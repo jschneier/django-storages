@@ -1,0 +1,1 @@
+# should not be too hard to adapt S3Storage
