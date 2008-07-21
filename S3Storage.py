@@ -1,11 +1,11 @@
-from mimetypes import guess_type
 import os
+from mimetypes import guess_type
 
-from django.core.exceptions import ImproperlyConfigured
-from django.core.filestorage.base import Storage, RemoteFile
-from django.core.filestorage.filesystem import FileSystemStorage
-from django.utils.functional import curry
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.core.files.storage import Storage
+from django.core.files.remote import RemoteFile
+from django.utils.functional import curry
 
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
 SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
@@ -16,6 +16,7 @@ try:
 except ImportError:
     raise ImproperlyConfigured, "Could not load amazon's S3 bindings.\
     \nSee http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134"
+
 
 class S3Storage(Storage):
     """Amazon Simple Storage Service"""
@@ -52,41 +53,38 @@ class S3Storage(Storage):
     def _get_connection(self):
         return AWSAuthConnection(*self._get_access_keys())
 
-    def _put_file(self, filename, raw_contents):
-        content_type = guess_type(filename)[0] or "application/x-octet-stream"
+    def _put_file(self, name, raw_contents):
+        content_type = guess_type(name)[0] or "application/x-octet-stream"
         self.headers.update({'x-amz-acl':  self.acl, 'Content-Type': content_type})
-        response = self.connection.put(self.bucket, filename, raw_contents, self.headers)
+        response = self.connection.put(self.bucket, name, raw_contents, self.headers)
 
-    def url(self, filename):
-        return self.generator.make_bare_url(self.bucket, filename)
+    def path(self, name):
+        return self.generator.make_bare_url(self.bucket, name)
     
-    path = url
-
-    def filesize(self, filename):
-        response = self.connection.make_request('HEAD', self.bucket, filename)
+    def size(self, name):
+        response = self.connection._make_request('HEAD', self.bucket, name)
         return int(response.getheader('Content-Length'))
-
-    def open(self, filename, mode='rb'):
-        response = self.connection.get(self.bucket, filename)
-        writer = curry(self._put_file, filename)
-        return RemoteFile(self, response.object.data, mode, writer)
-
-    def exists(self, filename):
-        response = self.connection.make_request('HEAD', self.bucket, filename)
+    
+    url = path
+    
+    def exists(self, name):
+        response = self.connection._make_request('HEAD', self.bucket, name)
         return response.status == 200
 
-    def save(self, filename, raw_contents):
-        filename = self.get_available_filename(filename)
-        self._put_file(filename, raw_contents)
-        return filename
-    
-    ## UNCOMMENT BELOW IF NECESSARY
-    
-    #def delete(self, filename):
-    #    """ Do not delete default images. """
-    #    if not filename.endswith('default.jpg') and not filename.endswith('guest.jpg'):
-    #        self.connection.delete(self.bucket, filename)
+    def _open(self, name, mode='rb'):
+        response = self.connection.get(self.bucket, name)
+        writer = curry(self._put_file, name)
+        return RemoteFile(response.object.data, mode, writer)
 
-    #def get_available_filename(self, filename):
+    def save(self, name, raw_contents):
+        name = self.get_available_filename(name)
+        self._put_file(name, raw_contents)
+        return name
+    
+    def delete(self, name):
+        self.connection.delete(self.bucket, name)
+
+    ## UNCOMMENT BELOW IF NECESSARY
+    #def get_available_filename(self, name):
     #    """ Overwrite existing file with the same name. """
-    #    return filename
+    #    return name
