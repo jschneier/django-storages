@@ -1,10 +1,14 @@
 import os
 from mimetypes import guess_type
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.files.storage import Storage
-from django.core.files.remote import RemoteFile
+from django.core.files.storage import Storage, StorageFile
 from django.utils.functional import curry
 
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
@@ -53,38 +57,60 @@ class S3Storage(Storage):
     def _get_connection(self):
         return AWSAuthConnection(*self._get_access_keys())
 
-    def _put_file(self, name, raw_contents):
+    def _put_file(self, name, content):
         content_type = guess_type(name)[0] or "application/x-octet-stream"
         self.headers.update({'x-amz-acl':  self.acl, 'Content-Type': content_type})
-        response = self.connection.put(self.bucket, name, raw_contents, self.headers)
-
-    def path(self, name):
-        return self.generator.make_bare_url(self.bucket, name)
-    
-    def size(self, name):
-        response = self.connection._make_request('HEAD', self.bucket, name)
-        return int(response.getheader('Content-Length'))
-    
-    url = path
-    
-    def exists(self, name):
-        response = self.connection._make_request('HEAD', self.bucket, name)
-        return response.status == 200
+        response = self.connection.put(self.bucket, name, content, self.headers)
 
     def _open(self, name, mode='rb'):
         response = self.connection.get(self.bucket, name)
         writer = curry(self._put_file, name)
-        return RemoteFile(response.object.data, mode, writer)
+        #print response.object.data
+        remote_file = S3StorageFile(response.object.data, mode, writer)
+        remote_file.size = self.size(name)
+        return remote_file
 
-    def save(self, name, raw_contents):
-        name = self.get_available_filename(name)
-        self._put_file(name, raw_contents)
-        return name
+    def _save(self, name, content):
+        self._put_file(self.url(name), content.open())
     
     def delete(self, name):
         self.connection.delete(self.bucket, name)
 
+    def exists(self, name):
+        response = self.connection._make_request('HEAD', self.bucket, name)
+        return response.status == 200
+
+    def size(self, name):
+        response = self.connection._make_request('HEAD', self.bucket, name)
+        content_length = response.getheader('Content-Length')
+        return content_length and int(content_length) or 0
+    
+    def url(self, name):
+        return self.generator.make_bare_url(self.bucket, name)
+
     ## UNCOMMENT BELOW IF NECESSARY
-    #def get_available_filename(self, name):
+    #def get_available_name(self, name):
     #    """ Overwrite existing file with the same name. """
     #    return name
+
+
+class S3StorageFile(StorageFile):
+    def __init__(self, data, mode, writer):
+        self._mode = mode
+        self._write_to_storage = writer
+        self._is_dirty = False
+        self.file = StringIO(data)
+
+    def read(self, num_bytes=None):
+        return self.file.getvalue()
+
+    def write(self, content):
+        if 'w' not in self._mode:
+            raise AttributeError("File was opened for read-only access.")
+        self.file = StringIO(content)
+        self._is_dirty = True
+
+    def close(self):
+        if self._is_dirty:
+            self._write_to_storage(self.file.getvalue())
+        self.file.close()
