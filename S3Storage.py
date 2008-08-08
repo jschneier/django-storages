@@ -8,7 +8,8 @@ except ImportError:
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.files.storage import Storage, StorageFile
+from django.core.files.base import File
+from django.core.files.storage import Storage
 from django.utils.functional import curry
 
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
@@ -94,7 +95,7 @@ class S3Storage(Storage):
     #    return name
 
 
-class S3StorageFile(StorageFile):
+class S3StorageFile(File):
     def __init__(self, data, mode, writer):
         self._mode = mode
         self._write_to_storage = writer
