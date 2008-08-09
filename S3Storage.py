@@ -72,7 +72,7 @@ class S3Storage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self._put_file(self.url(name), content.open())
+        self._put_file(name, content.read())
     
     def delete(self, name):
         self.connection.delete(self.bucket, name)
