@@ -2,21 +2,14 @@
 Django storages
 ===============
 
-Installation
-============
+Install
+=======
 
-You need to patch your Django source code with the latest patch of this 
-ticket::
+See http://code.larlet.fr/doc/#django-storage for detailed explanations.
 
-    http://code.djangoproject.com/ticket/5361
+TODO
+====
 
-After that you just need to populate your settings with a reference to your
-new storage::
-
-    DEFAULT_FILE_STORAGE = 'yourapp.storages.S3Storage'
-
-Eventually you can use the new storage::
-
-    from django.core.filestorage import storage
-
-Enjoy!
+    * Use chunks for S3Storage as in original FileSystemStorage
+    * Invite people who work on storages to add them to the repository
+    * Add more documentation
