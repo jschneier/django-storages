@@ -73,6 +73,7 @@ class S3Storage(Storage):
 
     def _save(self, name, content):
         self._put_file(name, content.read())
+        return name
     
     def delete(self, name):
         self.connection.delete(self.bucket, name)
