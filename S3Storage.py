@@ -72,7 +72,11 @@ class S3Storage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self._put_file(name, content.read())
+        if hasattr(content, 'chunks'):
+            content_str = ''.join(chunk for chunk in content.chunks())
+        else:
+            content_str = content.read()
+        self._put_file(name, content_str)
         return name
     
     def delete(self, name):
