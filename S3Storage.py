@@ -65,12 +65,20 @@ class S3Storage(Storage):
 
     def _open(self, name, mode='rb'):
         response = self.connection.get(self.bucket, name)
+        sizer = self.size
+        reader = self._read
         writer = curry(self._put_file, name)
-        #print response.object.data
-        remote_file = S3StorageFile(response.object.data, mode, writer)
-        remote_file.size = self.size(name)
+        remote_file = S3StorageFile(name, response.object.data, mode, sizer, reader, writer)
         return remote_file
 
+    def _read(self, name, num_bytes=None):
+        if num_bytes is None:
+            headers = {}
+        else:
+            headers = {'Range': 'bytes=0-%s' % (num_bytes-1,)}
+        response = self.connection.get(self.bucket, name, headers)
+        return response.object.data
+        
     def _save(self, name, content):
         if hasattr(content, 'chunks'):
             content_str = ''.join(chunk for chunk in content.chunks())
@@ -101,13 +109,23 @@ class S3Storage(Storage):
 
 
 class S3StorageFile(File):
-    def __init__(self, data, mode, writer):
+    def __init__(self, name, data, mode, sizer, reader, writer):
+        self._name = name
         self._mode = mode
+        self._size_from_storage = sizer
+        self._read_from_storage = reader
         self._write_to_storage = writer
         self._is_dirty = False
         self.file = StringIO(data)
 
+    @property
+    def size(self):
+        if not hasattr(self, '_size'):
+            self._size = self._size_from_storage(self._name)
+        return self._size
+
     def read(self, num_bytes=None):
+        self.file = StringIO(self._read_from_storage(self._name, num_bytes))
         return self.file.getvalue()
 
     def write(self, content):
