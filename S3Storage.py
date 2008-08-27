@@ -60,24 +60,21 @@ class S3Storage(Storage):
 
     def _put_file(self, name, content):
         content_type = guess_type(name)[0] or "application/x-octet-stream"
-        self.headers.update({'x-amz-acl':  self.acl, 'Content-Type': content_type})
+        self.headers.update({'x-amz-acl': self.acl, 'Content-Type': content_type})
         response = self.connection.put(self.bucket, name, content, self.headers)
 
     def _open(self, name, mode='rb'):
-        response = self.connection.get(self.bucket, name)
-        sizer = self.size
-        reader = self._read
-        writer = curry(self._put_file, name)
-        remote_file = S3StorageFile(name, response.object.data, mode, sizer, reader, writer)
+        remote_file = S3StorageFile(name, self, mode=mode)
         return remote_file
 
-    def _read(self, name, num_bytes=None):
-        if num_bytes is None:
+    def _read(self, name, start_range=None, end_range=None):
+        if start_range is None:
             headers = {}
         else:
-            headers = {'Range': 'bytes=0-%s' % (num_bytes-1,)}
+            headers = {'Range': 'bytes=%s-%s' % (start_range, end_range)}
         response = self.connection.get(self.bucket, name, headers)
-        return response.object.data
+        headers = response.http_response.msg
+        return response.object.data, headers['etag'], headers.get('content-range', None)
         
     def _save(self, name, content):
         if hasattr(content, 'chunks'):
@@ -109,23 +106,32 @@ class S3Storage(Storage):
 
 
 class S3StorageFile(File):
-    def __init__(self, name, data, mode, sizer, reader, writer):
+    def __init__(self, name, storage, mode):
         self._name = name
+        self._storage = storage
         self._mode = mode
-        self._size_from_storage = sizer
-        self._read_from_storage = reader
-        self._write_to_storage = writer
         self._is_dirty = False
-        self.file = StringIO(data)
-
+        self.file = StringIO()
+        self.start_range = 0
+    
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._size_from_storage(self._name)
+            self._size = self._storage.size(self._name)
         return self._size
 
     def read(self, num_bytes=None):
-        self.file = StringIO(self._read_from_storage(self._name, num_bytes))
+        if num_bytes is None:
+            args = []
+            self.start_range = 0
+        else:
+            args = [self.start_range, self.start_range+num_bytes-1]
+        data, etags, content_range = self._storage._read(self._name, *args)
+        if content_range is not None:
+            current_range, size = content_range.split(' ', 1)[1].split('/', 1)
+            start_range, end_range = current_range.split('-', 1)
+            self._size, self.start_range = int(size), int(end_range)+1
+        self.file = StringIO(data)
         return self.file.getvalue()
 
     def write(self, content):
@@ -136,5 +142,5 @@ class S3StorageFile(File):
 
     def close(self):
         if self._is_dirty:
-            self._write_to_storage(self.file.getvalue())
+            self._storage._put_file(self._name, self.file.getvalue())
         self.file.close()
