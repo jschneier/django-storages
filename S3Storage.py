@@ -77,6 +77,7 @@ class S3Storage(Storage):
         return response.object.data, headers['etag'], headers.get('content-range', None)
         
     def _save(self, name, content):
+        content.open()
         if hasattr(content, 'chunks'):
             content_str = ''.join(chunk for chunk in content.chunks())
         else:
