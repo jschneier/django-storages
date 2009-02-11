@@ -8,7 +8,10 @@ from django.utils.functional import curry
 
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
 SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
-AWS_HEADERS = 'AWS_HEADERS'
+AWS_HEADERS     = 'AWS_HEADERS'
+AWS_BUCKET_NAME = 'AWS_STORAGE_BUCKET_NAME'
+
+AWS_BUCKET_PREFIX = getattr(settings, AWS_BUCKET_NAME, {})
 
 try:
     from boto.s3.connection import S3Connection
@@ -19,7 +22,7 @@ except ImportError:
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
-    def __init__(self, bucket="root", bucketprefix=settings.AWS_BUCKET_PREFIX, access_key=None, secret_key=None, acl='public-read'):
+    def __init__(self, bucket="root", bucketprefix=AWS_BUCKET_PREFIX, access_key=None, secret_key=None, acl='public-read'):
         self.acl = acl
         
         if not access_key and not secret_key:

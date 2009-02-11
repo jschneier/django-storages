@@ -74,7 +74,7 @@ class S3Storage(Storage):
             headers = {'Range': 'bytes=%s-%s' % (start_range, end_range)}
         response = self.connection.get(self.bucket, name, headers)
         headers = response.http_response.msg
-        return response.object.data, headers['etag'], headers.get('content-range', None)
+        return response.object.data, headers.get('etag', None), headers.get('content-range', None)
         
     def _save(self, name, content):
         content.open()
