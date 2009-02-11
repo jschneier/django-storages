@@ -10,3 +10,4 @@ syntax:glob
 *.DS_Store
 testdb.sqlite
 django
+local_settings.py

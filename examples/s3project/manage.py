@@ -1,6 +1,6 @@
 # put patched django and S3 in PYTHONPATH
 import sys, os
-sys.path = [os.path.join(os.getcwd(), '../')] + sys.path
+sys.path = [os.path.join(os.getcwd(), '../../')] + sys.path
 
 from django.core.management import execute_manager
 

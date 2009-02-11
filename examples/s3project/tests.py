@@ -65,7 +65,7 @@ Once you're done, ``default_storage`` will be the S3 storage::
 
     >>> from django.core.files.storage import default_storage
     >>> print default_storage.__class__
-    <class 'S3Storage.S3Storage'>
+    <class 'backends.S3Storage.S3Storage'>
 
 This way, if you define a new ``FileField``, it will use the S3 storage::
 
@@ -76,7 +76,7 @@ This way, if you define a new ``FileField``, it will use the S3 storage::
     ...
     >>> resume = Resume()
     >>> print resume.pdf.storage
-    <S3Storage.S3Storage object at ...>
+    <backends.S3Storage.S3Storage object at ...>
 
 
 Tests
