@@ -8,6 +8,7 @@ setup(
     author_email='david@larlet.fr',
     url='http://code.welldev.org/django-storages/',
     packages=find_packages(),
+    py_modules=['S3'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
