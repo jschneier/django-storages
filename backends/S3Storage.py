@@ -62,6 +62,8 @@ class S3Storage(Storage):
         content_type = guess_type(name)[0] or "application/x-octet-stream"
         self.headers.update({'x-amz-acl': self.acl, 'Content-Type': content_type})
         response = self.connection.put(self.bucket, name, content, self.headers)
+        if response.http_response.status != 200:
+            raise IOError("S3StorageError: %s" % response.message)
 
     def _open(self, name, mode='rb'):
         remote_file = S3StorageFile(name, self, mode=mode)
@@ -73,6 +75,8 @@ class S3Storage(Storage):
         else:
             headers = {'Range': 'bytes=%s-%s' % (start_range, end_range)}
         response = self.connection.get(self.bucket, name, headers)
+        if response.http_response.status != 200:
+            raise IOError("S3StorageError: %s" % response.message)
         headers = response.http_response.msg
         return response.object.data, headers.get('etag', None), headers.get('content-range', None)
         
@@ -86,7 +90,9 @@ class S3Storage(Storage):
         return name
     
     def delete(self, name):
-        self.connection.delete(self.bucket, name)
+        response = self.connection.delete(self.bucket, name)
+        if response.http_response.status != 204:
+            raise IOError("S3StorageError: %s" % response.message)
 
     def exists(self, name):
         response = self.connection._make_request('HEAD', self.bucket, name)
