@@ -14,7 +14,11 @@ from django.utils.functional import curry
 
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
 SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
-AWS_HEADERS = 'AWS_HEADERS'
+HEADERS = 'AWS_HEADERS'
+
+DEFAULT_ACL= getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
+QUERYSTRING_ACTIVE= getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
+QUERYSTRING_EXPIRE= getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
 
 try:
     from S3 import AWSAuthConnection, QueryStringAuthGenerator
@@ -27,7 +31,7 @@ class S3Storage(Storage):
     """Amazon Simple Storage Service"""
 
     def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME, 
-            access_key=None, secret_key=None, acl='public-read', 
+            access_key=None, secret_key=None, acl=DEFAULT_ACL, 
             calling_format=settings.AWS_CALLING_FORMAT):
         self.bucket = bucket
         self.acl = acl
@@ -39,8 +43,9 @@ class S3Storage(Storage):
                             calling_format=calling_format)
         self.generator = QueryStringAuthGenerator(access_key, secret_key, 
                             calling_format=calling_format, is_secure=False)
+        self.generator.set_expires_in(QUERYSTRING_EXPIRE)
         
-        self.headers = getattr(settings, AWS_HEADERS, {})
+        self.headers = getattr(settings, HEADERS, {})
 
     def _get_access_keys(self):
         access_key = getattr(settings, ACCESS_KEY_NAME, None)
@@ -104,7 +109,10 @@ class S3Storage(Storage):
         return content_length and int(content_length) or 0
     
     def url(self, name):
-        return self.generator.make_bare_url(self.bucket, name)
+        if QUERYSTRING_ACTIVE:
+            return self.generator.generate_url('GET', self.bucket, name)
+        else:
+            return self.generator.make_bare_url(self.bucket, name)
 
     ## UNCOMMENT BELOW IF NECESSARY
     #def get_available_name(self, name):
