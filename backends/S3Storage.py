@@ -1,5 +1,5 @@
 import os
-from mimetypes import guess_type
+import mimetypes
 
 try:
     from cStringIO import StringIO
@@ -64,7 +64,7 @@ class S3Storage(Storage):
         return AWSAuthConnection(*self._get_access_keys())
 
     def _put_file(self, name, content):
-        content_type = guess_type(name)[0] or "application/x-octet-stream"
+        content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
         self.headers.update({'x-amz-acl': self.acl, 'Content-Type': content_type})
         response = self.connection.put(self.bucket, name, content, self.headers)
         if response.http_response.status != 200:

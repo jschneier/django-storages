@@ -1,6 +1,6 @@
 import urlparse
 from StringIO import StringIO
-from mimetypes import guess_type
+import mimetypes
 
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
@@ -82,7 +82,7 @@ def serve_mogilefs_file(request, key=None):
     Either reproxy the path to perlbal, or serve the image outright
     """
     # not the best way to do this, since we create a client each time
-    mimetype = guess_type(key)[0] or "application/x-octet-stream"
+    mimetype = mimetypes.guess_type(key)[0] or "application/x-octet-stream"
     client = mogilefs.Client(settings.MOGILEFS_DOMAIN, settings.MOGILEFS_TRACKERS)
     if hasattr(settings, "SERVE_WITH_PERLBAL") and settings.SERVE_WITH_PERLBAL:
         # we're reproxying with perlbal
