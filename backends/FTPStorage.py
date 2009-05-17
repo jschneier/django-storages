@@ -108,9 +108,7 @@ class FTPStorage(Storage):
             self._mkremdirs(os.path.dirname(name))
             pwd = self._connection.pwd()
             self._connection.cwd(os.path.dirname(name))
-            memory_file = StringIO(content)
-            self._connection.storbinary('STOR ' + os.path.basename(name), memory_file, 8*1024)
-            memory_file.close()
+            self._connection.storbinary('STOR ' + os.path.basename(name), content.file, content.DEFAULT_CHUNK_SIZE)
             self._connection.cwd(pwd)
         except ftplib.all_errors, e:
             raise FTPStorageException('Error writing file %s' % name)
@@ -132,12 +130,9 @@ class FTPStorage(Storage):
         
     def _save(self, name, content):
         content.open()
-        if hasattr(content, 'chunks'):
-            content_str = ''.join(chunk for chunk in content.chunks())
-        else:
-            content_str = content.read()
         self._start_connection()
-        self._put_file(name, content_str)
+        self._put_file(name, content)
+        content.close()
         return name
 
     def _get_dir_details(self, path):
