@@ -8,6 +8,7 @@ By order of apparition, thanks:
     * Chris McCormick (S3 with Boto)
     * Ivanov E. (Database)
     * Ariel Núñez (packaging)
+    * Wim Leers (SymlinkOrCopy + patches)
 
 Extra thanks to Marty for adding this in Django, 
 you can buy his very interesting book (Pro Django).
