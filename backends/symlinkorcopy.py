@@ -33,7 +33,7 @@ class SymlinkOrCopyStorage(FileSystemStorage):
     """
     def __init__(self, location=settings.MEDIA_ROOT, base_url=settings.MEDIA_URL, 
             symlink_within=None):
-        super(FileSystemStorage, self).__init__(location, base_url)
+        super(SymlinkOrCopyStorage, self).__init__(location, base_url)
         self.symlink_within = symlink_within.split(":")
 
     def _save(self, name, content):
@@ -57,6 +57,6 @@ class SymlinkOrCopyStorage(FileSystemStorage):
                     break
 
         if not symlinked:
-            super(FileSystemStorage, self)._save(name, content)
+            super(SymlinkOrCopyStorage, self)._save(name, content)
 
         return name
