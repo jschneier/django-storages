@@ -181,11 +181,14 @@ class FTPStorage(Storage):
     def exists(self, name):
         self._start_connection()
         try:
-            if name in self._connection.nlst(os.path.dirname(name)):
+            if os.path.basename(name) in self._connection.nlst(os.path.dirname(name) + '/'):
                 return True
             else:
                 return False
         except ftplib.error_temp, e:
+            return False
+        except ftplib.error_perm, e:
+            # error_perm: 550 Can't find file
             return False
         except ftplib.all_errors, e:
             raise FTPStorageException('Error when testing existence of %s' % name)            
