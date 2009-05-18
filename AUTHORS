@@ -10,6 +10,7 @@ By order of apparition, thanks:
     * Ariel Núñez (packaging)
     * Wim Leers (SymlinkOrCopy + patches)
     * Michael Elsdörfer (Overwrite + PEP8 compatibility)
+    * Christian Klein (CouchDB)
 
 Extra thanks to Marty for adding this in Django, 
 you can buy his very interesting book (Pro Django).
