@@ -40,7 +40,7 @@ class ImageStorage(FileSystemStorage):
         
         # Does the basename already have an extension? If so, replace it.
         # bare as in without extension
-        bare_basename = basename if '.' not in basename else basename[:basename.rindex('.')]
+        bare_basename, _ = os.path.splitext(basename)
         basename = bare_basename + '.' + extension
         
         name = os.path.join(dirname, basename)
