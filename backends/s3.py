@@ -12,6 +12,12 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.functional import curry
 
+try:
+    from S3 import AWSAuthConnection, QueryStringAuthGenerator
+except ImportError:
+    raise ImproperlyConfigured, "Could not load amazon's S3 bindings.\
+    \nSee http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134"
+
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
 SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
 HEADERS = 'AWS_HEADERS'
@@ -19,30 +25,26 @@ HEADERS = 'AWS_HEADERS'
 DEFAULT_ACL= getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_ACTIVE= getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
 QUERYSTRING_EXPIRE= getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
-
-try:
-    from S3 import AWSAuthConnection, QueryStringAuthGenerator
-except ImportError:
-    raise ImproperlyConfigured, "Could not load amazon's S3 bindings.\
-    \nSee http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134"
+SECURE_URLS= getattr(settings, 'AWS_S3_SECURE_URLS', False)
 
 
 class S3Storage(Storage):
     """Amazon Simple Storage Service"""
 
-    def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME, 
-            access_key=None, secret_key=None, acl=DEFAULT_ACL, 
+    def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME,
+            access_key=None, secret_key=None, acl=DEFAULT_ACL,
             calling_format=settings.AWS_CALLING_FORMAT):
         self.bucket = bucket
         self.acl = acl
 
         if not access_key and not secret_key:
-             access_key, secret_key = self._get_access_keys()
+            access_key, secret_key = self._get_access_keys()
 
-        self.connection = AWSAuthConnection(access_key, secret_key, 
+        self.connection = AWSAuthConnection(access_key, secret_key,
                             calling_format=calling_format)
         self.generator = QueryStringAuthGenerator(access_key, secret_key, 
-                            calling_format=calling_format, is_secure=False)
+                            calling_format=calling_format,
+                            is_secure=SECURE_URLS)
         self.generator.set_expires_in(QUERYSTRING_EXPIRE)
         
         self.headers = getattr(settings, HEADERS, {})
