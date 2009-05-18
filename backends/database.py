@@ -1,15 +1,19 @@
 # DatabaseStorage for django.
 # 2009 (c) GameKeeper Gambling Ltd, Ivanov E.
-
-
-from django.core.files.storage import Storage
-from django.core.files import File
-from django.conf import settings
-
 import StringIO
 import urlparse
 
-import pyodbc
+from django.conf import settings
+from django.core.files import File
+from django.core.files.storage import Storage
+from django.core.exceptions import ImproperlyConfigured
+
+try:
+    import pyodbc
+except ImportError:
+    raise ImproperlyConfigured, "Could not load pyodbc dependency.\
+    \nSee http://code.google.com/p/pyodbc/"
+
 
 class DatabaseStorage(Storage):
     """

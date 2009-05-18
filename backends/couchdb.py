@@ -11,11 +11,13 @@ from urllib import quote_plus
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
+from django.core.exceptions import ImproperlyConfigured
 
 try:
-    import couchdb.client
+    import couchdb
 except ImportError:
-    raise "You must install couchdb dependency. See http://code.google.com/p/couchdb-python/"
+    raise ImproperlyConfigured, "Could not load couchdb dependency.\
+    \nSee http://code.google.com/p/couchdb-python/"
 
 DEFAULT_SERVER= getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
 STORAGE_OPTIONS= getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})

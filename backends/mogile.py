@@ -1,15 +1,19 @@
 import urlparse
-from StringIO import StringIO
 import mimetypes
+from StringIO import StringIO
 
-from django.core.files.storage import Storage
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
-from django.utils.text import force_unicode
-from django.http import HttpResponse, HttpResponseNotFound
 from django.core.cache import cache
+from django.utils.text import force_unicode
+from django.core.files.storage import Storage
+from django.http import HttpResponse, HttpResponseNotFound
+from django.core.exceptions import ImproperlyConfigured
 
-import mogilefs
+try:
+    import mogilefs
+except ImportError:
+    raise ImproperlyConfigured, "Could not load mogilefs dependency.\
+    \nSee http://mogilefs.pbworks.com/Client-Libraries"
 
 
 class MogileFSStorage(Storage):
