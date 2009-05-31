@@ -11,6 +11,7 @@ By order of apparition, thanks:
     * Wim Leers (SymlinkOrCopy + patches)
     * Michael Elsdörfer (Overwrite + PEP8 compatibility)
     * Christian Klein (CouchDB)
+    * Rich Leland (Mosso Cloud Files)
 
 Extra thanks to Marty for adding this in Django, 
 you can buy his very interesting book (Pro Django).
