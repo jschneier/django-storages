@@ -15,25 +15,31 @@ except ImportError:
 
 ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
 SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
-AWS_HEADERS     = 'AWS_HEADERS'
-AWS_BUCKET_NAME = 'AWS_STORAGE_BUCKET_NAME'
+HEADERS         = 'AWS_HEADERS'
+BUCKET_NAME     = 'AWS_STORAGE_BUCKET_NAME'
+DEFAULT_ACL     = 'AWS_DEFAULT_ACL'
+QUERYSTRING_EXPIRE = 'AWS_QUERYSTRING_EXPIRE'
 
-AWS_BUCKET_PREFIX = getattr(settings, AWS_BUCKET_NAME, {})
+BUCKET_PREFIX     = getattr(settings, BUCKET_NAME, {})
+HEADERS           = getattr(settings, HEADERS, {})
+DEFAULT_ACL       = getattr(settings, DEFAULT_ACL, 'public-read')
+QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
 
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
-    def __init__(self, bucket="root", bucketprefix=AWS_BUCKET_PREFIX, 
-            access_key=None, secret_key=None, acl='public-read'):
+    def __init__(self, bucket="root", bucketprefix=BUCKET_PREFIX, 
+            access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS):
         self.acl = acl
+        self.headers = headers
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
         
         self.connection = S3Connection(access_key, secret_key)
         self.bucket = self.connection.create_bucket(bucketprefix + bucket)
-        self.headers = getattr(settings, AWS_HEADERS, {})
+        self.bucket.set_acl(self.acl)
     
     def _get_access_keys(self):
         access_key = getattr(settings, ACCESS_KEY_NAME, None)
@@ -55,7 +61,7 @@ class S3BotoStorage(Storage):
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
-        k.set_contents_from_file(content)
+        k.set_contents_from_file(content, headers=self.headers, policy=self.acl)
         return name
     
     def delete(self, name):
@@ -72,7 +78,7 @@ class S3BotoStorage(Storage):
         return self.bucket.get_key(name).size
     
     def url(self, name):
-        return self.bucket.get_key(name).generate_url(3600, method='GET')
+        return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, method='GET')
     
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
@@ -93,7 +99,7 @@ class S3BotoStorageFile(File):
         return self.key.read(*args, **kwargs)
     
     def write(self, content):
-        self.key.set_contents_from_string(content)
+        self.key.set_contents_from_string(content, headers=self._storage.headers, acl=self._storage.acl)
     
     def close(self):
         self.key.close()
