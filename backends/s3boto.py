@@ -58,10 +58,12 @@ class S3BotoStorage(Storage):
         return S3BotoStorageFile(name, mode, self)
     
     def _save(self, name, content):
+        headers = self.headers
+        headers['Content-Type'] = content.content_type
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
-        k.set_contents_from_file(content, headers=self.headers, policy=self.acl)
+        k.set_contents_from_file(content, headers=headers, policy=self.acl)
         return name
     
     def delete(self, name):
