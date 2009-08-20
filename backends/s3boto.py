@@ -59,7 +59,7 @@ class S3BotoStorage(Storage):
     
     def _save(self, name, content):
         headers = self.headers
-        headers['Content-Type'] = content.content_type
+        headers['Content-Type'] = content.file.content_type
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)

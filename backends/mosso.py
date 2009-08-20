@@ -83,7 +83,7 @@ class CloudFilesStorage(Storage):
         else:
             content_str = content.read()
         cloud_obj = self.container.create_object(name)
-        cloud_obj.content_type = content.content_type
+        cloud_obj.content_type = content.file.content_type
         cloud_obj.send(content_str)
         content.close()
         return name
