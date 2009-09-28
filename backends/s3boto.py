@@ -18,11 +18,13 @@ SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
 HEADERS         = 'AWS_HEADERS'
 BUCKET_NAME     = 'AWS_STORAGE_BUCKET_NAME'
 DEFAULT_ACL     = 'AWS_DEFAULT_ACL'
+QUERYSTRING_AUTH = 'AWS_QUERYSTRING_AUTH'
 QUERYSTRING_EXPIRE = 'AWS_QUERYSTRING_EXPIRE'
 
 BUCKET_PREFIX     = getattr(settings, BUCKET_NAME, {})
 HEADERS           = getattr(settings, HEADERS, {})
 DEFAULT_ACL       = getattr(settings, DEFAULT_ACL, 'public-read')
+QUERYSTRING_AUTH  = getattr(settings, QUERYSTRING_AUTH, True)
 QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
 
 
@@ -80,7 +82,7 @@ class S3BotoStorage(Storage):
         return self.bucket.get_key(name).size
     
     def url(self, name):
-        return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, method='GET')
+        return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, method='GET', query_auth=QUERYSTRING_AUTH)
     
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
