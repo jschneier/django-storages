@@ -141,7 +141,7 @@ class CloudFilesStorage(Storage):
         """
         Returns the total size, in bytes, of the file specified by name.
         """
-        return self._get_cloud_obj(name).size()
+        return self._get_cloud_obj(name).size
 
     def url(self, name):
         """
