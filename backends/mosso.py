@@ -39,6 +39,7 @@ class CloudFilesStorage(Storage):
     """
     Custom storage for Mosso Cloud Files.
     """
+    default_quick_listdir = True
 
     def __init__(self, username=None, api_key=None, container=None):
         """
@@ -132,10 +133,38 @@ class CloudFilesStorage(Storage):
 
     def listdir(self, path):
         """
-        Lists the contents of the specified path, returning a 2-tuple of lists;
-        the first item being directories, the second item being files.
+        Lists the contents of the specified path, returning a 2-tuple; the
+        first being an empty list of directories (not available for quick-
+        listing), the second being a list of filenames.
+        
+        If the list of directories is required, use the full_listdir method.
         """
         return ([], self.container.list_objects(path=path))
+
+    def full_listdir(self, path):
+        """
+        Lists the contents of the specified path, returning a 2-tuple of lists;
+        the first item being directories, the second item being files.
+        
+        On large containers, this may be a slow operation for root containers
+        because every single object must be returned (cloudfiles does not
+        provide an explicit way of listing directories).
+        """
+        dirs = set()
+        files = []
+        if path and not path.endswith('/'):
+            path = '%s/' % path
+        path_len = len(path)
+        for name in self.container.list_objects(prefix=path):
+            name = name[path_len:]
+            slash = name[1:-1].find('/') + 1
+            if slash:
+                dirs.add(name[:slash])
+            elif name:
+                files.append(name)
+        dirs = list(dirs)
+        dirs.sort()
+        return (dirs, files)
 
     def size(self, name):
         """
