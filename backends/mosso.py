@@ -74,16 +74,25 @@ class CloudFilesStorage(Storage):
                                                         self.container_name)
         return self._container
 
-    def _set_container(self, value):
+    def _set_container(self, container):
         """
         Set the container, making it publicly available (on Limelight CDN) if
         it is not already.
         """
-        if not value.is_public():
-            value.make_public()
-        self._container = value
+        if not container.is_public():
+            container.make_public()
+        if hasattr(self, '_container_public_uri'):
+            delattr(self, '_container_public_uri')
+        self._container = container
 
     container = property(_get_container, _set_container)
+
+    def _get_container_url(self):
+        if not hasattr(self, '_container_public_uri'):
+            self._container_public_uri = self.container.public_uri()
+        return self._container_public_uri
+
+    container_url = property(_get_container_url)
 
     def _get_cloud_obj(self, name):
         """
@@ -183,4 +192,4 @@ class CloudFilesStorage(Storage):
         Returns an absolute URL where the file's contents can be accessed
         directly by a web browser.
         """
-        return self._get_cloud_obj(name).public_uri()
+        return '%s/%s' % (self.container_url, name)
