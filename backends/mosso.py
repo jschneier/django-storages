@@ -17,13 +17,6 @@ try:
 except ImportError:
     raise ImproperlyConfigured, "Could not load cloudfiles dependency. See http://www.mosso.com/cloudfiles.jsp."
 
-try:
-    CLOUDFILES_USERNAME = settings.CLOUDFILES_USERNAME
-    CLOUDFILES_API_KEY = settings.CLOUDFILES_API_KEY
-    CLOUDFILES_CONTAINER = settings.CLOUDFILES_CONTAINER
-except AttributeError:
-    raise ImproperlyConfigured, "CLOUDFILES_USERNAME, CLOUDFILES_API_KEY, and CLOUDFILES_CONTAINER must be supplied in settings.py."
-
 # TODO: implement TTL into cloudfiles methods
 CLOUDFILES_TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
 
@@ -46,19 +39,51 @@ class CloudFilesStorage(Storage):
     """
     Custom storage for Mosso Cloud Files.
     """
-    
-    def __init__(self):
+
+    def __init__(self, username=None, api_key=None, container=None):
         """
-        Here we set up the connection and select the user-supplied container.
-        If the container isn't public (available on Limelight CDN), we make
-        it a publicly available container.
+        Initialize the settings for the connection and container.
         """
-        self.connection = cloudfiles.get_connection(CLOUDFILES_USERNAME,
-                                                    CLOUDFILES_API_KEY)
-        self.container = self.connection.get_container(CLOUDFILES_CONTAINER)
-        if not self.container.is_public():
-            self.container.make_public()
-    
+        self.username = username or settings.CLOUDFILES_USERNAME
+        self.api_key = api_key or settings.CLOUDFILES_API_KEY
+        self.container_name = container or settings.CLOUDFILES_CONTAINER
+
+    def __getstate__(self):
+        """
+        Return a picklable representation of the storage.
+        """
+        return dict(username=self.username,
+                    api_key=self.api_key,
+                    container_name=self.container_name)
+
+    def _get_connection(self):
+        if not hasattr(self, '_connection'):
+            self._connection = cloudfiles.get_connection(self.username,
+                                                         self.api_key)
+        return self._connection
+
+    def _set_connection(self, value):
+        self._connection = value
+
+    connection = property(_get_connection, _set_connection)
+
+    def _get_container(self):
+        if not hasattr(self, '_container'):
+            self.container = self.connection.get_container(
+                                                        self.container_name)
+        return self._container
+
+    def _set_container(self, value):
+        """
+        Set the container, making it publicly available (on Limelight CDN) if
+        it is not already.
+        """
+        if not value.is_public():
+            value.make_public()
+        self._container = value
+
+    container = property(_get_container, _set_container)
+
     def _get_cloud_obj(self, name):
         """
         Helper function to get retrieve the requested Cloud Files Object.
@@ -87,7 +112,7 @@ class CloudFilesStorage(Storage):
         cloud_obj.send(content_str)
         content.close()
         return name
-    
+
     def delete(self, name):
         """
         Deletes the specified file from the storage system.
@@ -104,7 +129,7 @@ class CloudFilesStorage(Storage):
             return True
         except NoSuchObject:
             return False
-        
+
     def listdir(self, path):
         """
         Lists the contents of the specified path, returning a 2-tuple of lists;
