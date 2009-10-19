@@ -139,7 +139,13 @@ class CloudFilesStorage(Storage):
         
         If the list of directories is required, use the full_listdir method.
         """
-        return ([], self.container.list_objects(path=path))
+        files = []
+        if path and not path.endswith('/'):
+            path = '%s/' % path
+        path_len = len(path)
+        for name in self.container.list_objects(path=path):
+            files.append(name[path_len:])
+        return ([], files)
 
     def full_listdir(self, path):
         """
