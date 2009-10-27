@@ -65,6 +65,10 @@ class S3Storage(Storage):
     def _get_connection(self):
         return AWSAuthConnection(*self._get_access_keys())
 
+    def _clean_name(self, name):
+        # Useful for windows' paths
+        return os.path.normpath(name).replace('\\', '/')
+
     def _put_file(self, name, content):
         content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
         self.headers.update({'x-amz-acl': self.acl, 'Content-Type': content_type})
@@ -73,10 +77,12 @@ class S3Storage(Storage):
             raise IOError("S3StorageError: %s" % response.message)
 
     def _open(self, name, mode='rb'):
+        name = self._clean_name(name)
         remote_file = S3StorageFile(name, self, mode=mode)
         return remote_file
 
     def _read(self, name, start_range=None, end_range=None):
+        name = self._clean_name(name)
         if start_range is None:
             headers = {}
         else:
@@ -88,6 +94,7 @@ class S3Storage(Storage):
         return response.object.data, headers.get('etag', None), headers.get('content-range', None)
         
     def _save(self, name, content):
+        name = self._clean_name(name)
         content.open()
         if hasattr(content, 'chunks'):
             content_str = ''.join(chunk for chunk in content.chunks())
@@ -97,20 +104,24 @@ class S3Storage(Storage):
         return name
     
     def delete(self, name):
+        name = self._clean_name(name)
         response = self.connection.delete(self.bucket, name)
         if response.http_response.status != 204:
             raise IOError("S3StorageError: %s" % response.message)
 
     def exists(self, name):
+        name = self._clean_name(name)
         response = self.connection._make_request('HEAD', self.bucket, name)
         return response.status == 200
 
     def size(self, name):
+        name = self._clean_name(name)
         response = self.connection._make_request('HEAD', self.bucket, name)
         content_length = response.getheader('Content-Length')
         return content_length and int(content_length) or 0
     
     def url(self, name):
+        name = self._clean_name(name)
         if QUERYSTRING_ACTIVE:
             return self.generator.generate_url('GET', self.bucket, name)
         else:
@@ -119,6 +130,7 @@ class S3Storage(Storage):
     ## UNCOMMENT BELOW IF NECESSARY
     #def get_available_name(self, name):
     #    """ Overwrite existing file with the same name. """
+    #    name = self._clean_name(name)
     #    return name
 
 
