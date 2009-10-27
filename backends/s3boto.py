@@ -56,10 +56,16 @@ class S3BotoStorage(Storage):
         
         return None, None
     
+    def _clean_name(self, name):
+        # Useful for windows' paths
+        return os.path.normpath(name).replace('\\', '/')
+
     def _open(self, name, mode='rb'):
+        name = self._clean_name(name)
         return S3BotoStorageFile(name, mode, self)
     
     def _save(self, name, content):
+        name = self._clean_name(name)
         headers = self.headers
         if hasattr(content.file, 'content_type'):
             headers['Content-Type'] = content.file.content_type
@@ -71,23 +77,29 @@ class S3BotoStorage(Storage):
         return name
     
     def delete(self, name):
+        name = self._clean_name(name)
         self.bucket.delete_key(name)
     
     def exists(self, name):
+        name = self._clean_name(name)
         k = Key(self.bucket, name)
         return k.exists()
     
     def listdir(self, name):
+        name = self._clean_name(name)
         return [l.name for l in self.bucket.list() if not len(name) or l.name[:len(name)] == name]
     
     def size(self, name):
+        name = self._clean_name(name)
         return self.bucket.get_key(name).size
     
     def url(self, name):
+        name = self._clean_name(name)
         return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, method='GET', query_auth=QUERYSTRING_AUTH)
     
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
+        name = self._clean_name(name)
         return name
 
 
