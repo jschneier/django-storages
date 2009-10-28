@@ -102,9 +102,9 @@ class CloudFilesStorage(Storage):
 
     def _open(self, name, mode='rb'):
         """
-        Not sure if this is the proper way to execute this. Would love input.
+        Return the CloudFilesStorageFile.
         """
-        return File(self._get_cloud_obj(name).read())
+        return CloudFilesStorageFile(storage=self, name=name)
 
     def _save(self, name, content):
         """
@@ -193,3 +193,58 @@ class CloudFilesStorage(Storage):
         directly by a web browser.
         """
         return '%s/%s' % (self.container_url, name)
+
+
+class CloudFilesStorageFile(File):
+    closed = False
+
+    def __init__(self, storage, name, *args, **kwargs):
+        self._storage = storage
+        super(CloudFilesStorageFile, self).__init__(file=None, name=name,
+                                                    *args, **kwargs)
+
+    def _get_size(self):
+        if not hasattr(self, '_size'):
+            self._size = self._storage.size(self.name)
+        return self._size
+
+    def _set_size(self, size):
+        self._size = size
+
+    size = property(_get_size, _set_size)
+
+    def _get_file(self):
+        if not hasattr(self, '_file'):
+            self._file = self._storage._get_cloud_obj(self.name)
+        return self._file
+
+    def _set_file(self, value):
+        if value is None:
+            if hasattr(self, '_file'):
+                del self._file
+        else:
+            self._file = value
+
+    file = property(_get_file, _set_file)
+
+    def read(self, num_bytes=None):
+        data = self.file.read(size=num_bytes or -1, offset=self._pos)
+        self._pos += len(data)
+        return data
+
+    def open(self, *args, **kwargs):
+        """
+        Open the cloud file object.
+        """
+        self.file
+        self._pos = 0
+
+    def close(self, *args, **kwargs):
+        self._pos = 0
+
+    @property
+    def closed(self):
+        return not hasattr(self, '_file')
+
+    def seek(self, pos):
+        self._pos = pos
