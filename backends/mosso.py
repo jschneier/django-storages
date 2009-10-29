@@ -2,8 +2,6 @@
 Custom storage for django with Mosso Cloud Files backend.
 Created by Rich Leland <rich@richleland.com>.
 """
-import re
-
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
@@ -15,7 +13,8 @@ try:
     import cloudfiles
     from cloudfiles.errors import NoSuchObject
 except ImportError:
-    raise ImproperlyConfigured, "Could not load cloudfiles dependency. See http://www.mosso.com/cloudfiles.jsp."
+    raise ImproperlyConfigured("Could not load cloudfiles dependency. See "
+                               "http://www.mosso.com/cloudfiles.jsp.")
 
 # TODO: implement TTL into cloudfiles methods
 CLOUDFILES_TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
@@ -25,11 +24,11 @@ def cloudfiles_upload_to(self, filename):
     """
     Simple, custom upload_to because Cloud Files doesn't support
     nested containers (directories).
-    
+
     Actually found this out from @minter:
-    @richleland The Cloud Files APIs do support pseudo-subdirectories, by 
+    @richleland The Cloud Files APIs do support pseudo-subdirectories, by
     creating zero-byte files with type application/directory.
-    
+
     May implement in a future version.
     """
     return get_valid_filename(filename)
@@ -131,8 +130,8 @@ class CloudFilesStorage(Storage):
 
     def exists(self, name):
         """
-        Returns True if a file referened by the given name already exists in the
-        storage system, or False if the name is available for a new file.
+        Returns True if a file referenced by the given name already exists in
+        the storage system, or False if the name is available for a new file.
         """
         try:
             self._get_cloud_obj(name)
@@ -145,7 +144,7 @@ class CloudFilesStorage(Storage):
         Lists the contents of the specified path, returning a 2-tuple; the
         first being an empty list of directories (not available for quick-
         listing), the second being a list of filenames.
-        
+
         If the list of directories is required, use the full_listdir method.
         """
         files = []
@@ -160,7 +159,7 @@ class CloudFilesStorage(Storage):
         """
         Lists the contents of the specified path, returning a 2-tuple of lists;
         the first item being directories, the second item being files.
-        
+
         On large containers, this may be a slow operation for root containers
         because every single object must be returned (cloudfiles does not
         provide an explicit way of listing directories).
