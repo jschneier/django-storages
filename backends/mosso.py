@@ -3,10 +3,11 @@ Custom storage for django with Mosso Cloud Files backend.
 Created by Rich Leland <rich@richleland.com>.
 """
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files import File
 from django.core.files.storage import Storage
-from django.core.exceptions import ImproperlyConfigured
 from django.utils.text import get_valid_filename
+import mimetypes
 
 
 try:
@@ -117,7 +118,11 @@ class CloudFilesStorage(Storage):
         else:
             content_str = content.read()
         cloud_obj = self.container.create_object(name)
-        cloud_obj.content_type = content.file.content_type
+        if hasattr(content.file, 'content_type'):
+            content_type = content.file.content_type
+        else:
+            content_type = mimetypes.guess_type(name)[0]
+        cloud_obj.content_type = content_type
         cloud_obj.send(content_str)
         content.close()
         return name
