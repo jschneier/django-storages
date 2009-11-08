@@ -108,22 +108,16 @@ class CloudFilesStorage(Storage):
 
     def _save(self, name, content):
         """
-        Here we're opening the content object and saving it to the Cloud Files
-        service. We have to set the content_type so it's delivered properly
-        when requested via public URI.
+        Use the Cloud Files service to write ``content`` to a remote file
+        (called ``name``).
         """
         content.open()
-        if hasattr(content, 'chunks'):
-            content_str = ''.join(chunk for chunk in content.chunks())
-        else:
-            content_str = content.read()
         cloud_obj = self.container.create_object(name)
+        # If the content type is available, pass it in directly rather than
+        # getting the cloud object to try to guess.
         if hasattr(content.file, 'content_type'):
-            content_type = content.file.content_type
-        else:
-            content_type = mimetypes.guess_type(name)[0]
-        cloud_obj.content_type = content_type
-        cloud_obj.send(content_str)
+            cloud_obj.content_type = content.file.content_type
+        cloud_obj.write(content)
         content.close()
         return name
 
