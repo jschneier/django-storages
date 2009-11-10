@@ -47,7 +47,7 @@ class CloudFilesStorage(Storage):
         self.username = username or settings.CLOUDFILES_USERNAME
         self.api_key = api_key or settings.CLOUDFILES_API_KEY
         self.container_name = container or settings.CLOUDFILES_CONTAINER
-        self.connection_kwargs = None or {}
+        self.connection_kwargs = connection_kwargs or {}
 
     def __getstate__(self):
         """
