@@ -117,7 +117,7 @@ class CloudFilesStorage(Storage):
         # getting the cloud object to try to guess.
         if hasattr(content.file, 'content_type'):
             cloud_obj.content_type = content.file.content_type
-        cloud_obj.write(content)
+        cloud_obj.send(content)
         content.close()
         return name
 
