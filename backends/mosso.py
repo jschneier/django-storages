@@ -7,8 +7,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.utils.text import get_valid_filename
-import mimetypes
-
 
 try:
     import cloudfiles
@@ -41,13 +39,15 @@ class CloudFilesStorage(Storage):
     """
     default_quick_listdir = True
 
-    def __init__(self, username=None, api_key=None, container=None):
+    def __init__(self, username=None, api_key=None, container=None,
+                 connection_kwargs=None):
         """
         Initialize the settings for the connection and container.
         """
         self.username = username or settings.CLOUDFILES_USERNAME
         self.api_key = api_key or settings.CLOUDFILES_API_KEY
         self.container_name = container or settings.CLOUDFILES_CONTAINER
+        self.connection_kwargs = None or {}
 
     def __getstate__(self):
         """
@@ -55,12 +55,13 @@ class CloudFilesStorage(Storage):
         """
         return dict(username=self.username,
                     api_key=self.api_key,
-                    container_name=self.container_name)
+                    container_name=self.container_name,
+                    connection_kwargs=self.connection_kwargs)
 
     def _get_connection(self):
         if not hasattr(self, '_connection'):
             self._connection = cloudfiles.get_connection(self.username,
-                                                         self.api_key)
+                                    self.api_key, **self.connection_kwargs)
         return self._connection
 
     def _set_connection(self, value):
