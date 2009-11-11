@@ -11,3 +11,6 @@ syntax:glob
 testdb.sqlite
 django
 local_settings.py
+dist/*
+django_storages.*
+setuptools*
