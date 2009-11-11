@@ -71,7 +71,11 @@ class S3Storage(Storage):
 
     def _put_file(self, name, content):
         content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
-        self.headers.update({'x-amz-acl': self.acl, 'Content-Type': content_type})
+        self.headers.update({
+            'x-amz-acl': self.acl, 
+            'Content-Type': content_type,
+            'Content-Length' : len(content),
+        })
         response = self.connection.put(self.bucket, name, content, self.headers)
         if response.http_response.status not in (200, 206):
             raise IOError("S3StorageError: %s" % response.message)
