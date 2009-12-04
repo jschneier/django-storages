@@ -7,10 +7,10 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-CUMULUS_USERNAME = 'yourusername'
-CUMULUS_API_KEY = 'yourapikey'
-CUMULUS_CONTAINER = 'test-container'
-CUMULUS_TTL = 600
+CLOUDFILES_USERNAME = 'yourusername'
+CLOUDFILES_API_KEY = 'yourapikey'
+CLOUDFILES_CONTAINER = 'test-container'
+CLOUDFILES_TTL = 600
 DEFAULT_FILE_STORAGE = 'backends.mosso.CloudFilesStorage'
 
 DATABASE_ENGINE = 'sqlite3'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
