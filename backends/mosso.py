@@ -114,6 +114,7 @@ class CloudFilesStorage(Storage):
         """
         content.open()
         cloud_obj = self.container.create_object(name)
+        cloud_obj.size = content.file.size
         # If the content type is available, pass it in directly rather than
         # getting the cloud object to try to guess.
         if hasattr(content.file, 'content_type'):
