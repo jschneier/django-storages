@@ -13,26 +13,19 @@ except ImportError:
     raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
     \nSee http://code.google.com/p/boto/"
 
-ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
-SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
-HEADERS         = 'AWS_HEADERS'
-BUCKET_NAME     = 'AWS_STORAGE_BUCKET_NAME'
-DEFAULT_ACL     = 'AWS_DEFAULT_ACL'
-QUERYSTRING_AUTH = 'AWS_QUERYSTRING_AUTH'
-QUERYSTRING_EXPIRE = 'AWS_QUERYSTRING_EXPIRE'
-
-BUCKET_PREFIX     = getattr(settings, BUCKET_NAME, {})
-HEADERS           = getattr(settings, HEADERS, {})
-DEFAULT_ACL       = getattr(settings, DEFAULT_ACL, 'public-read')
-QUERYSTRING_AUTH  = getattr(settings, QUERYSTRING_AUTH, True)
-QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
-
+ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
+SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
+HEADERS             = getattr(settings, 'AWS_HEADERS', {})
+STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
+DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
+QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
+QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
-    def __init__(self, bucket=BUCKET_PREFIX, access_key=None, secret_key=None,
-                       acl=DEFAULT_ACL, headers=HEADERS):
+    def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
+                       secret_key=None, acl=DEFAULT_ACL, headers=HEADERS):
         self.acl = acl
         self.headers = headers
         
@@ -44,8 +37,8 @@ class S3BotoStorage(Storage):
         self.bucket.set_acl(self.acl)
     
     def _get_access_keys(self):
-        access_key = getattr(settings, ACCESS_KEY_NAME, None)
-        secret_key = getattr(settings, SECRET_KEY_NAME, None)
+        access_key = ACCESS_KEY_NAME
+        secret_key = SECRET_KEY_NAME
         if (access_key or secret_key) and (not access_key or not secret_key):
             access_key = os.environ.get(ACCESS_KEY_NAME)
             secret_key = os.environ.get(SECRET_KEY_NAME)
