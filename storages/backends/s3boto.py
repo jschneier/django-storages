@@ -7,7 +7,7 @@ from django.utils.functional import curry
 from django.core.exceptions import ImproperlyConfigured
 
 try:
-    from boto.s3.connection import S3Connection
+    from boto.s3.connection import S3Connection, S3ResponseError
     from boto.s3.key import Key
 except ImportError:
     raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
@@ -31,8 +31,8 @@ QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
-    def __init__(self, bucket="root", bucketprefix=BUCKET_PREFIX, 
-            access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS):
+    def __init__(self, bucket=BUCKET_PREFIX, access_key=None, secret_key=None,
+                       acl=DEFAULT_ACL, headers=HEADERS):
         self.acl = acl
         self.headers = headers
         
@@ -40,7 +40,7 @@ class S3BotoStorage(Storage):
              access_key, secret_key = self._get_access_keys()
         
         self.connection = S3Connection(access_key, secret_key)
-        self.bucket = self.connection.create_bucket(bucketprefix + bucket)
+        self.bucket = self._get_or_create_bucket(bucket)
         self.bucket.set_acl(self.acl)
     
     def _get_access_keys(self):
@@ -55,6 +55,13 @@ class S3BotoStorage(Storage):
             return access_key, secret_key
         
         return None, None
+    
+    def _get_or_create_bucket(self, name):
+        """Retrieves a bucket if it exists, otherwise creates it."""
+        try:
+            return self.connection.get_bucket(name)
+        except S3ResponseError:
+            return self.connection.create_bucket(name)
     
     def _clean_name(self, name):
         # Useful for windows' paths
