@@ -3,7 +3,6 @@ import os
 from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils.functional import curry
 from django.core.exceptions import ImproperlyConfigured
 
 try:
@@ -17,6 +16,7 @@ ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 HEADERS             = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
+AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
@@ -53,8 +53,12 @@ class S3BotoStorage(Storage):
         """Retrieves a bucket if it exists, otherwise creates it."""
         try:
             return self.connection.get_bucket(name)
-        except S3ResponseError:
-            return self.connection.create_bucket(name)
+        except S3ResponseError, e:
+            if AUTO_CREATE_BUCKET:
+                return self.connection.create_bucket(name)
+            raise ImproperlyConfigured, ("Bucket specified by "
+            "AWS_STORAGE_BUCKET_NAME does not exist. Buckets can be "
+            "automatically created by setting AWS_AUTO_CREATE_BUCKET=True")
     
     def _clean_name(self, name):
         # Useful for windows' paths
