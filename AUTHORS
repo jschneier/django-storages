@@ -14,6 +14,7 @@ By order of apparition, thanks:
     * Rich Leland (Mosso Cloud Files)
     * Jason Christa (patches)
     * Adam Nelson (patches)
+    * Erik CW (S3 encryption)
 
 Extra thanks to Marty for adding this in Django, 
 you can buy his very interesting book (Pro Django).

@@ -33,9 +33,18 @@ class S3Storage(Storage):
 
     def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME,
             access_key=None, secret_key=None, acl=DEFAULT_ACL,
-            calling_format=settings.AWS_CALLING_FORMAT):
+            calling_format=settings.AWS_CALLING_FORMAT, encrypt=False):
         self.bucket = bucket
         self.acl = acl
+        self.encrypt = encrypt
+        
+        if encrypt:
+            try:
+                import ezPyCrypto
+            except ImportError:
+                raise ImproperlyConfigured, "Could not load ezPyCrypto.\
+                \nSee http://www.freenet.org.nz/ezPyCrypto/ to install it."
+            self.crypto_key = ezPyCrypto.key
 
         if not access_key and not secret_key:
             access_key, secret_key = self._get_access_keys()
@@ -70,6 +79,22 @@ class S3Storage(Storage):
         return os.path.normpath(name).replace('\\', '/')
 
     def _put_file(self, name, content):
+        if self.encrypt:
+        
+            # Create a key object
+            key = self.crypto_key()
+        
+            # Read in a public key
+            fd = open(settings.CRYPTO_KEYS_PUBLIC, "rb")
+            public_key = fd.read()
+            fd.close()
+        
+            # import this public key
+            key.importKey(public_key)
+        
+            # Now encrypt some text against this public key
+            content = key.encString(content)
+        
         content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
         self.headers.update({
             'x-amz-acl': self.acl, 
@@ -95,6 +120,19 @@ class S3Storage(Storage):
         if response.http_response.status not in (200, 206):
             raise IOError("S3StorageError: %s" % response.message)
         headers = response.http_response.msg
+        
+        if self.encrypt:
+            # Read in a private key
+            fd = open(settings.CRYPTO_KEYS_PRIVATE, "rb")
+            private_key = fd.read()
+            fd.close()
+        
+            # Create a key object, and auto-import private key
+            key = self.crypto_key(private_key)
+        
+            # Decrypt this file
+            response.object.data = key.decString(response.object.data)
+        
         return response.object.data, headers.get('etag', None), headers.get('content-range', None)
         
     def _save(self, name, content):
