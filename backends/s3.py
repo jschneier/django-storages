@@ -27,16 +27,27 @@ QUERYSTRING_ACTIVE= getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
 QUERYSTRING_EXPIRE= getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
 SECURE_URLS= getattr(settings, 'AWS_S3_SECURE_URLS', False)
 
+AWS_GZIP = getattr(settings, 'AWS_GZIP', False)
+GZIP_CONTENT_TYPES = (
+    'text/css',
+    'application/javascript',
+    'application/x-javascript'
+)
+GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', GZIP_CONTENT_TYPES)
+
 
 class S3Storage(Storage):
     """Amazon Simple Storage Service"""
 
     def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME,
             access_key=None, secret_key=None, acl=DEFAULT_ACL,
-            calling_format=settings.AWS_CALLING_FORMAT, encrypt=False):
+            calling_format=settings.AWS_CALLING_FORMAT, encrypt=False,
+            gzip=AWS_GZIP, gzip_content_types=GZIP_CONTENT_TYPES):
         self.bucket = bucket
         self.acl = acl
         self.encrypt = encrypt
+        self.gzip = gzip
+        self.gzip_content_types = gzip_content_types
         
         if encrypt:
             try:
@@ -78,6 +89,15 @@ class S3Storage(Storage):
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
 
+    def _compress_string(self, s):
+        """Gzip a given string."""
+        from gzip import GzipFile
+        zbuf = StringIO()
+        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+        zfile.write(s)
+        zfile.close()
+        return zbuf.getvalue()
+        
     def _put_file(self, name, content):
         if self.encrypt:
         
@@ -96,6 +116,11 @@ class S3Storage(Storage):
             content = key.encString(content)
         
         content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
+        
+        if self.gzip and content_type in self.gzip_content_types:
+            content = self._compress_string(content)
+            self.headers.update({'Content-Encoding': 'gzip'})
+        
         self.headers.update({
             'x-amz-acl': self.acl, 
             'Content-Type': content_type,

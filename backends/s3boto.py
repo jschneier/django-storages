@@ -1,8 +1,15 @@
 import os
+import mimetypes
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
+from django.core.files.base import ContentFile
 from django.utils.functional import curry
 from django.core.exceptions import ImproperlyConfigured
 
@@ -26,15 +33,25 @@ HEADERS           = getattr(settings, HEADERS, {})
 DEFAULT_ACL       = getattr(settings, DEFAULT_ACL, 'public-read')
 QUERYSTRING_AUTH  = getattr(settings, QUERYSTRING_AUTH, True)
 QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
+AWS_GZIP           = getattr(settings, 'AWS_GZIP', False)
+GZIP_CONTENT_TYPES = (
+    'text/css',
+    'application/javascript',
+    'application/x-javascript'
+)
+GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', GZIP_CONTENT_TYPES)
 
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
     def __init__(self, bucket="root", bucketprefix=BUCKET_PREFIX, 
-            access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS):
+            access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
+            gzip=AWS_GZIP, gzip_content_types=GZIP_CONTENT_TYPES):
         self.acl = acl
         self.headers = headers
+        self.gzip = gzip
+        self.gzip_content_types = gzip_content_types
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
@@ -60,6 +77,16 @@ class S3BotoStorage(Storage):
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
 
+    def _compress_content(self, content):
+        """Gzip a given string."""
+        from gzip import GzipFile
+        zbuf = StringIO()
+        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+        zfile.write(content.read())
+        zfile.close()
+        content.file = zbuf
+        return content
+        
     def _open(self, name, mode='rb'):
         name = self._clean_name(name)
         return S3BotoStorageFile(name, mode, self)
@@ -67,8 +94,21 @@ class S3BotoStorage(Storage):
     def _save(self, name, content):
         name = self._clean_name(name)
         headers = self.headers
+
         if hasattr(content.file, 'content_type'):
-            headers['Content-Type'] = content.file.content_type
+            content_type = content.file.content_type
+        else:
+            content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
+            
+        if self.gzip and content_type in self.gzip_content_types:
+            content = self._compress_content(content)
+            headers.update({'Content-Encoding': 'gzip'})
+
+        headers.update({
+            'Content-Type': content_type,
+            'Content-Length' : len(content),
+        })
+        
         content.name = name
         k = self.bucket.get_key(name)
         if not k:
