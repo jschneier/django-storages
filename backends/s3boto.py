@@ -9,6 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
+    from boto.exceptions import S3CreateError
 except ImportError:
     raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
     \nSee http://code.google.com/p/boto/"
@@ -40,8 +41,13 @@ class S3BotoStorage(Storage):
              access_key, secret_key = self._get_access_keys()
 
         self.connection = S3Connection(access_key, secret_key)
-        self.bucket = self.connection.create_bucket(bucketprefix + bucket)
-        self.bucket.set_acl(self.acl)
+        bucket_name = bucketprefix + bucket
+        try:
+            self.bucket = self.connection.create_bucket(bucket_name)
+            self.bucket.set_acl(self.acl)
+        except S3CreateError:
+            # assuming we own it
+            self.bucket = self.connection.get_bucket(bucket_name)
 
     def _get_access_keys(self):
         access_key = getattr(settings, ACCESS_KEY_NAME, None)
