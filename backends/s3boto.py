@@ -21,12 +21,14 @@ BUCKET_NAME     = 'AWS_STORAGE_BUCKET_NAME'
 DEFAULT_ACL     = 'AWS_DEFAULT_ACL'
 QUERYSTRING_AUTH = 'AWS_QUERYSTRING_AUTH'
 QUERYSTRING_EXPIRE = 'AWS_QUERYSTRING_EXPIRE'
+LOCATION           = 'AWS_LOCATION'
 
 BUCKET_PREFIX     = getattr(settings, BUCKET_NAME, {})
 HEADERS           = getattr(settings, HEADERS, {})
 DEFAULT_ACL       = getattr(settings, DEFAULT_ACL, 'public-read')
 QUERYSTRING_AUTH  = getattr(settings, QUERYSTRING_AUTH, True)
 QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
+LOCATION          = getattr(settings, LOCATION, '')
 
 
 class S3BotoStorage(Storage):
@@ -43,7 +45,7 @@ class S3BotoStorage(Storage):
         self.connection = S3Connection(access_key, secret_key)
         bucket_name = bucketprefix + bucket
         try:
-            self.bucket = self.connection.create_bucket(bucket_name)
+            self.bucket = self.connection.create_bucket(bucket_name, {}, LOCATION)
             self.bucket.set_acl(self.acl)
         except S3CreateError:
             # assuming we own it
