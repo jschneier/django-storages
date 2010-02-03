@@ -9,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
-    from boto.exceptions import S3CreateError
+    from boto.exception import S3CreateError
 except ImportError:
     raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
     \nSee http://code.google.com/p/boto/"
