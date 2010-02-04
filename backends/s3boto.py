@@ -27,13 +27,14 @@ BUCKET_NAME     = 'AWS_STORAGE_BUCKET_NAME'
 DEFAULT_ACL     = 'AWS_DEFAULT_ACL'
 QUERYSTRING_AUTH = 'AWS_QUERYSTRING_AUTH'
 QUERYSTRING_EXPIRE = 'AWS_QUERYSTRING_EXPIRE'
+IS_GZIPPED = 'AWS_IS_GZIPPED'
 
 BUCKET_PREFIX     = getattr(settings, BUCKET_NAME, {})
 HEADERS           = getattr(settings, HEADERS, {})
 DEFAULT_ACL       = getattr(settings, DEFAULT_ACL, 'public-read')
 QUERYSTRING_AUTH  = getattr(settings, QUERYSTRING_AUTH, True)
 QUERYSTRING_EXPIRE= getattr(settings, QUERYSTRING_EXPIRE, 3600)
-AWS_GZIP           = getattr(settings, 'AWS_GZIP', False)
+IS_GZIPPED        = getattr(settings, IS_GZIPPED, False) 
 GZIP_CONTENT_TYPES = (
     'text/css',
     'application/javascript',
@@ -41,13 +42,15 @@ GZIP_CONTENT_TYPES = (
 )
 GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', GZIP_CONTENT_TYPES)
 
+if IS_GZIPPED:
+    from gzip import GzipFile
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
     def __init__(self, bucket="root", bucketprefix=BUCKET_PREFIX, 
             access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
-            gzip=AWS_GZIP, gzip_content_types=GZIP_CONTENT_TYPES):
+            gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -79,7 +82,6 @@ class S3BotoStorage(Storage):
 
     def _compress_content(self, content):
         """Gzip a given string."""
-        from gzip import GzipFile
         zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         zfile.write(content.read())

@@ -27,7 +27,7 @@ QUERYSTRING_ACTIVE= getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
 QUERYSTRING_EXPIRE= getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
 SECURE_URLS= getattr(settings, 'AWS_S3_SECURE_URLS', False)
 
-AWS_GZIP = getattr(settings, 'AWS_GZIP', False)
+IS_GZIPPED= getattr(settings, 'AWS_IS_GZIPPED', False) 
 GZIP_CONTENT_TYPES = (
     'text/css',
     'application/javascript',
@@ -35,6 +35,8 @@ GZIP_CONTENT_TYPES = (
 )
 GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', GZIP_CONTENT_TYPES)
 
+if IS_GZIPPED:
+    from gzip import GzipFile
 
 class S3Storage(Storage):
     """Amazon Simple Storage Service"""
@@ -42,7 +44,7 @@ class S3Storage(Storage):
     def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME,
             access_key=None, secret_key=None, acl=DEFAULT_ACL,
             calling_format=settings.AWS_CALLING_FORMAT, encrypt=False,
-            gzip=AWS_GZIP, gzip_content_types=GZIP_CONTENT_TYPES):
+            gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
         self.bucket = bucket
         self.acl = acl
         self.encrypt = encrypt
@@ -91,7 +93,6 @@ class S3Storage(Storage):
 
     def _compress_string(self, s):
         """Gzip a given string."""
-        from gzip import GzipFile
         zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         zfile.write(s)
