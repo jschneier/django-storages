@@ -26,6 +26,7 @@ DEFAULT_ACL= getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_ACTIVE= getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
 QUERYSTRING_EXPIRE= getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
 SECURE_URLS= getattr(settings, 'AWS_S3_SECURE_URLS', False)
+BUCKET_PREFIX = getattr(settings, 'AWS_BUCKET_PREFIX', '')
 
 IS_GZIPPED= getattr(settings, 'AWS_IS_GZIPPED', False) 
 GZIP_CONTENT_TYPES = (
@@ -89,7 +90,7 @@ class S3Storage(Storage):
 
     def _clean_name(self, name):
         # Useful for windows' paths
-        return os.path.normpath(name).replace('\\', '/')
+        return os.path.join(BUCKET_PREFIX, os.path.normpath(name).replace('\\', '/'))
 
     def _compress_string(self, s):
         """Gzip a given string."""
