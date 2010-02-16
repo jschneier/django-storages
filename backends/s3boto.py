@@ -55,10 +55,6 @@ class S3BotoStorage(Storage):
             access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
             gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
 
-
-    def __init__(self, bucket="root", bucketprefix=BUCKET_PREFIX,
-            access_key=None, secret_key=None, acl=DEFAULT_ACL, headers=HEADERS):
-
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
