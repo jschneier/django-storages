@@ -1,4 +1,10 @@
 import os
+import mimetypes
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from django.conf import settings
 from django.core.files.base import File
@@ -20,14 +26,27 @@ AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
+LOCATION            = getattr(settings, 'AWS_LOCATION', '')
+IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
+GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
+    'text/css',
+    'application/javascript',
+    'application/x-javascript'
+))
+
+if IS_GZIPPED:
+    from gzip import GzipFile
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
-                       secret_key=None, acl=DEFAULT_ACL, headers=HEADERS):
+                       secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
+                       gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
         self.acl = acl
         self.headers = headers
+        self.gzip = gzip
+        self.gzip_content_types = gzip_content_types
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
@@ -64,6 +83,15 @@ class S3BotoStorage(Storage):
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
 
+    def _compress_content(self, content):
+        """Gzip a given string."""
+        zbuf = StringIO()
+        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+        zfile.write(content.read())
+        zfile.close()
+        content.file = zbuf
+        return content
+        
     def _open(self, name, mode='rb'):
         name = self._clean_name(name)
         return S3BotoStorageFile(name, mode, self)
@@ -71,8 +99,21 @@ class S3BotoStorage(Storage):
     def _save(self, name, content):
         name = self._clean_name(name)
         headers = self.headers
+        
         if hasattr(content.file, 'content_type'):
-            headers['Content-Type'] = content.file.content_type
+            content_type = content.file.content_type
+        else:
+            content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
+            
+        if self.gzip and content_type in self.gzip_content_types:
+            content = self._compress_content(content)
+            headers.update({'Content-Encoding': 'gzip'})
+
+        headers.update({
+            'Content-Type': content_type,
+            'Content-Length' : len(content),
+        })
+        
         content.name = name
         k = self.bucket.get_key(name)
         if not k:
@@ -99,8 +140,10 @@ class S3BotoStorage(Storage):
     
     def url(self, name):
         name = self._clean_name(name)
+        if self.bucket.get_key(name) is None:
+            return ''
         return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, method='GET', query_auth=QUERYSTRING_AUTH)
-    
+
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
         name = self._clean_name(name)
@@ -110,18 +153,29 @@ class S3BotoStorage(Storage):
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):
         self._storage = storage
-        self._name = name
+        self.name = name
         self._mode = mode
         self.key = storage.bucket.get_key(name)
-    
+        self._is_dirty = False
+        self.file = StringIO()
+
+    @property
     def size(self):
         return self.key.size
-    
+
     def read(self, *args, **kwargs):
-        return self.key.read(*args, **kwargs)
-    
+        self.file = StringIO()
+        self._is_dirty = False
+        self.key.get_contents_to_file(self.file)
+        return self.file.getvalue()
+
     def write(self, content):
-        self.key.set_contents_from_string(content, headers=self._storage.headers, acl=self._storage.acl)
-    
+        if 'w' not in self._mode:
+            raise AttributeError("File was opened for read-only access.")
+        self.file = StringIO(content)
+        self._is_dirty = True
+
     def close(self):
+        if self._is_dirty:
+            self.key.set_contents_from_string(self.file.getvalue(), headers=self._storage.headers, acl=self._storage.acl)
         self.key.close()
