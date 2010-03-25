@@ -7,9 +7,9 @@ except ImportError:
     from StringIO import StringIO
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
+from django.core.exceptions import ImproperlyConfigured
 
 try:
     from S3 import AWSAuthConnection, QueryStringAuthGenerator
@@ -17,23 +17,21 @@ except ImportError:
     raise ImproperlyConfigured, "Could not load amazon's S3 bindings.\
     \nSee http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134"
 
-ACCESS_KEY_NAME = 'AWS_ACCESS_KEY_ID'
-SECRET_KEY_NAME = 'AWS_SECRET_ACCESS_KEY'
-HEADERS = 'AWS_HEADERS'
+ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
+SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
+HEADERS             = getattr(settings, 'AWS_HEADERS', {})
+DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
+QUERYSTRING_ACTIVE  = getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
+QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
+SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', False)
+BUCKET_PREFIX       = getattr(settings, 'AWS_BUCKET_PREFIX', '')
 
-DEFAULT_ACL= getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
-QUERYSTRING_ACTIVE= getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
-QUERYSTRING_EXPIRE= getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
-SECURE_URLS= getattr(settings, 'AWS_S3_SECURE_URLS', False)
-BUCKET_PREFIX = getattr(settings, 'AWS_BUCKET_PREFIX', '')
-
-IS_GZIPPED= getattr(settings, 'AWS_IS_GZIPPED', False) 
-GZIP_CONTENT_TYPES = (
+IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
+GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
     'application/javascript',
     'application/x-javascript'
-)
-GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', GZIP_CONTENT_TYPES)
+))
 
 if IS_GZIPPED:
     from gzip import GzipFile
@@ -69,11 +67,11 @@ class S3Storage(Storage):
                             is_secure=SECURE_URLS)
         self.generator.set_expires_in(QUERYSTRING_EXPIRE)
         
-        self.headers = getattr(settings, HEADERS, {})
+        self.headers = HEADERS
 
     def _get_access_keys(self):
-        access_key = getattr(settings, ACCESS_KEY_NAME, None)
-        secret_key = getattr(settings, SECRET_KEY_NAME, None)
+        access_key = ACCESS_KEY_NAME
+        secret_key = SECRET_KEY_NAME
         if (access_key or secret_key) and (not access_key or not secret_key):
             access_key = os.environ.get(ACCESS_KEY_NAME)
             secret_key = os.environ.get(SECRET_KEY_NAME)
