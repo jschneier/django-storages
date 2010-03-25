@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
  
 setup(
     name='django-storages',
-    version='1.0',
+    version='1.1',
     description='Support for many storages (S3, MogileFS, etc) in Django.',
     author='David Larlet',
     author_email='david@larlet.fr',
