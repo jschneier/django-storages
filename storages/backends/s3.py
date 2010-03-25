@@ -10,7 +10,6 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils.functional import curry
 
 try:
     from S3 import AWSAuthConnection, QueryStringAuthGenerator
