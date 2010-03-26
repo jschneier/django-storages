@@ -12,6 +12,8 @@ testdb.sqlite
 django
 local_settings.py
 dist/*
+*.egg
+*.gz
 *.egg-info
 setuptools*
 build/
