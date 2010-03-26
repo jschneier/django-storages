@@ -12,5 +12,6 @@ testdb.sqlite
 django
 local_settings.py
 dist/*
-django_storages.*
+*.egg-info
 setuptools*
+build/
