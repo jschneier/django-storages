@@ -99,11 +99,7 @@ class S3BotoStorage(Storage):
     def _save(self, name, content):
         name = self._clean_name(name)
         headers = self.headers
-        
-        if hasattr(content.file, 'content_type'):
-            content_type = content.file.content_type
-        else:
-            content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
+        content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
             
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
