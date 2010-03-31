@@ -140,9 +140,8 @@ class S3BotoStorage(Storage):
     
     def url(self, name):
         name = self._clean_name(name)
-        if self.bucket.get_key(name) is None:
-            return ''
-        return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, method='GET', query_auth=QUERYSTRING_AUTH)
+        return self.connection.generate_url(QUERYSTRING_EXPIRE, method='GET', \
+                bucket=self.bucket.name, key=name, query_auth=QUERYSTRING_AUTH)
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
