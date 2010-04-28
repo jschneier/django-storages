@@ -15,8 +15,9 @@ By order of apparition, thanks:
     * Jason Christa (patches)
     * Adam Nelson (patches)
     * Erik CW (S3 encryption)
+    * Axel Gembe (Hash path)
 
-Extra thanks to Marty for adding this in Django, 
+Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
 
 
