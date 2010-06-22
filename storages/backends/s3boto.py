@@ -1,4 +1,5 @@
 import os
+import posixpath
 import mimetypes
 
 try:
@@ -46,7 +47,8 @@ class S3BotoStorage(Storage):
                        secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
-                       custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS):
+                       custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
+                       location=LOCATION):
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -55,6 +57,8 @@ class S3BotoStorage(Storage):
         self.querystring_expire = querystring_expire
         self.custom_domain = custom_domain
         self.secure_urls = secure_urls
+        self.location = location or ''
+        self.location = self.location.lstrip('/')
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
@@ -91,6 +95,9 @@ class S3BotoStorage(Storage):
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
 
+    def _normalize_name(self, name):
+        return posixpath.join(self.location, name).lstrip('/')
+
     def _compress_content(self, content):
         """Gzip a given string."""
         zbuf = StringIO()
@@ -101,11 +108,15 @@ class S3BotoStorage(Storage):
         return content
         
     def _open(self, name, mode='rb'):
-        name = self._clean_name(name)
-        return S3BotoStorageFile(name, mode, self)
+        name = self._normalize_name(self._clean_name(name))
+        f = S3BotoStorageFile(name, mode, self)
+        if not f.key:
+            raise IOError('File does not exist: %s' % name)
+        return f
     
     def _save(self, name, content):
-        name = self._clean_name(name)
+        cleaned_name = self._clean_name(name)
+        name = self._normalize_name(cleaned_name)
         headers = self.headers
         content_type = mimetypes.guess_type(name)[0] or Key.DefaultContentType            
 
@@ -117,23 +128,24 @@ class S3BotoStorage(Storage):
             'Content-Type': content_type,
         })
         
-        content.name = name
+        content.name = cleaned_name
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
         k.set_contents_from_file(content, headers=headers, policy=self.acl)
-        return name
+        return cleaned_name
     
     def delete(self, name):
-        name = self._clean_name(name)
+        name = self._normalize_name(self._clean_name(name))
         self.bucket.delete_key(name)
     
     def exists(self, name):
-        name = self._clean_name(name)
+        name = self._normalize_name(self._clean_name(name))
         k = self.bucket.new_key(name)
         return k.exists()
     
     def listdir(self, name):
+        name = self._normalize_name(self._clean_name(name))
         dirlist = self.bucket.list(name)
         files = []
         dirs = set()
@@ -150,11 +162,11 @@ class S3BotoStorage(Storage):
         return list(dirs),files
 
     def size(self, name):
-        name = self._clean_name(name)
+        name = self._normalize_name(self._clean_name(name))
         return self.bucket.get_key(name).size
     
     def url(self, name):
-        name = self._clean_name(name)
+        name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s://%s/%s" % ('https' if self.secure_urls else 'http', self.custom_domain, name)
         else:
@@ -171,7 +183,7 @@ class S3BotoStorage(Storage):
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):
         self._storage = storage
-        self.name = name
+        self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
         self.key = storage.bucket.get_key(name)
         self._is_dirty = False
