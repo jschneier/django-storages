@@ -107,7 +107,6 @@ class S3BotoStorage(Storage):
 
         headers.update({
             'Content-Type': content_type,
-            'Content-Length' : len(content),
         })
         
         content.name = name
