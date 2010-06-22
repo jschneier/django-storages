@@ -122,13 +122,25 @@ class S3BotoStorage(Storage):
     
     def exists(self, name):
         name = self._clean_name(name)
-        k = Key(self.bucket, name)
+        k = self.bucket.new_key(name)
         return k.exists()
     
     def listdir(self, name):
-        name = self._clean_name(name)
-        return [l.name for l in self.bucket.list() if not len(name) or l.name[:len(name)] == name]
-    
+        dirlist = self._bucket.list(name)
+        files = []
+        dirs = set()
+        base_parts = name.split("/") if name else []
+        for item in dirlist:
+            parts = item.name.split("/")
+            parts = parts[len(base_parts):]
+            if len(parts) == 1:
+                # File 
+                files.append(parts[0])
+            elif len(parts) > 1:
+                # Directory
+                dirs.add(parts[0])
+        return list(dirs),files
+
     def size(self, name):
         name = self._clean_name(name)
         return self.bucket.get_key(name).size
