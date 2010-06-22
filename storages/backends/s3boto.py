@@ -163,17 +163,20 @@ class S3BotoStorageFile(File):
         self._mode = mode
         self.key = storage.bucket.get_key(name)
         self._is_dirty = False
-        self.file = StringIO()
+        self._file = None
 
     @property
     def size(self):
         return self.key.size
 
-    def read(self, *args, **kwargs):
-        self.file = StringIO()
-        self._is_dirty = False
-        self.key.get_contents_to_file(self.file)
-        return self.file.getvalue()
+    @property
+    def file(self):
+        if self._file is None:
+            self._file = StringIO()
+            self._is_dirty = False
+            self.key.get_contents_to_file(self._file)
+            self._file.seek(0)
+        return self._file
 
     def write(self, content):
         if 'w' not in self._mode:
