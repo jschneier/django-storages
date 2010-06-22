@@ -126,7 +126,7 @@ class S3BotoStorage(Storage):
         return k.exists()
     
     def listdir(self, name):
-        dirlist = self._bucket.list(name)
+        dirlist = self.bucket.list(name)
         files = []
         dirs = set()
         base_parts = name.split("/") if name else []
