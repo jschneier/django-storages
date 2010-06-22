@@ -27,6 +27,8 @@ DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
+CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
+SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
 IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
 GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
@@ -43,13 +45,16 @@ class S3BotoStorage(Storage):
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
                        secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
-                       querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE):
+                       querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
+                       custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS):
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
         self.gzip_content_types = gzip_content_types
         self.querystring_auth = querystring_auth
         self.querystring_expire = querystring_expire
+        self.custom_domain = custom_domain
+        self.secure_urls = secure_urls
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
@@ -150,8 +155,12 @@ class S3BotoStorage(Storage):
     
     def url(self, name):
         name = self._clean_name(name)
-        return self.connection.generate_url(self.querystring_expire, method='GET', \
-                bucket=self.bucket.name, key=name, query_auth=self.querystring_auth)
+        if self.custom_domain:
+            return "%s://%s/%s" % ('https' if self.secure_urls else 'http', self.custom_domain, name)
+        else:
+            return self.connection.generate_url(self.querystring_expire, method='GET', \
+                    bucket=self.bucket.name, key=name, query_auth=self.querystring_auth, \
+                    force_http=not self.secure_urls)
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
