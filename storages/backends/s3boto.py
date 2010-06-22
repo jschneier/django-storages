@@ -42,11 +42,14 @@ class S3BotoStorage(Storage):
     
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
                        secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
-                       gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
+                       gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
+                       querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE):
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
         self.gzip_content_types = gzip_content_types
+        self.querystring_auth = querystring_auth
+        self.querystring_expire = querystring_expire
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
@@ -147,8 +150,8 @@ class S3BotoStorage(Storage):
     
     def url(self, name):
         name = self._clean_name(name)
-        return self.connection.generate_url(QUERYSTRING_EXPIRE, method='GET', \
-                bucket=self.bucket.name, key=name, query_auth=QUERYSTRING_AUTH)
+        return self.connection.generate_url(self.querystring_expire, method='GET', \
+                bucket=self.bucket.name, key=name, query_auth=self.querystring_auth)
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
