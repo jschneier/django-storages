@@ -173,18 +173,24 @@ class S3BotoStorageFile(File):
     def file(self):
         if self._file is None:
             self._file = StringIO()
-            self._is_dirty = False
-            self.key.get_contents_to_file(self._file)
-            self._file.seek(0)
+            if 'r' in self._mode:
+                self._is_dirty = False
+                self.key.get_contents_to_file(self._file)
+                self._file.seek(0)
         return self._file
 
-    def write(self, content):
+    def read(self, *args, **kwargs):
+        if 'r' not in self._mode:
+            raise AttributeError("File was not opened in read mode.")
+        return super(S3BotoStorageFile, self).read(*args, **kwargs)
+
+    def write(self, *args, **kwargs):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
         self._is_dirty = True
+        return super(S3BotoStorageFile, self).write(*args, **kwargs)
 
     def close(self):
         if self._is_dirty:
-            self.key.set_contents_from_string(self.file.getvalue(), headers=self._storage.headers, acl=self._storage.acl)
+            self.key.set_contents_from_file(self._file, headers=self._storage.headers, policy=self._storage.acl)
         self.key.close()
