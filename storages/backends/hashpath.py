@@ -30,7 +30,7 @@ class HashPathStorage(FileSystemStorage):
         # Try to create the directory relative to the media root
         try:
             os.makedirs(os.path.join(settings.MEDIA_ROOT, dir_name))
-        except OSError as e:
+        except OSError, e:
             if e.errno is not errno.EEXIST:
                 raise e
 
