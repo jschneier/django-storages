@@ -25,6 +25,7 @@ HEADERS             = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
 AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
+BUCKET_ACL          = getattr(settings, 'AWS_BUCKET_ACL', DEFAULT_ACL)
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
@@ -44,11 +45,12 @@ class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
-                       secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
+                       secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION):
+        self.bucket_acl = bucket_acl
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -65,7 +67,7 @@ class S3BotoStorage(Storage):
         
         self.connection = S3Connection(access_key, secret_key)
         self.bucket = self._get_or_create_bucket(bucket)
-        self.bucket.set_acl(self.acl)
+        self.bucket.set_acl(self.bucket_acl)
     
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
