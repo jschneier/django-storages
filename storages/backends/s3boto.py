@@ -28,6 +28,7 @@ DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 BUCKET_ACL          = getattr(settings, 'AWS_BUCKET_ACL', DEFAULT_ACL)
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
+REDUCED_REDUNDANCY  = getattr(settings, 'AWS_REDUCED_REDUNDANCY', False)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
 CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
@@ -48,6 +49,7 @@ class S3BotoStorage(Storage):
                        secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
+                       reduced_redundancy=REDUCED_REDUNDANCY,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION):
         self.bucket_acl = bucket_acl
@@ -57,6 +59,7 @@ class S3BotoStorage(Storage):
         self.gzip_content_types = gzip_content_types
         self.querystring_auth = querystring_auth
         self.querystring_expire = querystring_expire
+        self.reduced_redundancy = reduced_redundancy
         self.custom_domain = custom_domain
         self.secure_urls = secure_urls
         self.location = location or ''
@@ -134,7 +137,8 @@ class S3BotoStorage(Storage):
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
-        k.set_contents_from_file(content, headers=headers, policy=self.acl)
+        k.set_contents_from_file(content, headers=headers, policy=self.acl, 
+                                 reduced_redundancy=self.reduced_redundancy)
         return cleaned_name
     
     def delete(self, name):
