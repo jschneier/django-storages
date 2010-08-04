@@ -123,20 +123,18 @@ class S3BotoStorage(Storage):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
         headers = self.headers
-        content_type = mimetypes.guess_type(name)[0] or Key.DefaultContentType            
+        content_type = getattr(content,'content_type', mimetypes.guess_type(name)[0] or Key.DefaultContentType)
 
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
 
-        headers.update({
-            'Content-Type': content_type,
-        })
-        
         content.name = cleaned_name
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
+
+        k.set_metadata('Content-Type',content_type)
         k.set_contents_from_file(content, headers=headers, policy=self.acl, 
                                  reduced_redundancy=self.reduced_redundancy)
         return cleaned_name
