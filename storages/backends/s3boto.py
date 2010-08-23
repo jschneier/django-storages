@@ -25,8 +25,10 @@ HEADERS             = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
 AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
+BUCKET_ACL          = getattr(settings, 'AWS_BUCKET_ACL', DEFAULT_ACL)
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
+REDUCED_REDUNDANCY  = getattr(settings, 'AWS_REDUCED_REDUNDANCY', False)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
 CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
@@ -70,17 +72,20 @@ class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
     
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
-                       secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
+                       secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
+                       reduced_redundancy=REDUCED_REDUNDANCY,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION):
+        self.bucket_acl = bucket_acl
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
         self.gzip_content_types = gzip_content_types
         self.querystring_auth = querystring_auth
         self.querystring_expire = querystring_expire
+        self.reduced_redundancy = reduced_redundancy
         self.custom_domain = custom_domain
         self.secure_urls = secure_urls
         self.location = location or ''
@@ -91,7 +96,7 @@ class S3BotoStorage(Storage):
         
         self.connection = S3Connection(access_key, secret_key)
         self.bucket = self._get_or_create_bucket(bucket)
-        self.bucket.set_acl(self.acl)
+        self.bucket.set_acl(self.bucket_acl)
     
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
@@ -147,21 +152,20 @@ class S3BotoStorage(Storage):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
         headers = self.headers
-        content_type = mimetypes.guess_type(name)[0] or Key.DefaultContentType            
+        content_type = getattr(content,'content_type', mimetypes.guess_type(name)[0] or Key.DefaultContentType)
 
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
 
-        headers.update({
-            'Content-Type': content_type,
-        })
-        
         content.name = cleaned_name
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
-        k.set_contents_from_file(content, headers=headers, policy=self.acl)
+
+        k.set_metadata('Content-Type',content_type)
+        k.set_contents_from_file(content, headers=headers, policy=self.acl, 
+                                 reduced_redundancy=self.reduced_redundancy)
         return cleaned_name
     
     def delete(self, name):
