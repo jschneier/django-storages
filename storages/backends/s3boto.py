@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_unicode, smart_str
 
 try:
     from boto.s3.connection import S3Connection, S3ResponseError
@@ -32,6 +32,7 @@ REDUCED_REDUNDANCY  = getattr(settings, 'AWS_REDUCED_REDUNDANCY', False)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
 CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
+FILE_NAME_CHARSET   = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
 IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
 GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
@@ -77,7 +78,7 @@ class S3BotoStorage(Storage):
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
                        reduced_redundancy=REDUCED_REDUNDANCY,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
-                       location=LOCATION):
+                       location=LOCATION, file_name_charset=FILE_NAME_CHARSET):
         self.bucket_acl = bucket_acl
         self.acl = acl
         self.headers = headers
@@ -90,6 +91,7 @@ class S3BotoStorage(Storage):
         self.secure_urls = secure_urls
         self.location = location or ''
         self.location = self.location.lstrip('/')
+        self.file_name_charset = file_name_charset
         
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
@@ -132,6 +134,9 @@ class S3BotoStorage(Storage):
         except ValueError:
             raise SuspiciousOperation("Attempted access to '%s' denied." % name)
 
+    def _encode_name(self, name):
+        return smart_str(name, encoding=self.file_name_charset)
+
     def _compress_content(self, content):
         """Gzip a given string."""
         zbuf = StringIO()
@@ -159,9 +164,9 @@ class S3BotoStorage(Storage):
             headers.update({'Content-Encoding': 'gzip'})
 
         content.name = cleaned_name
-        k = self.bucket.get_key(name)
+        k = self.bucket.get_key(self._encode_name(name))
         if not k:
-            k = self.bucket.new_key(name)
+            k = self.bucket.new_key(self._encode_name(name))
 
         k.set_metadata('Content-Type',content_type)
         k.set_contents_from_file(content, headers=headers, policy=self.acl, 
@@ -170,16 +175,16 @@ class S3BotoStorage(Storage):
     
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
-        self.bucket.delete_key(name)
+        self.bucket.delete_key(self._encode_name(name))
     
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
-        k = self.bucket.new_key(name)
+        k = self.bucket.new_key(self._encode_name(name))
         return k.exists()
     
     def listdir(self, name):
         name = self._normalize_name(self._clean_name(name))
-        dirlist = self.bucket.list(name)
+        dirlist = self.bucket.list(self._encode_name(name))
         files = []
         dirs = set()
         base_parts = name.split("/") if name else []
@@ -196,7 +201,7 @@ class S3BotoStorage(Storage):
 
     def size(self, name):
         name = self._normalize_name(self._clean_name(name))
-        return self.bucket.get_key(name).size
+        return self.bucket.get_key(self._encode_name(name)).size
     
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -204,7 +209,7 @@ class S3BotoStorage(Storage):
             return "%s://%s/%s" % ('https' if self.secure_urls else 'http', self.custom_domain, name)
         else:
             return self.connection.generate_url(self.querystring_expire, method='GET', \
-                    bucket=self.bucket.name, key=name, query_auth=self.querystring_auth, \
+                    bucket=self.bucket.name, key=self._encode_name(name), query_auth=self.querystring_auth, \
                     force_http=not self.secure_urls)
 
     def get_available_name(self, name):
@@ -218,7 +223,7 @@ class S3BotoStorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
-        self.key = storage.bucket.get_key(name)
+        self.key = storage.bucket.get_key(self._storage._encode_name(name))
         self._is_dirty = False
         self._file = None
 
