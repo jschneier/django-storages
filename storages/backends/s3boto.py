@@ -80,6 +80,8 @@ class S3BotoStorage(Storage):
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION, file_name_charset=FILE_NAME_CHARSET):
         self.bucket_acl = bucket_acl
+        self.bucket_name = bucket
+        self._bucket = None
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -97,8 +99,13 @@ class S3BotoStorage(Storage):
              access_key, secret_key = self._get_access_keys()
         
         self.connection = S3Connection(access_key, secret_key)
-        self.bucket = self._get_or_create_bucket(bucket)
-        self.bucket.set_acl(self.bucket_acl)
+
+    @property
+    def bucket(self):
+        if self._bucket is None:
+            self._bucket = self._get_or_create_bucket(self.bucket_name)
+            self._bucket.set_acl(self.bucket_acl)
+        return self._bucket
     
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
