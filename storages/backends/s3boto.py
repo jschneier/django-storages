@@ -81,7 +81,6 @@ class S3BotoStorage(Storage):
                        location=LOCATION, file_name_charset=FILE_NAME_CHARSET):
         self.bucket_acl = bucket_acl
         self.bucket_name = bucket
-        self._bucket = None
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -102,9 +101,8 @@ class S3BotoStorage(Storage):
 
     @property
     def bucket(self):
-        if self._bucket is None:
+        if not hasattr(self, '_bucket'):
             self._bucket = self._get_or_create_bucket(self.bucket_name)
-            self._bucket.set_acl(self.bucket_acl)
         return self._bucket
     
     def _get_access_keys(self):
@@ -126,7 +124,9 @@ class S3BotoStorage(Storage):
             return self.connection.get_bucket(name)
         except S3ResponseError, e:
             if AUTO_CREATE_BUCKET:
-                return self.connection.create_bucket(name)
+                bucket = self.connection.create_bucket(name)
+                bucket.set_acl(self.bucket_acl)
+                return bucket
             raise ImproperlyConfigured, ("Bucket specified by "
             "AWS_STORAGE_BUCKET_NAME does not exist. Buckets can be "
             "automatically created by setting AWS_AUTO_CREATE_BUCKET=True")
