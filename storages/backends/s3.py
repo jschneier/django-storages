@@ -14,8 +14,8 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     from S3 import AWSAuthConnection, QueryStringAuthGenerator, CallingFormat
 except ImportError:
-    raise ImproperlyConfigured, "Could not load amazon's S3 bindings.\
-    \nSee http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134"
+    raise ImproperlyConfigured("Could not load amazon's S3 bindings.\nSee "
+        "http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134")
 
 ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
@@ -54,8 +54,8 @@ class S3Storage(Storage):
             try:
                 import ezPyCrypto
             except ImportError:
-                raise ImproperlyConfigured, "Could not load ezPyCrypto.\
-                \nSee http://www.freenet.org.nz/ezPyCrypto/ to install it."
+                raise ImproperlyConfigured("Could not load ezPyCrypto.\nSee "
+                    "http://www.freenet.org.nz/ezPyCrypto/ to install it.")
             self.crypto_key = ezPyCrypto.key
 
         if not access_key and not secret_key:
