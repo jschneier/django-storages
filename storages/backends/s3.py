@@ -12,7 +12,7 @@ from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
 
 try:
-    from S3 import AWSAuthConnection, QueryStringAuthGenerator
+    from S3 import AWSAuthConnection, QueryStringAuthGenerator, CallingFormat
 except ImportError:
     raise ImproperlyConfigured, "Could not load amazon's S3 bindings.\
     \nSee http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134"
@@ -25,6 +25,7 @@ QUERYSTRING_ACTIVE  = getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', False)
 BUCKET_PREFIX       = getattr(settings, 'AWS_BUCKET_PREFIX', '')
+CALLING_FORMAT      = getattr(settings, 'AWS_CALLING_FORMAT', CallingFormat.PATH)
 
 IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
 GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
@@ -41,7 +42,7 @@ class S3Storage(Storage):
 
     def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME,
             access_key=None, secret_key=None, acl=DEFAULT_ACL,
-            calling_format=settings.AWS_CALLING_FORMAT, encrypt=False,
+            calling_format=CALLING_FORMAT, encrypt=False,
             gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
         self.bucket = bucket
         self.acl = acl
