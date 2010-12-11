@@ -34,6 +34,7 @@ LOCATION            = getattr(settings, 'AWS_LOCATION', '')
 CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
 FILE_NAME_CHARSET   = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
+FILE_OVERWRITE      = getattr(settings, 'AWS_S3_FILE_OVERWRITE', True)
 IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
 GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
@@ -222,9 +223,11 @@ class S3BotoStorage(Storage):
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
-        name = self._clean_name(name)
-        return name
-
+        if FILE_OVERWRITE:
+            name = self._clean_name(name)
+            return name
+        return super(S3BotoStorage, self).get_available_name(name)
+        
 
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):
