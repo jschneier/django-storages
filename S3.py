@@ -12,9 +12,10 @@
 import base64
 import hmac
 import httplib
-import re
-import sha
-import sys
+try:
+    from hashlib import sha1 as sha
+except ImportError:
+    import sha
 import time
 import urllib
 import urlparse
@@ -286,7 +287,7 @@ class AWSAuthConnection:
                     = urlparse.urlparse(location)
             if scheme == "http":    is_secure = True
             elif scheme == "https": is_secure = False
-            else: raise invalidURL("Not http/https: " + location)
+            else: raise IOError("Not http/https: " + location)
             if query: path += "?" + query
             # retry with redirect
 
