@@ -124,7 +124,7 @@ class S3Storage(Storage):
         self.headers.update({
             'x-amz-acl': self.acl, 
             'Content-Type': content_type,
-            'Content-Length' : len(content),
+            'Content-Length' : str(len(content)),
         })
         response = self.connection.put(self.bucket, name, content, self.headers)
         if response.http_response.status not in (200, 206):
