@@ -129,7 +129,9 @@ class CloudFilesStorage(Storage):
         """
         Deletes the specified file from the storage system.
         """
-        self.container.delete_object(name)
+        # If the file exists, delete it.
+        if self.exists(name):
+            self.container.delete_object(name)
 
     def exists(self, name):
         """
