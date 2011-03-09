@@ -26,6 +26,7 @@ QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 60)
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', False)
 BUCKET_PREFIX       = getattr(settings, 'AWS_BUCKET_PREFIX', '')
 CALLING_FORMAT      = getattr(settings, 'AWS_CALLING_FORMAT', CallingFormat.PATH)
+PRELOAD_METADATA    = getattr(settings, 'AWS_PRELOAD_METADATA', False)
 
 IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
 GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
@@ -39,17 +40,18 @@ if IS_GZIPPED:
 
 class S3Storage(Storage):
     """Amazon Simple Storage Service"""
-    preload = False
 
     def __init__(self, bucket=settings.AWS_STORAGE_BUCKET_NAME,
             access_key=None, secret_key=None, acl=DEFAULT_ACL,
             calling_format=CALLING_FORMAT, encrypt=False,
-            gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES):
+            gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
+            preload_metadata=PRELOAD_METADATA):
         self.bucket = bucket
         self.acl = acl
         self.encrypt = encrypt
         self.gzip = gzip
         self.gzip_content_types = gzip_content_types
+        self.preload_metadata = preload_metadata
 
         if encrypt:
             try:
@@ -70,7 +72,7 @@ class S3Storage(Storage):
         self.generator.set_expires_in(QUERYSTRING_EXPIRE)
 
         self.headers = HEADERS
-        self.entries = self.preload and self._preload_entries() or {}
+        self._entries = {}
 
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
@@ -85,9 +87,12 @@ class S3Storage(Storage):
 
         return None, None
 
-    def _preload_entries(self):
-        entries = self.connection.list_bucket(self.bucket).entries
-        return dict((entry.key, entry) for entry in entries)
+    @property
+    def entries(self):
+        if self.preload_metadata and not self._entries:
+            self._entries = dict((entry.key, entry)
+                                for entry in self.connection.list_bucket(self.bucket).entries)
+        return self._entries
 
     def _get_connection(self):
         return AWSAuthConnection(*self._get_access_keys())
@@ -234,14 +239,7 @@ class S3Storage(Storage):
 
 
 class PreloadingS3Storage(S3Storage):
-    """
-    Preloading Amazon Simple Storage Service
-
-    This preloads info about the bucket entries to allow faster use with
-    staticfiles's collectstatic.
-    """
-    preload = True
-
+    pass
 
 class S3StorageFile(File):
     def __init__(self, name, storage, mode):
