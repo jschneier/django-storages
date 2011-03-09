@@ -17,8 +17,8 @@ try:
     from boto.exception import S3ResponseError
     from boto.s3.key import Key
 except ImportError:
-    raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
-    \nSee http://code.google.com/p/boto/"
+    raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
+                               "See http://code.google.com/p/boto/")
 
 ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
@@ -36,6 +36,7 @@ SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
 FILE_NAME_CHARSET   = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
 FILE_OVERWRITE      = getattr(settings, 'AWS_S3_FILE_OVERWRITE', True)
 IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
+PRELOAD_METADATA    = getattr(settings, 'AWS_PRELOAD_METADATA', False)
 GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
     'application/javascript',
@@ -73,18 +74,20 @@ def safe_join(base, *paths):
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
-    
+
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
                        secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
                        reduced_redundancy=REDUCED_REDUNDANCY,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
-                       location=LOCATION, file_name_charset=FILE_NAME_CHARSET):
+                       location=LOCATION, file_name_charset=FILE_NAME_CHARSET,
+                       preload_metadata=PRELOAD_METADATA):
         self.bucket_acl = bucket_acl
         self.bucket_name = bucket
         self.acl = acl
         self.headers = headers
+        self.preload_metadata = preload_metadata
         self.gzip = gzip
         self.gzip_content_types = gzip_content_types
         self.querystring_auth = querystring_auth
@@ -100,13 +103,21 @@ class S3BotoStorage(Storage):
              access_key, secret_key = self._get_access_keys()
         
         self.connection = S3Connection(access_key, secret_key)
+        self._entries = {}
 
     @property
     def bucket(self):
         if not hasattr(self, '_bucket'):
             self._bucket = self._get_or_create_bucket(self.bucket_name)
         return self._bucket
-    
+
+    @property
+    def entries(self):
+        if self.preload_metadata and not self._entries:
+            self._entries = dict((self._decode_name(entry.key), entry)
+                                for entry in self.bucket.list())
+        return self._entries
+
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
         secret_key = SECRET_KEY_NAME
@@ -145,6 +156,9 @@ class S3BotoStorage(Storage):
 
     def _encode_name(self, name):
         return smart_str(name, encoding=self.file_name_charset)
+
+    def _decode_name(self, name):
+        return force_unicode(name, encoding=self.file_name_charset)
 
     def _compress_content(self, content):
         """Gzip a given string."""
@@ -188,6 +202,8 @@ class S3BotoStorage(Storage):
     
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
+        if self.entries:
+            return name in self.entries
         k = self.bucket.new_key(self._encode_name(name))
         return k.exists()
     
@@ -210,8 +226,28 @@ class S3BotoStorage(Storage):
 
     def size(self, name):
         name = self._normalize_name(self._clean_name(name))
+        if self.entries:
+            entry = self.entries.get(name)
+            if entry:
+                return entry.size
+            return 0
         return self.bucket.get_key(self._encode_name(name)).size
-    
+
+    def modified_time(self, name):
+        try:
+           from dateutil import parser, tz
+        except ImportError:
+            raise NotImplementedError()
+        name = self._normalize_name(self._clean_name(name))
+        entry = self.entries.get(name, self.bucket.get_key(self._encode_name(name)))
+        # convert to string to date
+        last_modified_date = parser.parse(entry.last_modified)
+        # if the date has no timzone, assume UTC
+        if last_modified_date.tzinfo == None:
+            last_modified_date = last_modified_date.replace(tzinfo=tz.tzutc())
+        # convert date to local time w/o timezone
+        return last_modified_date.astimezone(tz.tzlocal()).replace(tzinfo=None)
+
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
