@@ -179,7 +179,7 @@ class S3BotoStorage(Storage):
     def _save(self, name, content):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
-        headers = self.headers
+        headers = self.headers.copy()
         content_type = getattr(content,'content_type', mimetypes.guess_type(name)[0] or Key.DefaultContentType)
 
         if self.gzip and content_type in self.gzip_content_types:
