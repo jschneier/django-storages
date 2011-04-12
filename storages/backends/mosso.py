@@ -252,3 +252,40 @@ class CloudFilesStorageFile(File):
 
     def seek(self, pos):
         self._pos = pos
+
+
+class ThreadSafeCloudFilesStorage(CloudFilesStorage):
+    """
+    Extends CloudFilesStorage to make it thread safer.
+
+    As long as you don't pass container or cloud objects
+    between threads, you'll be thread safe.
+
+    Uses one cloudfiles connection per thread.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(ThreadSafeCloudFilesStorage, self).__init__(*args, **kwargs)
+
+        import threading
+        self.local_cache = threading.local()
+
+    def _get_connection(self):
+        if not hasattr(self.local_cache, 'connection'):
+            connection = cloudfiles.get_connection(self.username,
+                                    self.api_key, **self.connection_kwargs)
+            self.local_cache.connection = connection
+
+        return self.local_cache.connection
+
+    connection = property(_get_connection, CloudFilesStorage._set_connection)
+
+    def _get_container(self):
+        if not hasattr(self.local_cache, 'container'):
+            container = self.connection.get_container(self.container_name)
+            self.local_cache.container = container
+
+        return self.local_cache.container
+
+    container = property(_get_container, CloudFilesStorage._set_container)
+
