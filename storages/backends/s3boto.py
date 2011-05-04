@@ -83,7 +83,7 @@ class S3BotoStorage(Storage):
                        reduced_redundancy=REDUCED_REDUNDANCY,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION, file_name_charset=FILE_NAME_CHARSET,
-                       preload_metadata=PRELOAD_METADATA, calling_format=CALLIGN_FORMAT):
+                       preload_metadata=PRELOAD_METADATA, calling_format=CALLING_FORMAT):
         self.bucket_acl = bucket_acl
         self.bucket_name = bucket
         self.acl = acl
