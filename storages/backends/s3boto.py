@@ -13,7 +13,7 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.encoding import force_unicode, smart_str
 
 try:
-    from boto.s3.connection import S3Connection
+    from boto.s3.connection import S3Connection, SubdomainCallingFormat
     from boto.exception import S3ResponseError
     from boto.s3.key import Key
 except ImportError:
@@ -32,6 +32,7 @@ QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
 REDUCED_REDUNDANCY  = getattr(settings, 'AWS_REDUCED_REDUNDANCY', False)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
 CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
+CALLING_FORMAT      = getattr(settings, 'AWS_S3_CALLING_FORMAT', SubdomainCallingFormat())
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
 FILE_NAME_CHARSET   = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
 FILE_OVERWRITE      = getattr(settings, 'AWS_S3_FILE_OVERWRITE', True)
@@ -82,7 +83,7 @@ class S3BotoStorage(Storage):
                        reduced_redundancy=REDUCED_REDUNDANCY,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION, file_name_charset=FILE_NAME_CHARSET,
-                       preload_metadata=PRELOAD_METADATA):
+                       preload_metadata=PRELOAD_METADATA, calling_format=CALLIGN_FORMAT):
         self.bucket_acl = bucket_acl
         self.bucket_name = bucket
         self.acl = acl
@@ -102,7 +103,7 @@ class S3BotoStorage(Storage):
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
         
-        self.connection = S3Connection(access_key, secret_key)
+        self.connection = S3Connection(access_key, secret_key, calling_format=calling_format)
         self._entries = {}
 
     @property
