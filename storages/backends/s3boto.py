@@ -24,7 +24,7 @@ ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 HEADERS             = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
-AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
+AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', False)
 DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 BUCKET_ACL          = getattr(settings, 'AWS_BUCKET_ACL', DEFAULT_ACL)
 QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
@@ -135,7 +135,7 @@ class S3BotoStorage(Storage):
     def _get_or_create_bucket(self, name):
         """Retrieves a bucket if it exists, otherwise creates it."""
         try:
-            return self.connection.get_bucket(name)
+            return self.connection.get_bucket(name, validate=AUTO_CREATE_BUCKET)
         except S3ResponseError, e:
             if AUTO_CREATE_BUCKET:
                 bucket = self.connection.create_bucket(name)
