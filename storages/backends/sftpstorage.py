@@ -125,7 +125,7 @@ class SFTPStorage(Storage):
     
     def _read(self, name):
         remote_path = self._remote_path(name)
-        f = self._sftp.open(remote_path, 'rb')
+        return self._sftp.open(remote_path, 'rb')
 
     def _chown(self, path, uid=None, gid=None):
         """Set uid and/or gid for file at path."""
