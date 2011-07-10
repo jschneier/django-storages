@@ -48,7 +48,8 @@ class GridFSStorage(Storage):
         return force_unicode(name).strip().replace('\\', '/')
 
     def delete(self, name):
-        file = self.fs.delete(name)
+        f = self._open(name, 'r')
+        return self.fs.delete(f.file._id)
 
     def exists(self, name):
         try:
@@ -92,3 +93,4 @@ class GridFSFile(File):
 
     def close(self):
         self.file.close()
+
