@@ -232,6 +232,10 @@ class CloudFilesStorageFile(File):
     file = property(_get_file, _set_file)
 
     def read(self, num_bytes=None):
+        if self._pos == self._get_size():
+            return None
+        if self._pos + num_bytes > self._get_size():
+            num_bytes = self._get_size() - self._pos
         data = self.file.read(size=num_bytes or -1, offset=self._pos)
         self._pos += len(data)
         return data
