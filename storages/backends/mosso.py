@@ -39,15 +39,18 @@ class CloudFilesStorage(Storage):
     """
     default_quick_listdir = True
 
-    def __init__(self, username=None, api_key=None, container=None,
-                 connection_kwargs=None):
+    def __init__(self,
+                 username=settings.CLOUDFILES_USERNAME,
+                 api_key=settings.CLOUDFILES_API_KEY,
+                 container=settings.CLOUDFILES_CONTAINER,
+                 connection_kwargs=settings.CLOUDFILES_CONNECTION_KWARGS):
         """
         Initialize the settings for the connection and container.
         """
-        self.username = username or settings.CLOUDFILES_USERNAME
-        self.api_key = api_key or settings.CLOUDFILES_API_KEY
-        self.container_name = container or settings.CLOUDFILES_CONTAINER
-        self.connection_kwargs = connection_kwargs or settings.CLOUDFILES_CONNECTION_KWARGS or {}
+        self.username = username
+        self.api_key = api_key
+        self.container_name = container
+        self.connection_kwargs = connection_kwargs
 
     def __getstate__(self):
         """
@@ -206,6 +209,8 @@ class CloudFilesStorageFile(File):
         self._storage = storage
         super(CloudFilesStorageFile, self).__init__(file=None, name=name,
                                                     *args, **kwargs)
+        self._pos = 0
+
 
     def _get_size(self):
         if not hasattr(self, '_size'):
