@@ -1,0 +1,15 @@
+===============
+Django storages
+===============
+
+Install
+=======
+
+See http://code.larlet.fr/doc/#django-storage for detailed explanations.
+
+TODO
+====
+
+    * Use chunks for S3Storage as in original FileSystemStorage
+    * Invite people who work on storages to add them to the repository
+    * Add more documentation
