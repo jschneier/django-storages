@@ -2,13 +2,18 @@
 Custom storage for django with Mosso Cloud Files backend.
 Created by Rich Leland <rich@richleland.com>.
 """
-from _io import StringIO
 import os
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.utils.text import get_valid_filename
+
+try:
+    from cStringIO import StringIO
+except:
+    from StringIO import StringIO
 
 try:
     import cloudfiles
@@ -127,7 +132,7 @@ class CloudFilesStorage(Storage):
         cloud_obj = self.container.create_object(name)
         cloud_obj.size = content.size
 
-        content.open()        
+        content.open()
         # If the content type is available, pass it in directly rather than
         # getting the cloud object to try to guess.
         if hasattr(content.file, 'content_type'):
