@@ -24,7 +24,7 @@ class HashPathStorage(FileSystemStorage):
         dir_name, file_name = os.path.split(name)
 
         # Return the name if the file is already there
-        if os.path.exists(name):
+        if os.path.exists(self.path(name)):
             return name
 
         # Try to create the directory relative to the media root
