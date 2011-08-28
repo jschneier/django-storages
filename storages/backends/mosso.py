@@ -23,7 +23,8 @@ except ImportError:
                                "http://www.mosso.com/cloudfiles.jsp.")
 
 # TODO: implement TTL into cloudfiles methods
-CLOUDFILES_TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
+TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
+CONNECTION_KWARGS = getattr(settings, 'CLOUDFILES_CONNECTION_KWARGS', {})
 
 
 def cloudfiles_upload_to(self, filename):
@@ -50,7 +51,7 @@ class CloudFilesStorage(Storage):
                  username=settings.CLOUDFILES_USERNAME,
                  api_key=settings.CLOUDFILES_API_KEY,
                  container=settings.CLOUDFILES_CONTAINER,
-                 connection_kwargs=settings.CLOUDFILES_CONNECTION_KWARGS):
+                 connection_kwargs=CONNECTION_KWARGS):
         """
         Initialize the settings for the connection and container.
         """
