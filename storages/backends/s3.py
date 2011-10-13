@@ -1,5 +1,6 @@
 import os
 import mimetypes
+import warnings
 
 try:
     from cStringIO import StringIO
@@ -46,6 +47,11 @@ class S3Storage(Storage):
             calling_format=CALLING_FORMAT, encrypt=False,
             gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
             preload_metadata=PRELOAD_METADATA):
+        warnings.warn(
+            "The s3 backend is deprecated and will be removed in version 1.2. "
+            "Use the s3boto backend instead.",
+            PendingDeprecationWarning
+        )
         self.bucket = bucket
         self.acl = acl
         self.encrypt = encrypt

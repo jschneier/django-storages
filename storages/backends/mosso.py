@@ -2,11 +2,18 @@
 Custom storage for django with Mosso Cloud Files backend.
 Created by Rich Leland <rich@richleland.com>.
 """
+import os
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.utils.text import get_valid_filename
+
+try:
+    from cStringIO import StringIO
+except:
+    from StringIO import StringIO
 
 try:
     import cloudfiles
@@ -16,7 +23,8 @@ except ImportError:
                                "http://www.mosso.com/cloudfiles.jsp.")
 
 # TODO: implement TTL into cloudfiles methods
-CLOUDFILES_TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
+TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
+CONNECTION_KWARGS = getattr(settings, 'CLOUDFILES_CONNECTION_KWARGS', {})
 
 
 def cloudfiles_upload_to(self, filename):
@@ -39,15 +47,18 @@ class CloudFilesStorage(Storage):
     """
     default_quick_listdir = True
 
-    def __init__(self, username=None, api_key=None, container=None,
-                 connection_kwargs=None):
+    def __init__(self,
+                 username=settings.CLOUDFILES_USERNAME,
+                 api_key=settings.CLOUDFILES_API_KEY,
+                 container=settings.CLOUDFILES_CONTAINER,
+                 connection_kwargs=CONNECTION_KWARGS):
         """
         Initialize the settings for the connection and container.
         """
-        self.username = username or settings.CLOUDFILES_USERNAME
-        self.api_key = api_key or settings.CLOUDFILES_API_KEY
-        self.container_name = container or settings.CLOUDFILES_CONTAINER
-        self.connection_kwargs = connection_kwargs or settings.CLOUDFILES_CONNECTION_KWARGS or {}
+        self.username = username
+        self.api_key = api_key
+        self.container_name = container
+        self.connection_kwargs = connection_kwargs
 
     def __getstate__(self):
         """
@@ -112,11 +123,17 @@ class CloudFilesStorage(Storage):
         Use the Cloud Files service to write ``content`` to a remote file
         (called ``name``).
         """
+        (path, last) = os.path.split(name)
+        if path:
+            try:
+                self.container.get_object(path)
+            except NoSuchObject:
+                self._save(path, CloudStorageDirectory(path))
 
         cloud_obj = self.container.create_object(name)
         cloud_obj.size = content.size
 
-        content.open()        
+        content.open()
         # If the content type is available, pass it in directly rather than
         # getting the cloud object to try to guess.
         if hasattr(content.file, 'content_type'):
@@ -199,6 +216,29 @@ class CloudFilesStorage(Storage):
         return '%s/%s' % (self.container_url, name)
 
 
+class CloudStorageDirectory(File):
+    """
+    A File-like object that creates a directory at cloudfiles
+    """
+
+    def __init__(self, name):
+        super(CloudStorageDirectory, self).__init__(StringIO(), name=name)
+        self.file.content_type = 'application/directory'
+        self.size = 0
+
+    def __str__(self):
+        return 'directory'
+
+    def __nonzero__(self):
+        return True
+
+    def open(self, mode=None):
+        self.seek(0)
+
+    def close(self):
+        pass
+
+
 class CloudFilesStorageFile(File):
     closed = False
 
@@ -206,6 +246,8 @@ class CloudFilesStorageFile(File):
         self._storage = storage
         super(CloudFilesStorageFile, self).__init__(file=None, name=name,
                                                     *args, **kwargs)
+        self._pos = 0
+
 
     def _get_size(self):
         if not hasattr(self, '_size'):
@@ -232,6 +274,10 @@ class CloudFilesStorageFile(File):
     file = property(_get_file, _set_file)
 
     def read(self, num_bytes=None):
+        if self._pos == self._get_size():
+            return None
+        if self._pos + num_bytes > self._get_size():
+            num_bytes = self._get_size() - self._pos
         data = self.file.read(size=num_bytes or -1, offset=self._pos)
         self._pos += len(data)
         return data
