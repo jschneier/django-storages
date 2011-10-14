@@ -22,11 +22,15 @@ class GridFSStorage(Storage):
         db = settings.GRIDFS_DATABASE
         # This should support both the django_mongodb_engine and the GSoC 2010
         # MongoDB backend
-        try:
-            connection = connections[db].db_connection
-        except:
-            connection = connections[db].connection
-        return GridFS(connection)
+        from django_mongodb_engine import __version__
+        if __version__[0] == 0 and __version__[1] <= 3:
+            try:
+                connection = connections[db].db_connection
+            except:
+                connection = connections[db].connection
+            return GridFS(connection)
+        else:
+            return GridFS(connections[db].database)
 
     def _open(self, name, mode='rb'):
         return GridFSFile(name, self, mode=mode)
