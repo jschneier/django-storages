@@ -87,7 +87,10 @@ class SFTPStorage(Storage):
         self._ssh = paramiko.SSHClient()
 
         # automatically add host keys from current user.
-        self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+        if settings.KNOWN_HOST_FOLDER:
+            self._ssh.load_host_keys(os.path.join(settings.KNOWN_HOST_FOLDER, "known_hosts"))
+        else:
+            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
         # and automatically add new host keys for hosts we haven't seen before.
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
