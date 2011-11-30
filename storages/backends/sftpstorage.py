@@ -43,6 +43,8 @@
 #
 # SFTP_STORAGE_GID (Optional) - gid of the group that should be set on the
 # files on the remote host.  You have to be a member of the group to set this.
+# SFTP_KNOWN_HOST_FILE (Optional) - absolute path of know host file, if it isn't
+# set "~/.ssh/known_hosts" will be used
 
 
 import os
