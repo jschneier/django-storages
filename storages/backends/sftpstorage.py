@@ -76,6 +76,7 @@ class SFTPStorage(Storage):
 
         self._uid = getattr(settings, 'SFTP_STORAGE_UID', None)
         self._gid = getattr(settings, 'SFTP_STORAGE_GID', None)
+        self._known_host_file = getattr(settings, 'SFTP_KNOWN_HOST_FILE', None)
 
         self._root_path = settings.SFTP_STORAGE_ROOT
 
@@ -86,10 +87,10 @@ class SFTPStorage(Storage):
     def _connect(self):
         self._ssh = paramiko.SSHClient()
 
-        # automatically add host keys from current user.
-        if settings.KNOWN_HOST_FOLDER:
-            self._ssh.load_host_keys(os.path.join(settings.KNOWN_HOST_FOLDER, "known_hosts"))
+        if self._known_host_file is not None:
+            self._ssh.load_host_keys(self._known_host_file)
         else:
+            # automatically add host keys from current user.
             self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
         # and automatically add new host keys for hosts we haven't seen before.
