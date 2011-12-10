@@ -240,7 +240,10 @@ class S3BotoStorage(Storage):
         except ImportError:
             raise NotImplementedError()
         name = self._normalize_name(self._clean_name(name))
-        entry = self.entries.get(name, self.bucket.get_key(self._encode_name(name)))
+        entry = self.entries.get(name)
+        # only call the function if the get fails
+        if entry is None:
+            entry = self.bucket.get_key(self._encode_name(name))
         # convert to string to date
         last_modified_date = parser.parse(entry.last_modified)
         # if the date has no timzone, assume UTC
