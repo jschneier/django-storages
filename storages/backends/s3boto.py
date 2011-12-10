@@ -241,7 +241,8 @@ class S3BotoStorage(Storage):
             raise NotImplementedError()
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
-        # only call the function if the get fails
+        # only call self.bucket.get_key() if the key is not found
+        # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
         # convert to string to date
