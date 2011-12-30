@@ -31,6 +31,7 @@ QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
 REDUCED_REDUNDANCY  = getattr(settings, 'AWS_REDUCED_REDUNDANCY', False)
 LOCATION            = getattr(settings, 'AWS_LOCATION', '')
+ENCRYPTION          = getattr(settings, 'AWS_S3_ENCRYPTION', False)
 CUSTOM_DOMAIN       = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
 CALLING_FORMAT      = getattr(settings, 'AWS_S3_CALLING_FORMAT', SubdomainCallingFormat())
 SECURE_URLS         = getattr(settings, 'AWS_S3_SECURE_URLS', True)
@@ -80,7 +81,7 @@ class S3BotoStorage(Storage):
                        secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH, querystring_expire=QUERYSTRING_EXPIRE,
-                       reduced_redundancy=REDUCED_REDUNDANCY,
+                       reduced_redundancy=REDUCED_REDUNDANCY, encryption=ENCRYPTION,
                        custom_domain=CUSTOM_DOMAIN, secure_urls=SECURE_URLS,
                        location=LOCATION, file_name_charset=FILE_NAME_CHARSET,
                        preload_metadata=PRELOAD_METADATA, calling_format=CALLING_FORMAT):
@@ -94,6 +95,7 @@ class S3BotoStorage(Storage):
         self.querystring_auth = querystring_auth
         self.querystring_expire = querystring_expire
         self.reduced_redundancy = reduced_redundancy
+        self.encryption = encryption
         self.custom_domain = custom_domain
         self.secure_urls = secure_urls
         self.location = location or ''
@@ -194,7 +196,8 @@ class S3BotoStorage(Storage):
 
         k.set_metadata('Content-Type',content_type)
         k.set_contents_from_file(content, headers=headers, policy=self.acl, 
-                                 reduced_redundancy=self.reduced_redundancy)
+                                 reduced_redundancy=self.reduced_redundancy,
+                                 encrypt_key=self.encryption)
         return cleaned_name
     
     def delete(self, name):
