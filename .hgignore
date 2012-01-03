@@ -1,16 +1,20 @@
 syntax:glob
 
+*.DS_Store
+*.egg
+*.egg-info
 *.elc
-*.pyc
-*~
-*.orig
+*.gz
 *.log
+*.orig
+*.pyc
 *.swp
 *.tmp
-*.DS_Store
-testdb.sqlite
+*~
+_build/
+build/
+dist/*
 django
 local_settings.py
-dist/*
-django_storages.*
 setuptools*
+testdb.sqlite
