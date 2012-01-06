@@ -3,6 +3,12 @@ Custom storage for django with Mosso Cloud Files backend.
 Created by Rich Leland <rich@richleland.com>.
 """
 import os
+import warnings
+warnings.simplefilter('always', PendingDeprecationWarning)
+warnings.warn("The mosso module will be deprecated in version 1.2 of "
+              "django-storages. The CloudFiles code has been moved into"
+              "django-cumulus at http://github.com/richleland/django-cumulus.",
+              PendingDeprecationWarning)
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
