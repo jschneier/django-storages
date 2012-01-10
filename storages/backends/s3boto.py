@@ -57,7 +57,7 @@ def safe_join(base, *paths):
 
     The final path must be located inside of the base path component (otherwise
     a ValueError is raised).
-    
+
     Paths outside the base path indicate a possible security sensitive operation.
     """
     from urlparse import urljoin
@@ -101,10 +101,10 @@ class S3BotoStorage(Storage):
         self.location = location or ''
         self.location = self.location.lstrip('/')
         self.file_name_charset = file_name_charset
-        
+
         if not access_key and not secret_key:
              access_key, secret_key = self._get_access_keys()
-        
+
         self.connection = S3Connection(access_key, secret_key, calling_format=calling_format)
         self._entries = {}
 
@@ -127,13 +127,13 @@ class S3BotoStorage(Storage):
         if (access_key or secret_key) and (not access_key or not secret_key):
             access_key = os.environ.get(ACCESS_KEY_NAME)
             secret_key = os.environ.get(SECRET_KEY_NAME)
-        
+
         if access_key and secret_key:
             # Both were provided, so use them
             return access_key, secret_key
-        
+
         return None, None
-    
+
     def _get_or_create_bucket(self, name):
         """Retrieves a bucket if it exists, otherwise creates it."""
         try:
@@ -146,7 +146,7 @@ class S3BotoStorage(Storage):
             raise ImproperlyConfigured, ("Bucket specified by "
             "AWS_STORAGE_BUCKET_NAME does not exist. Buckets can be "
             "automatically created by setting AWS_AUTO_CREATE_BUCKET=True")
-    
+
     def _clean_name(self, name):
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
@@ -171,14 +171,14 @@ class S3BotoStorage(Storage):
         zfile.close()
         content.file = zbuf
         return content
-        
+
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
         f = S3BotoStorageFile(name, mode, self)
         if not f.key:
             raise IOError('File does not exist: %s' % name)
         return f
-    
+
     def _save(self, name, content):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
@@ -195,22 +195,22 @@ class S3BotoStorage(Storage):
             k = self.bucket.new_key(self._encode_name(name))
 
         k.set_metadata('Content-Type',content_type)
-        k.set_contents_from_file(content, headers=headers, policy=self.acl, 
+        k.set_contents_from_file(content, headers=headers, policy=self.acl,
                                  reduced_redundancy=self.reduced_redundancy,
                                  encrypt_key=self.encryption)
         return cleaned_name
-    
+
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
         self.bucket.delete_key(self._encode_name(name))
-    
+
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
             return name in self.entries
         k = self.bucket.new_key(self._encode_name(name))
         return k.exists()
-    
+
     def listdir(self, name):
         name = self._normalize_name(self._clean_name(name))
         dirlist = self.bucket.list(self._encode_name(name))
@@ -221,7 +221,7 @@ class S3BotoStorage(Storage):
             parts = item.name.split("/")
             parts = parts[len(base_parts):]
             if len(parts) == 1:
-                # File 
+                # File
                 files.append(parts[0])
             elif len(parts) > 1:
                 # Directory
@@ -271,7 +271,7 @@ class S3BotoStorage(Storage):
             name = self._clean_name(name)
             return name
         return super(S3BotoStorage, self).get_available_name(name)
-        
+
 
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):
