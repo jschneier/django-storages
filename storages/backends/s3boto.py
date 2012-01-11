@@ -61,14 +61,14 @@ def safe_join(base, *paths):
     """
     from urlparse import urljoin
     base_path = force_unicode(base)
+    base_path += "/" if not base_path.endswith("/") else ""
     paths = map(lambda p: force_unicode(p), paths)
-    final_path = urljoin(base_path + ("/" if not base_path.endswith("/") else ""), *paths)
+    final_path = urljoin(base_path, *paths)
     # Ensure final_path starts with base_path and that the next character after
-    # the final path is '/' (or nothing, in which case final_path must be
-    # equal to base_path).
+    # the base path is not '.'
     base_path_len = len(base_path)
-    if not final_path.startswith(base_path) \
-       or final_path[base_path_len:base_path_len+1] not in ('', '/'):
+    if not (final_path.startswith(base_path) and
+            final_path[base_path_len:base_path_len+1] != '.'):
         raise ValueError('the joined path is located outside of the base path'
                          ' component')
     return final_path
