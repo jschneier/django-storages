@@ -64,11 +64,11 @@ def safe_join(base, *paths):
     base_path += "/" if not base_path.endswith("/") else ""
     paths = map(lambda p: force_unicode(p), paths)
     final_path = urljoin(base_path, *paths)
-    # Ensure final_path starts with base_path and that the next character after
-    # the base path is not '.'
+    # Ensure final_path starts with base_path and that the path after if does
+    # not try to go up using '/../' constructions
     base_path_len = len(base_path)
     if not (final_path.startswith(base_path) and
-            final_path[base_path_len:base_path_len+1] != '.'):
+            '../' not in final_path[base_path_len:]):
         raise ValueError('the joined path is located outside of the base path'
                          ' component')
     return final_path
