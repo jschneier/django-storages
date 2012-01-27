@@ -251,7 +251,8 @@ class S3BotoStorage(Storage):
         if last_modified_date.tzinfo == None:
             last_modified_date = last_modified_date.replace(tzinfo=tz.tzutc())
         # convert date to local time w/o timezone
-        return last_modified_date.astimezone(tz.tzlocal()).replace(tzinfo=None)
+        timezone = tz.gettz(settings.TIME_ZONE)
+        return last_modified_date.astimezone(timezone).replace(tzinfo=None)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
