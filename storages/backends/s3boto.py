@@ -188,12 +188,15 @@ class S3BotoStorage(Storage):
             headers.update({'Content-Encoding': 'gzip'})
 
         content.name = cleaned_name
-        k = self.bucket.get_key(self._encode_name(name))
-        if not k:
-            k = self.bucket.new_key(self._encode_name(name))
+        encoded_name = self._encode_name(name)
+        key = self.bucket.get_key(encoded_name)
+        if not key:
+            key = self.bucket.new_key(encoded_name)
+        if self.preload_metadata:
+            self._entries[encoded_name] = key
 
-        k.set_metadata('Content-Type',content_type)
-        k.set_contents_from_file(content, headers=headers, policy=self.acl,
+        key.set_metadata('Content-Type', content_type)
+        key.set_contents_from_file(content, headers=headers, policy=self.acl,
                                  reduced_redundancy=self.reduced_redundancy)
         return cleaned_name
 
