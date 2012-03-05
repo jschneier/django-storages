@@ -62,4 +62,21 @@ class S3BotoStorageTests(TestCase):
         
         # show file does not exist
         self.assertFalse(self.storage.exists(name))
+    
+    def test_storage_listdir(self):
+        content = 'not blank'
+        file_names = ["1.txt", "2.txt", "3.txt", "4.txt"]
+        for name in file_names:
+            file = self.storage.open(self.prefix_path(name), 'w')
+            file.write(content)
+            file.close()
+        file = self.storage.open(self.prefix_path('foo/bar.txt'), 'w')
+        file.write(content)
+        file.close()
+        dirs, files = self.storage.listdir(self.path_prefix)
+        for name in file_names:
+            self.assertTrue(name in files)
+        self.assertTrue('foo' in dirs)
+        
+        
         
