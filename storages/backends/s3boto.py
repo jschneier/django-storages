@@ -299,6 +299,13 @@ class S3BotoStorageFile(File):
             self.key = storage.bucket.new_key(storage._encode_name(name))
         self._is_dirty = False
         self._file = None
+        self._multipart = None
+        # 5 MB is the minimum part size (if there is more than one part).
+        # Amazon allows up to 10,000 parts.  The default supports uploads
+        # up to roughly 50 GB.  Increase the part size to accommodate 
+        # for files larger than this.
+        self._write_buffer_size = 5242880
+        self._write_counter = 0
 
     @property
     def size(self):
@@ -321,13 +328,39 @@ class S3BotoStorageFile(File):
 
     def write(self, *args, **kwargs):
         if 'w' not in self._mode:
-            raise AttributeError("File was opened for read-only access.")
+            raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
+        if self._multipart is None:
+            self._multipart = self._storage.bucket.initiate_multipart_upload(self.key.name)
+        if self._write_buffer_size <= self._buffer_file_size:
+            self._flush_write_buffer()
         return super(S3BotoStorageFile, self).write(*args, **kwargs)
+
+    @property
+    def _buffer_file_size(self):
+        pos = self.file.tell()
+        self.file.seek(0,os.SEEK_END)
+        length = self.file.tell()
+        self.file.seek(pos)
+        return length
+
+    def _flush_write_buffer(self):
+        if self._buffer_file_size:
+            self._write_counter += 1
+            self.file.seek(0)
+            self._multipart.upload_part_from_file(
+                self.file,
+                self._write_counter,
+                headers=self._storage.headers
+            )
+            self.file.close()
+            self._file = None
 
     def close(self):
         if self._is_dirty:
-            self._file.seek(0)
-            self.key.set_contents_from_file(self._file,
-                headers=self._storage.headers, policy=self._storage.acl)
+            self._flush_write_buffer()
+            self._multipart.complete_upload()
+        else:
+            if not self._multipart is None:
+                self._multipart.cancel_upload()
         self.key.close()
