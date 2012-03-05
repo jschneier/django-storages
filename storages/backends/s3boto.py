@@ -295,6 +295,8 @@ class S3BotoStorageFile(File):
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
         self.key = storage.bucket.get_key(self._storage._encode_name(name))
+        if not self.key and 'w' in mode:
+            self.key = storage.bucket.new_key(storage._encode_name(name))
         self._is_dirty = False
         self._file = None
 
@@ -325,6 +327,7 @@ class S3BotoStorageFile(File):
 
     def close(self):
         if self._is_dirty:
+            self._file.seek(0)
             self.key.set_contents_from_file(self._file,
                 headers=self._storage.headers, policy=self._storage.acl)
         self.key.close()
