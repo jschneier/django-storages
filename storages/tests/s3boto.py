@@ -42,4 +42,24 @@ class S3BotoStorageTests(TestCase):
         file.write(content)
         file.close()
         self.assertEqual(self.storage.open(name, 'r').read(), content)
+    
+    def test_storage_exists_and_delete(self):
+        # show file does not exist
+        name = self.prefix_path('test_exists.txt')
+        self.assertFalse(self.storage.exists(name))
+        
+        # create the file
+        content = 'new content'
+        file = self.storage.open(name, 'w')
+        file.write(content)
+        file.close()
+        
+        # show file exists
+        self.assertTrue(self.storage.exists(name))
+        
+        # delete the file
+        self.storage.delete(name)
+        
+        # show file does not exist
+        self.assertFalse(self.storage.exists(name))
         
