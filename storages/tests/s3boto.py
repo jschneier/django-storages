@@ -78,5 +78,11 @@ class S3BotoStorageTests(TestCase):
             self.assertTrue(name in files)
         self.assertTrue('foo' in dirs)
         
+    def test_storage_size(self):
+        name = self.prefix_path('test_storage_size.txt')
+        content = 'new content'
+        f = ContentFile(content)
+        self.storage.save(name, f)
+        self.assertEqual(self.storage.size(name), f.size)
         
         
