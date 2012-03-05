@@ -6,7 +6,6 @@ from uuid import uuid4
 import os
 from storages.backends.s3boto import S3BotoStorage
 
-
 class S3BotoStorageTests(TestCase):
     def setUp(self):
         self.storage = S3BotoStorage()
@@ -18,6 +17,14 @@ class S3BotoStorageTests(TestCase):
             path_prefix = "test-subfolder-%s/" % uuid4()
             dirs, files = self.storage.listdir(path_prefix)
         self.path_prefix = path_prefix
+    
+    def tearDown(self):
+        # delete all files created during each test
+        name = self.storage._normalize_name(self.storage._clean_name(self.path_prefix))
+        dirlist = self.storage.bucket.list(self.storage._encode_name(name))
+        names = [x.name for x in dirlist]
+        for name in names:
+            self.storage.delete(name)
         
     def prefix_path(self, path):
         return "%s%s" % (self.path_prefix, path)
