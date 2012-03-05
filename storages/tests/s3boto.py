@@ -70,13 +70,16 @@ class S3BotoStorageTests(TestCase):
             file = self.storage.open(self.prefix_path(name), 'w')
             file.write(content)
             file.close()
-        file = self.storage.open(self.prefix_path('foo/bar.txt'), 'w')
-        file.write(content)
-        file.close()
+        dir_names = ["a", "b", "c"]
+        for name in dir_names:
+            file = self.storage.open(self.prefix_path('%s/bar.txt' % name), 'w')
+            file.write(content)
+            file.close()
         dirs, files = self.storage.listdir(self.path_prefix)
         for name in file_names:
             self.assertTrue(name in files)
-        self.assertTrue('foo' in dirs)
+        for name in dir_names:
+            self.assertTrue(name in dirs)
         
     def test_storage_size(self):
         name = self.prefix_path('test_storage_size.txt')
