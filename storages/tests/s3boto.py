@@ -7,7 +7,7 @@ import os
 from storages.backends.s3boto import S3BotoStorage
 from urllib2 import urlopen
 
-class S3BotoStorageTests(TestCase):
+class S3BotoTestCase(TestCase):
     def setUp(self):
         self.storage = S3BotoStorage()
         
@@ -26,10 +26,11 @@ class S3BotoStorageTests(TestCase):
         names = [x.name for x in dirlist]
         for name in names:
             self.storage.delete(name)
-        
+    
     def prefix_path(self, path):
         return "%s%s" % (self.path_prefix, path)
-    
+
+class S3BotoStorageTests(S3BotoTestCase):
     def test_storage_save(self):
         name = self.prefix_path('test_storage_save.txt')
         content = 'new content'
