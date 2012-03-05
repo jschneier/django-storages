@@ -5,6 +5,7 @@ from django.core.files.storage import FileSystemStorage
 from uuid import uuid4
 import os
 from storages.backends.s3boto import S3BotoStorage
+from urllib2 import urlopen
 
 class S3BotoStorageTests(TestCase):
     def setUp(self):
@@ -88,4 +89,10 @@ class S3BotoStorageTests(TestCase):
         self.storage.save(name, f)
         self.assertEqual(self.storage.size(name), f.size)
         
+    def test_storage_url(self):
+        name = self.prefix_path('test_storage_size.txt')
+        content = 'new content'
+        f = ContentFile(content)
+        self.storage.save(name, f)
+        self.assertEqual(content, urlopen(self.storage.url(name)).read())
         
