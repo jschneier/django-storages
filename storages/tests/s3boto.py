@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from uuid import uuid4
 import os
-from storages.backends.s3boto import S3BotoStorage
+from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile
 from urllib2 import urlopen
 
 class S3BotoTestCase(TestCase):
@@ -97,3 +97,31 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.storage.save(name, f)
         self.assertEqual(content, urlopen(self.storage.url(name)).read())
         
+class S3BotoStorageFileTests(S3BotoTestCase):
+    def test_multipart_upload(self):
+        nparts = 2
+        name = self.prefix_path("test_multipart_upload.txt")
+        mode = 'w'
+        f = S3BotoStorageFile(name, mode, self.storage)
+        content_length = 1024 * 1024# 1 MB
+        content = 'a' * content_length
+        
+        bytes = 0
+        target = f._write_buffer_size * nparts
+        while bytes < target:
+            f.write(content)
+            bytes += content_length
+            
+        # make the buffer roll over so f._write_counter
+        # is incremented
+        f.write("finished")
+        
+        # verify upload was multipart and correctly partitioned
+        self.assertEqual(f._write_counter, nparts)
+        
+        # complete the upload
+        f.close()
+        
+        # verify that the remaining buffered bytes were
+        # uploaded when the file was closed.
+        self.assertEqual(f._write_counter, nparts+1)
