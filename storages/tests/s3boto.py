@@ -35,11 +35,11 @@ class S3BotoStorageTests(TestCase):
         self.storage.save(name, ContentFile(content))
         self.assertEqual(self.storage.open(name).read(), content)
     
-    def test_storage_open_for_writing(self):
+    def test_storage_open(self):
         name = self.prefix_path('test_open_for_writing.txt')
         content = 'new content'
         file = self.storage.open(name, 'w')
         file.write(content)
         file.close()
-        self.assertEqual(self.storage.open(name).read(), content)
+        self.assertEqual(self.storage.open(name, 'r').read(), content)
         
