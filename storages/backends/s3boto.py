@@ -331,9 +331,14 @@ class S3BotoStorageFile(File):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
         if self._multipart is None:
+            provider = self.key.bucket.connection.provider
+            upload_headers = {
+                provider.acl_header: self._storage.acl
+            }
+            upload_headers.update(self._storage.headers)
             self._multipart = self._storage.bucket.initiate_multipart_upload(
                 self.key.name,
-                headers = self._storage.headers,
+                headers = upload_headers,
                 reduced_redundancy = self._storage.reduced_redundancy
             )
         if self._write_buffer_size <= self._buffer_file_size:
