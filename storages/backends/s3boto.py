@@ -1,5 +1,9 @@
 import os
+import re
+import time
 import mimetypes
+import calendar
+from datetime import datetime
 
 try:
     from cStringIO import StringIO
@@ -77,6 +81,36 @@ def safe_join(base, *paths):
                          ' component')
     return final_path
 
+# Dates returned from S3's API look something like this:
+# "Sun, 11 Mar 2012 17:01:41 GMT"
+MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+DATESTR_RE = re.compile(r"^.+, (?P<day>\d{1,2}) (?P<month_name>%s) (?P<year>\d{4}) (?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2}) (GMT|UTC)$" % ("|".join(MONTH_NAMES)))
+def _parse_datestring(dstr):
+    """
+    Parse a simple datestring returned by the S3 API and returns
+    a datetime object in the local timezone.
+    """
+    # This regular expression and thus this function
+    # assumes the date is GMT/UTC
+    m = DATESTR_RE.match(dstr)
+    if m:
+        # This code could raise a ValueError if there is some
+        # bad data or the date is invalid.
+        datedict = m.groupdict()
+        utc_datetime = datetime(
+            int(datedict['year']),
+            int(MONTH_NAMES.index(datedict['month_name'])) + 1,
+            int(datedict['day']),
+            int(datedict['hour']),
+            int(datedict['minute']),
+            int(datedict['second']),
+        )
+
+        # Convert the UTC datetime object to local time.
+        return datetime(*time.localtime(calendar.timegm(utc_datetime.timetuple()))[:6])
+    else:
+        raise ValueError("Could not parse date string: " + dstr)
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
@@ -253,24 +287,13 @@ class S3BotoStorage(Storage):
         return self.bucket.get_key(self._encode_name(name)).size
 
     def modified_time(self, name):
-        try:
-            from dateutil import parser, tz
-        except ImportError:
-            raise NotImplementedError()
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
-        # only call self.bucket.get_key() if the key is not found
-        # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
-        # convert to string to date
-        last_modified_date = parser.parse(entry.last_modified)
-        # if the date has no timzone, assume UTC
-        if last_modified_date.tzinfo == None:
-            last_modified_date = last_modified_date.replace(tzinfo=tz.tzutc())
-        # convert date to local time w/o timezone
-        timezone = tz.gettz(settings.TIME_ZONE)
-        return last_modified_date.astimezone(timezone).replace(tzinfo=None)
+
+        # Parse the last_modified string to a local datetime object.
+        return _parse_datestring(entry.last_modified)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
