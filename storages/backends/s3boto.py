@@ -41,6 +41,7 @@ CALLING_FORMAT = getattr(settings, 'AWS_S3_CALLING_FORMAT',
 SECURE_URLS = getattr(settings, 'AWS_S3_SECURE_URLS', True)
 FILE_NAME_CHARSET = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
 FILE_OVERWRITE = getattr(settings, 'AWS_S3_FILE_OVERWRITE', True)
+FILE_WRITE_BUFFER_SIZE = getattr(settings, 'AWS_S3_FILE_WRITE_BUFFER_SIZE', 5242880)
 IS_GZIPPED = getattr(settings, 'AWS_IS_GZIPPED', False)
 PRELOAD_METADATA = getattr(settings, 'AWS_PRELOAD_METADATA', False)
 GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
@@ -313,7 +314,7 @@ class S3BotoStorage(Storage):
 
 
 class S3BotoStorageFile(File):
-    def __init__(self, name, mode, storage):
+    def __init__(self, name, mode, storage, buffer_size=FILE_WRITE_BUFFER_SIZE):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
@@ -327,7 +328,7 @@ class S3BotoStorageFile(File):
         # Amazon allows up to 10,000 parts.  The default supports uploads
         # up to roughly 50 GB.  Increase the part size to accommodate 
         # for files larger than this.
-        self._write_buffer_size = 5242880
+        self._write_buffer_size = buffer_size
         self._write_counter = 0
 
     @property
