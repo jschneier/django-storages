@@ -41,7 +41,7 @@ CALLING_FORMAT = getattr(settings, 'AWS_S3_CALLING_FORMAT',
 SECURE_URLS = getattr(settings, 'AWS_S3_SECURE_URLS', True)
 FILE_NAME_CHARSET = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
 FILE_OVERWRITE = getattr(settings, 'AWS_S3_FILE_OVERWRITE', True)
-FILE_WRITE_BUFFER_SIZE = getattr(settings, 'AWS_S3_FILE_WRITE_BUFFER_SIZE', 5242880)
+FILE_BUFFER_SIZE = getattr(settings, 'AWS_S3_FILE_BUFFER_SIZE', 5242880)
 IS_GZIPPED = getattr(settings, 'AWS_IS_GZIPPED', False)
 PRELOAD_METADATA = getattr(settings, 'AWS_PRELOAD_METADATA', False)
 GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
@@ -359,7 +359,7 @@ class S3BotoStorageFile(File):
     """
     # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
 
-    def __init__(self, name, mode, storage, buffer_size=FILE_WRITE_BUFFER_SIZE):
+    def __init__(self, name, mode, storage, buffer_size=FILE_BUFFER_SIZE):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
