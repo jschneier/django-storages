@@ -114,7 +114,13 @@ def _parse_datestring(dstr):
         raise ValueError("Could not parse date string: " + dstr)
 
 class S3BotoStorage(Storage):
-    """Amazon Simple Storage Service using Boto"""
+    """
+    Amazon Simple Storage Service using Boto
+    
+    This storage backend supports opening files in read or write
+    mode and supports streaming(buffering) data in chunks to S3
+    when writing.
+    """
 
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
             secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL,
@@ -154,21 +160,34 @@ class S3BotoStorage(Storage):
 
     @property
     def bucket(self):
+        """
+        Get the current bucket. If there is no current bucket object
+        create it.
+        """
         if not hasattr(self, '_bucket'):
             self._bucket = self._get_or_create_bucket(self.bucket_name)
         return self._bucket
 
     @property
     def entries(self):
+        """
+        Get the locally cached files for the bucket.
+        """
         if self.preload_metadata and not self._entries:
             self._entries = dict((self._decode_name(entry.key), entry)
                                 for entry in self.bucket.list())
         return self._entries
 
     def _get_access_keys(self):
+        """
+        Gets the access keys to use when accessing S3. If none
+        are provided to the class in the constructor or in the 
+        settings then get them from the environment variables.
+        """
         access_key = ACCESS_KEY_NAME
         secret_key = SECRET_KEY_NAME
         if (access_key or secret_key) and (not access_key or not secret_key):
+            # TODO: this seems to be broken
             access_key = os.environ.get(ACCESS_KEY_NAME)
             secret_key = os.environ.get(SECRET_KEY_NAME)
 
@@ -194,10 +213,18 @@ class S3BotoStorage(Storage):
                 "AWS_AUTO_CREATE_BUCKET=True")
 
     def _clean_name(self, name):
+        """
+        Cleans the name so that Windows style paths work
+        """
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
 
     def _normalize_name(self, name):
+        """
+        Normalizes the name so that paths like /path/to/ignored/../something.txt
+        work. We check to make sure that the path pointed to is not outside
+        the directory specified by the LOCATION setting.
+        """
         try:
             return safe_join(self.location, name).lstrip('/')
         except ValueError:
@@ -211,7 +238,7 @@ class S3BotoStorage(Storage):
         return force_unicode(name, encoding=self.file_name_charset)
 
     def _compress_content(self, content):
-        """Gzip a given string."""
+        """Gzip a given string content."""
         zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         zfile.write(content.read())
@@ -314,6 +341,24 @@ class S3BotoStorage(Storage):
 
 
 class S3BotoStorageFile(File):
+    """
+    The default file object used by the S3BotoStorage backend.
+    
+    This file implements file streaming using boto's multipart
+    uploading functionality. The file can be opened in read or
+    write mode.
+
+    This class extends Django's File class. However, the contained
+    data is only the data contained in the current buffer. So you
+    should not access the contained file object directly. You should
+    access the data via this class.
+
+    Warning: This file *must* be closed using the close() method in
+    order to properly write the file to S3. Be sure to close the file
+    in your application.
+    """
+    # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
+
     def __init__(self, name, mode, storage, buffer_size=FILE_WRITE_BUFFER_SIZE):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
@@ -378,6 +423,9 @@ class S3BotoStorageFile(File):
         return length
 
     def _flush_write_buffer(self):
+        """
+        Flushes the write buffer.
+        """
         if self._buffer_file_size:
             self._write_counter += 1
             self.file.seek(0)
