@@ -1,11 +1,13 @@
+import os
+from uuid import uuid4
+from urllib2 import urlopen
+
 from django.test import TestCase
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from uuid import uuid4
-import os
+
 from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile
-from urllib2 import urlopen
 
 class S3BotoTestCase(TestCase):
     def setUp(self):
