@@ -1,2 +1,2 @@
 from storages.tests.hashpath import *
-from s3boto import S3BotoStorageTests, S3BotoStorageFileTests
+from storages.tests.s3boto import *

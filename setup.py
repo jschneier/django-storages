@@ -20,6 +20,6 @@ setup(
         'Programming Language :: Python',
         'Framework :: Django',
     ],
-    py_modules = ['S3'],
+    test_suite='tests.main',
     zip_safe = False,
 )
