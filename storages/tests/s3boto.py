@@ -8,6 +8,8 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
+from boto.s3.key import Key
+
 from storages.backends import s3boto
 
 __all__ = (
@@ -115,25 +117,48 @@ class S3BotoStorageTests(S3BotoTestCase):
     #    
     #    # show file does not exist
     #    self.assertFalse(self.storage.exists(name))
-    #
-    #def test_storage_listdir(self):
-    #    content = 'not blank'
-    #    file_names = ["1.txt", "2.txt", "3.txt", "4.txt"]
-    #    for name in file_names:
-    #        file = self.storage.open(self.prefix_path(name), 'w')
-    #        file.write(content)
-    #        file.close()
-    #    dir_names = ["a", "b", "c"]
-    #    for name in dir_names:
-    #        file = self.storage.open(self.prefix_path('%s/bar.txt' % name), 'w')
-    #        file.write(content)
-    #        file.close()
-    #    dirs, files = self.storage.listdir(self.path_prefix)
-    #    for name in file_names:
-    #        self.assertTrue(name in files)
-    #    for name in dir_names:
-    #        self.assertTrue(name in dirs)
-    #    
+
+    def test_storage_listdir_base(self):
+        file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
+
+        self.storage.bucket.list.return_value = []
+        for p in file_names:
+            key = mock.MagicMock(spec=Key)
+            key.name = p
+            self.storage.bucket.list.return_value.append(key)
+
+        dirs, files = self.storage.listdir("")
+
+        self.assertEqual(len(dirs), 2)
+        for directory in ["some", "other"]:
+            self.assertTrue(directory in dirs, 
+                            """ "%s" not in directory list "%s".""" % (
+                                directory, dirs))
+            
+        self.assertEqual(len(files), 2)
+        for filename in ["2.txt", "4.txt"]:
+            self.assertTrue(filename in files, 
+                            """ "%s" not in file list "%s".""" % (
+                                filename, files))
+
+    def test_storage_listdir_subdir(self):
+        file_names = ["some/path/1.txt", "some/2.txt"]
+
+        self.storage.bucket.list.return_value = []
+        for p in file_names:
+            key = mock.MagicMock(spec=Key)
+            key.name = p
+            self.storage.bucket.list.return_value.append(key)
+
+        dirs, files = self.storage.listdir("some/")
+        self.assertEqual(len(dirs), 1)
+        self.assertTrue('path' in dirs, 
+                        """ "path" not in directory list "%s".""" % (dirs,))
+            
+        self.assertEqual(len(files), 1)
+        self.assertTrue('2.txt' in files, 
+                        """ "2.txt" not in files list "%s".""" % (files,))
+
     #def test_storage_size(self):
     #    name = self.prefix_path('test_storage_size.txt')
     #    content = 'new content'
