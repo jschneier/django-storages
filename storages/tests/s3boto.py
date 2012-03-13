@@ -32,6 +32,14 @@ class SafeJoinTest(TestCase):
                                 ".", "to/./somewhere")
         self.assertEquals(path, "path/to/somewhere")
 
+    def test_base_url(self):
+        path = s3boto.safe_join("base_url", "path/to/somewhere")
+        self.assertEquals(path, "base_url/path/to/somewhere")
+
+    def test_base_url_with_slash(self):
+        path = s3boto.safe_join("base_url/", "path/to/somewhere")
+        self.assertEquals(path, "base_url/path/to/somewhere")
+
     def test_suspicious_operation(self):
         self.assertRaises(ValueError,
             s3boto.safe_join, "base", "../../../../../../../etc/passwd")
