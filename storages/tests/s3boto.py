@@ -1,12 +1,7 @@
-import os
 import mock
-from uuid import uuid4
-from urllib2 import urlopen
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
 
 from boto.s3.key import Key
 
@@ -98,25 +93,19 @@ class S3BotoStorageTests(S3BotoTestCase):
         )
         file._multipart.complete_upload.assert_called_once()
     
-    #def test_storage_exists_and_delete(self):
-    #    # show file does not exist
-    #    name = self.prefix_path('test_exists.txt')
-    #    self.assertFalse(self.storage.exists(name))
-    #    
-    #    # create the file
-    #    content = 'new content'
-    #    file = self.storage.open(name, 'w')
-    #    file.write(content)
-    #    file.close()
-    #    
-    #    # show file exists
-    #    self.assertTrue(self.storage.exists(name))
-    #    
-    #    # delete the file
-    #    self.storage.delete(name)
-    #    
-    #    # show file does not exist
-    #    self.assertFalse(self.storage.exists(name))
+    def test_storage_exists(self):
+        key = self.storage.bucket.new_key.return_value
+        key.exists.return_value = True
+        self.assertTrue(self.storage.exists("file.txt"))
+
+    def test_storage_exists_false(self):
+        key = self.storage.bucket.new_key.return_value
+        key.exists.return_value = False 
+        self.assertFalse(self.storage.exists("file.txt"))
+
+    def test_storage_delete(self):
+        self.storage.delete("path/to/file.txt")
+        self.storage.bucket.delete_key.assert_called_with("path/to/file.txt")
 
     def test_storage_listdir_base(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
