@@ -358,6 +358,8 @@ class S3BotoStorageFile(File):
     in your application.
     """
     # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
+    # TODO: When Django drops support for Python 2.5, rewrite to use the 
+    #       BufferedIO streams in the Python 2.6 io module.
 
     def __init__(self, name, mode, storage, buffer_size=FILE_BUFFER_SIZE):
         self._storage = storage
