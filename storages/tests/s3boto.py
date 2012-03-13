@@ -148,13 +148,13 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.assertTrue('2.txt' in files, 
                         """ "2.txt" not in files list "%s".""" % (files,))
 
-    #def test_storage_size(self):
-    #    name = self.prefix_path('test_storage_size.txt')
-    #    content = 'new content'
-    #    f = ContentFile(content)
-    #    self.storage.save(name, f)
-    #    self.assertEqual(self.storage.size(name), f.size)
-    #    
+    def test_storage_size(self):
+        key = self.storage.bucket.get_key.return_value
+        key.size = 4098
+
+        name = 'file.txt'
+        self.assertEqual(self.storage.size(name), key.size)
+
     #def test_storage_url(self):
     #    name = self.prefix_path('test_storage_size.txt')
     #    content = 'new content'
