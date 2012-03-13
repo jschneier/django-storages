@@ -155,12 +155,20 @@ class S3BotoStorageTests(S3BotoTestCase):
         name = 'file.txt'
         self.assertEqual(self.storage.size(name), key.size)
 
-    #def test_storage_url(self):
-    #    name = self.prefix_path('test_storage_size.txt')
-    #    content = 'new content'
-    #    f = ContentFile(content)
-    #    self.storage.save(name, f)
-    #    self.assertEqual(content, urlopen(self.storage.url(name)).read())
+    def test_storage_url(self):
+        name = 'test_storage_size.txt'
+        url = 'http://aws.amazon.com/%s' % name
+        self.storage.connection.generate_url.return_value = url
+
+        self.assertEquals(self.storage.url(name), url)
+        self.storage.connection.generate_url.assert_called_with(
+            self.storage.querystring_expire,
+            method='GET',
+            bucket=self.storage.bucket.name,
+            key=name,
+            query_auth=self.storage.querystring_auth,
+            force_http=not self.storage.secure_urls,
+        )
         
 #class S3BotoStorageFileTests(S3BotoTestCase):
 #    def test_multipart_upload(self):
