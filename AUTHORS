@@ -1,0 +1,24 @@
+By order of apparition, thanks:
+    * Marty Alchin (S3)
+    * David Larlet (S3)
+    * Arne Brodowski (S3)
+    * Sebastian Serrano (S3)
+    * Andrew McClain (MogileFS)
+    * Rafal Jonca (FTP)
+    * Chris McCormick (S3 with Boto)
+    * Ivanov E. (Database)
+    * Ariel Núñez (packaging)
+    * Wim Leers (SymlinkOrCopy + patches)
+    * Michael Elsdörfer (Overwrite + PEP8 compatibility)
+    * Christian Klein (CouchDB)
+    * Rich Leland (Mosso Cloud Files)
+    * Jason Christa (patches)
+    * Adam Nelson (patches)
+    * Erik CW (S3 encryption)
+    * Axel Gembe (Hash path)
+    * Waldemar Kornewald (MongoDB)
+
+Extra thanks to Marty for adding this in Django,
+you can buy his very interesting book (Pro Django).
+
+
