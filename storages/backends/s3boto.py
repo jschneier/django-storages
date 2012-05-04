@@ -114,11 +114,22 @@ def _parse_datestring(dstr):
             int(datedict['minute']),
             int(datedict['second']),
         )
-
-        # Convert the UTC datetime object to local time.
-        return datetime(*time.localtime(calendar.timegm(utc_datetime.timetuple()))[:6])
     else:
-        raise ValueError("Could not parse date string: " + dstr)
+        try:
+            format = '%Y-%m-%dT%H:%M:%S'
+            if 'T' not in dstr:
+                format = format.replace('T', '')
+            if '.' in dstr:
+                format += ".%f"
+            if dstr.endswith('Z'):
+                dstr = dstr[:-1]
+            elif dstr.endswith(('UTC', 'GMT')):
+                dstr = dstr[:-3]
+            utc_datetime = datetime.datetime.strptime(dstr, format)
+        except:
+            raise ValueError("Could not parse date string: " + dstr)
+    # Convert the UTC datetime object to local time.
+    return datetime(*time.localtime(calendar.timegm(utc_datetime.timetuple()))[:6])
 
 
 class S3BotoStorage(Storage):
@@ -334,7 +345,7 @@ class S3BotoStorage(Storage):
             entry = self.bucket.get_key(self._encode_name(name))
 
         # Parse the last_modified string to a local datetime object.
-        return _parse_datestring(entry.last_modified)
+            return _parse_datestring(entry.last_modified)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
