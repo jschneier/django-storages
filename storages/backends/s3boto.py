@@ -92,6 +92,8 @@ def safe_join(base, *paths):
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 DATESTR_RE = re.compile(r"^.+, (?P<day>\d{1,2}) (?P<month_name>%s) (?P<year>\d{4}) (?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2}) (GMT|UTC)$" % ("|".join(MONTH_NAMES)))
+
+
 def _parse_datestring(dstr):
     """
     Parse a simple datestring returned by the S3 API and returns
@@ -118,10 +120,11 @@ def _parse_datestring(dstr):
     else:
         raise ValueError("Could not parse date string: " + dstr)
 
+
 class S3BotoStorage(Storage):
     """
     Amazon Simple Storage Service using Boto
-    
+
     This storage backend supports opening files in read or write
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
@@ -186,7 +189,7 @@ class S3BotoStorage(Storage):
     def _get_access_keys(self):
         """
         Gets the access keys to use when accessing S3. If none
-        are provided to the class in the constructor or in the 
+        are provided to the class in the constructor or in the
         settings then get them from the environment variables.
         """
         access_key = ACCESS_KEY_NAME
@@ -353,7 +356,7 @@ class S3BotoStorage(Storage):
 class S3BotoStorageFile(File):
     """
     The default file object used by the S3BotoStorage backend.
-    
+
     This file implements file streaming using boto's multipart
     uploading functionality. The file can be opened in read or
     write mode.
@@ -368,7 +371,7 @@ class S3BotoStorageFile(File):
     in your application.
     """
     # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
-    # TODO: When Django drops support for Python 2.5, rewrite to use the 
+    # TODO: When Django drops support for Python 2.5, rewrite to use the
     #       BufferedIO streams in the Python 2.6 io module.
 
     def __init__(self, name, mode, storage, buffer_size=FILE_BUFFER_SIZE):
@@ -383,7 +386,7 @@ class S3BotoStorageFile(File):
         self._multipart = None
         # 5 MB is the minimum part size (if there is more than one part).
         # Amazon allows up to 10,000 parts.  The default supports uploads
-        # up to roughly 50 GB.  Increase the part size to accommodate 
+        # up to roughly 50 GB.  Increase the part size to accommodate
         # for files larger than this.
         self._write_buffer_size = buffer_size
         self._write_counter = 0
@@ -395,7 +398,12 @@ class S3BotoStorageFile(File):
     @property
     def file(self):
         if self._file is None:
-            self._file = StringIO()
+            content_type = mimetypes.guess_type(self.name)[0] or Key.DefaultContentType
+            if (self._storage.gzip and
+                    content_type in self._storage.gzip_content_types):
+                self._file = GzipFile()
+            else:
+                self._file = StringIO()
             if 'r' in self._mode:
                 self._is_dirty = False
                 self.key.get_contents_to_file(self._file)
@@ -419,8 +427,8 @@ class S3BotoStorageFile(File):
             upload_headers.update(self._storage.headers)
             self._multipart = self._storage.bucket.initiate_multipart_upload(
                 self.key.name,
-                headers = upload_headers,
-                reduced_redundancy = self._storage.reduced_redundancy
+                headers=upload_headers,
+                reduced_redundancy=self._storage.reduced_redundancy
             )
         if self._write_buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
@@ -429,7 +437,7 @@ class S3BotoStorageFile(File):
     @property
     def _buffer_file_size(self):
         pos = self.file.tell()
-        self.file.seek(0,os.SEEK_END)
+        self.file.seek(0, os.SEEK_END)
         length = self.file.tell()
         self.file.seek(pos)
         return length
