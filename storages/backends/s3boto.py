@@ -372,8 +372,7 @@ class S3BotoStorageFile(File):
     def size(self):
         return self.key.size
 
-    @property
-    def file(self):
+    def _get_file(self):
         if self._file is None:
             self._file = StringIO()
             if 'r' in self._mode:
@@ -385,6 +384,11 @@ class S3BotoStorageFile(File):
                     content_type in self._storage.gzip_content_types):
                 self._file = GzipFile(mode=self._mode, fileobj=self._file)
         return self._file
+
+    def _set_file(self, value):
+        self._file = value
+
+    file = property(_get_file, _set_file)
 
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:
