@@ -345,7 +345,7 @@ class S3BotoStorage(Storage):
             entry = self.bucket.get_key(self._encode_name(name))
 
         # Parse the last_modified string to a local datetime object.
-            return _parse_datestring(entry.last_modified)
+        return _parse_datestring(entry.last_modified)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
