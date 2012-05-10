@@ -376,14 +376,14 @@ class S3BotoStorageFile(File):
     def file(self):
         if self._file is None:
             self._file = StringIO()
-            content_type = mimetypes.guess_type(self.name)[0] or Key.DefaultContentType
-            if (self._storage.gzip and
-                    content_type in self._storage.gzip_content_types):
-                self._file = GzipFile(fileobj=self._file)
             if 'r' in self._mode:
                 self._is_dirty = False
                 self.key.get_contents_to_file(self._file)
                 self._file.seek(0)
+            content_type = mimetypes.guess_type(self.name)[0] or Key.DefaultContentType
+            if (self._storage.gzip and
+                    content_type in self._storage.gzip_content_types):
+                self._file = GzipFile(mode=self._mode, fileobj=self._file)
         return self._file
 
     def read(self, *args, **kwargs):
