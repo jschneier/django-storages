@@ -212,9 +212,12 @@ class S3BotoStorage(Storage):
         """Gzip a given string content."""
         zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
-        zfile.write(content.read())
-        zfile.close()
+        try:
+            zfile.write(content.read())
+        finally:
+            zfile.close()
         content.file = zbuf
+        content.seek(0)
         return content
 
     def _open(self, name, mode='rb'):
