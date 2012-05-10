@@ -1,9 +1,5 @@
 import os
-import re
-import time
 import mimetypes
-import calendar
-from datetime import datetime
 
 try:
     from cStringIO import StringIO
@@ -86,50 +82,6 @@ def safe_join(base, *paths):
                          ' component')
 
     return final_path.lstrip('/')
-
-# Dates returned from S3's API look something like this:
-# "Sun, 11 Mar 2012 17:01:41 GMT"
-MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-DATESTR_RE = re.compile(r"^.+, (?P<day>\d{1,2}) (?P<month_name>%s) (?P<year>\d{4}) (?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2}) (GMT|UTC)$" % ("|".join(MONTH_NAMES)))
-
-
-def _parse_datestring(dstr):
-    """
-    Parse a simple datestring returned by the S3 API and returns
-    a datetime object in the local timezone.
-    """
-    # This regular expression and thus this function
-    # assumes the date is GMT/UTC
-    m = DATESTR_RE.match(dstr)
-    if m:
-        # This code could raise a ValueError if there is some
-        # bad data or the date is invalid.
-        datedict = m.groupdict()
-        utc_datetime = datetime(
-            int(datedict['year']),
-            int(MONTH_NAMES.index(datedict['month_name'])) + 1,
-            int(datedict['day']),
-            int(datedict['hour']),
-            int(datedict['minute']),
-            int(datedict['second']),
-        )
-    else:
-        try:
-            format = '%Y-%m-%dT%H:%M:%S'
-            if 'T' not in dstr:
-                format = format.replace('T', '')
-            if '.' in dstr:
-                format += ".%f"
-            if dstr.endswith('Z'):
-                dstr = dstr[:-1]
-            elif dstr.endswith(('UTC', 'GMT')):
-                dstr = dstr[:-3]
-            utc_datetime = datetime.datetime.strptime(dstr, format)
-        except:
-            raise ValueError("Could not parse date string: " + dstr)
-    # Convert the UTC datetime object to local time.
-    return datetime(*time.localtime(calendar.timegm(utc_datetime.timetuple()))[:6])
 
 
 class S3BotoStorage(Storage):
@@ -260,9 +212,12 @@ class S3BotoStorage(Storage):
         """Gzip a given string content."""
         zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
-        zfile.write(content.read())
-        zfile.close()
+        try:
+            zfile.write(content.read())
+        finally:
+            zfile.close()
         content.file = zbuf
+        content.seek(0)
         return content
 
     def _open(self, name, mode='rb'):
@@ -339,13 +294,24 @@ class S3BotoStorage(Storage):
         return self.bucket.get_key(self._encode_name(name)).size
 
     def modified_time(self, name):
+        try:
+            from dateutil import parser, tz
+        except ImportError:
+            raise NotImplementedError()
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
+        # only call self.bucket.get_key() if the key is not found
+        # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
-
-        # Parse the last_modified string to a local datetime object.
-        return _parse_datestring(entry.last_modified)
+        # convert to string to date
+        last_modified_date = parser.parse(entry.last_modified)
+        # if the date has no timzone, assume UTC
+        if last_modified_date.tzinfo == None:
+            last_modified_date = last_modified_date.replace(tzinfo=tz.tzutc())
+        # convert date to local time w/o timezone
+        timezone = tz.gettz(settings.TIME_ZONE)
+        return last_modified_date.astimezone(timezone).replace(tzinfo=None)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -406,19 +372,23 @@ class S3BotoStorageFile(File):
     def size(self):
         return self.key.size
 
-    @property
-    def file(self):
+    def _get_file(self):
         if self._file is None:
             self._file = StringIO()
-            content_type = mimetypes.guess_type(self.name)[0] or Key.DefaultContentType
-            if (self._storage.gzip and
-                    content_type in self._storage.gzip_content_types):
-                self._file = GzipFile(fileobj=self._file)
             if 'r' in self._mode:
                 self._is_dirty = False
                 self.key.get_contents_to_file(self._file)
                 self._file.seek(0)
+            content_type = mimetypes.guess_type(self.name)[0] or Key.DefaultContentType
+            if (self._storage.gzip and
+                    content_type in self._storage.gzip_content_types):
+                self._file = GzipFile(mode=self._mode, fileobj=self._file)
         return self._file
+
+    def _set_file(self, value):
+        self._file = value
+
+    file = property(_get_file, _set_file)
 
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:

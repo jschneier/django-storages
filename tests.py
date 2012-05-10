@@ -46,6 +46,8 @@ def main():
         'beproud.django.authutils.middleware.AuthMiddleware',
     )
     global_settings.DEFAULT_FILE_STORAGE = 'backends.s3boto.S3BotoStorage'
+    global_settings.AWS_IS_GZIPPED = True
+    global_settings.SECRET_KEY = "tralala"
 
     from django.test.utils import get_runner
     test_runner = get_runner(global_settings)
