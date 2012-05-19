@@ -16,6 +16,9 @@ Add the following to your project's settings.py file::
     CLOUDFILES_CONTAINER = 'ContainerName'
     DEFAULT_FILE_STORAGE = 'backends.mosso.CloudFilesStorage'
 
+    # Optional - use SSL
+    CLOUDFILES_SSL = True
+
 Optionally, you can implement the following custom upload_to in your models.py file. This will upload the file using the file name only to Cloud Files (e.g. 'myfile.jpg'). If you supply a string (e.g. upload_to='some/path'), your file name will include the path (e.g. 'some/path/myfile.jpg')::
 
     from backends.mosso import cloudfiles_upload_to

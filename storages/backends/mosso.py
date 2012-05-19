@@ -31,6 +31,7 @@ except ImportError:
 # TODO: implement TTL into cloudfiles methods
 TTL = getattr(settings, 'CLOUDFILES_TTL', 600)
 CONNECTION_KWARGS = getattr(settings, 'CLOUDFILES_CONNECTION_KWARGS', {})
+SSL = getattr(settings, 'CLOUDFILES_SSL', False)
 
 
 def cloudfiles_upload_to(self, filename):
@@ -107,7 +108,10 @@ class CloudFilesStorage(Storage):
 
     def _get_container_url(self):
         if not hasattr(self, '_container_public_uri'):
-            self._container_public_uri = self.container.public_uri()
+            if SSL:
+                self._container_public_uri = self.container.public_ssl_uri()
+            else:
+                self._container_public_uri = self.container.public_uri()
         return self._container_public_uri
 
     container_url = property(_get_container_url)
