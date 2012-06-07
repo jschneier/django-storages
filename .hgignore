@@ -11,6 +11,7 @@ syntax:glob
 *.swp
 *.tmp
 *~
+.tox/
 _build/
 build/
 dist/*

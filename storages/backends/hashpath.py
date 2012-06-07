@@ -1,6 +1,5 @@
 import os, hashlib, errno
 
-from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.utils.encoding import force_unicode
 
@@ -27,9 +26,9 @@ class HashPathStorage(FileSystemStorage):
         if self.exists(name):
             return name
 
-        # Try to create the directory relative to the media root
+        # Try to create the directory relative to location specified in __init__
         try:
-            os.makedirs(os.path.join(settings.MEDIA_ROOT, dir_name))
+            os.makedirs(os.path.join(self.location, dir_name))
         except OSError, e:
             if e.errno is not errno.EEXIST:
                 raise e
