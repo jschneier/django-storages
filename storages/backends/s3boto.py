@@ -281,9 +281,13 @@ class S3BotoStorage(Storage):
             self._entries[encoded_name] = key
 
         key.set_metadata('Content-Type', content_type)
+        # only pass backwards incompatible arguments if they vary from the default
+        kwargs = {}
+        if self.encryption:
+            kwargs['encrypt_key'] = self.encryption
         key.set_contents_from_file(content, headers=headers, policy=self.acl,
                                    reduced_redundancy=self.reduced_redundancy,
-                                   encrypt_key=self.encryption)
+                                   **kwargs)
         return cleaned_name
 
     def delete(self, name):
