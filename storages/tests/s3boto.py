@@ -92,7 +92,7 @@ class S3BotoStorageTests(S3BotoTestCase):
             return
         content = ContentFile("I should be gzip'd")
         content = self.storage._compress_content(content)
-        self.assertGreater(len(content.read()), 0)
+        self.assertTrue(len(content.read()) > 0)
 
     def test_storage_open_write(self):
         """
