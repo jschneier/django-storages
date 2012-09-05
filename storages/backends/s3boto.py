@@ -18,7 +18,7 @@ try:
     from boto.s3.key import Key
 except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
-                               "See http://code.google.com/p/boto/")
+                               "See https://github.com/boto/boto")
 
 ACCESS_KEY_NAME = getattr(settings, 'AWS_S3_ACCESS_KEY_ID', getattr(settings, 'AWS_ACCESS_KEY_ID', None))
 SECRET_KEY_NAME = getattr(settings, 'AWS_S3_SECRET_ACCESS_KEY', getattr(settings, 'AWS_SECRET_ACCESS_KEY', None))
@@ -45,6 +45,7 @@ GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'application/javascript',
     'application/x-javascript',
 ))
+
 
 if IS_GZIPPED:
     from gzip import GzipFile
@@ -76,8 +77,8 @@ def safe_join(base, *paths):
     # the final path is '/' (or nothing, in which case final_path must be
     # equal to base_path).
     base_path_len = len(base_path)
-    if not final_path.startswith(base_path) \
-       or final_path[base_path_len:base_path_len + 1] not in ('', '/'):
+    if (not final_path.startswith(base_path) or
+            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
         raise ValueError('the joined path is located outside of the base path'
                          ' component')
 
@@ -92,6 +93,8 @@ class S3BotoStorage(Storage):
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
+    connection_class = S3Connection
+    connection_response_error = S3ResponseError
 
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
             secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL,
@@ -121,13 +124,12 @@ class S3BotoStorage(Storage):
         self.location = location or ''
         self.location = self.location.lstrip('/')
         self.file_name_charset = file_name_charset
-
+        self.calling_format = calling_format
+        self._entries = {}
         if not access_key and not secret_key:
             access_key, secret_key = self._get_access_keys()
-
-        self.connection = S3Connection(access_key, secret_key,
-            calling_format=calling_format)
-        self._entries = {}
+        self.connection = self.connection_class(access_key, secret_key,
+            calling_format=self.calling_format)
 
     @property
     def bucket(self):
@@ -173,7 +175,7 @@ class S3BotoStorage(Storage):
         try:
             return self.connection.get_bucket(name,
                 validate=AUTO_CREATE_BUCKET)
-        except S3ResponseError:
+        except self.connection_response_error:
             if AUTO_CREATE_BUCKET:
                 bucket = self.connection.create_bucket(name)
                 bucket.set_acl(self.bucket_acl)
