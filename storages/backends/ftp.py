@@ -256,6 +256,6 @@ class FTPStorageFile(File):
     def close(self):
         if self._is_dirty:
             self._storage._start_connection()
-            self._storage._put_file(self._name, self.file.getvalue())
-            self._storage._end_connection()
+            self._storage._put_file(self._name, self)
+            self._storage.disconnect()
         self.file.close()
