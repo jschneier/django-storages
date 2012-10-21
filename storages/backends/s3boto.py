@@ -250,7 +250,8 @@ class S3BotoStorage(Storage):
 
         key.set_metadata('Content-Type', content_type)
         key.set_contents_from_file(content, headers=headers, policy=self.acl,
-                                 reduced_redundancy=self.reduced_redundancy)
+                                 reduced_redundancy=self.reduced_redundancy,
+                                 rewind=True)
         return cleaned_name
 
     def delete(self, name):
