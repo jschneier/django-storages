@@ -29,12 +29,15 @@ from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
 
 
-class FTPStorageException(Exception): pass
+class FTPStorageException(Exception):
+    pass
+
 
 class FTPStorage(Storage):
     """FTP Storage class for Django pluggable storage system."""
 
-    def __init__(self, location=settings.FTP_STORAGE_LOCATION, base_url=settings.MEDIA_URL):
+    def __init__(self, location=settings.FTP_STORAGE_LOCATION,
+                 base_url=settings.MEDIA_URL):
         self._config = self._decode_location(location)
         self._base_url = base_url
         self._connection = None
@@ -43,12 +46,14 @@ class FTPStorage(Storage):
         """Return splitted configuration data from location."""
         splitted_url = urlparse.urlparse(location)
         config = {}
-        
+
         if splitted_url.scheme not in ('ftp', 'aftp'):
-            raise ImproperlyConfigured('FTPStorage works only with FTP protocol!')
+            raise ImproperlyConfigured(
+                'FTPStorage works only with FTP protocol!'
+            )
         if splitted_url.hostname == '':
             raise ImproperlyConfigured('You must at least provide hostname!')
-            
+
         if splitted_url.scheme == 'aftp':
             config['active'] = True
         else:
@@ -58,7 +63,7 @@ class FTPStorage(Storage):
         config['user'] = splitted_url.username
         config['passwd'] = splitted_url.password
         config['port'] = int(splitted_url.port)
-        
+
         return config
 
     def _start_connection(self):
@@ -66,9 +71,9 @@ class FTPStorage(Storage):
         if self._connection is not None:
             try:
                 self._connection.pwd()
-            except ftplib.all_errors, e:
+            except ftplib.all_errors:
                 self._connection = None
-        
+
         # Real reconnect
         if self._connection is None:
             ftp = ftplib.FTP()
@@ -81,8 +86,11 @@ class FTPStorage(Storage):
                     ftp.cwd(self._config['path'])
                 self._connection = ftp
                 return
-            except ftplib.all_errors, e:
-                raise FTPStorageException('Connection or login error using data %s' % repr(self._config))
+            except ftplib.all_errors:
+                raise FTPStorageException(
+                    'Connection or login error using data %s'
+                    % repr(self._config)
+                )
 
     def disconnect(self):
         self._connection.quit()
@@ -98,8 +106,10 @@ class FTPStorage(Storage):
                 try:
                     self._connection.mkd(path_part)
                     self._connection.cwd(path_part)
-                except ftplib.all_errors, e:
-                    raise FTPStorageException('Cannot create directory chain %s' % path)                    
+                except ftplib.all_errors:
+                    raise FTPStorageException(
+                        'Cannot create directory chain %s' % path
+                    )
         self._connection.cwd(pwd)
         return
 
@@ -109,9 +119,11 @@ class FTPStorage(Storage):
             self._mkremdirs(os.path.dirname(name))
             pwd = self._connection.pwd()
             self._connection.cwd(os.path.dirname(name))
-            self._connection.storbinary('STOR ' + os.path.basename(name), content.file, content.DEFAULT_CHUNK_SIZE)
+            self._connection.storbinary('STOR ' + os.path.basename(name),
+                                        content.file,
+                                        content.DEFAULT_CHUNK_SIZE)
             self._connection.cwd(pwd)
-        except ftplib.all_errors, e:
+        except ftplib.all_errors:
             raise FTPStorageException('Error writing file %s' % name)
 
     def _open(self, name, mode='rb'):
@@ -123,12 +135,13 @@ class FTPStorage(Storage):
         try:
             pwd = self._connection.pwd()
             self._connection.cwd(os.path.dirname(name))
-            self._connection.retrbinary('RETR ' + os.path.basename(name), memory_file.write)
+            self._connection.retrbinary('RETR ' + os.path.basename(name),
+                                        memory_file.write)
             self._connection.cwd(pwd)
             return memory_file
-        except ftplib.all_errors, e:
+        except ftplib.all_errors:
             raise FTPStorageException('Error reading file %s' % name)
-        
+
     def _save(self, name, content):
         content.open()
         self._start_connection()
@@ -140,7 +153,7 @@ class FTPStorage(Storage):
         # Connection must be open!
         try:
             lines = []
-            self._connection.retrlines('LIST '+path, lines.append)
+            self._connection.retrlines('LIST ' + path, lines.append)
             dirs = {}
             files = {}
             for line in lines:
@@ -150,11 +163,11 @@ class FTPStorage(Storage):
                 if words[-2] == '->':
                     continue
                 if words[0][0] == 'd':
-                    dirs[words[-1]] = 0;
+                    dirs[words[-1]] = 0
                 elif words[0][0] == '-':
-                    files[words[-1]] = int(words[-5]);
+                    files[words[-1]] = int(words[-5])
             return dirs, files
-        except ftplib.all_errors, msg:
+        except ftplib.all_errors:
             raise FTPStorageException('Error getting listing for %s' % path)
 
     def listdir(self, path):
@@ -162,7 +175,7 @@ class FTPStorage(Storage):
         try:
             dirs, files = self._get_dir_details(path)
             return dirs.keys(), files.keys()
-        except FTPStorageException, e:
+        except FTPStorageException:
             raise
 
     def delete(self, name):
@@ -171,23 +184,26 @@ class FTPStorage(Storage):
         self._start_connection()
         try:
             self._connection.delete(name)
-        except ftplib.all_errors, e:
-            raise FTPStorageException('Error when removing %s' % name)                 
+        except ftplib.all_errors:
+            raise FTPStorageException('Error when removing %s' % name)
 
     def exists(self, name):
         self._start_connection()
         try:
-            if os.path.basename(name) in self._connection.nlst(os.path.dirname(name) + '/'):
+            if os.path.basename(name) in self._connection.nlst(
+                os.path.dirname(name) + '/'
+            ):
                 return True
             else:
                 return False
-        except ftplib.error_temp, e:
+        except ftplib.error_temp:
             return False
-        except ftplib.error_perm, e:
+        except ftplib.error_perm:
             # error_perm: 550 Can't find file
             return False
-        except ftplib.all_errors, e:
-            raise FTPStorageException('Error when testing existence of %s' % name)            
+        except ftplib.all_errors:
+            raise FTPStorageException('Error when testing existence of %s'
+                                      % name)
 
     def size(self, name):
         self._start_connection()
@@ -197,13 +213,14 @@ class FTPStorage(Storage):
                 return files[os.path.basename(name)]
             else:
                 return 0
-        except FTPStorageException, e:
+        except FTPStorageException:
             return 0
 
     def url(self, name):
         if self._base_url is None:
             raise ValueError("This file is not accessible via a URL.")
         return urlparse.urljoin(self._base_url, name).replace('\\', '/')
+
 
 class FTPStorageFile(File):
     def __init__(self, name, storage, mode):
@@ -213,7 +230,7 @@ class FTPStorageFile(File):
         self._is_dirty = False
         self.file = StringIO()
         self._is_read = False
-    
+
     @property
     def size(self):
         if not hasattr(self, '_size'):
@@ -226,7 +243,7 @@ class FTPStorageFile(File):
             self.file = self._storage._read(self._name)
             self._storage._end_connection()
             self._is_read = True
-            
+
         return self.file.read(num_bytes)
 
     def write(self, content):
@@ -239,6 +256,6 @@ class FTPStorageFile(File):
     def close(self):
         if self._is_dirty:
             self._storage._start_connection()
-            self._storage._put_file(self._name, self.file.getvalue())
-            self._storage._end_connection()
+            self._storage._put_file(self._name, self)
+            self._storage.disconnect()
         self.file.close()
