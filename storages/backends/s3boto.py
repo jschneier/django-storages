@@ -236,6 +236,9 @@ class S3BotoStorage(Storage):
         content_type = getattr(content, 'content_type',
             mimetypes.guess_type(name)[0] or Key.DefaultContentType)
 
+        # setting the content_type in the key object is not enough.
+        self.headers.update({'Content-Type': content_type})
+
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
@@ -247,6 +250,7 @@ class S3BotoStorage(Storage):
             key = self.bucket.new_key(encoded_name)
         if self.preload_metadata:
             self._entries[encoded_name] = key
+
 
         key.set_metadata('Content-Type', content_type)
         key.set_contents_from_file(content, headers=headers, policy=self.acl,
