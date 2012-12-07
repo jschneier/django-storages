@@ -46,7 +46,13 @@ GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'application/javascript',
     'application/x-javascript',
 ))
+URL_PROTOCOL = getattr(settings, 'AWS_S3_URL_PROTOCOL', 'http:')
 
+# Backward-compatibility: given the anteriority of the SECURE_URL setting
+# we fall back to https if specified in order to avoid the construction
+# of unsecure urls.
+if SECURE_URLS:
+    URL_PROTOCOL = 'https:'
 
 if IS_GZIPPED:
     from gzip import GzipFile
@@ -107,6 +113,7 @@ class S3BotoStorage(Storage):
             encryption=ENCRYPTION,
             custom_domain=CUSTOM_DOMAIN,
             secure_urls=SECURE_URLS,
+            url_protocol=URL_PROTOCOL,
             location=LOCATION,
             file_name_charset=FILE_NAME_CHARSET,
             preload_metadata=PRELOAD_METADATA,
@@ -124,6 +131,7 @@ class S3BotoStorage(Storage):
         self.encryption = encryption
         self.custom_domain = custom_domain
         self.secure_urls = secure_urls
+        self.url_protocol = url_protocol
         self.location = location or ''
         self.location = self.location.lstrip('/')
         self.file_name_charset = file_name_charset
@@ -329,8 +337,8 @@ class S3BotoStorage(Storage):
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
-            return "%s://%s/%s" % ('https' if self.secure_urls else 'http',
-                                   self.custom_domain, name)
+            return "%s//%s/%s" % (self.url_protocol,
+                                  self.custom_domain, name)
         return self.connection.generate_url(self.querystring_expire,
             method='GET', bucket=self.bucket.name, key=self._encode_name(name),
             query_auth=self.querystring_auth, force_http=not self.secure_urls)
