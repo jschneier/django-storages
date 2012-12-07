@@ -16,7 +16,7 @@ except ImportError:
 
 try:
     from libcloud.storage.providers import get_driver
-    from libcloud.storage.types import ObjectDoesNotExistError
+    from libcloud.storage.types import ObjectDoesNotExistError, Provider
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
 
@@ -24,20 +24,30 @@ except ImportError:
 class LibCloudStorage(Storage):
     """Django storage derived class using apache libcloud to operate
     on supported providers"""
-    def __init__(self, provider_name, option=None):
+    def __init__(self, provider_name=None, option=None):
+        if provider_name is None:
+            provider_name = getattr(settings, 'DEFAULT_LIBCLOUD_PROVIDER', 'default')
+
         self.provider = settings.LIBCLOUD_PROVIDERS.get(provider_name)
         if not self.provider:
             raise ImproperlyConfigured(
-                'LIBCLOUD_PROVIDERS %s not define or invalid' % provider_name)
+                'LIBCLOUD_PROVIDERS %s not defined or invalid' % provider_name)
         try:
-            Driver = get_driver(self.provider['type'])
+            provider_type = self.provider['type']
+            if isinstance(provider_type, basestring):
+                module_path, tag = provider_type.rsplit('.', 1)
+                if module_path != 'libcloud.storage.types.Provider':
+                    raise ValueError("Invalid module path")
+                provider_type = getattr(Provider, tag)
+
+            Driver = get_driver(provider_type)
             self.driver = Driver(
                 self.provider['user'],
                 self.provider['key'],
                 )
         except Exception, e:
             raise ImproperlyConfigured(
-                "Unable to create libcloud driver type %s" % \
+                "Unable to create libcloud driver type %s: %s" % \
                 (self.provider.get('type'), e))
         self.bucket = self.provider['bucket']   # Limit to one container
 
@@ -54,11 +64,11 @@ class LibCloudStorage(Storage):
         clean_name = self._clean_name(name)
         try:
             return self.driver.get_object(self.bucket, clean_name)
-        except ObjectDoesNotExistError, e:
+        except ObjectDoesNotExistError:
             return None
 
     def delete(self, name):
-        """Delete objet on remote"""
+        """Delete object on remote"""
         obj = self._get_object(name)
         if obj:
             return self.driver.delete_object(obj)
@@ -124,11 +134,12 @@ class LibCloudStorage(Storage):
         return self.driver.download_object_as_stream(obj, obj.size).next()
 
     def _save(self, name, file):
-        self.driver.upload_object_via_stream(file, self._get_bucket(), name)
+        self.driver.upload_object_via_stream(iter(file), self._get_bucket(), name)
+        return name
 
 
 class LibCloudFile(File):
-    """File intherited class for libcloud storage objects read and write"""
+    """File inherited class for libcloud storage objects read and write"""
     def __init__(self, name, storage, mode):
         self._name = name
         self._storage = storage

@@ -18,8 +18,8 @@ except ImportError:
     raise ImproperlyConfigured("Could not load amazon's S3 bindings.\nSee "
         "http://developer.amazonwebservices.com/connect/entry.jspa?externalID=134")
 
-ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
-SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
+ACCESS_KEY_NAME     = getattr(settings, 'AWS_S3_ACCESS_KEY_ID', getattr(settings, 'AWS_ACCESS_KEY_ID', None))
+SECRET_KEY_NAME     = getattr(settings, 'AWS_S3_SECRET_ACCESS_KEY', getattr(settings, 'AWS_SECRET_ACCESS_KEY', None))
 HEADERS             = getattr(settings, 'AWS_HEADERS', {})
 DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_ACTIVE  = getattr(settings, 'AWS_QUERYSTRING_ACTIVE', False)
