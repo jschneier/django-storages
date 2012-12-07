@@ -14,6 +14,7 @@ except ImportError:
     raise ImproperlyConfigured, "Could not load pyodbc dependency.\
     \nSee http://code.google.com/p/pyodbc/"
 
+REQUIRED_FIELDS = ('db_table', 'fname_column', 'blob_column', 'size_column', 'base_url')
 
 class DatabaseStorage(Storage):
     """
@@ -47,10 +48,10 @@ method (another way is to open file and get size)
             Url prefix used with filenames. Should be mapped to the view,
 that returns an image as result. 
         """
-        
-        if not option or not (option.has_key('db_table') and option.has_key('fname_column') and option.has_key('blob_column')
-                              and option.has_key('size_column') and option.has_key('base_url') ):
+
+        if not option or not all([field in option for field in REQUIRED_FIELDS]):
             raise ValueError("You didn't specify required options")
+
         self.db_table = option['db_table']
         self.fname_column = option['fname_column']
         self.blob_column = option['blob_column']
