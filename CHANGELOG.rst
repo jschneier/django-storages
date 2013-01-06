@@ -1,6 +1,31 @@
 django-storages change log
 ==========================
 
+1.1.6 (2013-01-06)
+******************
+
+* Merged many changes from Jannis Leidel (mostly regarding gzipping)
+* Fixed tests by Ian Lewis
+* Added support for Google Cloud Storage backend by Jannis Leidel
+* Updated license file by Dan Loewenherz, fixes `#133`_ with pull-request `#44`_
+* Set Content-Type header for use in upload_part_from_file by Gerardo Curiel
+* Pass the rewind parameter to Boto's set_contents_from_file method by Jannis Leidel with pull-request `#45`_
+* Fix for FTPStorageFile close() method by Mathieu Comandon with pull-request `#43`_
+* Minor refactoring by Oktay Sancak with pull-request `#48`_
+* Ungzip on download based on Content-Encoding by Gavin Wahl with pull-request `#46`_
+* Add support for S3 server-side encryption by Tobias McNulty with pull-request `#17`_
+* Add an optional setting to the boto storage to produce protocol-relative URLs, fixes `#105`_
+
+.. _#133: https://bitbucket.org/david/django-storages/issue/133/license-file-refers-to-incorrect-project
+.. _#44: https://bitbucket.org/david/django-storages/pull-request/44/
+.. _#45: https://bitbucket.org/david/django-storages/pull-request/45/
+.. _#43: https://bitbucket.org/david/django-storages/pull-request/43/
+.. _#48: https://bitbucket.org/david/django-storages/pull-request/48/
+.. _#46: https://bitbucket.org/david/django-storages/pull-request/46/
+.. _#17: https://bitbucket.org/david/django-storages/pull-request/17/
+.. _#105: https://bitbucket.org/david/django-storages/issue/105/add-option-to-produce-protocol-relative
+
+
 1.1.5 (2012-07-18)
 ******************
 
