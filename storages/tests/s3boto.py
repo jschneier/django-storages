@@ -22,7 +22,7 @@ class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
     def setUp(self, S3Connection):
         self.storage = s3boto.S3BotoStorage()
-
+        self.storage._bucket = mock.MagicMock()
 
 class SafeJoinTest(TestCase):
     def test_normal(self):
@@ -61,16 +61,17 @@ class S3BotoStorageTests(S3BotoTestCase):
         key.set_metadata.assert_called_with('Content-Type', 'text/plain')
         key.set_contents_from_file.assert_called_with(
             content,
-            headers={},
-            policy=self.storage.acl,
+            headers={'Content-Type': 'text/plain'},
+            policy=self.storage.default_acl,
             reduced_redundancy=self.storage.reduced_redundancy,
+            rewind=True
         )
 
     def test_storage_save_gzip(self):
         """
         Test saving a file with gzip enabled.
         """
-        if not s3boto.IS_GZIPPED:  # Gzip not available.
+        if not s3boto.S3BotoStorage.gzip:  # Gzip not available.
             return
         name = 'test_storage_save.css'
         content = ContentFile("I should be gzip'd")
@@ -79,16 +80,17 @@ class S3BotoStorageTests(S3BotoTestCase):
         key.set_metadata.assert_called_with('Content-Type', 'text/css')
         key.set_contents_from_file.assert_called_with(
             content,
-            headers={'Content-Encoding': 'gzip'},
-            policy=self.storage.acl,
+            headers={'Content-Type': 'text/css', 'Content-Encoding': 'gzip'},
+            policy=self.storage.default_acl,
             reduced_redundancy=self.storage.reduced_redundancy,
+            rewind=True,
         )
 
     def test_compress_content_len(self):
         """
         Test that file returned by _compress_content() is readable.
         """
-        if not s3boto.IS_GZIPPED:  # Gzip not available.
+        if not s3boto.S3BotoStorage.gzip:  # Gzip not available.
             return
         content = ContentFile("I should be gzip'd")
         content = self.storage._compress_content(content)
