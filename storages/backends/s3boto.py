@@ -342,6 +342,7 @@ class S3BotoStorage(Storage):
             zfile.write(content.read())
         finally:
             zfile.close()
+        zbuf.seek(0)
         content.file = zbuf
         content.seek(0)
         return content
