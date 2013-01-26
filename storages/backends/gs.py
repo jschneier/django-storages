@@ -1,3 +1,8 @@
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO  # noqa
+
 from django.core.exceptions import ImproperlyConfigured
 
 from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile, setting
@@ -12,7 +17,20 @@ except ImportError:
 
 
 class GSBotoStorageFile(S3BotoStorageFile):
-    buffer_size = setting('GS_FILE_BUFFER_SIZE', 5242880)
+
+    def write(self, content):
+        if 'w' not in self._mode:
+            raise AttributeError("File was not opened in write mode.")
+        self.file = StringIO(content)
+        self._is_dirty = True
+
+    def close(self):
+        if self._is_dirty:
+            provider = self.key.bucket.connection.provider
+            upload_headers = {provider.acl_header: self._storage.default_acl}
+            upload_headers.update(self._storage.headers)
+            self._storage._save_content(self.key, self.file, upload_headers)
+        self.key.close()
 
 
 class GSBotoStorage(S3BotoStorage):
