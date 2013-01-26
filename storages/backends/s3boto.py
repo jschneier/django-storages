@@ -306,7 +306,8 @@ class S3BotoStorage(Storage):
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
                                        "can be automatically created by "
-                                       "setting appropriate setting." % name)
+                                       "setting AWS_AUTO_CREATE_BUCKET to "
+                                       "``True``." % name)
 
     def _clean_name(self, name):
         """

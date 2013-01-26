@@ -94,4 +94,5 @@ class GSBotoStorage(S3BotoStorage):
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
                                        "can be automatically created by "
-                                       "setting appropriate setting." % name)
+                                       "setting GS_AUTO_CREATE_BUCKET to "
+                                       "``True``." % name)
