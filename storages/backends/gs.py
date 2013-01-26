@@ -39,17 +39,20 @@ class GSBotoStorage(S3BotoStorage):
     file_class = GSBotoStorageFile
     key_class = GSKey
 
+    access_key_names = ['GS_ACCESS_KEY_ID']
+    secret_key_names = ['GS_SECRET_ACCESS_KEY']
+
     access_key = setting('GS_ACCESS_KEY_ID')
     secret_key = setting('GS_SECRET_ACCESS_KEY')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
     headers = setting('GS_HEADERS', {})
-    storage_bucket_name = setting('GS_BUCKET_NAME', None)
+    bucket_name = setting('GS_BUCKET_NAME', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     default_acl = setting('GS_DEFAULT_ACL', 'public-read')
     bucket_acl = setting('GS_BUCKET_ACL', default_acl)
     querystring_auth = setting('GS_QUERYSTRING_AUTH', True)
     querystring_expire = setting('GS_QUERYSTRING_EXPIRE', 3600)
-    reduced_redundancy = setting('GS_REDUCED_REDUNDANCY', False)
+    durable_reduced_availability = setting('GS_DURABLE_REDUCED_AVAILABILITY', False)
     location = setting('GS_LOCATION', '')
     custom_domain = setting('GS_CUSTOM_DOMAIN')
     calling_format = setting('GS_CALLING_FORMAT', SubdomainCallingFormat())
@@ -63,3 +66,32 @@ class GSBotoStorage(S3BotoStorage):
         'application/x-javascript',
     ))
     url_protocol = setting('GS_URL_PROTOCOL', 'http:')
+
+    def _save_content(self, key, content, headers):
+        # only pass backwards incompatible arguments if they vary from the default
+        options = {}
+        if self.encryption:
+            options['encrypt_key'] = self.encryption
+        key.set_contents_from_file(content, headers=headers,
+                                   policy=self.default_acl,
+                                   rewind=True, **options)
+
+    def _get_or_create_bucket(self, name):
+        """
+        Retrieves a bucket if it exists, otherwise creates it.
+        """
+        if self.durable_reduced_availability:
+            storage_class = 'DURABLE_REDUCED_AVAILABILITY'
+        else:
+            storage_class = 'STANDARD'
+        try:
+            return self.connection.get_bucket(name,
+                validate=self.auto_create_bucket)
+        except self.connection_response_error:
+            if self.auto_create_bucket:
+                bucket = self.connection.create_bucket(name, storage_class=storage_class)
+                bucket.set_acl(self.bucket_acl)
+                return bucket
+            raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
+                                       "can be automatically created by "
+                                       "setting appropriate setting." % name)
