@@ -14,12 +14,19 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.encoding import force_unicode, smart_str
 
 try:
+    from boto import __version__ as boto_version
     from boto.s3.connection import S3Connection, SubdomainCallingFormat
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
 except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
+
+boto_version_info = tuple([int(i) for i in boto_version.split('.')])
+
+if boto_version_info[:2] < (2, 4):
+    raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
+                               "higher.\nSee https://github.com/boto/boto")
 
 
 def setting(name, default=None):
