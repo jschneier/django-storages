@@ -19,6 +19,7 @@ By order of apparition, thanks:
     * Waldemar Kornewald (MongoDB)
     * Russell Keith-Magee (Apache LibCloud patches)
     * Jannis Leidel (S3 and GS with Boto)
+    * Andrei Coman (Azure)
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
