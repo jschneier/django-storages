@@ -18,6 +18,7 @@ try:
     from boto.s3.connection import S3Connection, SubdomainCallingFormat
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
+    from boto.utils import parse_ts
 except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
@@ -440,24 +441,14 @@ class S3BotoStorage(Storage):
         return self.bucket.get_key(self._encode_name(name)).size
 
     def modified_time(self, name):
-        try:
-            from dateutil import parser, tz
-        except ImportError:
-            raise NotImplementedError()
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
         # only call self.bucket.get_key() if the key is not found
         # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
-        # convert to string to date
-        last_modified_date = parser.parse(entry.last_modified)
-        # if the date has no timzone, assume UTC
-        if last_modified_date.tzinfo == None:
-            last_modified_date = last_modified_date.replace(tzinfo=tz.tzutc())
-        # convert date to local time w/o timezone
-        timezone = tz.gettz(settings.TIME_ZONE)
-        return last_modified_date.astimezone(timezone).replace(tzinfo=None)
+        # Parse the last_modified string to a local datetime object.
+        return parse_ts(entry.last_modified)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
