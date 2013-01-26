@@ -192,6 +192,10 @@ class S3BotoStorage(Storage):
     file_class = S3BotoStorageFile
     key_class = S3Key
 
+    # used for looking up the access and secret key from env vars
+    access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
+    secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
+
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
     file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
@@ -279,19 +283,14 @@ class S3BotoStorage(Storage):
         are provided to the class in the constructor or in the
         settings then get them from the environment variables.
         """
-        access_key = self.access_key
-        secret_key = self.secret_key
-
-        if (access_key or secret_key) and (not access_key or not secret_key):
-            # TODO: this seems to be broken
-            access_key = os.environ.get(self.access_key)
-            secret_key = os.environ.get(self.secret_key)
-
-        if access_key and secret_key:
-            # Both were provided, so use them
-            return access_key, secret_key
-
-        return None, None
+        def lookup_env(names):
+            for name in names:
+                value = os.environ.get(name)
+                if value:
+                    return value
+        access_key = self.access_key or lookup_env(self.access_key_names)
+        secret_key = self.secret_key or lookup_env(self.secret_key_names)
+        return access_key, secret_key
 
     def _get_or_create_bucket(self, name):
         """
@@ -349,7 +348,7 @@ class S3BotoStorage(Storage):
 
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
-        f = S3BotoStorageFile(name, mode, self)
+        f = self.file_class(name, mode, self)
         if not f.key:
             raise IOError('File does not exist: %s' % name)
         return f
@@ -377,6 +376,10 @@ class S3BotoStorage(Storage):
             self._entries[encoded_name] = key
 
         key.set_metadata('Content-Type', content_type)
+        self._save_content(key, content, headers=headers)
+        return cleaned_name
+
+    def _save_content(self, key, content, headers):
         # only pass backwards incompatible arguments if they vary from the default
         kwargs = {}
         if self.encryption:
@@ -385,7 +388,6 @@ class S3BotoStorage(Storage):
                                    policy=self.default_acl,
                                    reduced_redundancy=self.reduced_redundancy,
                                    rewind=True, **kwargs)
-        return cleaned_name
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
