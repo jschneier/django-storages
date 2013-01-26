@@ -30,9 +30,6 @@ class HashPathStorageTest(TestCase):
         saves a file twice, the file should only be stored once, because the
         content/hash is the same
         """
-        
         path_1 = self.storage.save('test', ContentFile('new content'))
-        
         path_2 = self.storage.save('test', ContentFile('new content'))
-
         self.assertEqual(path_1, path_2)
