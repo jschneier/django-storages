@@ -1,6 +1,5 @@
 import os.path
 
-from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
@@ -13,13 +12,11 @@ except ImportError:
         "Could not load Azure bindings. "
         "See https://github.com/WindowsAzure/azure-sdk-for-python")
 
+from storages.util import setting
+
 
 def clean_name(name):
     return os.path.normpath(name).replace("\\", "/")
-
-
-def setting(name, default=None):
-    return getattr(settings, name, default)
 
 
 class AzureStorage(Storage):
@@ -34,8 +31,8 @@ class AzureStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = azure.storage.BlobService(self.account_name,
-                                                         self.account_key)
+            self._connection = azure.storage.BlobService(
+                self.account_name, self.account_key)
         return self._connection
 
     def _open(self, name, mode="rb"):
@@ -44,7 +41,8 @@ class AzureStorage(Storage):
 
     def exists(self, name):
         try:
-            self.connection.get_blob_properties(self.azure_container, name)
+            self.connection.get_blob_properties(
+                self.azure_container, name)
         except azure.WindowsAzureMissingResourceError:
             return False
         else:

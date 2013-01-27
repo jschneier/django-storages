@@ -7,7 +7,6 @@ try:
 except ImportError:
     from StringIO import StringIO  # noqa
 
-from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -23,19 +22,13 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
 
+from storages.util import setting
+
 boto_version_info = tuple([int(i) for i in boto_version.split('.')])
 
 if boto_version_info[:2] < (2, 4):
     raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
                                "higher.\nSee https://github.com/boto/boto")
-
-
-def setting(name, default=None):
-    """
-    Helper function to get a Django setting by name or (optionally) return
-    a default (or else ``None``).
-    """
-    return getattr(settings, name, default)
 
 
 def safe_join(base, *paths):
@@ -92,7 +85,7 @@ class S3BotoStorageFile(File):
     # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
     # TODO: When Django drops support for Python 2.5, rewrite to use the
     #       BufferedIO streams in the Python 2.6 io module.
-    buffer_size = getattr(settings, 'AWS_S3_FILE_BUFFER_SIZE', 5242880)
+    buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
         self._storage = storage
