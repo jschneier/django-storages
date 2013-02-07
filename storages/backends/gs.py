@@ -6,7 +6,7 @@ except ImportError:
 from django.core.exceptions import ImproperlyConfigured
 
 from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile
-from storages.util import setting
+from storages.utils import setting
 
 try:
     from boto.gs.connection import GSConnection, SubdomainCallingFormat
