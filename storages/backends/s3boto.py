@@ -22,7 +22,7 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
 
-from storages.util import setting
+from storages.utils import setting
 
 boto_version_info = tuple([int(i) for i in boto_version.split('.')])
 

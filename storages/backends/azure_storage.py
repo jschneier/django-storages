@@ -12,7 +12,7 @@ except ImportError:
         "Could not load Azure bindings. "
         "See https://github.com/WindowsAzure/azure-sdk-for-python")
 
-from storages.util import setting
+from storages.utils import setting
 
 
 def clean_name(name):
