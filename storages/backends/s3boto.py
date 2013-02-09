@@ -275,7 +275,7 @@ class S3BotoStorage(Storage):
         """
         if self.preload_metadata and not self._entries:
             self._entries = dict((self._decode_name(entry.key), entry)
-                                for entry in self.bucket.list())
+                                for entry in self.bucket.list(prefix=self.location))
         return self._entries
 
     def _get_access_keys(self):
