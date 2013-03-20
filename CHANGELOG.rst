@@ -1,6 +1,19 @@
 django-storages change log
 ==========================
 
+1.1.7 (2013-03-20)
+******************
+
+* Listing of huge buckets on S3 is now prevented by using the prefix argument to boto's list() method
+* Initial support for Windows Azure Storage
+* Switched to useing boto's parse_ts date parser getting last modified info when using S3boto backend
+* Fixed key handling in S3boto and Google Storage backends
+* Account for lack of multipart upload in Google Storage backend
+* Fixed seek() issue when using AWS_IS_GZIPPED by darkness51 with pull-request `#50`_
+* Improvements to S3BotoStorage and GSBotoStorage
+
+.. _#50: https://bitbucket.org/david/django-storages/pull-request/50/
+
 1.1.6 (2013-01-06)
 ******************
 
