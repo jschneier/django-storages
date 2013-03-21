@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Photos in database</h1>
+{% if object_list %}
+<ul>{% spaceless %}
+    {% for object in object_list %}
+    <li>{{ object.image.url }}</li>
+    {% endfor %}
+{% endspaceless %}</ul>
+{% else %}
+<p>No photos exist.</p>
+{% endif %}
+{% endblock %}
