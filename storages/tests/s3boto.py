@@ -2,6 +2,7 @@ import os
 import mock
 from uuid import uuid4
 from urllib2 import urlopen
+import datetime
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
@@ -13,10 +14,16 @@ from boto.s3.key import Key
 from storages.backends import s3boto
 
 __all__ = (
+    'ParseTsExtendedCase',
     'SafeJoinTest',
     'S3BotoStorageTests',
     #'S3BotoStorageFileTests',
 )
+
+class ParseTsExtendedCase(TestCase):
+    def test_normal(self):
+        value = s3boto.parse_ts_extended("Wed, 13 Mar 2013 12:45:49 GMT")
+        self.assertEquals(value, datetime.datetime(2013, 3, 13, 12, 45, 49))
 
 class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')

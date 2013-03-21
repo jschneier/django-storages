@@ -1,6 +1,7 @@
 import os
 import mimetypes
 from gzip import GzipFile
+import datetime
 
 try:
     from cStringIO import StringIO
@@ -29,6 +30,16 @@ boto_version_info = tuple([int(i) for i in boto_version.split('.')])
 if boto_version_info[:2] < (2, 4):
     raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
                                "higher.\nSee https://github.com/boto/boto")
+
+
+def parse_ts_extended(ts):
+    RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
+    rv = None
+    try:
+        rv = parse_ts(ts)
+    except ValueError:
+        rv = datetime.datetime.strptime(ts, RFC1123)
+    return rv
 
 
 def safe_join(base, *paths):
@@ -441,7 +452,7 @@ class S3BotoStorage(Storage):
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
         # Parse the last_modified string to a local datetime object.
-        return parse_ts(entry.last_modified)
+        return parse_ts_extended(entry.last_modified)
 
     def url(self, name):
         name = self._normalize_name(self._clean_name(name))
