@@ -238,7 +238,7 @@ class S3BotoStorage(Storage):
         # check if some of the settings we've provided as class attributes
         # need to be overwritten with values passed in here
         for name, value in settings.items():
-            if name in self.__dict__:
+            if hasattr(self, name):
                 setattr(self, name, value)
 
         # For backward-compatibility of old differing parameter names
