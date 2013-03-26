@@ -234,6 +234,7 @@ class S3BotoStorage(Storage):
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
     host = setting('AWS_S3_HOST', None)
+    use_ssl = setting('AWS_S3_USE_SSL', True)
     port = setting('AWS_S3_PORT', None)
 
     def __init__(self, acl=None, bucket=None, **settings):
@@ -271,6 +272,7 @@ class S3BotoStorage(Storage):
                 self._connection = self.connection_class(
                     self.access_key,
                     self.secret_key,
+                    is_secure=self.use_ssl,
                     calling_format=self.calling_format
                 )
             else:
@@ -278,6 +280,7 @@ class S3BotoStorage(Storage):
                 self._connection = self.connection_class(
                     self.access_key,
                     self.secret_key,
+                    is_secure=self.use_ssl,
                     calling_format=self.calling_format,
                     host=self.host,
                     port=self.port
