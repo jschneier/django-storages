@@ -233,6 +233,8 @@ class S3BotoStorage(Storage):
         'application/x-javascript',
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
+    host = setting('AWS_S3_HOST', None)
+    port = setting('AWS_S3_PORT', None)
 
     def __init__(self, acl=None, bucket=None, **settings):
         # check if some of the settings we've provided as class attributes
@@ -264,9 +266,22 @@ class S3BotoStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = self.connection_class(
-                self.access_key, self.secret_key,
-                calling_format=self.calling_format)
+            if self.host is None:
+                # Using real Amazon S3 server
+                self._connection = self.connection_class(
+                    self.access_key,
+                    self.secret_key,
+                    calling_format=self.calling_format
+                )
+            else:
+                # Using custom S3 server
+                self._connection = self.connection_class(
+                    self.access_key,
+                    self.secret_key,
+                    calling_format=self.calling_format,
+                    host=self.host,
+                    port=self.port
+                )
         return self._connection
 
     @property
