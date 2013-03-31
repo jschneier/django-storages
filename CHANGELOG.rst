@@ -1,6 +1,15 @@
 django-storages change log
 ==========================
 
+1.1.8 (2013-03-31)
+******************
+
+* Fixes `#156`_ regarding date parsing, ValueError when running collectstatic
+* Proper handling of boto dev version parsing
+* Made SFTP URLs accessible, now uses settings.MEDIA_URL instead of sftp://
+
+.. _#156: https://bitbucket.org/david/django-storages/issue/156/s3boto-backend-valueerror-time-data-thu-07
+
 1.1.7 (2013-03-20)
 ******************
 
