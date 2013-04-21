@@ -127,7 +127,12 @@ class S3BotoStorageFile(File):
 
     def _get_file(self):
         if self._file is None:
-            self._file = SpooledTemporaryFile(max_size=self._storage.file_max_size)
+            kwargs = {
+                "max_size": self._storage.file_max_size,
+                "suffix": ".S3BotoStorageFile",
+                "dir": setting("FILE_UPLOAD_TEMP_DIR", None)
+            }
+            self._file = SpooledTemporaryFile(**kwargs)
             if 'r' in self._mode:
                 self._is_dirty = False
                 self.key.get_contents_to_file(self._file)
