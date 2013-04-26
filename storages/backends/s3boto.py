@@ -11,7 +11,7 @@ except ImportError:
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.encoding import force_unicode, smart_str
+from django.utils.encoding import force_unicode, smart_str, filepath_to_uri
 
 try:
     from boto import __version__ as boto_version
@@ -458,7 +458,7 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
-                                  self.custom_domain, name)
+                                  self.custom_domain, filepath_to_uri(name))
         return self.connection.generate_url(self.querystring_expire,
             method='GET', bucket=self.bucket.name, key=self._encode_name(name),
             query_auth=self.querystring_auth, force_http=not self.secure_urls)
