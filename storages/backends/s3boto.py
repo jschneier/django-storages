@@ -25,7 +25,7 @@ except ImportError:
 
 from storages.utils import setting
 
-boto_version_info = tuple([int(i) for i in boto_version.split('.')])
+boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
 if boto_version_info[:2] < (2, 4):
     raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
