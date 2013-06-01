@@ -1,13 +1,9 @@
-import os
 import mock
-from uuid import uuid4
-from urllib2 import urlopen
 import datetime
+import urlparse
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
 
 from boto.s3.key import Key
 
@@ -53,7 +49,16 @@ class SafeJoinTest(TestCase):
         self.assertRaises(ValueError,
             s3boto.safe_join, "base", "../../../../../../../etc/passwd")
 
+
 class S3BotoStorageTests(S3BotoTestCase):
+
+    def test_generated_url_is_encoded(self):
+        self.storage.custom_domain = "mock.cloudfront.net"
+        filename = "whacky & filename.mp4"
+        url = self.storage.url(filename)
+        parsed_url = urlparse.urlparse(url)
+        self.assertEqual(parsed_url.path,
+                         "/whacky%20%26%20filename.mp4")
 
     def test_storage_save(self):
         """
