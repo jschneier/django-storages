@@ -233,6 +233,9 @@ class S3BotoStorage(Storage):
         'application/x-javascript',
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
+    host = setting('AWS_S3_HOST', S3Connection.DefaultHost)
+    use_ssl = setting('AWS_S3_USE_SSL', True)
+    port = setting('AWS_S3_PORT', None)
 
     def __init__(self, acl=None, bucket=None, **settings):
         # check if some of the settings we've provided as class attributes
@@ -265,8 +268,13 @@ class S3BotoStorage(Storage):
     def connection(self):
         if self._connection is None:
             self._connection = self.connection_class(
-                self.access_key, self.secret_key,
-                calling_format=self.calling_format)
+                self.access_key,
+                self.secret_key,
+                is_secure=self.use_ssl,
+                calling_format=self.calling_format,
+                host=self.host,
+                port=self.port,
+            )
         return self._connection
 
     @property
@@ -454,14 +462,16 @@ class S3BotoStorage(Storage):
         # Parse the last_modified string to a local datetime object.
         return parse_ts_extended(entry.last_modified)
 
-    def url(self, name):
+    def url(self, name, headers=None, response_headers=None):
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
         return self.connection.generate_url(self.querystring_expire,
             method='GET', bucket=self.bucket.name, key=self._encode_name(name),
-            query_auth=self.querystring_auth, force_http=not self.secure_urls)
+            headers=headers,
+            query_auth=self.querystring_auth, force_http=not self.secure_urls,
+            response_headers=response_headers)
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
