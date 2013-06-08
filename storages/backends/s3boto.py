@@ -463,7 +463,9 @@ class S3BotoStorage(Storage):
         return parse_ts_extended(entry.last_modified)
 
     def url(self, name, headers=None, response_headers=None):
-        name = self._normalize_name(self._clean_name(name))
+        # Preserve the trailing slash after normalizing the path.
+        trailing_slash = '/' if name and name[-1] == '/' else ''
+        name = self._normalize_name(self._clean_name(name)) + trailing_slash
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
