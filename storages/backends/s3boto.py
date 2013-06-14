@@ -464,7 +464,7 @@ class S3BotoStorage(Storage):
 
     def url(self, name, headers=None, response_headers=None):
         # Preserve the trailing slash after normalizing the path.
-        trailing_slash = '/' if name and name[-1] == '/' else ''
+        trailing_slash = '/' if name.endswith('/') else ''
         name = self._normalize_name(self._clean_name(name)) + trailing_slash
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
