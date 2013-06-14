@@ -1,5 +1,6 @@
 import mock
 import datetime
+import urlparse
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
@@ -208,6 +209,14 @@ class S3BotoStorageTests(S3BotoTestCase):
             headers=None,
             response_headers=None,
         )
+
+    def test_generated_url_is_encoded(self):
+        self.storage.custom_domain = "mock.cloudfront.net"
+        filename = "whacky & filename.mp4"
+        url = self.storage.url(filename)
+        parsed_url = urlparse.urlparse(url)
+        self.assertEqual(parsed_url.path,
+                         "/whacky%20%26%20filename.mp4")
         
 #class S3BotoStorageFileTests(S3BotoTestCase):
 #    def test_multipart_upload(self):
