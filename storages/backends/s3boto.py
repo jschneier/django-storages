@@ -1,57 +1,45 @@
 import os
-import re
-import time
 import mimetypes
-import calendar
-from datetime import datetime
+from gzip import GzipFile
+import datetime
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO  # noqa
 
-from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.encoding import force_unicode, smart_str
+from django.utils.encoding import force_unicode, smart_str, filepath_to_uri
 
 try:
+    from boto import __version__ as boto_version
     from boto.s3.connection import S3Connection, SubdomainCallingFormat
     from boto.exception import S3ResponseError
-    from boto.s3.key import Key
+    from boto.s3.key import Key as S3Key
+    from boto.utils import parse_ts
 except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
-                               "See http://code.google.com/p/boto/")
+                               "See https://github.com/boto/boto")
 
-ACCESS_KEY_NAME = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
-SECRET_KEY_NAME = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
-HEADERS = getattr(settings, 'AWS_HEADERS', {})
-STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
-AUTO_CREATE_BUCKET = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', False)
-DEFAULT_ACL = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
-BUCKET_ACL = getattr(settings, 'AWS_BUCKET_ACL', DEFAULT_ACL)
-QUERYSTRING_AUTH = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
-QUERYSTRING_EXPIRE = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
-REDUCED_REDUNDANCY = getattr(settings, 'AWS_REDUCED_REDUNDANCY', False)
-LOCATION = getattr(settings, 'AWS_LOCATION', '')
-CUSTOM_DOMAIN = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', None)
-CALLING_FORMAT = getattr(settings, 'AWS_S3_CALLING_FORMAT',
-                         SubdomainCallingFormat())
-SECURE_URLS = getattr(settings, 'AWS_S3_SECURE_URLS', True)
-FILE_NAME_CHARSET = getattr(settings, 'AWS_S3_FILE_NAME_CHARSET', 'utf-8')
-FILE_OVERWRITE = getattr(settings, 'AWS_S3_FILE_OVERWRITE', True)
-FILE_BUFFER_SIZE = getattr(settings, 'AWS_S3_FILE_BUFFER_SIZE', 5242880)
-IS_GZIPPED = getattr(settings, 'AWS_IS_GZIPPED', False)
-PRELOAD_METADATA = getattr(settings, 'AWS_PRELOAD_METADATA', False)
-GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
-    'text/css',
-    'application/javascript',
-    'application/x-javascript',
-))
+from storages.utils import setting
 
-if IS_GZIPPED:
-    from gzip import GzipFile
+boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
+
+if boto_version_info[:2] < (2, 4):
+    raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
+                               "higher.\nSee https://github.com/boto/boto")
+
+
+def parse_ts_extended(ts):
+    RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
+    rv = None
+    try:
+        rv = parse_ts(ts)
+    except ValueError:
+        rv = datetime.datetime.strptime(ts, RFC1123)
+    return rv
 
 
 def safe_join(base, *paths):
@@ -80,88 +68,214 @@ def safe_join(base, *paths):
     # the final path is '/' (or nothing, in which case final_path must be
     # equal to base_path).
     base_path_len = len(base_path)
-    if not final_path.startswith(base_path) \
-       or final_path[base_path_len:base_path_len + 1] not in ('', '/'):
+    if (not final_path.startswith(base_path) or
+            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
         raise ValueError('the joined path is located outside of the base path'
                          ' component')
 
     return final_path.lstrip('/')
 
-# Dates returned from S3's API look something like this:
-# "Sun, 11 Mar 2012 17:01:41 GMT"
-MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-DATESTR_RE = re.compile(r"^.+, (?P<day>\d{1,2}) (?P<month_name>%s) (?P<year>\d{4}) (?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2}) (GMT|UTC)$" % ("|".join(MONTH_NAMES)))
-def _parse_datestring(dstr):
-    """
-    Parse a simple datestring returned by the S3 API and returns
-    a datetime object in the local timezone.
-    """
-    # This regular expression and thus this function
-    # assumes the date is GMT/UTC
-    m = DATESTR_RE.match(dstr)
-    if m:
-        # This code could raise a ValueError if there is some
-        # bad data or the date is invalid.
-        datedict = m.groupdict()
-        utc_datetime = datetime(
-            int(datedict['year']),
-            int(MONTH_NAMES.index(datedict['month_name'])) + 1,
-            int(datedict['day']),
-            int(datedict['hour']),
-            int(datedict['minute']),
-            int(datedict['second']),
-        )
 
-        # Convert the UTC datetime object to local time.
-        return datetime(*time.localtime(calendar.timegm(utc_datetime.timetuple()))[:6])
-    else:
-        raise ValueError("Could not parse date string: " + dstr)
+class S3BotoStorageFile(File):
+    """
+    The default file object used by the S3BotoStorage backend.
+
+    This file implements file streaming using boto's multipart
+    uploading functionality. The file can be opened in read or
+    write mode.
+
+    This class extends Django's File class. However, the contained
+    data is only the data contained in the current buffer. So you
+    should not access the contained file object directly. You should
+    access the data via this class.
+
+    Warning: This file *must* be closed using the close() method in
+    order to properly write the file to S3. Be sure to close the file
+    in your application.
+    """
+    # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
+    # TODO: When Django drops support for Python 2.5, rewrite to use the
+    #       BufferedIO streams in the Python 2.6 io module.
+    buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
+
+    def __init__(self, name, mode, storage, buffer_size=None):
+        self._storage = storage
+        self.name = name[len(self._storage.location):].lstrip('/')
+        self._mode = mode
+        self.key = storage.bucket.get_key(self._storage._encode_name(name))
+        if not self.key and 'w' in mode:
+            self.key = storage.bucket.new_key(storage._encode_name(name))
+        self._is_dirty = False
+        self._file = None
+        self._multipart = None
+        # 5 MB is the minimum part size (if there is more than one part).
+        # Amazon allows up to 10,000 parts.  The default supports uploads
+        # up to roughly 50 GB.  Increase the part size to accommodate
+        # for files larger than this.
+        if buffer_size is not None:
+            self.buffer_size = buffer_size
+        self._write_counter = 0
+
+    @property
+    def size(self):
+        return self.key.size
+
+    def _get_file(self):
+        if self._file is None:
+            self._file = StringIO()
+            if 'r' in self._mode:
+                self._is_dirty = False
+                self.key.get_contents_to_file(self._file)
+                self._file.seek(0)
+            if self._storage.gzip and self.key.content_encoding == 'gzip':
+                self._file = GzipFile(mode=self._mode, fileobj=self._file)
+        return self._file
+
+    def _set_file(self, value):
+        self._file = value
+
+    file = property(_get_file, _set_file)
+
+    def read(self, *args, **kwargs):
+        if 'r' not in self._mode:
+            raise AttributeError("File was not opened in read mode.")
+        return super(S3BotoStorageFile, self).read(*args, **kwargs)
+
+    def write(self, *args, **kwargs):
+        if 'w' not in self._mode:
+            raise AttributeError("File was not opened in write mode.")
+        self._is_dirty = True
+        if self._multipart is None:
+            provider = self.key.bucket.connection.provider
+            upload_headers = {
+                provider.acl_header: self._storage.default_acl
+            }
+            upload_headers.update(self._storage.headers)
+            self._multipart = self._storage.bucket.initiate_multipart_upload(
+                self.key.name,
+                headers=upload_headers,
+                reduced_redundancy=self._storage.reduced_redundancy
+            )
+        if self.buffer_size <= self._buffer_file_size:
+            self._flush_write_buffer()
+        return super(S3BotoStorageFile, self).write(*args, **kwargs)
+
+    @property
+    def _buffer_file_size(self):
+        pos = self.file.tell()
+        self.file.seek(0, os.SEEK_END)
+        length = self.file.tell()
+        self.file.seek(pos)
+        return length
+
+    def _flush_write_buffer(self):
+        """
+        Flushes the write buffer.
+        """
+        if self._buffer_file_size:
+            self._write_counter += 1
+            self.file.seek(0)
+            headers = self._storage.headers.copy()
+            self._multipart.upload_part_from_file(
+                self.file, self._write_counter, headers=headers)
+            self.file.close()
+            self._file = None
+
+    def close(self):
+        if self._is_dirty:
+            self._flush_write_buffer()
+            self._multipart.complete_upload()
+        else:
+            if not self._multipart is None:
+                self._multipart.cancel_upload()
+        self.key.close()
+
 
 class S3BotoStorage(Storage):
     """
     Amazon Simple Storage Service using Boto
-    
+
     This storage backend supports opening files in read or write
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
+    connection_class = S3Connection
+    connection_response_error = S3ResponseError
+    file_class = S3BotoStorageFile
+    key_class = S3Key
 
-    def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
-            secret_key=None, bucket_acl=BUCKET_ACL, acl=DEFAULT_ACL,
-            headers=HEADERS, gzip=IS_GZIPPED,
-            gzip_content_types=GZIP_CONTENT_TYPES,
-            querystring_auth=QUERYSTRING_AUTH,
-            querystring_expire=QUERYSTRING_EXPIRE,
-            reduced_redundancy=REDUCED_REDUNDANCY,
-            custom_domain=CUSTOM_DOMAIN,
-            secure_urls=SECURE_URLS,
-            location=LOCATION,
-            file_name_charset=FILE_NAME_CHARSET,
-            preload_metadata=PRELOAD_METADATA,
-            calling_format=CALLING_FORMAT):
-        self.bucket_acl = bucket_acl
-        self.bucket_name = bucket
-        self.acl = acl
-        self.headers = headers
-        self.preload_metadata = preload_metadata
-        self.gzip = gzip
-        self.gzip_content_types = gzip_content_types
-        self.querystring_auth = querystring_auth
-        self.querystring_expire = querystring_expire
-        self.reduced_redundancy = reduced_redundancy
-        self.custom_domain = custom_domain
-        self.secure_urls = secure_urls
-        self.location = location or ''
-        self.location = self.location.lstrip('/')
-        self.file_name_charset = file_name_charset
+    # used for looking up the access and secret key from env vars
+    access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
+    secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
 
-        if not access_key and not secret_key:
-            access_key, secret_key = self._get_access_keys()
+    access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
+    secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
+    file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
+    headers = setting('AWS_HEADERS', {})
+    bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
+    auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
+    default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
+    bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
+    querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
+    querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
+    reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
+    location = setting('AWS_LOCATION', '')
+    encryption = setting('AWS_S3_ENCRYPTION', False)
+    custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
+    calling_format = setting('AWS_S3_CALLING_FORMAT', SubdomainCallingFormat())
+    secure_urls = setting('AWS_S3_SECURE_URLS', True)
+    file_name_charset = setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8')
+    gzip = setting('AWS_IS_GZIPPED', False)
+    preload_metadata = setting('AWS_PRELOAD_METADATA', False)
+    gzip_content_types = setting('GZIP_CONTENT_TYPES', (
+        'text/css',
+        'application/javascript',
+        'application/x-javascript',
+    ))
+    url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
+    host = setting('AWS_S3_HOST', S3Connection.DefaultHost)
+    use_ssl = setting('AWS_S3_USE_SSL', True)
+    port = setting('AWS_S3_PORT', None)
 
-        self.connection = S3Connection(access_key, secret_key,
-            calling_format=calling_format)
+    def __init__(self, acl=None, bucket=None, **settings):
+        # check if some of the settings we've provided as class attributes
+        # need to be overwritten with values passed in here
+        for name, value in settings.items():
+            if hasattr(self, name):
+                setattr(self, name, value)
+
+        # For backward-compatibility of old differing parameter names
+        if acl is not None:
+            self.default_acl = acl
+        if bucket is not None:
+            self.bucket_name = bucket
+
+        self.location = (self.location or '').lstrip('/')
+        # Backward-compatibility: given the anteriority of the SECURE_URL setting
+        # we fall back to https if specified in order to avoid the construction
+        # of unsecure urls.
+        if self.secure_urls:
+            self.url_protocol = 'https:'
+
         self._entries = {}
+        self._bucket = None
+        self._connection = None
+
+        if not self.access_key and not self.secret_key:
+            self.access_key, self.secret_key = self._get_access_keys()
+
+    @property
+    def connection(self):
+        if self._connection is None:
+            self._connection = self.connection_class(
+                self.access_key,
+                self.secret_key,
+                is_secure=self.use_ssl,
+                calling_format=self.calling_format,
+                host=self.host,
+                port=self.port,
+            )
+        return self._connection
 
     @property
     def bucket(self):
@@ -169,7 +283,7 @@ class S3BotoStorage(Storage):
         Get the current bucket. If there is no current bucket object
         create it.
         """
-        if not hasattr(self, '_bucket'):
+        if self._bucket is None:
             self._bucket = self._get_or_create_bucket(self.bucket_name)
         return self._bucket
 
@@ -180,42 +294,40 @@ class S3BotoStorage(Storage):
         """
         if self.preload_metadata and not self._entries:
             self._entries = dict((self._decode_name(entry.key), entry)
-                                for entry in self.bucket.list())
+                                for entry in self.bucket.list(prefix=self.location))
         return self._entries
 
     def _get_access_keys(self):
         """
         Gets the access keys to use when accessing S3. If none
-        are provided to the class in the constructor or in the 
+        are provided to the class in the constructor or in the
         settings then get them from the environment variables.
         """
-        access_key = ACCESS_KEY_NAME
-        secret_key = SECRET_KEY_NAME
-        if (access_key or secret_key) and (not access_key or not secret_key):
-            # TODO: this seems to be broken
-            access_key = os.environ.get(ACCESS_KEY_NAME)
-            secret_key = os.environ.get(SECRET_KEY_NAME)
-
-        if access_key and secret_key:
-            # Both were provided, so use them
-            return access_key, secret_key
-
-        return None, None
+        def lookup_env(names):
+            for name in names:
+                value = os.environ.get(name)
+                if value:
+                    return value
+        access_key = self.access_key or lookup_env(self.access_key_names)
+        secret_key = self.secret_key or lookup_env(self.secret_key_names)
+        return access_key, secret_key
 
     def _get_or_create_bucket(self, name):
-        """Retrieves a bucket if it exists, otherwise creates it."""
+        """
+        Retrieves a bucket if it exists, otherwise creates it.
+        """
         try:
             return self.connection.get_bucket(name,
-                validate=AUTO_CREATE_BUCKET)
-        except S3ResponseError:
-            if AUTO_CREATE_BUCKET:
+                validate=self.auto_create_bucket)
+        except self.connection_response_error:
+            if self.auto_create_bucket:
                 bucket = self.connection.create_bucket(name)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
-            raise ImproperlyConfigured("Bucket specified by "
-                "AWS_STORAGE_BUCKET_NAME does not exist. "
-                "Buckets can be automatically created by setting "
-                "AWS_AUTO_CREATE_BUCKET=True")
+            raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
+                                       "can be automatically created by "
+                                       "setting AWS_AUTO_CREATE_BUCKET to "
+                                       "``True``." % name)
 
     def _clean_name(self, name):
         """
@@ -246,14 +358,18 @@ class S3BotoStorage(Storage):
         """Gzip a given string content."""
         zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
-        zfile.write(content.read())
-        zfile.close()
+        try:
+            zfile.write(content.read())
+        finally:
+            zfile.close()
+        zbuf.seek(0)
         content.file = zbuf
+        content.seek(0)
         return content
 
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
-        f = S3BotoStorageFile(name, mode, self)
+        f = self.file_class(name, mode, self)
         if not f.key:
             raise IOError('File does not exist: %s' % name)
         return f
@@ -263,7 +379,10 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(cleaned_name)
         headers = self.headers.copy()
         content_type = getattr(content, 'content_type',
-            mimetypes.guess_type(name)[0] or Key.DefaultContentType)
+            mimetypes.guess_type(name)[0] or self.key_class.DefaultContentType)
+
+        # setting the content_type in the key object is not enough.
+        headers.update({'Content-Type': content_type})
 
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
@@ -278,9 +397,18 @@ class S3BotoStorage(Storage):
             self._entries[encoded_name] = key
 
         key.set_metadata('Content-Type', content_type)
-        key.set_contents_from_file(content, headers=headers, policy=self.acl,
-                                 reduced_redundancy=self.reduced_redundancy)
+        self._save_content(key, content, headers=headers)
         return cleaned_name
+
+    def _save_content(self, key, content, headers):
+        # only pass backwards incompatible arguments if they vary from the default
+        kwargs = {}
+        if self.encryption:
+            kwargs['encrypt_key'] = self.encryption
+        key.set_contents_from_file(content, headers=headers,
+                                   policy=self.default_acl,
+                                   reduced_redundancy=self.reduced_redundancy,
+                                   rewind=True, **kwargs)
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -327,133 +455,27 @@ class S3BotoStorage(Storage):
     def modified_time(self, name):
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
+        # only call self.bucket.get_key() if the key is not found
+        # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
-
         # Parse the last_modified string to a local datetime object.
-        return _parse_datestring(entry.last_modified)
+        return parse_ts_extended(entry.last_modified)
 
-    def url(self, name):
+    def url(self, name, headers=None, response_headers=None):
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
-            return "%s://%s/%s" % ('https' if self.secure_urls else 'http',
-                                   self.custom_domain, name)
+            return "%s//%s/%s" % (self.url_protocol,
+                                  self.custom_domain, filepath_to_uri(name))
         return self.connection.generate_url(self.querystring_expire,
             method='GET', bucket=self.bucket.name, key=self._encode_name(name),
-            query_auth=self.querystring_auth, force_http=not self.secure_urls)
+            headers=headers,
+            query_auth=self.querystring_auth, force_http=not self.secure_urls,
+            response_headers=response_headers)
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
-        if FILE_OVERWRITE:
+        if self.file_overwrite:
             name = self._clean_name(name)
             return name
         return super(S3BotoStorage, self).get_available_name(name)
-
-
-class S3BotoStorageFile(File):
-    """
-    The default file object used by the S3BotoStorage backend.
-    
-    This file implements file streaming using boto's multipart
-    uploading functionality. The file can be opened in read or
-    write mode.
-
-    This class extends Django's File class. However, the contained
-    data is only the data contained in the current buffer. So you
-    should not access the contained file object directly. You should
-    access the data via this class.
-
-    Warning: This file *must* be closed using the close() method in
-    order to properly write the file to S3. Be sure to close the file
-    in your application.
-    """
-    # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
-    # TODO: When Django drops support for Python 2.5, rewrite to use the 
-    #       BufferedIO streams in the Python 2.6 io module.
-
-    def __init__(self, name, mode, storage, buffer_size=FILE_BUFFER_SIZE):
-        self._storage = storage
-        self.name = name[len(self._storage.location):].lstrip('/')
-        self._mode = mode
-        self.key = storage.bucket.get_key(self._storage._encode_name(name))
-        if not self.key and 'w' in mode:
-            self.key = storage.bucket.new_key(storage._encode_name(name))
-        self._is_dirty = False
-        self._file = None
-        self._multipart = None
-        # 5 MB is the minimum part size (if there is more than one part).
-        # Amazon allows up to 10,000 parts.  The default supports uploads
-        # up to roughly 50 GB.  Increase the part size to accommodate 
-        # for files larger than this.
-        self._write_buffer_size = buffer_size
-        self._write_counter = 0
-
-    @property
-    def size(self):
-        return self.key.size
-
-    @property
-    def file(self):
-        if self._file is None:
-            self._file = StringIO()
-            if 'r' in self._mode:
-                self._is_dirty = False
-                self.key.get_contents_to_file(self._file)
-                self._file.seek(0)
-        return self._file
-
-    def read(self, *args, **kwargs):
-        if 'r' not in self._mode:
-            raise AttributeError("File was not opened in read mode.")
-        return super(S3BotoStorageFile, self).read(*args, **kwargs)
-
-    def write(self, *args, **kwargs):
-        if 'w' not in self._mode:
-            raise AttributeError("File was not opened in write mode.")
-        self._is_dirty = True
-        if self._multipart is None:
-            provider = self.key.bucket.connection.provider
-            upload_headers = {
-                provider.acl_header: self._storage.acl
-            }
-            upload_headers.update(self._storage.headers)
-            self._multipart = self._storage.bucket.initiate_multipart_upload(
-                self.key.name,
-                headers = upload_headers,
-                reduced_redundancy = self._storage.reduced_redundancy
-            )
-        if self._write_buffer_size <= self._buffer_file_size:
-            self._flush_write_buffer()
-        return super(S3BotoStorageFile, self).write(*args, **kwargs)
-
-    @property
-    def _buffer_file_size(self):
-        pos = self.file.tell()
-        self.file.seek(0,os.SEEK_END)
-        length = self.file.tell()
-        self.file.seek(pos)
-        return length
-
-    def _flush_write_buffer(self):
-        """
-        Flushes the write buffer.
-        """
-        if self._buffer_file_size:
-            self._write_counter += 1
-            self.file.seek(0)
-            self._multipart.upload_part_from_file(
-                self.file,
-                self._write_counter,
-                headers=self._storage.headers
-            )
-            self.file.close()
-            self._file = None
-
-    def close(self):
-        if self._is_dirty:
-            self._flush_write_buffer()
-            self._multipart.complete_upload()
-        else:
-            if not self._multipart is None:
-                self._multipart.cancel_upload()
-        self.key.close()

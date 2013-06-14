@@ -17,8 +17,10 @@ By order of apparition, thanks:
     * Erik CW (S3 encryption)
     * Axel Gembe (Hash path)
     * Waldemar Kornewald (MongoDB)
+    * Russell Keith-Magee (Apache LibCloud patches)
+    * Jannis Leidel (S3 and GS with Boto)
+    * Andrei Coman (Azure)
+    * Chris Streeter (S3 with Boto)
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
-
-
