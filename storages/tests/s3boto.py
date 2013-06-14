@@ -1,4 +1,5 @@
 import mock
+import datetime
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
@@ -8,16 +9,22 @@ from boto.s3.key import Key
 from storages.backends import s3boto
 
 __all__ = (
+    'ParseTsExtendedCase',
     'SafeJoinTest',
     'S3BotoStorageTests',
     #'S3BotoStorageFileTests',
 )
 
+class ParseTsExtendedCase(TestCase):
+    def test_normal(self):
+        value = s3boto.parse_ts_extended("Wed, 13 Mar 2013 12:45:49 GMT")
+        self.assertEquals(value, datetime.datetime(2013, 3, 13, 12, 45, 49))
+
 class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
     def setUp(self, S3Connection):
         self.storage = s3boto.S3BotoStorage()
-
+        self.storage._connection = mock.MagicMock()
 
 class SafeJoinTest(TestCase):
     def test_normal(self):
@@ -40,7 +47,7 @@ class SafeJoinTest(TestCase):
     def test_suspicious_operation(self):
         self.assertRaises(ValueError,
             s3boto.safe_join, "base", "../../../../../../../etc/passwd")
-    
+
 class S3BotoStorageTests(S3BotoTestCase):
 
     def test_storage_save(self):
@@ -51,16 +58,46 @@ class S3BotoStorageTests(S3BotoTestCase):
         content = ContentFile('new content')
         self.storage.save(name, content)
         self.storage.bucket.get_key.assert_called_once_with(name)
-        
+
         key = self.storage.bucket.get_key.return_value
         key.set_metadata.assert_called_with('Content-Type', 'text/plain')
         key.set_contents_from_file.assert_called_with(
             content,
-            headers={},
-            policy=self.storage.acl,
+            headers={'Content-Type': 'text/plain'},
+            policy=self.storage.default_acl,
             reduced_redundancy=self.storage.reduced_redundancy,
+            rewind=True
         )
-    
+
+    def test_storage_save_gzip(self):
+        """
+        Test saving a file with gzip enabled.
+        """
+        if not s3boto.S3BotoStorage.gzip:  # Gzip not available.
+            return
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+        self.storage.save(name, content)
+        key = self.storage.bucket.get_key.return_value
+        key.set_metadata.assert_called_with('Content-Type', 'text/css')
+        key.set_contents_from_file.assert_called_with(
+            content,
+            headers={'Content-Type': 'text/css', 'Content-Encoding': 'gzip'},
+            policy=self.storage.default_acl,
+            reduced_redundancy=self.storage.reduced_redundancy,
+            rewind=True,
+        )
+
+    def test_compress_content_len(self):
+        """
+        Test that file returned by _compress_content() is readable.
+        """
+        if not s3boto.S3BotoStorage.gzip:  # Gzip not available.
+            return
+        content = ContentFile("I should be gzip'd")
+        content = self.storage._compress_content(content)
+        self.assertTrue(len(content.read()) > 0)
+
     def test_storage_open_write(self):
         """
         Test opening a file in write mode
@@ -73,7 +110,7 @@ class S3BotoStorageTests(S3BotoTestCase):
         # Set the mocked key's bucket
         self.storage.bucket.get_key.return_value.bucket = self.storage.bucket
         # Set the name of the mock object
-        self.storage.bucket.get_key.return_value.name = name 
+        self.storage.bucket.get_key.return_value.name = name
 
         file = self.storage.open(name, 'w')
         self.storage.bucket.get_key.assert_called_with(name)
@@ -120,13 +157,13 @@ class S3BotoStorageTests(S3BotoTestCase):
 
         self.assertEqual(len(dirs), 2)
         for directory in ["some", "other"]:
-            self.assertTrue(directory in dirs, 
+            self.assertTrue(directory in dirs,
                             """ "%s" not in directory list "%s".""" % (
                                 directory, dirs))
-            
+
         self.assertEqual(len(files), 2)
         for filename in ["2.txt", "4.txt"]:
-            self.assertTrue(filename in files, 
+            self.assertTrue(filename in files,
                             """ "%s" not in file list "%s".""" % (
                                 filename, files))
 
@@ -141,11 +178,11 @@ class S3BotoStorageTests(S3BotoTestCase):
 
         dirs, files = self.storage.listdir("some/")
         self.assertEqual(len(dirs), 1)
-        self.assertTrue('path' in dirs, 
+        self.assertTrue('path' in dirs,
                         """ "path" not in directory list "%s".""" % (dirs,))
-            
+
         self.assertEqual(len(files), 1)
-        self.assertTrue('2.txt' in files, 
+        self.assertTrue('2.txt' in files,
                         """ "2.txt" not in files list "%s".""" % (files,))
 
     def test_storage_size(self):
@@ -168,6 +205,8 @@ class S3BotoStorageTests(S3BotoTestCase):
             key=name,
             query_auth=self.storage.querystring_auth,
             force_http=not self.storage.secure_urls,
+            headers=None,
+            response_headers=None,
         )
         
 #class S3BotoStorageFileTests(S3BotoTestCase):
@@ -178,23 +217,23 @@ class S3BotoStorageTests(S3BotoTestCase):
 #        f = s3boto.S3BotoStorageFile(name, mode, self.storage)
 #        content_length = 1024 * 1024# 1 MB
 #        content = 'a' * content_length
-#        
+#
 #        bytes = 0
 #        target = f._write_buffer_size * nparts
 #        while bytes < target:
 #            f.write(content)
 #            bytes += content_length
-#            
+#
 #        # make the buffer roll over so f._write_counter
 #        # is incremented
 #        f.write("finished")
-#        
+#
 #        # verify upload was multipart and correctly partitioned
 #        self.assertEqual(f._write_counter, nparts)
-#        
+#
 #        # complete the upload
 #        f.close()
-#        
+#
 #        # verify that the remaining buffered bytes were
 #        # uploaded when the file was closed.
 #        self.assertEqual(f._write_counter, nparts+1)
