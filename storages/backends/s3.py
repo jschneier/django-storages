@@ -212,9 +212,7 @@ class S3Storage(Storage):
         return content_length and int(content_length) or 0
 
     def url(self, name):
-        # Preserve the trailing slash after normalizing the path.
-        trailing_slash = '/' if name and name[-1] == '/' else ''
-        name = self._clean_name(name) + trailing_slash
+        name = self._clean_name(name)
         if QUERYSTRING_ACTIVE:
             return self.generator.generate_url('GET', self.bucket, name)
         else:

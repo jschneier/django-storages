@@ -55,6 +55,20 @@ class SafeJoinTest(TestCase):
 
 class S3BotoStorageTests(S3BotoTestCase):
 
+    def test_storage_url(self):
+        """
+        Test URL generation.
+        """
+        self.storage.custom_domain = 'example.com'
+
+        # We expect no leading slashes in the path,
+        # and trailing slashes should be preserved.
+        self.assertEqual(self.storage.url(''), 'https://example.com/')
+        self.assertEqual(self.storage.url('path'), 'https://example.com/path')
+        self.assertEqual(self.storage.url('path/'), 'https://example.com/path/')
+        self.assertEqual(self.storage.url('path/1'), 'https://example.com/path/1')
+        self.assertEqual(self.storage.url('path/1/'), 'https://example.com/path/1/')
+
     def test_storage_save(self):
         """
         Test saving a file
