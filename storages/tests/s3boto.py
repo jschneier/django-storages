@@ -1,13 +1,9 @@
-import os
 import mock
-from uuid import uuid4
-from urllib2 import urlopen
 import datetime
+import urlparse
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
 
 from boto.s3.key import Key
 
@@ -29,7 +25,7 @@ class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
     def setUp(self, S3Connection):
         self.storage = s3boto.S3BotoStorage()
-        self.storage._bucket = mock.MagicMock()
+        self.storage._connection = mock.MagicMock()
 
 class SafeJoinTest(TestCase):
     def test_normal(self):
@@ -148,26 +144,20 @@ class S3BotoStorageTests(S3BotoTestCase):
             _file, 1, headers=self.storage.headers,
         )
         file._multipart.complete_upload.assert_called_once()
+    
+    def test_storage_exists(self):
+        key = self.storage.bucket.new_key.return_value
+        key.exists.return_value = True
+        self.assertTrue(self.storage.exists("file.txt"))
 
-    #def test_storage_exists_and_delete(self):
-    #    # show file does not exist
-    #    name = self.prefix_path('test_exists.txt')
-    #    self.assertFalse(self.storage.exists(name))
-    #
-    #    # create the file
-    #    content = 'new content'
-    #    file = self.storage.open(name, 'w')
-    #    file.write(content)
-    #    file.close()
-    #
-    #    # show file exists
-    #    self.assertTrue(self.storage.exists(name))
-    #
-    #    # delete the file
-    #    self.storage.delete(name)
-    #
-    #    # show file does not exist
-    #    self.assertFalse(self.storage.exists(name))
+    def test_storage_exists_false(self):
+        key = self.storage.bucket.new_key.return_value
+        key.exists.return_value = False 
+        self.assertFalse(self.storage.exists("file.txt"))
+
+    def test_storage_delete(self):
+        self.storage.delete("path/to/file.txt")
+        self.storage.bucket.delete_key.assert_called_with("path/to/file.txt")
 
     def test_storage_listdir_base(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
@@ -210,20 +200,38 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.assertTrue('2.txt' in files,
                         """ "2.txt" not in files list "%s".""" % (files,))
 
-    #def test_storage_size(self):
-    #    name = self.prefix_path('test_storage_size.txt')
-    #    content = 'new content'
-    #    f = ContentFile(content)
-    #    self.storage.save(name, f)
-    #    self.assertEqual(self.storage.size(name), f.size)
-    #
-    #def test_storage_url(self):
-    #    name = self.prefix_path('test_storage_size.txt')
-    #    content = 'new content'
-    #    f = ContentFile(content)
-    #    self.storage.save(name, f)
-    #    self.assertEqual(content, urlopen(self.storage.url(name)).read())
+    def test_storage_size(self):
+        key = self.storage.bucket.get_key.return_value
+        key.size = 4098
 
+        name = 'file.txt'
+        self.assertEqual(self.storage.size(name), key.size)
+
+    def test_storage_url(self):
+        name = 'test_storage_size.txt'
+        url = 'http://aws.amazon.com/%s' % name
+        self.storage.connection.generate_url.return_value = url
+
+        self.assertEquals(self.storage.url(name), url)
+        self.storage.connection.generate_url.assert_called_with(
+            self.storage.querystring_expire,
+            method='GET',
+            bucket=self.storage.bucket.name,
+            key=name,
+            query_auth=self.storage.querystring_auth,
+            force_http=not self.storage.secure_urls,
+            headers=None,
+            response_headers=None,
+        )
+
+    def test_generated_url_is_encoded(self):
+        self.storage.custom_domain = "mock.cloudfront.net"
+        filename = "whacky & filename.mp4"
+        url = self.storage.url(filename)
+        parsed_url = urlparse.urlparse(url)
+        self.assertEqual(parsed_url.path,
+                         "/whacky%20%26%20filename.mp4")
+        
 #class S3BotoStorageFileTests(S3BotoTestCase):
 #    def test_multipart_upload(self):
 #        nparts = 2
