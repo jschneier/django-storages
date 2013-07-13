@@ -127,12 +127,11 @@ class S3BotoStorageFile(File):
 
     def _get_file(self):
         if self._file is None:
-            kwargs = {
-                "max_size": self._storage.file_max_size,
-                "suffix": ".S3BotoStorageFile",
-                "dir": setting("FILE_UPLOAD_TEMP_DIR", None)
-            }
-            self._file = SpooledTemporaryFile(**kwargs)
+            self._file = SpooledTemporaryFile(
+                max_size=self._storage.max_memory_size,
+                suffix=".S3BotoStorageFile",
+                dir=setting("FILE_UPLOAD_TEMP_DIR", None)
+            )
             if 'r' in self._mode:
                 self._is_dirty = False
                 self.key.get_contents_to_file(self._file)
@@ -246,7 +245,7 @@ class S3BotoStorage(Storage):
 
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
-    file_max_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
+    max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
 
     def __init__(self, acl=None, bucket=None, **settings):
         # check if some of the settings we've provided as class attributes
