@@ -2,16 +2,12 @@ import os
 import mimetypes
 from gzip import GzipFile
 import datetime
+from tempfile import SpooledTemporaryFile
 
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO  # noqa
-
-try:
-    from tempfile import SpooledTemporaryFile
-except ImportError:
-    from ..tempfile import SpooledTemporaryFile
 
 from django.core.files.base import File
 from django.core.files.storage import Storage
