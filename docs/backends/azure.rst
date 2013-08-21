@@ -1,11 +1,11 @@
 Azure Storage
-====
+===========
 
 A custom storage system for Django using Windows Azure Storage backend.
 
 
 Settings
-====
+*******
 
 ``DEFAULT_FILE_STORAGE``
 
