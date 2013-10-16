@@ -344,7 +344,11 @@ class S3BotoStorage(Storage):
         Cleans the name so that Windows style paths work
         """
         # Useful for windows' paths
-        return os.path.normpath(name).replace('\\', '/')
+        if name.endswith('/'):
+            #trailing slash is vaild
+            return os.path.normpath(name).replace('\\', '/') + '/'
+        else:
+            return os.path.normpath(name).replace('\\', '/')
 
     def _normalize_name(self, name):
         """
@@ -353,7 +357,11 @@ class S3BotoStorage(Storage):
         the directory specified by the LOCATION setting.
         """
         try:
-            return safe_join(self.location, name)
+            if name.endswith('/'):
+                #the result of safe_join is still valid with trailing slash
+                return safe_join(self.location, name) + '/'
+            else:
+                return safe_join(self.location, name)
         except ValueError:
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
@@ -435,7 +443,7 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(self._clean_name(name))
         # for the bucket.list and logic below name needs to end in /
         # But for the root path "" we leave it as an empty string
-        if name:
+        if name and not name.endswith('/'):
             name += '/'
 
         dirlist = self.bucket.list(self._encode_name(name))
@@ -474,8 +482,7 @@ class S3BotoStorage(Storage):
 
     def url(self, name, headers=None, response_headers=None):
         # Preserve the trailing slash after normalizing the path.
-        trailing_slash = '/' if name.endswith('/') else ''
-        name = self._normalize_name(self._clean_name(name)) + trailing_slash
+        name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
