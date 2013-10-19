@@ -1,4 +1,5 @@
 import os
+import posixpath
 import mimetypes
 from gzip import GzipFile
 import datetime
@@ -63,7 +64,7 @@ def safe_join(base, *paths):
 
     final_path = base_path
     for path in paths:
-        final_path = urljoin(final_path.rstrip('/') + "/", path.rstrip("/"))
+        final_path = urljoin(final_path.rstrip('/') + "/", path)
 
     # Ensure final_path starts with base_path and that the next character after
     # the final path is '/' (or nothing, in which case final_path must be
@@ -343,12 +344,16 @@ class S3BotoStorage(Storage):
         """
         Cleans the name so that Windows style paths work
         """
-        # Useful for windows' paths
-        if name.endswith('/'):
-            #trailing slash is vaild
-            return os.path.normpath(name).replace('\\', '/') + '/'
+        # Normalize Windows style paths
+        clean_name = posixpath.normpath(name).replace('\\', '/')
+
+        # os.path.normpath() can strip trailing slashes so we implement
+        # a workaround here.
+        if name.endswith('/') and not clean_name.endswith('/'):
+            # Add a trailing slash as it was stripped.
+            return clean_name + '/'
         else:
-            return os.path.normpath(name).replace('\\', '/')
+            return clean_name
 
     def _normalize_name(self, name):
         """
@@ -357,11 +362,7 @@ class S3BotoStorage(Storage):
         the directory specified by the LOCATION setting.
         """
         try:
-            if name.endswith('/'):
-                #the result of safe_join is still valid with trailing slash
-                return safe_join(self.location, name) + '/'
-            else:
-                return safe_join(self.location, name)
+            return safe_join(self.location, name)
         except ValueError:
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
