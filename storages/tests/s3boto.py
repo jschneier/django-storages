@@ -133,7 +133,10 @@ class S3BotoStorageTests(S3BotoTestCase):
         file.write(content)
         self.storage.bucket.initiate_multipart_upload.assert_called_with(
             name,
-            headers={'x-amz-acl': 'public-read'},
+            headers={
+                'Content-Type': 'text/plain',
+                'x-amz-acl': 'public-read',
+            },
             reduced_redundancy=self.storage.reduced_redundancy,
         )
 
