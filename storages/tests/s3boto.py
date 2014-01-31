@@ -49,7 +49,50 @@ class SafeJoinTest(TestCase):
         self.assertRaises(ValueError,
             s3boto.safe_join, "base", "../../../../../../../etc/passwd")
 
+    def test_trailing_slash(self):
+        """
+        Test safe_join with paths that end with a trailing slash.
+        """
+        path = s3boto.safe_join("base_url/", "path/to/somewhere/")
+        self.assertEquals(path, "base_url/path/to/somewhere/")
+
+    def test_trailing_slash_multi(self):
+        """
+        Test safe_join with multiple paths that end with a trailing slash.
+        """
+        path = s3boto.safe_join("base_url/", "path/to/" "somewhere/")
+        self.assertEquals(path, "base_url/path/to/somewhere/")
+
+
 class S3BotoStorageTests(S3BotoTestCase):
+
+    def test_clean_name(self):
+        """
+        Test the base case of _clean_name
+        """
+        path = self.storage._clean_name("path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere")
+
+    def test_clean_name_normalize(self):
+        """
+        Test the normalization of _clean_name
+        """
+        path = self.storage._clean_name("path/to/../somewhere")
+        self.assertEqual(path, "path/somewhere")
+
+    def test_clean_name_trailing_slash(self):
+        """
+        Test the _clean_name when the path has a trailing slash
+        """
+        path = self.storage._clean_name("path/to/somewhere/")
+        self.assertEqual(path, "path/to/somewhere/")
+
+    def test_clean_name_windows(self):
+        """
+        Test the _clean_name when the path has a trailing slash
+        """
+        path = self.storage._clean_name("path\\to\\somewhere")
+        self.assertEqual(path, "path/to/somewhere")
 
     def test_storage_url(self):
         """
@@ -133,7 +176,10 @@ class S3BotoStorageTests(S3BotoTestCase):
         file.write(content)
         self.storage.bucket.initiate_multipart_upload.assert_called_with(
             name,
-            headers={'x-amz-acl': 'public-read'},
+            headers={
+                'Content-Type': 'text/plain',
+                'x-amz-acl': 'public-read',
+            },
             reduced_redundancy=self.storage.reduced_redundancy,
         )
 

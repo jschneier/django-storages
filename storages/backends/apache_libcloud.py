@@ -32,6 +32,9 @@ class LibCloudStorage(Storage):
         if not self.provider:
             raise ImproperlyConfigured(
                 'LIBCLOUD_PROVIDERS %s not defined or invalid' % provider_name)
+        extra_kwargs = {}
+        if 'region' in self.provider:
+            extra_kwargs['region'] = self.provider['region']
         try:
             provider_type = self.provider['type']
             if isinstance(provider_type, basestring):
@@ -44,7 +47,8 @@ class LibCloudStorage(Storage):
             self.driver = Driver(
                 self.provider['user'],
                 self.provider['key'],
-                )
+                **extra_kwargs
+            )
         except Exception, e:
             raise ImproperlyConfigured(
                 "Unable to create libcloud driver type %s: %s" % \
