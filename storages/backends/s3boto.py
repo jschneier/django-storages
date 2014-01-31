@@ -1,4 +1,5 @@
 import os
+import posixpath
 import mimetypes
 from gzip import GzipFile
 import datetime
@@ -63,7 +64,7 @@ def safe_join(base, *paths):
 
     final_path = base_path
     for path in paths:
-        final_path = urljoin(final_path.rstrip('/') + "/", path.rstrip("/"))
+        final_path = urljoin(final_path.rstrip('/') + "/", path)
 
     # Ensure final_path starts with base_path and that the next character after
     # the final path is '/' (or nothing, in which case final_path must be
@@ -343,8 +344,16 @@ class S3BotoStorage(Storage):
         """
         Cleans the name so that Windows style paths work
         """
-        # Useful for windows' paths
-        return os.path.normpath(name).replace('\\', '/')
+        # Normalize Windows style paths
+        clean_name = posixpath.normpath(name).replace('\\', '/')
+
+        # os.path.normpath() can strip trailing slashes so we implement
+        # a workaround here.
+        if name.endswith('/') and not clean_name.endswith('/'):
+            # Add a trailing slash as it was stripped.
+            return clean_name + '/'
+        else:
+            return clean_name
 
     def _normalize_name(self, name):
         """
@@ -435,7 +444,7 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(self._clean_name(name))
         # for the bucket.list and logic below name needs to end in /
         # But for the root path "" we leave it as an empty string
-        if name:
+        if name and not name.endswith('/'):
             name += '/'
 
         dirlist = self.bucket.list(self._encode_name(name))
@@ -474,8 +483,7 @@ class S3BotoStorage(Storage):
 
     def url(self, name, headers=None, response_headers=None):
         # Preserve the trailing slash after normalizing the path.
-        trailing_slash = '/' if name.endswith('/') else ''
-        name = self._normalize_name(self._clean_name(name)) + trailing_slash
+        name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
