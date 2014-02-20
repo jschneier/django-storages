@@ -38,7 +38,10 @@ class GridFSStorage(Storage):
     def _save(self, name, content):
         name = force_unicode(name).replace('\\', '/')
         content.open()
-        file = self.fs.new_file(filename=name)
+        kwargs = {'filename': name}
+        if hasattr(content.file, 'content_type'):
+            kwargs['content_type'] = content.file.content_type
+        file = self.fs.new_file(**kwargs)
         if hasattr(content, 'chunks'):
             for chunk in content.chunks():
                 file.write(chunk)
