@@ -11,8 +11,8 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     import pyodbc
 except ImportError:
-    raise ImproperlyConfigured, "Could not load pyodbc dependency.\
-    \nSee http://code.google.com/p/pyodbc/"
+    raise ImproperlyConfigured("Could not load pyodbc dependency.\
+    \nSee http://code.google.com/p/pyodbc/")
 
 REQUIRED_FIELDS = ('db_table', 'fname_column', 'blob_column', 'size_column', 'base_url')
 

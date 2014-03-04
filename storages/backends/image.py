@@ -7,8 +7,8 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     from PIL import ImageFile as PILImageFile
 except ImportError:
-    raise ImproperlyConfigured, "Could not load PIL dependency.\
-    \nSee http://www.pythonware.com/products/pil/"
+    raise ImproperlyConfigured("Could not load PIL dependency.\
+    \nSee http://www.pythonware.com/products/pil/")
 
 
 class ImageStorage(FileSystemStorage):

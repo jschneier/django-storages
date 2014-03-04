@@ -8,14 +8,14 @@ from django.utils.encoding import force_unicode
 try:
     from gridfs import GridFS, NoFile
 except ImportError:
-    raise ImproperlyConfigured, "Could not load gridfs dependency.\
-    \nSee http://www.mongodb.org/display/DOCS/GridFS"
+    raise ImproperlyConfigured("Could not load gridfs dependency.\
+    \nSee http://www.mongodb.org/display/DOCS/GridFS")
 
 try:
     from pymongo import Connection
 except ImportError:
-    raise ImproperlyConfigured, "Could not load pymongo dependency.\
-    \nSee http://github.com/mongodb/mongo-python-driver"
+    raise ImproperlyConfigured("Could not load pymongo dependency.\
+    \nSee http://github.com/mongodb/mongo-python-driver")
 
 class GridFSStorage(Storage):
     @property

@@ -29,7 +29,7 @@ class HashPathStorage(FileSystemStorage):
         # Try to create the directory relative to location specified in __init__
         try:
             os.makedirs(os.path.join(self.location, dir_name))
-        except OSError, e:
+        except OSError as e:
             if e.errno is not errno.EEXIST:
                 raise e
 

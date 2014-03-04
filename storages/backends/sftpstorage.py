@@ -1,3 +1,4 @@
+from __future__ import print_function
 # SFTP storage backend for Django.
 # Author: Brent Tubbs <brent.tubbs@gmail.com>
 # License: MIT
@@ -105,7 +106,7 @@ class SFTPStorage(Storage):
 
         try:
             self._ssh.connect(self._host, **self._params)
-        except paramiko.AuthenticationException, e:
+        except paramiko.AuthenticationException as e:
             if self._interactive and 'password' not in self._params:
                 # If authentication has failed, and we haven't already tried
                 # username/password, and configuration allows it, then try
@@ -115,9 +116,9 @@ class SFTPStorage(Storage):
                 self._params['password'] = getpass.getpass()
                 self._connect()
             else:
-                raise paramiko.AuthenticationException, e
-        except Exception, e:
-            print e
+                raise paramiko.AuthenticationException(e)
+        except Exception as e:
+            print(e)
 
         if not hasattr(self, '_sftp'):
             self._sftp = self._ssh.open_sftp()

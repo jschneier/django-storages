@@ -16,8 +16,8 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     import couchdb
 except ImportError:
-    raise ImproperlyConfigured, "Could not load couchdb dependency.\
-    \nSee http://code.google.com/p/couchdb-python/"
+    raise ImproperlyConfigured("Could not load couchdb dependency.\
+    \nSee http://code.google.com/p/couchdb-python/")
 
 DEFAULT_SERVER= getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
 STORAGE_OPTIONS= getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
