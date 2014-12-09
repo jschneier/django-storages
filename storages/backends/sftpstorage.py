@@ -53,18 +53,13 @@ import os
 import paramiko
 import posixpath
 import stat
-import urlparse
 from datetime import datetime
 
 from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO  # noqa
-
+from storages.compat import urlparse, StringIO
 
 class SFTPStorage(Storage):
 
@@ -243,7 +238,7 @@ class SFTPStorageFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = StringIO()
+        self.file = StringIO.StringIO()
         self._is_read = False
 
     @property
@@ -262,7 +257,7 @@ class SFTPStorageFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
+        self.file = StringIO.StringIO(content)
         self._is_dirty = True
         self._is_read = True
 

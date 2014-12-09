@@ -1,12 +1,12 @@
 import mock
 import datetime
-import urlparse
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
 
 from boto.s3.key import Key
 
+from storages.compat import urlparse
 from storages.backends import s3boto
 
 __all__ = (

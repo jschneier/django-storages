@@ -1,12 +1,12 @@
 # DatabaseStorage for django.
 # 2009 (c) GameKeeper Gambling Ltd, Ivanov E.
-import StringIO
-import urlparse
 
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+
+from storages.compat import urlparse, StringIO
 
 try:
     import pyodbc

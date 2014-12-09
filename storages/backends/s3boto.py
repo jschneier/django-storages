@@ -5,11 +5,6 @@ from gzip import GzipFile
 import datetime
 from tempfile import SpooledTemporaryFile
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO  # noqa
-
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -26,6 +21,7 @@ except ImportError:
                                "See https://github.com/boto/boto")
 
 from storages.utils import setting
+from storages.compat import urlparse, StringIO
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -57,14 +53,13 @@ def safe_join(base, *paths):
     Paths outside the base path indicate a possible security
     sensitive operation.
     """
-    from urlparse import urljoin
     base_path = force_text(base)
     base_path = base_path.rstrip('/')
     paths = [force_text(p) for p in paths]
 
     final_path = base_path
     for path in paths:
-        final_path = urljoin(final_path.rstrip('/') + "/", path)
+        final_path = urlparse.urljoin(final_path.rstrip('/') + "/", path)
 
     # Ensure final_path starts with base_path and that the next character after
     # the final path is '/' (or nothing, in which case final_path must be
@@ -375,7 +370,7 @@ class S3BotoStorage(Storage):
 
     def _compress_content(self, content):
         """Gzip a given string content."""
-        zbuf = StringIO()
+        zbuf = StringIO.StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         try:
             zfile.write(content.read())

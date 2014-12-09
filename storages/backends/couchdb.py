@@ -4,14 +4,13 @@ Created by Christian Klein.
 (c) Copyright 2009 HUDORA GmbH. All Rights Reserved.
 """
 import os
-from cStringIO import StringIO
-from urlparse import urljoin
-from urllib import quote_plus
 
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+
+from storages.compat import urlparse, StringIO
 
 try:
     import couchdb
@@ -73,10 +72,10 @@ class CouchDBStorage(Storage):
         return 0
 
     def url(self, name):
-        return urljoin(self.base_url, 
-                       os.path.join(quote_plus(self.db.name), 
-                       quote_plus(name), 
-                       'content'))
+        return urlparse.urljoin(self.base_url,
+                                os.path.join(urlparse.quote_plus(self.db.name),
+                                urlparse.quote_plus(name),
+                                'content'))
 
     def delete(self, name):
         try:
@@ -109,12 +108,12 @@ class CouchDBFile(File):
             else:
                 filename = "content"
             attachment = self._storage.db.get_attachment(self._doc, filename=filename)
-            self.file = StringIO(attachment)
+            self.file = StringIO.StringIO(attachment)
         except couchdb.client.ResourceNotFound:
             if 'r' in self._mode:
                 raise ValueError("The file cannot be reopened.")
             else:
-                self.file = StringIO()
+                self.file = StringIO.StringIO()
                 self._is_dirty = True
 
     @property
@@ -124,7 +123,7 @@ class CouchDBFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
+        self.file = StringIO.StringIO(content)
         self._is_dirty = True
 
     def close(self):
