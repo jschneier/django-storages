@@ -1,6 +1,34 @@
 django-storages change log
 ==========================
 
+Version 1.1.9 is the first release of django-storages-redux after the fork but
+is simply the current state of django-storages in master as of 2014-12-08 (no
+commit since March 2014 and no PyPi release since March 2013)
+
+1.1.9 (2014-12-08)
+******************
+
+* Fix syntax for Python3 with pull-request `#91`_
+* Support pushing content type from File object to GridFS with pull-request `#90`_
+* Support passing a region to the libcloud driver with pull-request `#86`_
+* Handle trailing slash paths fixes `#188`_ fixed by pull-request `#85`_
+* Use a SpooledTemporaryFile to conserve memory in S3BotoFile pull-request `#69`_
+* Guess content-type for S3BotoStorageFile the same way that _save() in S3BotoStorage does
+* Pass headers and response_headers through from url to generate_url in S3BotoStorage pull-request `#65`_
+* Added AWS_S3_HOST, AWS_S3_PORT and AWS_S3_USE_SSL settings to specify host, port and is_secure in pull-request `#66`_
+
+.. _#91: https://bitbucket.org/david/django-storages/pull-request/91/
+.. _#90: https://bitbucket.org/david/django-storages/pull-request/90/
+.. _#86: https://bitbucket.org/david/django-storages/pull-request/86/
+.. _#188: https://bitbucket.org/david/django-storages/issue/188/s3boto-_clean_name-is-broken-and-leads-to
+.. _#85: https://bitbucket.org/david/django-storages/pull-request/85/
+.. _#69: https://bitbucket.org/david/django-storages/pull-request/69/
+.. _#66: https://bitbucket.org/david/django-storages/pull-request/66/
+.. _#65: https://bitbucket.org/david/django-storages/pull-request/65/
+
+Everything Below Here Was Previously Released on PyPi under django-storages
+***************************************************************************
+
 1.1.8 (2013-03-31)
 ******************
 
