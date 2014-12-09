@@ -94,7 +94,7 @@ class S3BotoStorageTests(S3BotoTestCase):
         path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
-    def test_storage_url(self):
+    def test_storage_url_slashes(self):
         """
         Test URL generation.
         """
