@@ -25,8 +25,8 @@ from storages.compat import urlparse, StringIO
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
-if boto_version_info[:2] < (2, 4):
-    raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
+if boto_version_info[:2] < (2, 32):
+    raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
 
 
