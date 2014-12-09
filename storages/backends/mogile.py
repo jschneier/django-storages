@@ -6,7 +6,7 @@ from StringIO import StringIO
 
 from django.conf import settings
 from django.core.cache import cache
-from django.utils.text import force_unicode
+from django.utils.text import force_text
 from django.core.files.storage import Storage
 from django.http import HttpResponse, HttpResponseNotFound
 from django.core.exceptions import ImproperlyConfigured
@@ -75,7 +75,7 @@ class MogileFSStorage(Storage):
         else:
             print("FAILURE writing file %s" % (filename))
 
-        return force_unicode(filename.replace('\\', '/'))
+        return force_text(filename.replace('\\', '/'))
 
     def delete(self, filename):
         
