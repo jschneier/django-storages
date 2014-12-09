@@ -1,6 +1,16 @@
 django-storages change log
 ==========================
 
+1.2.0 (unreleased)
+******************
+
+* Remove legacy S3 storage - fixes `#1`_
+* Remove mosso files backend - fixes `#2`_
+
+.. _#1: https://github.com/jschneier/django-storages-redux/issues/1
+.. _#2: https://github.com/jschneier/django-storages-redux/issues/2
+
+
 Version 1.1.9 is the first release of django-storages-redux after the fork but
 is simply the current state of django-storages in master as of 2014-12-08 (no
 commit since March 2014 and no PyPi release since March 2013)
