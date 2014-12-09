@@ -108,12 +108,12 @@ class CouchDBFile(File):
             else:
                 filename = "content"
             attachment = self._storage.db.get_attachment(self._doc, filename=filename)
-            self.file = StringIO.StringIO(attachment)
+            self.file = StringIO(attachment)
         except couchdb.client.ResourceNotFound:
             if 'r' in self._mode:
                 raise ValueError("The file cannot be reopened.")
             else:
-                self.file = StringIO.StringIO()
+                self.file = StringIO()
                 self._is_dirty = True
 
     @property
@@ -123,7 +123,7 @@ class CouchDBFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO.StringIO(content)
+        self.file = StringIO(content)
         self._is_dirty = True
 
     def close(self):

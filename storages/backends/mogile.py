@@ -69,7 +69,7 @@ class MogileFSStorage(Storage):
             self.mogile_class = None
 
         # Write the file to mogile
-        success = self.client.send_file(filename, StringIO.StringIO(raw_contents), self.mogile_class)
+        success = self.client.send_file(filename, StringIO(raw_contents), self.mogile_class)
         if success:
             print("Wrote file to key %s, %s@%s" % (filename, self.domain, self.trackers[0]))
         else:

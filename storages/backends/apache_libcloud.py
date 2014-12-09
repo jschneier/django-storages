@@ -145,7 +145,7 @@ class LibCloudFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = StringIO.StringIO()
+        self.file = StringIO()
         self.start_range = 0
 
     @property
@@ -161,13 +161,13 @@ class LibCloudFile(File):
         else:
             args = [self.start_range, self.start_range + num_bytes - 1]
         data = self._storage._read(self._name, *args)
-        self.file = StringIO.StringIO(data)
+        self.file = StringIO(data)
         return self.file.getvalue()
 
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO.StringIO(content)
+        self.file = StringIO(content)
         self._is_dirty = True
 
     def close(self):

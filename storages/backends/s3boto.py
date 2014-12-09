@@ -370,7 +370,7 @@ class S3BotoStorage(Storage):
 
     def _compress_content(self, content):
         """Gzip a given string content."""
-        zbuf = StringIO.StringIO()
+        zbuf = StringIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         try:
             zfile.write(content.read())

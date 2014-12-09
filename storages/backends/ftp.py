@@ -126,7 +126,7 @@ class FTPStorage(Storage):
         return remote_file
 
     def _read(self, name):
-        memory_file = StringIO.StringIO()
+        memory_file = StringIO()
         try:
             pwd = self._connection.pwd()
             self._connection.cwd(os.path.dirname(name))
@@ -223,7 +223,7 @@ class FTPStorageFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = StringIO.StringIO()
+        self.file = StringIO()
         self._is_read = False
 
     @property
@@ -244,7 +244,7 @@ class FTPStorageFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO.StringIO(content)
+        self.file = StringIO(content)
         self._is_dirty = True
         self._is_read = True
 

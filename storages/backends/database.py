@@ -81,7 +81,7 @@ that returns an image as result.
         row = self.cursor.execute("SELECT %s from %s where %s = '%s'"%(self.blob_column,self.db_table,self.fname_column,name) ).fetchone()
         if row is None:
             return None
-        inMemFile = StringIO.StringIO(row[0])
+        inMemFile = StringIO(row[0])
         inMemFile.name = name
         inMemFile.mode = mode
         

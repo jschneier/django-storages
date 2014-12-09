@@ -18,7 +18,7 @@ class GSBotoStorageFile(S3BotoStorageFile):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
-        self.file = StringIO.StringIO(content)
+        self.file = StringIO(content)
         self._is_dirty = True
 
     def close(self):
