@@ -4,24 +4,12 @@ Amazon S3
 Usage
 *****
 
-There are two backend APIs for interacting with S3. The first is the s3 backend (in storages/backends/s3.py) which is simple and based on the Amazon S3 Python library. The second is the s3boto backend (in storages/backends/s3boto.py) which is well-maintained by the community and is generally more robust (including connection pooling, etc...). s3boto requires the python-boto library.
+There is one backend for interacting with S3 based on boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
 
 Settings
 --------
 
-``DEFAULT_FILE_STORAGE``
-
-This setting sets the path to the S3 storage class, the first part correspond to the filepath and the second the name of the class, if you've got example.com in your PYTHONPATH and store your storage file in example.com/libs/storages/S3Storage.py, the resulting setting will be::
-
-    DEFAULT_FILE_STORAGE = 'libs.storages.S3Storage.S3Storage'
-
-or if you installed using setup.py::
-
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3.S3Storage'
-
-If you keep the same filename as in repository, it should always end with S3Storage.S3Storage.
-
-To use s3boto, this setting will be::
+To use s3boto set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
