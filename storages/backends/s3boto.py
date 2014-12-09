@@ -21,7 +21,7 @@ except ImportError:
                                "See https://github.com/boto/boto")
 
 from storages.utils import setting
-from storages.compat import urlparse, StringIO
+from storages.compat import urlparse, BytesIO
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -370,7 +370,7 @@ class S3BotoStorage(Storage):
 
     def _compress_content(self, content):
         """Gzip a given string content."""
-        zbuf = StringIO()
+        zbuf = BytesIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         try:
             zfile.write(content.read())

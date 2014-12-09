@@ -1,7 +1,7 @@
 import os, hashlib, errno
 
 from django.core.files.storage import FileSystemStorage
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, force_bytes
 
 class HashPathStorage(FileSystemStorage):
     """
@@ -15,7 +15,7 @@ class HashPathStorage(FileSystemStorage):
         # Get the SHA1 hash of the uploaded file
         sha1 = hashlib.sha1()
         for chunk in content.chunks():
-            sha1.update(chunk)
+            sha1.update(force_bytes(chunk))
         sha1sum = sha1.hexdigest()
 
         # Build the new path and split it into directory and filename

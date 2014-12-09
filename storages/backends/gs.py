@@ -2,7 +2,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile
 from storages.utils import setting
-from storages.compat import StringIO
+from storages.compat import BytesIO
 
 try:
     from boto.gs.connection import GSConnection, SubdomainCallingFormat
@@ -18,7 +18,7 @@ class GSBotoStorageFile(S3BotoStorageFile):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
-        self.file = StringIO(content)
+        self.file = BytesIO(content)
         self._is_dirty = True
 
     def close(self):

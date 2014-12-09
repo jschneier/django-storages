@@ -59,7 +59,7 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 
-from storages.compat import urlparse, StringIO
+from storages.compat import urlparse, BytesIO
 
 class SFTPStorage(Storage):
 
@@ -238,7 +238,7 @@ class SFTPStorageFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = StringIO()
+        self.file = BytesIO()
         self._is_read = False
 
     @property
@@ -257,7 +257,7 @@ class SFTPStorageFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
+        self.file = BytesIO(content)
         self._is_dirty = True
         self._is_read = True
 

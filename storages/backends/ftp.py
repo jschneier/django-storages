@@ -22,7 +22,7 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
 
-from storages.compat import urlparse, StringIO
+from storages.compat import urlparse, BytesIO
 
 class FTPStorageException(Exception):
     pass
@@ -126,7 +126,7 @@ class FTPStorage(Storage):
         return remote_file
 
     def _read(self, name):
-        memory_file = StringIO()
+        memory_file = BytesIO()
         try:
             pwd = self._connection.pwd()
             self._connection.cwd(os.path.dirname(name))
@@ -223,7 +223,7 @@ class FTPStorageFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = StringIO()
+        self.file = BytesIO()
         self._is_read = False
 
     @property
@@ -244,7 +244,7 @@ class FTPStorageFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
+        self.file = BytesIO(content)
         self._is_dirty = True
         self._is_read = True
 

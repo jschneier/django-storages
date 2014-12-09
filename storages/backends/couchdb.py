@@ -10,7 +10,7 @@ from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
 
-from storages.compat import urlparse, StringIO
+from storages.compat import urlparse, BytesIO
 
 try:
     import couchdb
@@ -108,12 +108,12 @@ class CouchDBFile(File):
             else:
                 filename = "content"
             attachment = self._storage.db.get_attachment(self._doc, filename=filename)
-            self.file = StringIO(attachment)
+            self.file = BytesIO(attachment)
         except couchdb.client.ResourceNotFound:
             if 'r' in self._mode:
                 raise ValueError("The file cannot be reopened.")
             else:
-                self.file = StringIO()
+                self.file = BytesIO()
                 self._is_dirty = True
 
     @property
@@ -123,7 +123,7 @@ class CouchDBFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
+        self.file = BytesIO(content)
         self._is_dirty = True
 
     def close(self):
