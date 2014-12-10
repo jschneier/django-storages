@@ -1,12 +1,12 @@
 # DatabaseStorage for django.
 # 2009 (c) GameKeeper Gambling Ltd, Ivanov E.
-import StringIO
-import urlparse
 
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+
+from storages.compat import urlparse, BytesIO
 
 try:
     import pyodbc
@@ -81,7 +81,7 @@ that returns an image as result.
         row = self.cursor.execute("SELECT %s from %s where %s = '%s'"%(self.blob_column,self.db_table,self.fname_column,name) ).fetchone()
         if row is None:
             return None
-        inMemFile = StringIO.StringIO(row[0])
+        inMemFile = BytesIO(row[0])
         inMemFile.name = name
         inMemFile.mode = mode
         

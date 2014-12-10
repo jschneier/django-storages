@@ -3,7 +3,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.db import connections
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 
 try:
     from gridfs import GridFS, NoFile
@@ -37,7 +37,7 @@ class GridFSStorage(Storage):
         return GridFSFile(name, self, mode=mode)
 
     def _save(self, name, content):
-        name = force_unicode(name).replace('\\', '/')
+        name = force_text(name).replace('\\', '/')
         content.open()
         kwargs = {'filename': name}
         if hasattr(content.file, 'content_type'):
@@ -53,7 +53,7 @@ class GridFSStorage(Storage):
         return name
 
     def get_valid_name(self, name):
-        return force_unicode(name).strip().replace('\\', '/')
+        return force_text(name).strip().replace('\\', '/')
 
     def delete(self, name):
         f = self._open(name, 'r')

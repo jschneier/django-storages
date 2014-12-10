@@ -8,11 +8,7 @@ from django.core.files.storage import Storage
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
+from storages.compat import BytesIO
 
 try:
     from libcloud.storage.providers import get_driver
@@ -149,7 +145,7 @@ class LibCloudFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = StringIO()
+        self.file = BytesIO()
         self.start_range = 0
 
     @property
@@ -165,13 +161,13 @@ class LibCloudFile(File):
         else:
             args = [self.start_range, self.start_range + num_bytes - 1]
         data = self._storage._read(self._name, *args)
-        self.file = StringIO(data)
+        self.file = BytesIO(data)
         return self.file.getvalue()
 
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = StringIO(content)
+        self.file = BytesIO(content)
         self._is_dirty = True
 
     def close(self):

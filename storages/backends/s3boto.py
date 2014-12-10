@@ -5,15 +5,10 @@ from gzip import GzipFile
 import datetime
 from tempfile import SpooledTemporaryFile
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO  # noqa
-
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.encoding import force_unicode, smart_str, filepath_to_uri
+from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 
 try:
     from boto import __version__ as boto_version
@@ -26,11 +21,12 @@ except ImportError:
                                "See https://github.com/boto/boto")
 
 from storages.utils import setting
+from storages.compat import urlparse, BytesIO
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
-if boto_version_info[:2] < (2, 4):
-    raise ImproperlyConfigured("The installed Boto library must be 2.4 or "
+if boto_version_info[:2] < (2, 32):
+    raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
 
 
@@ -57,14 +53,13 @@ def safe_join(base, *paths):
     Paths outside the base path indicate a possible security
     sensitive operation.
     """
-    from urlparse import urljoin
-    base_path = force_unicode(base)
+    base_path = force_text(base)
     base_path = base_path.rstrip('/')
-    paths = [force_unicode(p) for p in paths]
+    paths = [force_text(p) for p in paths]
 
     final_path = base_path
     for path in paths:
-        final_path = urljoin(final_path.rstrip('/') + "/", path)
+        final_path = urlparse.urljoin(final_path.rstrip('/') + "/", path)
 
     # Ensure final_path starts with base_path and that the next character after
     # the final path is '/' (or nothing, in which case final_path must be
@@ -147,7 +142,7 @@ class S3BotoStorageFile(File):
             raise AttributeError("File was not opened in read mode.")
         return super(S3BotoStorageFile, self).read(*args, **kwargs)
 
-    def write(self, *args, **kwargs):
+    def write(self, content, *args, **kwargs):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
@@ -165,7 +160,7 @@ class S3BotoStorageFile(File):
             )
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
-        return super(S3BotoStorageFile, self).write(*args, **kwargs)
+        return super(S3BotoStorageFile, self).write(force_bytes(content), *args, **kwargs)
 
     @property
     def _buffer_file_size(self):
@@ -371,14 +366,14 @@ class S3BotoStorage(Storage):
         return smart_str(name, encoding=self.file_name_charset)
 
     def _decode_name(self, name):
-        return force_unicode(name, encoding=self.file_name_charset)
+        return force_text(name, encoding=self.file_name_charset)
 
     def _compress_content(self, content):
         """Gzip a given string content."""
-        zbuf = StringIO()
+        zbuf = BytesIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         try:
-            zfile.write(content.read())
+            zfile.write(force_bytes(content.read()))
         finally:
             zfile.close()
         zbuf.seek(0)

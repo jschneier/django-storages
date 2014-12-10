@@ -1,15 +1,15 @@
 from __future__ import print_function
 
-import urlparse
 import mimetypes
-from StringIO import StringIO
 
 from django.conf import settings
 from django.core.cache import cache
-from django.utils.text import force_unicode
+from django.utils.text import force_text
 from django.core.files.storage import Storage
 from django.http import HttpResponse, HttpResponseNotFound
 from django.core.exceptions import ImproperlyConfigured
+
+from storages.compat import urlparse, BytesIO
 
 try:
     import mogilefs
@@ -69,13 +69,13 @@ class MogileFSStorage(Storage):
             self.mogile_class = None
 
         # Write the file to mogile
-        success = self.client.send_file(filename, StringIO(raw_contents), self.mogile_class)
+        success = self.client.send_file(filename, BytesIO(raw_contents), self.mogile_class)
         if success:
             print("Wrote file to key %s, %s@%s" % (filename, self.domain, self.trackers[0]))
         else:
             print("FAILURE writing file %s" % (filename))
 
-        return force_unicode(filename.replace('\\', '/'))
+        return force_text(filename.replace('\\', '/'))
 
     def delete(self, filename):
         
