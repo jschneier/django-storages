@@ -17,7 +17,6 @@ __all__ = (
     'ParseTsExtendedCase',
     'SafeJoinTest',
     'S3BotoStorageTests',
-    #'S3BotoStorageFileTests',
 )
 
 class ParseTsExtendedCase(TestCase):
@@ -281,32 +280,4 @@ class S3BotoStorageTests(S3BotoTestCase):
         parsed_url = urlparse.urlparse(url)
         self.assertEqual(parsed_url.path,
                          "/whacky%20%26%20filename.mp4")
-        
-#class S3BotoStorageFileTests(S3BotoTestCase):
-#    def test_multipart_upload(self):
-#        nparts = 2
-#        name = self.prefix_path("test_multipart_upload.txt")
-#        mode = 'w'
-#        f = s3boto.S3BotoStorageFile(name, mode, self.storage)
-#        content_length = 1024 * 1024# 1 MB
-#        content = 'a' * content_length
-#
-#        bytes = 0
-#        target = f._write_buffer_size * nparts
-#        while bytes < target:
-#            f.write(content)
-#            bytes += content_length
-#
-#        # make the buffer roll over so f._write_counter
-#        # is incremented
-#        f.write("finished")
-#
-#        # verify upload was multipart and correctly partitioned
-#        self.assertEqual(f._write_counter, nparts)
-#
-#        # complete the upload
-#        f.close()
-#
-#        # verify that the remaining buffered bytes were
-#        # uploaded when the file was closed.
-#        self.assertEqual(f._write_counter, nparts+1)
+
