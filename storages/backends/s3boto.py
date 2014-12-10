@@ -232,6 +232,7 @@ class S3BotoStorage(Storage):
     preload_metadata = setting('AWS_PRELOAD_METADATA', False)
     gzip_content_types = setting('GZIP_CONTENT_TYPES', (
         'text/css',
+        'text/javascript',
         'application/javascript',
         'application/x-javascript',
     ))
