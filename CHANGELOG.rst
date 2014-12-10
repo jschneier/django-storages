@@ -4,9 +4,14 @@ django-storages change log
 1.2.0 (unreleased)
 ******************
 
+* Add text/javascript mimetype to S3BotoStorage gzip allowed defaults
+* Add support for Django 1.7 migrations of S3BotoStorage with pull-request `#5`_
+* Python3K (3.3+) now available for S3Boto backend via pull-request `#4`_
 * Remove legacy S3 storage - fixes `#1`_
 * Remove mosso files backend - fixes `#2`_
 
+.. _#5: https://github.com/jschneier/django-storages-redux/pull/5
+.. _#4: https://github.com/jschneier/django-storages-redux/pull/4
 .. _#1: https://github.com/jschneier/django-storages-redux/issues/1
 .. _#2: https://github.com/jschneier/django-storages-redux/issues/2
 
