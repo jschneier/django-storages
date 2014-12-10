@@ -21,7 +21,7 @@ except ImportError:
                                "See https://github.com/boto/boto")
 
 from storages.utils import setting
-from storages.compat import urlparse, BytesIO
+from storages.compat import urlparse, BytesIO, deconstructible
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -73,6 +73,7 @@ def safe_join(base, *paths):
     return final_path.lstrip('/')
 
 
+@deconstructible
 class S3BotoStorageFile(File):
     """
     The default file object used by the S3BotoStorage backend.
