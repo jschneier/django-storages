@@ -194,7 +194,7 @@ class S3BotoStorageTests(S3BotoTestCase):
             _file, 1, headers=self.storage.headers,
         )
         file._multipart.complete_upload.assert_called_once()
-    
+
     def test_storage_exists(self):
         key = self.storage.bucket.new_key.return_value
         key.exists.return_value = True

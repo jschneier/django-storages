@@ -8,7 +8,7 @@ from tempfile import SpooledTemporaryFile
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.encoding import force_text, smart_str, filepath_to_uri
+from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 
 try:
     from boto import __version__ as boto_version
@@ -142,7 +142,7 @@ class S3BotoStorageFile(File):
             raise AttributeError("File was not opened in read mode.")
         return super(S3BotoStorageFile, self).read(*args, **kwargs)
 
-    def write(self, *args, **kwargs):
+    def write(self, content, *args, **kwargs):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
@@ -160,7 +160,7 @@ class S3BotoStorageFile(File):
             )
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
-        return super(S3BotoStorageFile, self).write(*args, **kwargs)
+        return super(S3BotoStorageFile, self).write(force_bytes(content), *args, **kwargs)
 
     @property
     def _buffer_file_size(self):
@@ -373,7 +373,7 @@ class S3BotoStorage(Storage):
         zbuf = BytesIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         try:
-            zfile.write(content.read())
+            zfile.write(force_bytes(content.read()))
         finally:
             zfile.close()
         zbuf.seek(0)
