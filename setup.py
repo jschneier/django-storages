@@ -1,11 +1,11 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import storages
 
 setup(
     name='django-storages-redux',
     version=storages.__version__,
-    packages=find_packages(),
+    packages=['storages', 'storages.backends'],
     author='Josh Schneier',
     author_email='josh.schneier@gmail.com',
     license='BSD',
