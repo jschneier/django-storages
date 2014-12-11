@@ -1,40 +1,34 @@
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
-import sys
 
 import storages
 
-# Some of this is based on drf and easy_thumbnails repos
-
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args['tests']
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        sys.exit(pytest.main(self.test_args))
-
 setup(
-    name = 'django-storages-redux',
-    version = storages.__version__,
-    packages = find_packages(),
-
-    author = 'Josh Schneier',
-    author_email = 'josh.schneier@gmail.com',
-    license = 'BSD',
-    description = 'Support for many storages (S3, MogileFS, etc) in Django.',
+    name='django-storages-redux',
+    version=storages.__version__,
+    packages=find_packages(),
+    author='Josh Schneier',
+    author_email='josh.schneier@gmail.com',
+    license='BSD',
+    description='Support for many storages (S3, MogileFS, etc) in Django.',
+    long_description=open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read(),
     url='https://github.com/jschneier/django-storages-redux',
-    cmd_class={'test': PyTest},
-    classifiers = [
+    classifiers=[
+        'Framework :: Django',
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Framework :: Django',
+        'Programming Language :: Python 2',
+        'Programming Language :: Python 3',
     ],
+    tests_require=[
+        'Django>=1.5',
+        'pytest',
+        'mock',
+        'boto>=2.32.0'
+    ],
+    test_suite='tests',
     zip_safe=False
 )

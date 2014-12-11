@@ -5,6 +5,17 @@ django-storages-redux
 .. image:: https://travis-ci.org/jschneier/django-storages-redux.png?branch=master
         :target: https://travis-ci/jschneier/django-storages-redux
 
+
+About
+=====
+django-storages was (is) a project to provide a variety of storage backends in a
+single library. This is its maintained, Python 3 compatible fork. It supports
+all currently supported versions of Django. The reasons for the fork are given
+in the next section.
+
+At the moment the only tested Python 3 comptaible backend is the S3 Boto one
+but some of them should work without issue (hashpath, symlink, overwrite).
+
 Why Fork?
 =========
 The BitBucket repo of the original django-storages has seen no commit applied
@@ -33,6 +44,11 @@ backends.
 Issues are tracked via GitHub issues at the `project issue page
 <https://github.com/jschneier/django-storages-redux/issues>`_.
 
+Documentation
+=============
+The original documentation for django-storages is located at http://django-storages.readthedocs.org/.
+Stay tuned for forthcoming documentation updates.
+
 
 Contributing
 ============
@@ -47,5 +63,3 @@ Contributing
 #. Bug me until I can merge your pull request. Also, don't forget to add
    yourself to ``AUTHORS``.
 
-
-See http://django-storages.readthedocs.org/
