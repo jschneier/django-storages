@@ -1,5 +1,5 @@
-django-storages change log
-==========================
+django-storages-redux change log
+================================
 
 1.2.0 (unreleased)
 ******************
@@ -16,9 +16,10 @@ django-storages change log
 .. _#2: https://github.com/jschneier/django-storages-redux/issues/2
 
 
-Version 1.1.9 is the first release of django-storages-redux after the fork but
-is simply the current state of django-storages in master as of 2014-12-08 (no
-commit since March 2014 and no PyPi release since March 2013)
+**NOTE**: Version 1.1.9 is the first release of django-storages-redux after the fork.
+It represents the current (2014-12-08) state of the original django-storages in
+master with no additional changes. This is the first release of the code base
+since March 2013.
 
 1.1.9 (2014-12-08)
 ******************
@@ -41,8 +42,9 @@ commit since March 2014 and no PyPi release since March 2013)
 .. _#66: https://bitbucket.org/david/django-storages/pull-request/66/
 .. _#65: https://bitbucket.org/david/django-storages/pull-request/65/
 
-Everything Below Here Was Previously Released on PyPi under django-storages
-***************************************************************************
+
+**Everything Below Here Was Previously Released on PyPi under django-storages**
+
 
 1.1.8 (2013-03-31)
 ******************

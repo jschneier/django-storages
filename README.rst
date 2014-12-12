@@ -8,13 +8,15 @@ django-storages-redux
 
 About
 =====
-django-storages was (is) a project to provide a variety of storage backends in a
-single library. This is its maintained, Python 3 compatible fork. It supports
-all currently supported versions of Django. The reasons for the fork are given
-in the next section.
+django-storages was (is) a project to provide a variety of storage backends in
+a single library. This is its maintained, Python 3 compatible fork. The reasons
+for the fork are given in the next section.
 
 At the moment the only tested Python 3 comptaible backend is the S3 Boto one
 but some of them should work without issue (hashpath, symlink, overwrite).
+
+This library maintains compatibility for all currently supported versions of
+Django.
 
 Why Fork?
 =========
