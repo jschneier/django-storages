@@ -8,7 +8,7 @@ from django.core.files.storage import Storage
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
 
-from storages.compat import BytesIO
+from storages.compat import BytesIO, deconstructible
 
 try:
     from libcloud.storage.providers import get_driver
@@ -16,7 +16,7 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
 
-
+@deconstructible
 class LibCloudStorage(Storage):
     """Django storage derived class using apache libcloud to operate
     on supported providers"""
