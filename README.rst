@@ -3,7 +3,7 @@ django-storages-redux
 =====================
 
 .. image:: https://travis-ci.org/jschneier/django-storages-redux.png?branch=master
-        :target: https://travis-ci/jschneier/django-storages-redux
+        :target: https://travis-ci.org/jschneier/django-storages-redux
 
 
 About
