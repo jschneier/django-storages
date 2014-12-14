@@ -1,7 +1,7 @@
 django-storages-redux change log
 ================================
 
-1.2.0 (unreleased)
+1.2 (2014-12-14)
 ******************
 
 * Add text/javascript mimetype to S3BotoStorage gzip allowed defaults
