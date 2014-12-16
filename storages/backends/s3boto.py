@@ -1,6 +1,9 @@
 import os
 import posixpath
 import mimetypes
+from boto.utils import ISO8601
+from boto.utils import ISO8601_MS
+
 from gzip import GzipFile
 import datetime
 from tempfile import SpooledTemporaryFile
@@ -476,6 +479,12 @@ class S3BotoStorage(Storage):
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
         # Parse the last_modified string to a local datetime object.
+        if not entry.last_modified:
+            try:
+                entry.last_modified = datetime.datetime.now().strftime(ISO8601)
+            except ValueError:
+                entry.last_modified = datetime.datetime.now().strftime(ISO8601_MS)
+
         return parse_ts_extended(entry.last_modified)
 
     def url(self, name, headers=None, response_headers=None):
