@@ -2,8 +2,8 @@ import os
 import posixpath
 import mimetypes
 from gzip import GzipFile
-import datetime
 from tempfile import SpooledTemporaryFile
+import warnings
 
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -31,13 +31,12 @@ if boto_version_info[:2] < (2, 32):
 
 
 def parse_ts_extended(ts):
-    RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
-    rv = None
-    try:
-        rv = parse_ts(ts)
-    except ValueError:
-        rv = datetime.datetime.strptime(ts, RFC1123)
-    return rv
+    warnings.warn(
+        "parse_ts_extended has been deprecated and will be removed in version "
+        "1.3 because boto.utils.parse_ts has subsumed the old functionality.",
+        PendingDeprecationWarning
+    )
+    return parse_ts(ts)
 
 
 def safe_join(base, *paths):
@@ -476,7 +475,7 @@ class S3BotoStorage(Storage):
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
         # Parse the last_modified string to a local datetime object.
-        return parse_ts_extended(entry.last_modified)
+        return parse_ts(entry.last_modified)
 
     def url(self, name, headers=None, response_headers=None):
         # Preserve the trailing slash after normalizing the path.

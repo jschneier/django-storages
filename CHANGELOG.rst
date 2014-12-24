@@ -1,8 +1,13 @@
 django-storages-redux change log
 ================================
 
-1.2 (2014-12-14)
+1.2.1 (unreleased)
 ******************
+
+* Deprecate and issue warning about ``parse_ts_extended``
+
+1.2 (2014-12-14)
+****************
 
 * Add text/javascript mimetype to S3BotoStorage gzip allowed defaults
 * Add support for Django 1.7 migrations in S3BotoStorage `#5`_ and ApacheLibCloudStorage `#8`_
