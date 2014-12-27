@@ -16,7 +16,7 @@ try:
     from boto.s3.connection import S3Connection, SubdomainCallingFormat
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
-    from boto.utils import parse_ts
+    from boto.utils import parse_ts, ISO8601
 except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
@@ -411,6 +411,7 @@ class S3BotoStorage(Storage):
             key = self.bucket.new_key(encoded_name)
         if self.preload_metadata:
             self._entries[encoded_name] = key
+            key.last_modified = datetime.utcnow().strftime(ISO8601)
 
         key.set_metadata('Content-Type', content_type)
         self._save_content(key, content, headers=headers)
