@@ -9,6 +9,7 @@ from django.test import TestCase
 from django.core.files.base import ContentFile
 
 from boto.s3.key import Key
+from boto.utils import ISO8601
 
 from storages.compat import urlparse
 from storages.backends import s3boto
@@ -280,4 +281,16 @@ class S3BotoStorageTests(S3BotoTestCase):
         parsed_url = urlparse.urlparse(url)
         self.assertEqual(parsed_url.path,
                          "/whacky%20%26%20filename.mp4")
+
+    def test_new_file_modified_time(self):
+        self.storage.preload_metadata = True
+        name = 'test_storage_save.txt'
+        content = ContentFile('new content')
+        utcnow = datetime.datetime.utcnow()
+        with mock.patch('storages.backends.s3boto.datetime') as mock_datetime:
+            mock_datetime.utcnow.return_value = utcnow
+            self.storage.save(name, content)
+            self.assertEqual(self.storage.entries[name].last_modified,
+                             utcnow.strftime(ISO8601))
+            self.storage.modified_time(name) # should not raise an exception
 
