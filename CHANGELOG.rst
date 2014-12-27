@@ -5,6 +5,7 @@ django-storages-redux change log
 ******************
 
 * Deprecate and issue warning about ``parse_ts_extended``
+* Deprecate mongodb backend - django-mongodb-engine now ships its own storage backend
 
 1.2 (2014-12-14)
 ****************

@@ -4,6 +4,11 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.db import connections
 from django.utils.encoding import force_text
+import warnings
+
+warnings.warn("The mongodb storage backend will be removed in version 1.3.\n"
+              "A storage backend is now provided by django-mongodb-engine.",
+              PendingDeprecationWarning)
 
 try:
     from gridfs import GridFS, NoFile
