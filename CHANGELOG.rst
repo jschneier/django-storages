@@ -4,17 +4,23 @@ django-storages-redux change log
 1.2.1 (unreleased)
 ******************
 
+* Fix ``storage.modified_time`` crashing on new files when ``AWS_PRELOAD_METADATA=True`` (`#11`_, `#12`__, `#14`_)
 * Deprecate and issue warning about ``parse_ts_extended``
 * Deprecate mongodb backend - django-mongodb-engine now ships its own storage backend
+
+.. _#11: https://github.com/jschneier/django-storages-redux/pull/11
+__ https://github.com/jschneier/django-storages-redux/issues/12
+.. _#14: https://github.com/jschneier/django-storages-redux/pull/14
+
 
 1.2 (2014-12-14)
 ****************
 
 * Add text/javascript mimetype to S3BotoStorage gzip allowed defaults
-* Add support for Django 1.7 migrations in S3BotoStorage `#5`_ and ApacheLibCloudStorage `#8`_
-* Python3K (3.3+) now available for S3Boto backend `#4`_
-* Remove legacy S3 storage - fixes `#1`_
-* Remove mosso files backend - fixes `#2`_
+* Add support for Django 1.7 migrations in S3BotoStorage and ApacheLibCloudStorage (`#5`_, `#8`_)
+* Python3K (3.3+) now available for S3Boto backend (`#4`_)
+* Remove legacy S3 storage (`#1`_)
+* Remove mosso files backend (`#2`_)
 
 .. _#8: https://github.com/jschneier/django-storages-redux/pull/8
 .. _#5: https://github.com/jschneier/django-storages-redux/pull/5
