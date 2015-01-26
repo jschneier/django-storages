@@ -193,7 +193,7 @@ class S3BotoStorageFile(File):
                 self._multipart.cancel_upload()
         self.key.close()
 
-
+@deconstructible
 class S3BotoStorage(Storage):
     """
     Amazon Simple Storage Service using Boto
