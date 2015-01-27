@@ -1,6 +1,17 @@
 django-storages-redux change log
 ================================
 
+1.2.2 (unreleased)
+******************
+
+* Release package as a wheel
+* Avoid resource warning during install (`#20`__)
+* Made ``S3BotoStorage`` deconstructible (previously only ``S3BotoStorageFile`` was deconstructible) (`#19`_)
+
+.. __: https://github.com/jschneier/django-storages-redux/issues/20
+.. _#19: https://github.com/jschneier/django-storages-redux/pull/11
+
+
 1.2.1 (2014-12-31)
 ******************
 
