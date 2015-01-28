@@ -1,9 +1,9 @@
 =====================
-django-storages-redux
+django-storages
 =====================
 
-.. image:: https://travis-ci.org/jschneier/django-storages-redux.png?branch=master
-        :target: https://travis-ci.org/jschneier/django-storages-redux
+.. image:: https://travis-ci.org/jschneier/django-storages.png?branch=master
+        :target: https://travis-ci.org/jschneier/django-storages
 
 
 About
@@ -44,7 +44,7 @@ welcome bug reports (and especially) patches and tests for some of the other
 backends.
 
 Issues are tracked via GitHub issues at the `project issue page
-<https://github.com/jschneier/django-storages-redux/issues>`_.
+<https://github.com/jschneier/django-storages/issues>`_.
 
 Documentation
 =============
@@ -56,10 +56,10 @@ Contributing
 ============
 
 #. `Check for open issues
-   <https://github.com/jschneier/django-storages-redux/issues>`_ at the project
+   <https://github.com/jschneier/django-storages/issues>`_ at the project
    issue page or open a new issue to start a discussion about a feature or bug.
-#. Fork the `django-storages-redux repository on GitHub
-   <https://github.com/jschneier/django-storages-redux>`_ to start making changes.
+#. Fork the `django-storages repository on GitHub
+   <https://github.com/jschneier/django-storages>`_ to start making changes.
 #. Add a test case to show that the bug is fixed or the feature is implemented
    correctly.
 #. Bug me until I can merge your pull request. Also, don't forget to add

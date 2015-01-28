@@ -1,4 +1,4 @@
-django-storages-redux change log
+django-storages change log
 ================================
 
 1.2.2 (unreleased)
@@ -8,8 +8,8 @@ django-storages-redux change log
 * Avoid resource warning during install (`#20`__)
 * Made ``S3BotoStorage`` deconstructible (previously only ``S3BotoStorageFile`` was deconstructible) (`#19`_)
 
-.. __: https://github.com/jschneier/django-storages-redux/issues/20
-.. _#19: https://github.com/jschneier/django-storages-redux/pull/11
+.. __: https://github.com/jschneier/django-storages/issues/20
+.. _#19: https://github.com/jschneier/django-storages/pull/11
 
 
 1.2.1 (2014-12-31)
@@ -19,9 +19,9 @@ django-storages-redux change log
 * Deprecate and issue warning about ``parse_ts_extended``
 * Deprecate mongodb backend - django-mongodb-engine now ships its own storage backend
 
-.. _#11: https://github.com/jschneier/django-storages-redux/pull/11
-__ https://github.com/jschneier/django-storages-redux/issues/12
-.. _#14: https://github.com/jschneier/django-storages-redux/pull/14
+.. _#11: https://github.com/jschneier/django-storages/pull/11
+__ https://github.com/jschneier/django-storages/issues/12
+.. _#14: https://github.com/jschneier/django-storages/pull/14
 
 
 1.2 (2014-12-14)
@@ -33,14 +33,14 @@ __ https://github.com/jschneier/django-storages-redux/issues/12
 * Remove legacy S3 storage (`#1`_)
 * Remove mosso files backend (`#2`_)
 
-.. _#8: https://github.com/jschneier/django-storages-redux/pull/8
-.. _#5: https://github.com/jschneier/django-storages-redux/pull/5
-.. _#4: https://github.com/jschneier/django-storages-redux/pull/4
-.. _#1: https://github.com/jschneier/django-storages-redux/issues/1
-.. _#2: https://github.com/jschneier/django-storages-redux/issues/2
+.. _#8: https://github.com/jschneier/django-storages/pull/8
+.. _#5: https://github.com/jschneier/django-storages/pull/5
+.. _#4: https://github.com/jschneier/django-storages/pull/4
+.. _#1: https://github.com/jschneier/django-storages/issues/1
+.. _#2: https://github.com/jschneier/django-storages/issues/2
 
 
-**NOTE**: Version 1.1.9 is the first release of django-storages-redux after the fork.
+**NOTE**: Version 1.1.9 is the first release of django-storages after the fork.
 It represents the current (2014-12-08) state of the original django-storages in
 master with no additional changes. This is the first release of the code base
 since March 2013.
