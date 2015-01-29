@@ -1,15 +1,17 @@
 django-storages change log
 ================================
 
-1.2.2 (unreleased)
+1.2.2 (2014-01-28)
 ******************
 
+* Remove always show all warnings filter (`#21`_)
 * Release package as a wheel
 * Avoid resource warning during install (`#20`__)
 * Made ``S3BotoStorage`` deconstructible (previously only ``S3BotoStorageFile`` was deconstructible) (`#19`_)
 
+.. _#21: https://github.com/jschneier/django-storages/pull/21
 .. __: https://github.com/jschneier/django-storages/issues/20
-.. _#19: https://github.com/jschneier/django-storages/pull/11
+.. _#19: https://github.com/jschneier/django-storages/pull/19
 
 
 1.2.1 (2014-12-31)
