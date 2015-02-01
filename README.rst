@@ -26,7 +26,7 @@ March 2013 despite a wealth of bugfixes that were applied in that year-long
 gap. There is plenty of community support for the django-storages project
 (especially the S3BotoStorage piece) and I have a personal need for a Python3
 compatible version.
-
+https://github.com/nlundquist/django-storages
 All of the Python3 comptaible forks that currently exist (and there are a few)
 are lacking in some way. This can be anything from the fact that they don't
 release to PyPi, have no ongoing testing, didn't apply many important bugfixes
@@ -51,6 +51,12 @@ Documentation
 The original documentation for django-storages is located at http://django-storages.readthedocs.org/.
 Stay tuned for forthcoming documentation updates.
 
+API Changes
+===========
+Any signifigant API changes added during this fork are noted below while new documentation is assembled:
+
+- `Added S3BotoStorage bucket_alias kawrg & AWS_STORAGE_BUCKET_ALIASES setting
+  <https://github.com/jschneier/django-storages/issues/22>`_
 
 Contributing
 ============
@@ -64,4 +70,3 @@ Contributing
    correctly.
 #. Bug me until I can merge your pull request. Also, don't forget to add
    yourself to ``AUTHORS``.
-
