@@ -185,7 +185,7 @@ class FTPStorage(Storage):
     def exists(self, name):
         self._start_connection()
         try:
-            if os.path.basename(name) in self._connection.nlst(
+            if name in self._connection.nlst(
                 os.path.dirname(name) + '/'
             ):
                 return True
