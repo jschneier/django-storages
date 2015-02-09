@@ -252,7 +252,6 @@ class FTPStorageFile(File):
         if not self._is_read:
             self._storage._start_connection()
             self.file = self._storage._read(self._name)
-            self._storage._end_connection()
             self._is_read = True
 
         return self.file.read(num_bytes)
