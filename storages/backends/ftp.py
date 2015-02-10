@@ -174,7 +174,7 @@ class FTPStorage(Storage):
             # workaround for broken FTP servers returning responses
             # starting with e.g. 1904... instead of 2004...
             if len(s) == 15 and s[:2] == '19':
-                s = repr(1900 + int(s[2:5])) + s[5:]
+                s = str(1900 + int(s[2:5])) + s[5:]
             return datetime.strptime(s, '%Y%m%d%H%M%S')
         raise FTPStorageException(
                 'Error getting modification time of file %s' % name
