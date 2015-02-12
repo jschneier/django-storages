@@ -15,6 +15,7 @@
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
 import os
+from datetime import datetime
 import ftplib
 
 from django.conf import settings
@@ -165,6 +166,20 @@ class FTPStorage(Storage):
         except ftplib.all_errors:
             raise FTPStorageException('Error getting listing for %s' % path)
 
+    def modified_time(self, name):
+        self._start_connection()
+        resp = self._connection.sendcmd('MDTM ' + name)
+        if resp[:3] == '213':
+            s = resp[3:].strip()
+            # workaround for broken FTP servers returning responses
+            # starting with e.g. 1904... instead of 2004...
+            if len(s) == 15 and s[:2] == '19':
+                s = str(1900 + int(s[2:5])) + s[5:]
+            return datetime.strptime(s, '%Y%m%d%H%M%S')
+        raise FTPStorageException(
+                'Error getting modification time of file %s' % name
+        )
+
     def listdir(self, path):
         self._start_connection()
         try:
@@ -185,9 +200,10 @@ class FTPStorage(Storage):
     def exists(self, name):
         self._start_connection()
         try:
-            if os.path.basename(name) in self._connection.nlst(
+            nlst = self._connection.nlst(
                 os.path.dirname(name) + '/'
-            ):
+            )
+            if name in nlst or os.path.basename(name) in nlst:
                 return True
             else:
                 return False
@@ -236,7 +252,6 @@ class FTPStorageFile(File):
         if not self._is_read:
             self._storage._start_connection()
             self.file = self._storage._read(self._name)
-            self._storage._end_connection()
             self._is_read = True
 
         return self.file.read(num_bytes)
