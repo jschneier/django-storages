@@ -27,7 +27,7 @@ gap. There is plenty of community support for the django-storages project
 (especially the S3BotoStorage piece) and I have a personal need for a Python3
 compatible version.
 
-All of the Python3 comptaible forks that currently exist (and there are a few)
+All of the Python3 compatible forks that currently exist (and there are a few)
 are lacking in some way. This can be anything from the fact that they don't
 release to PyPi, have no ongoing testing, didn't apply many important bugfixes
 that have occurred on the bitbucket repo since forking or don't support older
