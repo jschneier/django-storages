@@ -11,7 +11,7 @@ Raw sql is used for all operations. In constructor or in DB_FILES of settings.py
 
     DB_FILES = {
         'db_table': 'FILES',
-        'fname_column':  'FILE_NAME',
+        'fname_column': 'FILE_NAME',
         'blob_column': 'BLOB',
         'size_column': 'SIZE',
         'base_url': 'http://localhost/dbfiles/'
