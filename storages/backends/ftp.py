@@ -174,7 +174,7 @@ class FTPStorage(Storage):
                             self.list_maxsplit = i + 3
                             break
                     # resplit line if maxsplit doesn't match len(words)
-                    if len(words) != self.list_maxsplit:
+                    if len(words) > self.list_maxsplit + 1:
                         words = line.split(None, self.list_maxsplit)
                 if words[0][0] == 'd':
                     dirs[words[-1]] = 0
