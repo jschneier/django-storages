@@ -63,7 +63,7 @@ from storages.compat import urlparse, BytesIO
 
 class SFTPStorage(Storage):
 
-    def __init__(self):
+    def __init__(self, location=settings.SFTP_STORAGE_ROOT):
         self._host = settings.SFTP_STORAGE_HOST
 
         # if present, settings.SFTP_STORAGE_PARAMS should be a dict with params
@@ -80,7 +80,7 @@ class SFTPStorage(Storage):
         self._gid = getattr(settings, 'SFTP_STORAGE_GID', None)
         self._known_host_file = getattr(settings, 'SFTP_KNOWN_HOST_FILE', None)
 
-        self._root_path = settings.SFTP_STORAGE_ROOT
+        self._root_path = location
         self._base_url = settings.MEDIA_URL
 
         # for now it's all posix paths.  Maybe someday we'll support figuring
@@ -240,6 +240,10 @@ class SFTPStorageFile(File):
         self._is_dirty = False
         self.file = BytesIO()
         self._is_read = False
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def size(self):
