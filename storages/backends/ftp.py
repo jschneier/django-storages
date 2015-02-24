@@ -37,6 +37,9 @@ class FTPStorage(Storage):
         self._config = self._decode_location(location)
         self._base_url = base_url
         self._connection = None
+        # Heuristics for LIST command
+        self.list_size_col_no = None
+        self.list_maxsplit = -1
 
     def _decode_location(self, location):
         """Return splitted configuration data from location."""
@@ -153,15 +156,30 @@ class FTPStorage(Storage):
             dirs = {}
             files = {}
             for line in lines:
-                words = line.split()
+                words = line.split(None, self.list_maxsplit)
                 if len(words) < 6:
                     continue
-                if words[-2] == '->':
-                    continue
+                if self.list_size_col_no is None:
+                    # need to determine which column specifies file size
+                    # due to very non-standard nature of LIST command
+                    # the only good way to do this is to find a column with
+                    # file date's month part (3 symbol shortened name of a month)
+                    # which always goes after size column
+                    for i in range(1, len(words)):
+                        if len(words[i]) == 3 and words[i].isalpha():
+                            self.list_size_col_no = i - 1
+                            # filenames might contain spaces so maxsplit has 
+                            # to be adjusted to i + 3
+                            # (+2 splits for the rest of date and +1 for filename)
+                            self.list_maxsplit = i + 3
+                            break
+                    # resplit line if maxsplit doesn't match len(words)
+                    if len(words) != self.list_maxsplit:
+                        words = line.split(None, self.list_maxsplit)
                 if words[0][0] == 'd':
                     dirs[words[-1]] = 0
                 elif words[0][0] == '-':
-                    files[words[-1]] = int(words[-5])
+                    files[words[-1]] = int(words[self.list_size_col_no])
             return dirs, files
         except ftplib.all_errors:
             raise FTPStorageException('Error getting listing for %s' % path)
@@ -241,6 +259,10 @@ class FTPStorageFile(File):
         self._is_dirty = False
         self.file = BytesIO()
         self._is_read = False
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def size(self):
