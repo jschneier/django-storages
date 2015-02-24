@@ -5,11 +5,14 @@ from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 import warnings
+import math
 
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from filechunkio import FileChunkIO
+
 
 try:
     from boto import __version__ as boto_version
@@ -66,7 +69,7 @@ def safe_join(base, *paths):
     # equal to base_path).
     base_path_len = len(base_path)
     if (not final_path.startswith(base_path) or
-            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
+                final_path[base_path_len:base_path_len + 1] not in ('', '/')):
         raise ValueError('the joined path is located outside of the base path'
                          ' component')
 
@@ -93,7 +96,7 @@ class S3BotoStorageFile(File):
     """
     # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
     # TODO: When Django drops support for Python 2.5, rewrite to use the
-    #       BufferedIO streams in the Python 2.6 io module.
+    # BufferedIO streams in the Python 2.6 io module.
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
@@ -152,7 +155,8 @@ class S3BotoStorageFile(File):
             upload_headers = {
                 provider.acl_header: self._storage.default_acl
             }
-            upload_headers.update({'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType})
+            upload_headers.update(
+                {'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType})
             upload_headers.update(self._storage.headers)
             self._multipart = self._storage.bucket.initiate_multipart_upload(
                 self.key.name,
@@ -193,7 +197,7 @@ class S3BotoStorageFile(File):
                 self._multipart.cancel_upload()
         self.key.close()
 
-@deconstructible
+
 class S3BotoStorage(Storage):
     """
     Amazon Simple Storage Service using Boto
@@ -302,7 +306,7 @@ class S3BotoStorage(Storage):
         """
         if self.preload_metadata and not self._entries:
             self._entries = dict((self._decode_name(entry.key), entry)
-                                for entry in self.bucket.list(prefix=self.location))
+                                 for entry in self.bucket.list(prefix=self.location))
         return self._entries
 
     def _get_access_keys(self):
@@ -311,11 +315,13 @@ class S3BotoStorage(Storage):
         are provided to the class in the constructor or in the
         settings then get them from the environment variables.
         """
+
         def lookup_env(names):
             for name in names:
                 value = os.environ.get(name)
                 if value:
                     return value
+
         access_key = self.access_key or lookup_env(self.access_key_names)
         secret_key = self.secret_key or lookup_env(self.secret_key_names)
         return access_key, secret_key
@@ -326,7 +332,7 @@ class S3BotoStorage(Storage):
         """
         try:
             return self.connection.get_bucket(name,
-                validate=self.auto_create_bucket)
+                                              validate=self.auto_create_bucket)
         except self.connection_response_error:
             if self.auto_create_bucket:
                 bucket = self.connection.create_bucket(name)
@@ -395,7 +401,7 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(cleaned_name)
         headers = self.headers.copy()
         content_type = getattr(content, 'content_type',
-            mimetypes.guess_type(name)[0] or self.key_class.DefaultContentType)
+                               mimetypes.guess_type(name)[0] or self.key_class.DefaultContentType)
 
         # setting the content_type in the key object is not enough.
         headers.update({'Content-Type': content_type})
@@ -404,8 +410,9 @@ class S3BotoStorage(Storage):
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
 
-        content.name = cleaned_name
+        # content.name = cleaned_name
         encoded_name = self._encode_name(name)
+
         key = self.bucket.get_key(encoded_name)
         if not key:
             key = self.bucket.new_key(encoded_name)
@@ -422,10 +429,28 @@ class S3BotoStorage(Storage):
         kwargs = {}
         if self.encryption:
             kwargs['encrypt_key'] = self.encryption
-        key.set_contents_from_file(content, headers=headers,
-                                   policy=self.default_acl,
-                                   reduced_redundancy=self.reduced_redundancy,
-                                   rewind=True, **kwargs)
+        mp = self.bucket.initiate_multipart_upload(
+            key.name,
+            headers=headers,
+            reduced_redundancy=self.reduced_redundancy,
+            policy=self.default_acl,
+            **kwargs
+        )
+        chunk_size = 52428800
+        source_size = os.stat(content.name).st_size
+        chunk_count = int(math.ceil(source_size / chunk_size)) + 1
+        print ('_save_content:key_name.content_name.source_size.chunk_count = ({}).({}).({}).({})'.format(key.name, content.name, source_size, chunk_count))
+        for i in range(chunk_count):
+            offset = chunk_size * i
+            bytes = min(chunk_size, source_size - offset)
+            with FileChunkIO(content.name, 'r', offset=offset, bytes=bytes) as fp:
+                print('_save_content:key_name.content_name.source_size.chunk_count = ({}).({}).({}).({}).uploading.({})'.format(key.name, content.name, source_size, chunk_count, i+1))
+                mp.upload_part_from_file(fp, part_num=i + 1)
+        mp.complete_upload()
+        # key.set_contents_from_file(content, headers=headers,
+        # policy=self.default_acl,
+        #                            reduced_redundancy=self.reduced_redundancy,
+        #                            rewind=True, **kwargs)
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -486,10 +511,10 @@ class S3BotoStorage(Storage):
             return "%s//%s/%s" % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
         return self.connection.generate_url(self.querystring_expire,
-            method='GET', bucket=self.bucket.name, key=self._encode_name(name),
-            headers=headers,
-            query_auth=self.querystring_auth, force_http=not self.secure_urls,
-            response_headers=response_headers)
+                                            method='GET', bucket=self.bucket.name, key=self._encode_name(name),
+                                            headers=headers,
+                                            query_auth=self.querystring_auth, force_http=not self.secure_urls,
+                                            response_headers=response_headers)
 
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
