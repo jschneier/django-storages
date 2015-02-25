@@ -15,6 +15,7 @@
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
 import os
+import re
 from datetime import datetime
 import ftplib
 
@@ -162,11 +163,14 @@ class FTPStorage(Storage):
                 if self.list_size_col_no is None:
                     # need to determine which column specifies file size
                     # due to very non-standard nature of LIST command
-                    # the only good way to do this is to find a column with
-                    # file date's month part (3 symbol shortened name of a month)
-                    # which always goes after size column
-                    for i in range(1, len(words)):
-                        if len(words[i]) == 3 and words[i].isalpha():
+                    # the only good way to do this is to find columns with
+                    # file's date (3 symbol shortened name of a month, 
+                    # day of month and time or year) which always go after 
+                    # size column
+                    for i in range(2, len(words)-3):
+                        if (len(words[i]) == 3 and words[i].isalpha() and
+                                words[i+1].isdigit() and 
+                                re.match(r'^\d\d:?\d\d', words[i+2])):
                             self.list_size_col_no = i - 1
                             # filenames might contain spaces so maxsplit has 
                             # to be adjusted to i + 3
