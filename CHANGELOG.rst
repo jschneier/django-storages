@@ -1,7 +1,7 @@
 django-storages change log
 ================================
 
-1.2.2 (2014-01-28)
+1.2.2 (2015-01-28)
 ******************
 
 * Remove always show all warnings filter (`#21`_)
