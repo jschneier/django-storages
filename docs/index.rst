@@ -29,16 +29,16 @@ Each storage backend has its own unique settings you will need to add to your se
 Contributing
 ************
 
-To contribute to django-storages `create a fork`_ on bitbucket. Clone your fork, make some changes, and submit a pull request.
+To contribute to django-storages `create a fork`_ on GitHub. Clone your fork, make some changes, and submit a pull request.
 
-.. _create a fork: https://bitbucket.org/david/django-storages/fork
+.. _create a fork: https://github.com/jschneier/django-storages
 
 Issues
 ******
 
-Use the bitbucket `issue tracker`_ for django-storages to submit bugs, issues, and feature requests.
+Use the GitHub `issue tracker`_ for django-storages to submit bugs, issues, and feature requests.
 
-.. _issue tracker: https://bitbucket.org/david/django-storages/issues
+.. _issue tracker: https://github.com/jschneier/django-storages/issues
 
 Indices and tables
 ==================

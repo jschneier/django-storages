@@ -4,7 +4,7 @@ Amazon S3
 Usage
 *****
 
-There is one backend for interacting with S3 based on boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
+There is one backend for interacting with S3 based on the boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
 
 Settings
 --------
@@ -24,13 +24,6 @@ Your Amazon Web Services secret access key, as a string.
 ``AWS_STORAGE_BUCKET_NAME``
 
 Your Amazon Web Services storage bucket name, as a string.
-
-``AWS_CALLING_FORMAT`` (Subdomain hardcoded in s3boto)
-
-The way you'd like to call the Amazon Web Services API, for instance if you prefer subdomains::
-
-    from S3 import CallingFormat
-    AWS_CALLING_FORMAT = CallingFormat.SUBDOMAIN
 
 ``AWS_HEADERS`` (optional)
 
