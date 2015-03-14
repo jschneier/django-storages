@@ -1,6 +1,15 @@
 django-storages change log
 ================================
 
+1.2.3 (2015-03-14)
+******************
+
+* Variety of FTP backend fixes (fix ``exists``, add ``modified_time``, remove call to non-existent function) (`#26`_)
+* Apparently the year changed to 2015
+
+.. _#26: https://github.com/jschneier/django-storages/pull/26
+
+
 1.2.2 (2015-01-28)
 ******************
 
