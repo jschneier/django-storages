@@ -100,11 +100,13 @@ your storage provider:
 
     **Rackspace Cloudfiles**:
 
-        **type**: ``libcloud.storage.types.Provider.CLOUDFIULES_US`` or ``libcloud.storage.types.Provider.CLOUDFIULES_UK``,
+        **type**: ``libcloud.storage.types.Provider.CLOUDFILES``
 
         **user**: Your Rackspace user ID
 
         **key**: Your Rackspace access key
+
+	**region**: The region where your Rackspace container lives (*defaults to ORD*).	
 
 You can specify any bucket name you want; however, the bucket must exist before you
 can start using it. If you need to create the bucket, you can use the storage API.
