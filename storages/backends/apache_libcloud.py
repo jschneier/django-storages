@@ -12,7 +12,7 @@ from storages.compat import BytesIO, deconstructible
 
 try:
     from libcloud.storage.providers import get_driver
-    from libcloud.storage.types import ObjectDoesNotExistError, Provider
+    from libcloud.storage.types import ObjectDoesNotExistError, Provider, ContainerDoesNotExistError
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
 
@@ -50,6 +50,8 @@ class LibCloudStorage(Storage):
                 "Unable to create libcloud driver type %s: %s" % \
                 (self.provider.get('type'), e))
         self.bucket = self.provider['bucket']   # Limit to one container
+        self.is_private_bucket = self.provider['is_private_bucket'] if 'is_private_bucket' in self.provider else None
+        self.temporary_url_timeout = self.provider['temporary_url_timeout'] if 'temporary_url_timeout' in self.provider else None
 
     def _get_bucket(self):
         """Helper to get bucket object (libcloud container)"""
@@ -120,9 +122,16 @@ class LibCloudStorage(Storage):
         else:
             return -1
 
-    def url(self, name):
+    def url(self, name, temporary_url=False, temporary_url_timeout=None):
         obj = self._get_object(name)
-        return self.driver.get_object_cdn_url(obj)
+        timeout = temporary_url_timeout if temporary_url_timeout else self.temporary_url_timeout
+        if self.is_private_bucket or temporary_url:
+            return self.driver.ex_get_object_temp_url(obj, timeout)
+        else:
+            try:
+                return self.driver.get_object_cdn_url(obj)
+            except ContainerDoesNotExistError:
+                return self.driver.ex_get_object_temp_url(obj, timeout)
 
     def _open(self, name, mode='rb'):
         remote_file = LibCloudFile(name, self, mode=mode)
