@@ -51,7 +51,7 @@ Amazon S3 store, and a third bucket (``bucket-3``) on Google::
             'bucket': 'bucket-2',
         },
         'google': {
-            'type': 'libcloud.storage.types.GOOGLE_STORAGE',
+            'type': 'libcloud.storage.types.Provider.GOOGLE_STORAGE',
             'user': '<Your Google APIv1 username>',
             'key': '<Your Google APIv1 Key>',
             'bucket': 'bucket-3',
