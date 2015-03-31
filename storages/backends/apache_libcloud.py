@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.files.storage import Storage
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.functional import cached_property
 
 from storages.compat import BytesIO, deconstructible
 
@@ -15,6 +16,7 @@ try:
     from libcloud.storage.types import ObjectDoesNotExistError, Provider
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
+
 
 @deconstructible
 class LibCloudStorage(Storage):
@@ -148,11 +150,9 @@ class LibCloudFile(File):
         self.file = BytesIO()
         self.start_range = 0
 
-    @property
+    @cached_property
     def size(self):
-        if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
-        return self._size
+        return self._storage.size(self._name)
 
     def read(self, num_bytes=None):
         if num_bytes is None:

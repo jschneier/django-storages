@@ -22,8 +22,10 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.functional import cached_property
 
 from storages.compat import urlparse, BytesIO
+
 
 class FTPStorageException(Exception):
     pass
@@ -242,11 +244,9 @@ class FTPStorageFile(File):
         self.file = BytesIO()
         self._is_read = False
 
-    @property
+    @cached_property
     def size(self):
-        if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
-        return self._size
+        return self._storage.size(self._name)
 
     def read(self, num_bytes=None):
         if not self._is_read:

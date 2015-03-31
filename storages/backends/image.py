@@ -52,4 +52,3 @@ class ImageStorage(FileSystemStorage):
         
         name = os.path.join(dirname, basename)
         return super(ImageStorage, self).save(name, content)
-    

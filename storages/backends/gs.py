@@ -14,8 +14,7 @@ except ImportError:
 
 
 class GSBotoStorageFile(S3BotoStorageFile):
-
-    def write(self, content):
+    def write(self, content, *args, **kwargs):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self.file = BytesIO(content)
@@ -70,8 +69,7 @@ class GSBotoStorage(S3BotoStorage):
         if self.encryption:
             options['encrypt_key'] = self.encryption
         key.set_contents_from_file(content, headers=headers,
-                                   policy=self.default_acl,
-                                   rewind=True, **options)
+            policy=self.default_acl, rewind=True, **options)
 
     def _get_or_create_bucket(self, name):
         """
@@ -86,7 +84,8 @@ class GSBotoStorage(S3BotoStorage):
                 validate=self.auto_create_bucket)
         except self.connection_response_error:
             if self.auto_create_bucket:
-                bucket = self.connection.create_bucket(name, storage_class=storage_class)
+                bucket = self.connection.create_bucket(name,
+                    storage_class=storage_class)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "

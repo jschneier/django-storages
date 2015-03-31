@@ -22,6 +22,7 @@ except ImportError:
     raise ImproperlyConfigured("Could not load pymongo dependency.\
     \nSee http://github.com/mongodb/mongo-python-driver")
 
+
 class GridFSStorage(Storage):
     @property
     def fs(self):
@@ -80,8 +81,6 @@ class GridFSStorage(Storage):
         except NoFile:
             raise ValueError('File with name "%s" does not exist' % name)
 
-    def url(self, name):
-        raise NotImplementedError()
 
 class GridFSFile(File):
     def __init__(self, name, storage, mode):
@@ -106,4 +105,3 @@ class GridFSFile(File):
 
     def close(self):
         self.file.close()
-

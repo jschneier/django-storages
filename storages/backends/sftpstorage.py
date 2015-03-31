@@ -24,7 +24,7 @@ from __future__ import print_function
 # already a password in SFTP_STORAGE_PARAMS.  You can set this to True to
 # enable interactive login when running 'manage.py collectstatic', for example.
 #
-#   DO NOT set SFTP_STORAGE_INTERACTIVE to True if you are using this storage
+# DO NOT set SFTP_STORAGE_INTERACTIVE to True if you are using this storage
 #   for files being uploaded to your site by users, because you'll have no way
 #   to enter the password when they submit the form..
 #
@@ -58,11 +58,12 @@ from datetime import datetime
 from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
+from django.utils.functional import cached_property
 
 from storages.compat import urlparse, BytesIO
 
-class SFTPStorage(Storage):
 
+class SFTPStorage(Storage):
     def __init__(self):
         self._host = settings.SFTP_STORAGE_HOST
 
@@ -71,8 +72,7 @@ class SFTPStorage(Storage):
         # you can put username/password there.  Or you can omit all that if
         # you're using keys.
         self._params = getattr(settings, 'SFTP_STORAGE_PARAMS', {})
-        self._interactive = getattr(settings, 'SFTP_STORAGE_INTERACTIVE',
-                                    False)
+        self._interactive = getattr(settings, 'SFTP_STORAGE_INTERACTIVE', False)
         self._file_mode = getattr(settings, 'SFTP_STORAGE_FILE_MODE', None)
         self._dir_mode = getattr(settings, 'SFTP_STORAGE_DIR_MODE', None)
 
@@ -94,7 +94,8 @@ class SFTPStorage(Storage):
             self._ssh.load_host_keys(self._known_host_file)
         else:
             # automatically add host keys from current user.
-            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+            self._ssh.load_host_keys(
+                os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
         # and automatically add new host keys for hosts we haven't seen before.
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -241,11 +242,9 @@ class SFTPStorageFile(File):
         self.file = BytesIO()
         self._is_read = False
 
-    @property
+    @cached_property
     def size(self):
-        if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
-        return self._size
+        return self._storage.size(self._name)
 
     def read(self, num_bytes=None):
         if not self._is_read:
