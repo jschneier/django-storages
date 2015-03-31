@@ -126,12 +126,12 @@ class LibCloudStorage(Storage):
         obj = self._get_object(name)
         timeout = temporary_url_timeout if temporary_url_timeout else self.temporary_url_timeout
         if self.is_private_bucket or temporary_url:
-            return self.driver.ex_get_object_temp_url(obj, timeout)
+            return self.driver.ex_get_object_temp_url(obj, timeout=timeout)
         else:
             try:
                 return self.driver.get_object_cdn_url(obj)
             except ContainerDoesNotExistError:
-                return self.driver.ex_get_object_temp_url(obj, timeout)
+                return self.driver.ex_get_object_temp_url(obj, timeout=timeout)
 
     def _open(self, name, mode='rb'):
         remote_file = LibCloudFile(name, self, mode=mode)
