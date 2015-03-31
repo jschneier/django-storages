@@ -57,9 +57,9 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.files.base import File
-from django.core.files.storage import Storage
 
-from storages.compat import urlparse, BytesIO
+from storages.compat import urlparse, BytesIO, Storage
+
 
 class SFTPStorage(Storage):
 

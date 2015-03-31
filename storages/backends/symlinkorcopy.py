@@ -1,7 +1,7 @@
 import os
 
 from django.conf import settings
-from django.core.files.storage import FileSystemStorage
+from storages.compat import FileSystemStorage
 
 __doc__ = """
 I needed to efficiently create a mirror of a directory tree (so that
@@ -24,6 +24,7 @@ The rationale is that unmodified files will exist in their original location,
 e.g. /htdocs/example.com/image.jpg and modified files will be stored in
 a temporary directory, e.g. /tmp/image.jpg.
 """
+
 
 class SymlinkOrCopyStorage(FileSystemStorage):
     """Stores symlinks to files instead of actual files whenever possible

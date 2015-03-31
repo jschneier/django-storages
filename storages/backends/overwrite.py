@@ -1,4 +1,4 @@
-from django.core.files.storage import FileSystemStorage
+from storages.compat import FileSystemStorage
 
 
 class OverwriteStorage(FileSystemStorage):
@@ -9,7 +9,7 @@ class OverwriteStorage(FileSystemStorage):
     See also Django #4339, which might add this functionality to core.
     """
 
-    def get_available_name(self, name):
+    def get_available_name(self, name, max_length=None):
         """
         Returns a filename that's free on the target storage system, and
         available for new content to be written to.

@@ -1,8 +1,8 @@
 
 import os
 
-from django.core.files.storage import FileSystemStorage
 from django.core.exceptions import ImproperlyConfigured
+from storages.compat import FileSystemStorage
 
 try:
     from PIL import ImageFile as PILImageFile
@@ -27,7 +27,7 @@ class ImageStorage(FileSystemStorage):
         
         return format
     
-    def save(self, name, content):
+    def save(self, name, content, max_length=None):
         dirname = os.path.dirname(name)
         basename = os.path.basename(name)
         

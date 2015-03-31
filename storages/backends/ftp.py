@@ -20,10 +20,10 @@ import ftplib
 
 from django.conf import settings
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
 
-from storages.compat import urlparse, BytesIO
+from storages.compat import urlparse, BytesIO, Storage
+
 
 class FTPStorageException(Exception):
     pass

@@ -1,10 +1,10 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.db import connections
 from django.utils.encoding import force_text
 import warnings
+from storages.compat import Storage
 
 warnings.warn("The mongodb storage backend will be removed in version 1.3.\n"
               "A storage backend is now provided by django-mongodb-engine.",
@@ -21,6 +21,7 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load pymongo dependency.\
     \nSee http://github.com/mongodb/mongo-python-driver")
+
 
 class GridFSStorage(Storage):
     @property
@@ -82,6 +83,7 @@ class GridFSStorage(Storage):
 
     def url(self, name):
         raise NotImplementedError()
+
 
 class GridFSFile(File):
     def __init__(self, name, storage, mode):
