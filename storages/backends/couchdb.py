@@ -18,8 +18,8 @@ except ImportError:
     raise ImproperlyConfigured("Could not load couchdb dependency.\
     \nSee http://code.google.com/p/couchdb-python/")
 
-DEFAULT_SERVER= getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
-STORAGE_OPTIONS= getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
+DEFAULT_SERVER = getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
+STORAGE_OPTIONS = getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
 
 
 class CouchDBStorage(Storage):
@@ -83,10 +83,6 @@ class CouchDBStorage(Storage):
         except couchdb.client.ResourceNotFound:
             raise IOError("File not found: %s" % name)
 
-    #def listdir(self, name):
-    # _all_docs?
-    #    pass
-
 
 class CouchDBFile(File):
     """
@@ -130,5 +126,3 @@ class CouchDBFile(File):
         if self._is_dirty:
             self._storage._put_file(self._name, self.file.getvalue())
         self.file.close()
-
-

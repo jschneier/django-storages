@@ -16,6 +16,7 @@ except ImportError:
 
 REQUIRED_FIELDS = ('db_table', 'fname_column', 'blob_column', 'size_column', 'base_url')
 
+
 class DatabaseStorage(Storage):
     """
     Class DatabaseStorage provides storing files in the database. 
@@ -58,7 +59,7 @@ that returns an image as result.
         self.size_column = option['size_column']
         self.base_url = option['base_url']
 
-        #get database settings
+        # get database settings
         self.DATABASE_ODBC_DRIVER = settings.DATABASE_ODBC_DRIVER
         self.DATABASE_NAME = settings.DATABASE_NAME
         self.DATABASE_USER = settings.DATABASE_USER

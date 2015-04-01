@@ -3,6 +3,7 @@ import os.path
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.functional import cached_property
 
 try:
     import azure
@@ -26,14 +27,10 @@ class AzureStorage(Storage):
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
-        self._connection = None
 
-    @property
+    @cached_property
     def connection(self):
-        if self._connection is None:
-            self._connection = azure.storage.BlobService(
-                self.account_name, self.account_key)
-        return self._connection
+        return azure.storage.BlobService(self.account_name, self.account_key)
 
     def _open(self, name, mode="rb"):
         contents = self.connection.get_blob(self.azure_container, name)

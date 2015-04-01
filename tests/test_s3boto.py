@@ -20,16 +20,19 @@ __all__ = (
     'S3BotoStorageTests',
 )
 
+
 class ParseTsExtendedCase(TestCase):
     def test_normal(self):
         value = s3boto.parse_ts_extended("Wed, 13 Mar 2013 12:45:49 GMT")
         self.assertEquals(value, datetime.datetime(2013, 3, 13, 12, 45, 49))
 
+
 class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
     def setUp(self, S3Connection):
         self.storage = s3boto.S3BotoStorage()
-        self.storage._connection = mock.MagicMock()
+        self.storage.connection = mock.MagicMock()
+
 
 class SafeJoinTest(TestCase):
     def test_normal(self):
