@@ -1,9 +1,14 @@
-=====================
+===============
 django-storages
-=====================
+===============
 
 .. image:: https://travis-ci.org/jschneier/django-storages.png?branch=master
-        :target: https://travis-ci.org/jschneier/django-storages
+    :target: https://travis-ci.org/jschneier/django-storages
+    :alt: Build Status
+
+.. image:: https://pypip.in/v/django-storages-redux/badge.png
+    :target: https://pypi.python.org/pypi/django-storages-redux
+    :alt: PyPI Version
 
 
 About
@@ -12,7 +17,7 @@ django-storages was (is) a project to provide a variety of storage backends in
 a single library. This is its maintained, Python 3 compatible fork. The reasons
 for the fork are given in the next section.
 
-At the moment the only tested Python 3 comptaible backend is the S3 Boto one
+At the moment the only tested Python 3 compatible backend is the S3 Boto one
 but some of them should work without issue (hashpath, symlink, overwrite).
 
 This library maintains compatibility for all currently supported versions of
@@ -30,15 +35,15 @@ compatible version.
 All of the Python3 compatible forks that currently exist (and there are a few)
 are lacking in some way. This can be anything from the fact that they don't
 release to PyPi, have no ongoing testing, didn't apply many important bugfixes
-that have occurred on the bitbucket repo since forking or don't support older
+that have occurred on the Bitbucket repo since forking or don't support older
 versions of Python and Django (vital to finding bugs and keeping a large
 community). For this fork I've done the small bit of work necessary to get a
 tox + travis ci matrix going for all of the supported Python + Django versions.
 In many cases the various forks are lacking in a few of the above ways.
 
-Found a Bug? Something Unspported?
-==================================
-I suspect that a few of the storage engines in backends/ have been unspported
+Found a Bug? Something Unsupported?
+===================================
+I suspect that a few of the storage engines in backends/ have been unsupported
 for quite a long time. I personally only really need the S3Storage backend but
 welcome bug reports (and especially) patches and tests for some of the other
 backends.
