@@ -5,11 +5,10 @@ import mimetypes
 from django.conf import settings
 from django.core.cache import cache
 from django.utils.text import force_text
-from django.core.files.storage import Storage
 from django.http import HttpResponse, HttpResponseNotFound
 from django.core.exceptions import ImproperlyConfigured
 
-from storages.compat import urlparse, BytesIO
+from storages.compat import urlparse, BytesIO, Storage
 
 try:
     import mogilefs
@@ -62,8 +61,8 @@ class MogileFSStorage(Storage):
     def exists(self, filename):
         return filename in self.client
 
-    def save(self, filename, raw_contents):
-        filename = self.get_available_filename(filename)
+    def save(self, filename, raw_contents, max_length=None):
+        filename = self.get_available_name(filename, max_length)
         
         if not hasattr(self, 'mogile_class'):
             self.mogile_class = None
@@ -78,7 +77,6 @@ class MogileFSStorage(Storage):
         return force_text(filename.replace('\\', '/'))
 
     def delete(self, filename):
-        
         self.client.delete(filename)
             
         

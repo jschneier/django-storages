@@ -1,8 +1,8 @@
 import os.path
 
 from django.core.files.base import ContentFile
-from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+from storages.compat import Storage
 
 try:
     import azure

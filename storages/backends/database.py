@@ -3,10 +3,9 @@
 
 from django.conf import settings
 from django.core.files import File
-from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
 
-from storages.compat import urlparse, BytesIO
+from storages.compat import urlparse, BytesIO, Storage
 
 try:
     import pyodbc
@@ -15,6 +14,7 @@ except ImportError:
     \nSee http://code.google.com/p/pyodbc/")
 
 REQUIRED_FIELDS = ('db_table', 'fname_column', 'blob_column', 'size_column', 'base_url')
+
 
 class DatabaseStorage(Storage):
     """
@@ -111,7 +111,7 @@ that returns an image as result.
         row = self.cursor.execute("SELECT %s from %s where %s = '%s'"%(self.fname_column,self.db_table,self.fname_column,name)).fetchone()
         return row is not None
     
-    def get_available_name(self, name):
+    def get_available_name(self, name, max_length=None):
         return name
 
     def delete(self, name):

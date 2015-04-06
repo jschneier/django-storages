@@ -1,16 +1,18 @@
 import os, hashlib, errno
 
-from django.core.files.storage import FileSystemStorage
 from django.utils.encoding import force_text, force_bytes
+from storages.compat import FileSystemStorage
+
 
 class HashPathStorage(FileSystemStorage):
     """
     Creates a hash from the uploaded file to build the path.
     """
 
-    def save(self, name, content):
+    def save(self, name, content, max_length=None):
         # Get the content name if name is not given
-        if name is None: name = content.name
+        if name is None:
+            name = content.name
 
         # Get the SHA1 hash of the uploaded file
         sha1 = hashlib.sha1()

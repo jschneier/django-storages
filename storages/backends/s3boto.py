@@ -7,7 +7,6 @@ from tempfile import SpooledTemporaryFile
 import warnings
 
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 
@@ -22,7 +21,7 @@ except ImportError:
                                "See https://github.com/boto/boto")
 
 from storages.utils import setting
-from storages.compat import urlparse, BytesIO, deconstructible
+from storages.compat import urlparse, BytesIO, deconstructible, Storage
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -491,9 +490,9 @@ class S3BotoStorage(Storage):
             query_auth=self.querystring_auth, force_http=not self.secure_urls,
             response_headers=response_headers)
 
-    def get_available_name(self, name):
+    def get_available_name(self, name, max_length=None):
         """ Overwrite existing file with the same name. """
         if self.file_overwrite:
             name = self._clean_name(name)
             return name
-        return super(S3BotoStorage, self).get_available_name(name)
+        return super(S3BotoStorage, self).get_available_name(name, max_length)
