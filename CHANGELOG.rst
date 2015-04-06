@@ -1,5 +1,13 @@
 django-storages change log
-================================
+==========================
+
+1.3 (unreleased)
+****************
+
+* Add support for Django 1.8+ (`#36`__)
+
+.. __: https://github.com/jschneier/django-storages/pull/26
+
 
 1.2.3 (2015-03-14)
 ******************
