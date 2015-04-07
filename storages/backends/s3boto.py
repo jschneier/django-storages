@@ -13,7 +13,7 @@ from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_
 
 try:
     from boto import __version__ as boto_version
-    from boto.s3.connection import S3Connection, SubdomainCallingFormat, NoHostProvided
+    from boto.s3.connection import S3Connection, SubdomainCallingFormat
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
     from boto.utils import parse_ts, ISO8601
@@ -283,8 +283,8 @@ class S3BotoStorage(Storage):
                 self.secret_key,
                 is_secure=self.use_ssl,
                 calling_format=self.calling_format,
-                host=NoHostProvided,
-                port=None,
+                host=self.host,
+                port=self.port,
                 proxy=self.proxy,
                 proxy_port=self.proxy_port
             )
