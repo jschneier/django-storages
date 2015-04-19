@@ -57,13 +57,19 @@ class AzureStorage(Storage):
         return properties["content-length"]
 
     def _save(self, name, content):
+        if hasattr(content.file, 'content_type'):
+            content_type = content.file.content_type
+        else:
+            content_type = mimetypes.guess_type(name)[0]
+
         if hasattr(content, 'chunks'):
             content_data = b''.join(chunk for chunk in content.chunks())
         else:
             content_data = content.read()
 
         self.connection.put_blob(self.azure_container, name,
-                                 content_data, "BlockBlob")
+                                 content_data, "BlockBlob",
+                                 x_ms_blob_content_type=content_type)
         return name
 
     def url(self, name):
