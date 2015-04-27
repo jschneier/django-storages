@@ -50,8 +50,8 @@ class LibCloudStorage(Storage):
                 "Unable to create libcloud driver type %s: %s" % \
                 (self.provider.get('type'), e))
         self.bucket = self.provider['bucket']   # Limit to one container
-        self.is_private_bucket = self.provider['is_private_bucket'] if 'is_private_bucket' in self.provider else None
-        self.temporary_url_timeout = self.provider['temporary_url_timeout'] if 'temporary_url_timeout' in self.provider else None
+        self.is_private_bucket = self.provider.get('is_private_bucket', False)
+        self.temporary_url_timeout = self.provider.get('temporary_url_timeout', 300)
 
     def _get_bucket(self):
         """Helper to get bucket object (libcloud container)"""
@@ -122,10 +122,10 @@ class LibCloudStorage(Storage):
         else:
             return -1
 
-    def url(self, name, temporary_url=False, temporary_url_timeout=None):
+    def url(self, name, temporary=False, timeout=None):
         obj = self._get_object(name)
-        timeout = temporary_url_timeout if temporary_url_timeout else self.temporary_url_timeout
-        if self.is_private_bucket or temporary_url:
+        timeout = timeout if timeout else self.temporary_url_timeout
+        if self.is_private_bucket or temporary:
             return self.driver.ex_get_object_temp_url(obj, timeout=timeout)
         else:
             try:
