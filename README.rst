@@ -20,8 +20,7 @@ for the fork are given in the next section.
 At the moment the only tested Python 3 compatible backend is the S3 Boto one
 but some of them should work without issue (hashpath, symlink, overwrite).
 
-This library maintains compatibility for all currently supported versions of
-Django.
+This library is compatible with Django >= 1.5.
 
 Why Fork?
 =========
