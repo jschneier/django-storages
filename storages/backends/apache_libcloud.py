@@ -40,8 +40,8 @@ class LibCloudStorage(Storage):
 
             Driver = get_driver(provider_type)
             self.driver = Driver(
-                self.provider['user'],
-                self.provider['key'],
+                user_id=self.provider['user'],
+                key=self.provider['key'],
                 **extra_kwargs
             )
         except Exception as e:
