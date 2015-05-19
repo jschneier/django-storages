@@ -1,4 +1,5 @@
 import os.path
+import mimetypes
 
 from django.core.files.base import ContentFile
 from django.core.exceptions import ImproperlyConfigured
