@@ -145,7 +145,6 @@ class LibCloudFile(File):
         self._mode = mode
         self._is_dirty = False
         self.file = BytesIO()
-        self.start_range = 0
 
     @property
     def size(self):
@@ -156,9 +155,8 @@ class LibCloudFile(File):
     def read(self, num_bytes=None):
         if num_bytes is None:
             args = []
-            self.start_range = 0
         else:
-            args = [self.start_range, self.start_range + num_bytes - 1]
+            args = [0, num_bytes - 1]
         data = self._storage._read(self._name, *args)
         self.file = BytesIO(data)
         return self.file.getvalue()
