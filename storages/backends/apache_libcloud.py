@@ -127,7 +127,7 @@ class LibCloudStorage(Storage):
         remote_file = LibCloudFile(name, self, mode=mode)
         return remote_file
 
-    def _read(self, name, start_range=None, end_range=None):
+    def _read(self, name):
         obj = self._get_object(name)
         # TOFIX : we should be able to read chunk by chunk
         return next(self.driver.download_object_as_stream(obj, obj.size))
@@ -153,13 +153,9 @@ class LibCloudFile(File):
         return self._size
 
     def read(self, num_bytes=None):
-        if num_bytes is None:
-            args = []
-        else:
-            args = [0, num_bytes - 1]
-        data = self._storage._read(self._name, *args)
+        data = self._storage._read(self._name)
         self.file = BytesIO(data)
-        return self.file.getvalue()
+        return self.file.read(num_bytes)
 
     def write(self, content):
         if 'w' not in self._mode:
