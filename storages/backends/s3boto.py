@@ -278,14 +278,8 @@ class S3BotoStorage(Storage):
     def connection(self):
         if self._connection is None:
             self._connection = self.connection_class(
-                self.access_key,
-                self.secret_key,
-                is_secure=self.use_ssl,
+                self.access_key, self.secret_key,
                 calling_format=self.calling_format,
-                host=self.host,
-                port=self.port,
-                proxy=self.proxy,
-                proxy_port=self.proxy_port
             )
         return self._connection
 
@@ -499,4 +493,4 @@ class S3BotoStorage(Storage):
         if self.file_overwrite:
             name = self._clean_name(name)
             return name
-        return super(S3BotoStorage, self).get_available_name(name, max_length)
+        return super(S3BotoStorage, self).get_available_name(name, max_length=max_length)
