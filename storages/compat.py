@@ -21,7 +21,7 @@ else:
         def get_available_name(self, name, max_length=None):
             return super(StorageMixin, self).get_available_name(name)
 
-    class Storage(DjangoStorage, StorageMixin):
+    class Storage(StorageMixin, DjangoStorage):
         pass
 
     class FileSystemStorage(DjangoFileSystemStorage, StorageMixin):
