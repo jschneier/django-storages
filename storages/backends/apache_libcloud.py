@@ -6,6 +6,7 @@ import os
 from django.conf import settings
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.six import string_types
 
 from storages.compat import BytesIO, deconstructible, Storage
 
@@ -14,6 +15,7 @@ try:
     from libcloud.storage.types import ObjectDoesNotExistError, Provider
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
+
 
 @deconstructible
 class LibCloudStorage(Storage):
@@ -32,7 +34,7 @@ class LibCloudStorage(Storage):
             extra_kwargs['region'] = self.provider['region']
         try:
             provider_type = self.provider['type']
-            if isinstance(provider_type, basestring):
+            if isinstance(provider_type, string_types):
                 module_path, tag = provider_type.rsplit('.', 1)
                 if module_path != 'libcloud.storage.types.Provider':
                     raise ValueError("Invalid module path")
@@ -46,7 +48,7 @@ class LibCloudStorage(Storage):
             )
         except Exception as e:
             raise ImproperlyConfigured(
-                "Unable to create libcloud driver type %s: %s" % \
+                "Unable to create libcloud driver type %s: %s" %
                 (self.provider.get('type'), e))
         self.bucket = self.provider['bucket']   # Limit to one container
 
@@ -76,7 +78,7 @@ class LibCloudStorage(Storage):
 
     def exists(self, name):
         obj = self._get_object(name)
-        return True if obj else False
+        return bool(obj)
 
     def listdir(self, path='/'):
         """Lists the contents of the specified path,
@@ -98,7 +100,7 @@ class LibCloudStorage(Storage):
                     files.append(o.name)
                 elif o.name.count('/') == 1:
                     dir_name = o.name[:o.name.index('/')]
-                    if not dir_name in dirs:
+                    if dir_name not in dirs:
                         dirs.append(dir_name)
             elif o.name.startswith(path):
                 if o.name.count('/') <= path.count('/'):
@@ -114,10 +116,7 @@ class LibCloudStorage(Storage):
 
     def size(self, name):
         obj = self._get_object(name)
-        if obj:
-            return obj.size
-        else:
-            return -1
+        return obj.size if obj else -1
 
     def url(self, name):
         obj = self._get_object(name)
