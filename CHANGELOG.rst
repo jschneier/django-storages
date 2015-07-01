@@ -6,9 +6,11 @@ django-storages change log
 
 * Add support for Django 1.8+ (`#36`__)
 * Add ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` settings for s3boto backend (`#41`_)
+* Fix Python3K compat issue in apache_libcloud (`#52`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/36
 .. _#41: https://github.com/jschneier/django-storages/pull/41
+.. _#52: https://github.com/jschneier/django-storages/issues/52
 
 
 1.2.3 (2015-03-14)
