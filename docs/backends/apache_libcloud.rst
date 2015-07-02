@@ -100,11 +100,19 @@ your storage provider:
 
     **Rackspace Cloudfiles**:
 
-        **type**: ``libcloud.storage.types.Provider.CLOUDFIULES_US`` or ``libcloud.storage.types.Provider.CLOUDFIULES_UK``,
+        **type**: ``libcloud.storage.types.Provider.CLOUDFILES``
 
         **user**: Your Rackspace user ID
 
         **key**: Your Rackspace access key
+
+        **bucket**: The parent container for this provider
+
+        **region**: The region where your container lives (*defaults to ORD*)
+
+        **is_private_bucket**: Boolean indicating if the parent container is private
+
+        **temporary_url_timeout**: Length, in seconds, temporary CDN url's should persist for
 
 You can specify any bucket name you want; however, the bucket must exist before you
 can start using it. If you need to create the bucket, you can use the storage API.
