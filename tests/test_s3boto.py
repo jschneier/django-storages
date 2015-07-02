@@ -1,6 +1,6 @@
 try:
     from unittest import mock
-except ImportError: # Python 3.2 and below
+except ImportError:  # Python 3.2 and below
     import mock
 
 import datetime
@@ -20,16 +20,19 @@ __all__ = (
     'S3BotoStorageTests',
 )
 
+
 class ParseTsExtendedCase(TestCase):
     def test_normal(self):
         value = s3boto.parse_ts_extended("Wed, 13 Mar 2013 12:45:49 GMT")
         self.assertEquals(value, datetime.datetime(2013, 3, 13, 12, 45, 49))
+
 
 class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
     def setUp(self, S3Connection):
         self.storage = s3boto.S3BotoStorage()
         self.storage._connection = mock.MagicMock()
+
 
 class SafeJoinTest(TestCase):
     def test_normal(self):
@@ -51,7 +54,7 @@ class SafeJoinTest(TestCase):
 
     def test_suspicious_operation(self):
         self.assertRaises(ValueError,
-            s3boto.safe_join, "base", "../../../../../../../etc/passwd")
+                          s3boto.safe_join, "base", "../../../../../../../etc/passwd")
 
     def test_trailing_slash(self):
         """
@@ -202,7 +205,7 @@ class S3BotoStorageTests(S3BotoTestCase):
 
     def test_storage_exists_false(self):
         key = self.storage.bucket.new_key.return_value
-        key.exists.return_value = False 
+        key.exists.return_value = False
         self.assertFalse(self.storage.exists("file.txt"))
 
     def test_storage_delete(self):
@@ -292,4 +295,3 @@ class S3BotoStorageTests(S3BotoTestCase):
             self.storage.save(name, content)
             self.assertEqual(self.storage.modified_time(name),
                              parse_ts(utcnow.strftime(ISO8601)))
-
