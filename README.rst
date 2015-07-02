@@ -11,6 +11,25 @@ django-storages
     :alt: PyPI Version
 
 
+Installation
+============
+Installing from PyPI is as easy as doing::
+
+  pip install django-storages-redux
+
+If you'd prefer to install from source (maybe there is a bugfix in master that
+hasn't been released yet) then the magic incantation you are looking for is::
+
+  pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
+
+Once that is done add ``storages`` to your ``INSTALLED_APPS`` and set ``DEFAULT_FILE_STORAGE`` to the
+backend of your choice. If, for example, you want to use the s3boto backend you would set::
+
+  DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+
+There are also a number of settings available to control how each storage backend functions,
+please consult the documentation for a comprehensive list.
+
 About
 =====
 django-storages was (is) a project to provide a variety of storage backends in
