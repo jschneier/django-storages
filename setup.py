@@ -35,7 +35,8 @@ setup(
         'Django>=1.6.2',
         'pytest',
         'mock',
-        'boto>=2.32.0'
+        'boto>=2.32.0',
+        'dropbox>=2.2.0'
     ],
     test_suite='tests',
     zip_safe=False
