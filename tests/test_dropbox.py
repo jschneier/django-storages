@@ -1,5 +1,4 @@
 import re
-from io import BytesIO
 from datetime import datetime
 try:
     from unittest import mock
@@ -7,11 +6,11 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 from django.test import TestCase
-from django.core.files.base import File
+from django.core.files.base import File, ContentFile
 
 from storages.backends import dropbox
 
-FILE_DATE = datetime(2015, 8, 24, 15, 06, 41)
+FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
 FILE_FIXTURE = {
     'bytes': 4,
     'client_mtime': 'Mon, 24 Aug 2015 15:06:41 +0000',
@@ -114,10 +113,10 @@ class DropBoxTest(TestCase):
     @mock.patch('dropbox.client.DropboxClient.put_file',
                 return_value='foo')
     def test_save(self, *args):
-        self.storage._save('foo', 'bar')
+        self.storage._save('foo', b'bar')
 
     @mock.patch('dropbox.client.DropboxClient.get_file',
-                return_value=BytesIO('bar'))
+                return_value=ContentFile('bar'))
     def test_read(self, *args):
         content = self.storage._read('foo')
         self.assertEqual(content, 'bar')
@@ -134,10 +133,10 @@ class DropBoxFileTest(TestCase):
     @mock.patch('dropbox.client.DropboxClient.put_file',
                 return_value='foo')
     def test_write(self, *args):
-        self.storage._save('foo', 'bar')
+        self.storage._save('foo', b'bar')
 
     @mock.patch('dropbox.client.DropboxClient.get_file',
-                return_value=BytesIO('bar'))
+                return_value=ContentFile('bar'))
     def test_read(self, *args):
         content = self.storage._read('foo')
         self.assertEqual(content, 'bar')

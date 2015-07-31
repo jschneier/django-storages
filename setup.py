@@ -1,11 +1,14 @@
 from setuptools import setup
-
 import storages
 
 
 def read(filename):
     with open(filename) as f:
         return f.read()
+
+def get_requirements_tests():
+    with open('requirements-tests.txt') as f:
+        return f.readlines()
 
 setup(
     name='django-storages-redux',
@@ -31,13 +34,7 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
     ],
-    tests_require=[
-        'Django>=1.6.2',
-        'pytest',
-        'mock',
-        'boto>=2.32.0',
-        'dropbox>=2.2.0'
-    ],
+    tests_require=get_requirements_tests(),
     test_suite='tests',
     zip_safe=False
 )
