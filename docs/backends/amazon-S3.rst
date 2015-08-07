@@ -25,6 +25,11 @@ Your Amazon Web Services secret access key, as a string.
 
 Your Amazon Web Services storage bucket name, as a string.
 
+``AWS_AUTO_CREATE_BUCKET`` (optional)
+
+If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
+
+
 ``AWS_HEADERS`` (optional)
 
 If you'd like to set headers sent with each file of the storage::
