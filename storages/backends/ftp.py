@@ -235,7 +235,7 @@ class FTPStorage(Storage):
 
 class FTPStorageFile(File):
     def __init__(self, name, storage, mode):
-        self._name = name
+        self.name = name
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
@@ -245,13 +245,13 @@ class FTPStorageFile(File):
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
 
     def read(self, num_bytes=None):
         if not self._is_read:
             self._storage._start_connection()
-            self.file = self._storage._read(self._name)
+            self.file = self._storage._read(self.name)
             self._is_read = True
 
         return self.file.read(num_bytes)
@@ -266,6 +266,6 @@ class FTPStorageFile(File):
     def close(self):
         if self._is_dirty:
             self._storage._start_connection()
-            self._storage._put_file(self._name, self)
+            self._storage._put_file(self.name, self)
             self._storage.disconnect()
         self.file.close()
