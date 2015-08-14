@@ -26,5 +26,5 @@ MIDDLEWARE_CLASSES = (
 
 DEFAULT_FILE_STORAGE = 'backends.s3boto.S3BotoStorage'
 AWS_IS_GZIPPED = True
+GS_IS_GZIPPED = True
 SECRET_KEY = 'hailthesunshine'
-

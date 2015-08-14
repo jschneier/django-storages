@@ -55,7 +55,7 @@ class GSBotoStorage(S3BotoStorage):
     calling_format = setting('GS_CALLING_FORMAT', SubdomainCallingFormat())
     secure_urls = setting('GS_SECURE_URLS', True)
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
-    is_gzipped = setting('GS_IS_GZIPPED', False)
+    gzip = setting('GS_IS_GZIPPED', False)
     preload_metadata = setting('GS_PRELOAD_METADATA', False)
     gzip_content_types = setting('GS_GZIP_CONTENT_TYPES', (
         'text/css',
