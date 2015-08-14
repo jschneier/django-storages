@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.3 (unreleased)
+1.3 (2015-08-14)
 ****************
 
 * **Drop Support for Django 1.5 and Python2.6**
