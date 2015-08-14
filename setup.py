@@ -2,6 +2,7 @@ from setuptools import setup
 
 import storages
 
+
 def read(filename):
     with open(filename) as f:
         return f.read()
@@ -31,7 +32,7 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
     tests_require=[
-        'Django>=1.5',
+        'Django>=1.6.2',
         'pytest',
         'mock',
         'boto>=2.32.0'
