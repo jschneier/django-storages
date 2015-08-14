@@ -8,12 +8,14 @@ django-storages change log
 * Add ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` settings for s3boto backend (`#41`_)
 * Fix Python3K compat issue in apache_libcloud (`#52`_)
 * Fix Google Storage backend not respecting ``GS_IS_GZIPPED`` setting (`#51`__, `#60`_) thanks @stmos
+* Rename FTP ``_name`` attribute to ``name`` which is what the Django ``File`` api is expecting (`#70`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/36
 .. _#41: https://github.com/jschneier/django-storages/pull/41
 .. _#52: https://github.com/jschneier/django-storages/issues/52
 .. __: https://github.com/jschneier/django-storages/pull/51
 .. _#60: https://github.com/jschneier/django-storages/pull/60
+.. _#70: https://github.com/jschneier/django-storages/pull/70
 
 
 1.2.3 (2015-03-14)
