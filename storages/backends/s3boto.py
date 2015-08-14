@@ -4,7 +4,6 @@ import mimetypes
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
-import warnings
 
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -28,15 +27,6 @@ boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')
 if boto_version_info[:2] < (2, 32):
     raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
-
-
-def parse_ts_extended(ts):
-    warnings.warn(
-        "parse_ts_extended has been deprecated and will be removed in version "
-        "1.3 because boto.utils.parse_ts has subsumed the old functionality.",
-        PendingDeprecationWarning
-    )
-    return parse_ts(ts)
 
 
 def safe_join(base, *paths):

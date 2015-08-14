@@ -6,6 +6,7 @@ django-storages change log
 
 * **Drop Support for Django 1.5 and Python2.6**
 * Remove previously deprecated mongodb backend
+* Remove previously deprecated ``parse_ts_extended`` from s3boto storage
 * Add support for Django 1.8+ (`#36`__)
 * Add ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` settings for s3boto backend (`#41`_)
 * Fix Python3K compat issue in apache_libcloud (`#52`_)

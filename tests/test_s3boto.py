@@ -17,16 +17,9 @@ from storages.compat import urlparse
 from storages.backends import s3boto
 
 __all__ = (
-    'ParseTsExtendedCase',
     'SafeJoinTest',
     'S3BotoStorageTests',
 )
-
-
-class ParseTsExtendedCase(TestCase):
-    def test_normal(self):
-        value = s3boto.parse_ts_extended("Wed, 13 Mar 2013 12:45:49 GMT")
-        self.assertEquals(value, datetime.datetime(2013, 3, 13, 12, 45, 49))
 
 
 class S3BotoTestCase(TestCase):
