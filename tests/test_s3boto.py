@@ -1,3 +1,4 @@
+import unittest
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
@@ -7,6 +8,7 @@ import datetime
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
+import django
 
 from boto.s3.key import Key
 from boto.utils import parse_ts, ISO8601
@@ -15,16 +17,9 @@ from storages.compat import urlparse
 from storages.backends import s3boto
 
 __all__ = (
-    'ParseTsExtendedCase',
     'SafeJoinTest',
     'S3BotoStorageTests',
 )
-
-
-class ParseTsExtendedCase(TestCase):
-    def test_normal(self):
-        value = s3boto.parse_ts_extended("Wed, 13 Mar 2013 12:45:49 GMT")
-        self.assertEquals(value, datetime.datetime(2013, 3, 13, 12, 45, 49))
 
 
 class S3BotoTestCase(TestCase):
@@ -295,3 +290,9 @@ class S3BotoStorageTests(S3BotoTestCase):
             self.storage.save(name, content)
             self.assertEqual(self.storage.modified_time(name),
                              parse_ts(utcnow.strftime(ISO8601)))
+
+    @unittest.skipIf(django.VERSION >= (1, 8), 'Only test backward compat of max_length for versions before 1.8')
+    def test_max_length_compat_okay(self):
+        self.storage.file_overwrite = False
+        self.storage.exists = lambda name: False
+        self.storage.get_available_name('gogogo', max_length=255)
