@@ -1,6 +1,14 @@
 django-storages change log
 ==========================
 
+1.3.1 (XXXX-XX-XX)
+******************
+
+* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__)
+
+.. __: https://github.com/jschneier/django-storages/pull/45
+
+
 1.3 (2015-08-14)
 ****************
 
