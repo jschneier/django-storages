@@ -1,4 +1,5 @@
 import os.path
+import mimetypes
 
 from django.core.files.base import ContentFile
 from django.core.exceptions import ImproperlyConfigured
@@ -6,7 +7,7 @@ from storages.compat import Storage
 
 try:
     import azure
-    import azure.storage
+    from azure.storage.blob.blobservice import BlobService
 except ImportError:
     raise ImproperlyConfigured(
         "Could not load Azure bindings. "
@@ -23,6 +24,8 @@ class AzureStorage(Storage):
     account_name = setting("AZURE_ACCOUNT_NAME")
     account_key = setting("AZURE_ACCOUNT_KEY")
     azure_container = setting("AZURE_CONTAINER")
+    azure_ssl = setting("AZURE_SSL")
+    azure_protocol = 'https:' if azure_ssl else 'http:' if azure_ssl is not None else ''
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
@@ -31,7 +34,7 @@ class AzureStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = azure.storage.BlobService(
+            self._connection = BlobService(
                 self.account_name, self.account_key)
         return self._connection
 
@@ -43,7 +46,7 @@ class AzureStorage(Storage):
         try:
             self.connection.get_blob_properties(
                 self.azure_container, name)
-        except azure.WindowsAzureMissingResourceError:
+        except azure.common.AzureMissingResourceHttpError:
             return False
         else:
             return True
@@ -57,9 +60,21 @@ class AzureStorage(Storage):
         return properties["content-length"]
 
     def _save(self, name, content):
-        self.connection.put_blob(self.azure_container, name,
-                                 content, "BlockBlob")
+        (content_type, encoding) = mimetypes.guess_type(name)
+        self.connection.put_blob(
+            container_name=self.azure_container,
+            blob_name=name,
+            blob=content.read(),
+            x_ms_blob_type="BlockBlob",
+            x_ms_blob_content_type=content_type,
+            x_ms_blob_content_encoding=encoding,
+        )
         return name
 
     def url(self, name):
-        return "%s/%s" % (self.azure_bucket, name)
+        protocol = 'https:' if self.azure_ssl else 'http:' if self.azure_ssl is not None else None
+        return self.connection.make_blob_url(
+            container_name=self.azure_container,
+            blob_name=name,
+            protocol=protocol,
+        )
