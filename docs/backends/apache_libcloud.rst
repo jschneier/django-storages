@@ -152,8 +152,8 @@ Your default Libcloud provider will be used as the file store.
 Certifcate authorities
 ----------------------
 
-Libcloud uses HTTPS connections, and in order for these HTTPS connections are
-correctly signed, certificate authorities must be present. On some platforms
+Libcloud uses HTTPS connections, and in order to validate that these HTTPS connections are
+correctly signed, root CA certificates must be present. On some platforms
 (most notably, OS X and Windows), the required certificates may not be available
 by default. To test
 
