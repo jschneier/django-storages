@@ -42,9 +42,9 @@ class AzureStorage(Storage):
 
     @property
     def azure_protocol(self):
-        if azure_ssl:
+        if self.azure_ssl:
             protocol = 'https'
-        elif azure_ssl is not None:
+        elif self.azure_ssl is not None:
             protocol = 'http'
         else:
             protocol = None
