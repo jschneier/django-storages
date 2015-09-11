@@ -1,5 +1,8 @@
+from datetime import datetime
 import os.path
 import mimetypes
+import time
+from time import mktime
 
 from django.core.files.base import ContentFile
 from django.core.exceptions import ImproperlyConfigured
@@ -7,23 +10,27 @@ from storages.compat import Storage
 
 try:
     import azure
-    import azure.storage
 except ImportError:
     raise ImproperlyConfigured(
         "Could not load Azure bindings. "
-        "See https://github.com/WindowsAzure/azure-sdk-for-python")
+        "See https://github.com/Azure/azure-storage-python")
+
+try:
+    # azure-storage 0.20.0
+    from azure.storage.blob.blobservice import BlobService
+    from azure.common import AzureMissingResourceHttpError
+except ImportError:
+    from azure.storage import BlobService
+    from azure import WindowsAzureMissingResourceError as AzureMissingResourceHttpError
 
 from storages.utils import setting
-
-
-def clean_name(name):
-    return os.path.normpath(name).replace("\\", "/")
 
 
 class AzureStorage(Storage):
     account_name = setting("AZURE_ACCOUNT_NAME")
     account_key = setting("AZURE_ACCOUNT_KEY")
     azure_container = setting("AZURE_CONTAINER")
+    azure_ssl = setting("AZURE_SSL")
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
@@ -32,19 +39,36 @@ class AzureStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = azure.storage.BlobService(
+            self._connection = BlobService(
                 self.account_name, self.account_key)
         return self._connection
+
+    @property
+    def azure_protocol(self):
+        if self.azure_ssl:
+            protocol = 'https'
+        elif self.azure_ssl is not None:
+            protocol = 'http'
+        else:
+            protocol = None
+
+        return protocol
+
+    def __get_blob_properties(self, name):
+        try:
+            return self.connection.get_blob_properties(
+                self.azure_container,
+                name
+            )
+        except AzureMissingResourceHttpError:
+            return None
 
     def _open(self, name, mode="rb"):
         contents = self.connection.get_blob(self.azure_container, name)
         return ContentFile(contents)
 
     def exists(self, name):
-        try:
-            self.connection.get_blob_properties(
-                self.azure_container, name)
-        except azure.WindowsAzureMissingResourceError:
+        if self.__get_blob_properties(name) is None:
             return False
         else:
             return True
@@ -74,4 +98,22 @@ class AzureStorage(Storage):
         return name
 
     def url(self, name):
-        return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
+        if hasattr(self.connection, 'make_blob_url'):
+            return self.connection.make_blob_url(
+                container_name=self.azure_container,
+                blob_name=name,
+                protocol=self.azure_protocol,
+            )
+        else:
+            return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
+
+    def modified_time(self, name):
+        try:
+            modified = self.__get_blob_properties(name)['last-modified']
+        except (TypeError, KeyError):
+            return super(AzureStorage, self).modified_time(name)
+
+        modified = time.strptime(modified, '%a, %d %b %Y %H:%M:%S %Z')
+        modified = datetime.fromtimestamp(mktime(modified))
+
+        return modified
