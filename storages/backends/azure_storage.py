@@ -1,5 +1,8 @@
+from datetime import datetime
 import os.path
 import mimetypes
+import time
+from time import mktime
 
 from django.core.files.base import ContentFile
 from django.core.exceptions import ImproperlyConfigured
@@ -51,15 +54,21 @@ class AzureStorage(Storage):
 
         return protocol
 
+    def __get_blob_properties(self, name):
+        try:
+            return self.connection.get_blob_properties(
+                self.azure_container,
+                name
+            )
+        except AzureMissingResourceHttpError:
+            return None
+
     def _open(self, name, mode="rb"):
         contents = self.connection.get_blob(self.azure_container, name)
         return ContentFile(contents)
 
     def exists(self, name):
-        try:
-            self.connection.get_blob_properties(
-                self.azure_container, name)
-        except AzureMissingResourceHttpError:
+        if self.__get_blob_properties(name) is None:
             return False
         else:
             return True
@@ -97,3 +106,14 @@ class AzureStorage(Storage):
             )
         else:
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
+
+    def modified_time(self, name):
+        try:
+            modified = self.__get_blob_properties(name)['last-modified']
+        except (TypeError, KeyError):
+            return super(AzureStorage, self).modified_time(name)
+
+        modified = time.strptime(modified, '%a, %d %b %Y %H:%M:%S %Z')
+        modified = datetime.fromtimestamp(mktime(modified))
+
+        return modified
