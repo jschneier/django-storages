@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.six import string_types
+from django.utils.six.moves.urllib.parse import urljoin
 
 from storages.compat import BytesIO, deconstructible, Storage
 
@@ -119,8 +120,26 @@ class LibCloudStorage(Storage):
         return obj.size if obj else -1
 
     def url(self, name):
+        provider_type = self.provider['type'].lower()
         obj = self._get_object(name)
-        return self.driver.get_object_cdn_url(obj)
+        if not obj:
+            return None
+        try:
+            url = self.driver.get_object_cdn_url(obj)
+        except NotImplementedError as e:
+            object_path = '%s/%s' % (self.bucket, obj.name)
+            if 's3' in provider_type:
+                base_url = 'http://%s' % self.driver.connection.host
+                url = urljoin(base_url, object_path)
+            elif 'google' in provider_type:
+                url = urljoin('http://storage.googleapis.com', object_path)
+            elif 'azure' in provider_type:
+                base_url = ('http://%s.blob.core.windows.net' %
+                            self.provider['user'])
+                url = urljoin(base_url, object_path)
+            else:
+                raise e
+        return url
 
     def _open(self, name, mode='rb'):
         remote_file = LibCloudFile(name, self, mode=mode)
