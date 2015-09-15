@@ -27,12 +27,12 @@ class DropBoxStorageException(Exception):
 
 
 class DropBoxFile(File):
-    def __init__(self, name, storage):
+    def __init__(self, name, storage, mode='rb'):
         self.name = name
         self._storage = storage
 
     def read(self, num_bytes=None):
-        self._storage._read(self.name, num_bytes=num_bytes)
+        return self._storage._read(self.name, num_bytes=num_bytes)
 
     def write(self, content):
         self._storage._save(self.name, content)
@@ -78,12 +78,12 @@ class DropBoxStorage(Storage):
         acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
         return acc_time
 
-    def _open(self, name):
+    def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(name, self)
         return remote_file
 
     def _save(self, name, content):
-        self.client.put_file(name, BytesIO(content))
+        self.client.put_file(name, content)
         return name
 
     def _read(self, name, num_bytes=None):
