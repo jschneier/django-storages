@@ -22,6 +22,7 @@ By order of apparition, thanks:
     * Andrei Coman (Azure)
     * Chris Streeter (S3 with Boto)
     * Josh Schneier (Fork maintainer, Bugfixes, Py3K)
+    * Anthony Monthe (Dropbox)
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
