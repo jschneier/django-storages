@@ -36,5 +36,8 @@ setup(
     ],
     tests_require=get_requirements_tests(),
     test_suite='tests',
-    zip_safe=False
+    zip_safe=False,
+    install_requires = [
+        'python-dateutil>=1.5',
+    ]
 )
