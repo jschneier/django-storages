@@ -33,7 +33,6 @@ if boto_version_info[:2] < (2, 32):
 
 
 def parse_ts_extended(ts):
-    RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
     rv = parse(ts)
 
     # convert it to the system timezone
