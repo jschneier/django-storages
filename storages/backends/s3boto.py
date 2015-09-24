@@ -41,7 +41,7 @@ def parse_ts_extended(ts):
 
     # remove the timezone awareness so collectstatic can compare
     # it with another timezone unaware datetime object
-    rv = tzutils.make_naitve(rv, tzlocal())
+    rv = tzutils.make_naive(rv, tzlocal())
     return rv
 
 def safe_join(base, *paths):
