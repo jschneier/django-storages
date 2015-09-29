@@ -74,7 +74,10 @@ class AzureStorage(Storage):
             return True
 
     def delete(self, name):
-        self.connection.delete_blob(self.azure_container, name)
+        try:
+            self.connection.delete_blob(self.azure_container, name)
+        except AzureMissingResourceHttpError:
+            pass
 
     def size(self, name):
         properties = self.connection.get_blob_properties(
