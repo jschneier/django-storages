@@ -129,12 +129,12 @@ class LibCloudStorage(Storage):
         except NotImplementedError as e:
             object_path = '%s/%s' % (self.bucket, obj.name)
             if 's3' in provider_type:
-                base_url = 'http://%s' % self.driver.connection.host
+                base_url = 'https://%s' % self.driver.connection.host
                 url = urljoin(base_url, object_path)
             elif 'google' in provider_type:
-                url = urljoin('http://storage.googleapis.com', object_path)
+                url = urljoin('https://storage.googleapis.com', object_path)
             elif 'azure' in provider_type:
-                base_url = ('http://%s.blob.core.windows.net' %
+                base_url = ('https://%s.blob.core.windows.net' %
                             self.provider['user'])
                 url = urljoin(base_url, object_path)
             else:
