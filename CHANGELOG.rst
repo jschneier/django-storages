@@ -1,12 +1,17 @@
 django-storages change log
 ==========================
 
-1.3.1 (XXXX-XX-XX)
+X.X.X (XXXX-XX-XX)
 ******************
 
-* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__)
+* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__) thanks @erlingbo
+* Add support for a Dropbox (``dropbox``) storage backend, thanks @ZuluPro (`#76`_)
+* Various fixes to the ``apache_libcloud`` backend [return the number of bytes asked for by ``.read``, make ``.name`` non-private, don't
+  initialize to an empty ``BytesIO`` object] thanks @kaedroho (`#55`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/45
+.. _#76: https://github.com/jschneier/django-storages/pull/76
+.. _#55: https://github.com/jschneier/django-storages/pull/55
 
 
 1.3 (2015-08-14)
