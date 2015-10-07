@@ -126,7 +126,7 @@ class LibCloudStorage(Storage):
         remote_file = LibCloudFile(name, self, mode=mode)
         return remote_file
 
-    def _read(self, name, start_range=None, end_range=None):
+    def _read(self, name):
         obj = self._get_object(name)
         # TOFIX : we should be able to read chunk by chunk
         return next(self.driver.download_object_as_stream(obj, obj.size))
@@ -139,28 +139,31 @@ class LibCloudStorage(Storage):
 class LibCloudFile(File):
     """File inherited class for libcloud storage objects read and write"""
     def __init__(self, name, storage, mode):
-        self._name = name
+        self.name = name
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = BytesIO()
-        self.start_range = 0
+        self._file = None
+
+    def _get_file(self):
+        if self._file is None:
+            data = self._storage._read(self.name)
+            self._file = BytesIO(data)
+        return self._file
+
+    def _set_file(self, value):
+        self._file = value
+
+    file = property(_get_file, _set_file)
 
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
 
     def read(self, num_bytes=None):
-        if num_bytes is None:
-            args = []
-            self.start_range = 0
-        else:
-            args = [self.start_range, self.start_range + num_bytes - 1]
-        data = self._storage._read(self._name, *args)
-        self.file = BytesIO(data)
-        return self.file.getvalue()
+        return self.file.read(num_bytes)
 
     def write(self, content):
         if 'w' not in self._mode:
@@ -170,5 +173,5 @@ class LibCloudFile(File):
 
     def close(self):
         if self._is_dirty:
-            self._storage._save(self._name, self.file)
+            self._storage._save(self.name, self.file)
         self.file.close()
