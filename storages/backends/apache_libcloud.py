@@ -27,12 +27,20 @@ class LibCloudStorage(Storage):
             provider_name = getattr(settings, 'DEFAULT_LIBCLOUD_PROVIDER', 'default')
 
         self.provider = settings.LIBCLOUD_PROVIDERS.get(provider_name)
+
         if not self.provider:
             raise ImproperlyConfigured(
                 'LIBCLOUD_PROVIDERS %s not defined or invalid' % provider_name)
+
+        self.bucket = self.provider['bucket']   # Limit to one container
+
+    @property
+    def driver(self):
         extra_kwargs = {}
+
         if 'region' in self.provider:
             extra_kwargs['region'] = self.provider['region']
+
         try:
             provider_type = self.provider['type']
             if isinstance(provider_type, string_types):
@@ -42,7 +50,8 @@ class LibCloudStorage(Storage):
                 provider_type = getattr(Provider, tag)
 
             Driver = get_driver(provider_type)
-            self.driver = Driver(
+
+            return Driver(
                 self.provider['user'],
                 self.provider['key'],
                 **extra_kwargs
@@ -51,7 +60,6 @@ class LibCloudStorage(Storage):
             raise ImproperlyConfigured(
                 "Unable to create libcloud driver type %s: %s" %
                 (self.provider.get('type'), e))
-        self.bucket = self.provider['bucket']   # Limit to one container
 
     def _get_bucket(self):
         """Helper to get bucket object (libcloud container)"""
