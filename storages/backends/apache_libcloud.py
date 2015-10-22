@@ -34,8 +34,7 @@ class LibCloudStorage(Storage):
 
         self.bucket = self.provider['bucket']   # Limit to one container
 
-    @property
-    def driver(self):
+    def _get_driver(self):
         extra_kwargs = {}
 
         if 'region' in self.provider:
@@ -61,9 +60,12 @@ class LibCloudStorage(Storage):
                 "Unable to create libcloud driver type %s: %s" %
                 (self.provider.get('type'), e))
 
+    # Backwards compatiblity
+    driver = property(_get_driver)
+
     def _get_bucket(self):
         """Helper to get bucket object (libcloud container)"""
-        return self.driver.get_container(self.bucket)
+        return self._get_driver().get_container(self.bucket)
 
     def _clean_name(self, name):
         """Clean name (windows directories)"""
@@ -73,7 +75,7 @@ class LibCloudStorage(Storage):
         """Get object by its name. Return None if object not found"""
         clean_name = self._clean_name(name)
         try:
-            return self.driver.get_object(self.bucket, clean_name)
+            return self._get_driver().get_object(self.bucket, clean_name)
         except ObjectDoesNotExistError:
             return None
 
@@ -81,7 +83,7 @@ class LibCloudStorage(Storage):
         """Delete object on remote"""
         obj = self._get_object(name)
         if obj:
-            return self.driver.delete_object(obj)
+            return self._get_driver().delete_object(obj)
         else:
             raise Exception('Object to delete does not exists')
 
@@ -95,7 +97,7 @@ class LibCloudStorage(Storage):
         directories, the second item being files.
         """
         container = self._get_bucket()
-        objects = self.driver.list_container_objects(container)
+        objects = self._get_driver().list_container_objects(container)
         path = self._clean_name(path)
         if not path.endswith('/'):
             path = "%s/" % path
@@ -133,11 +135,11 @@ class LibCloudStorage(Storage):
         if not obj:
             return None
         try:
-            url = self.driver.get_object_cdn_url(obj)
+            url = self._get_driver().get_object_cdn_url(obj)
         except NotImplementedError as e:
             object_path = '%s/%s' % (self.bucket, obj.name)
             if 's3' in provider_type:
-                base_url = 'https://%s' % self.driver.connection.host
+                base_url = 'https://%s' % self._get_driver().connection.host
                 url = urljoin(base_url, object_path)
             elif 'google' in provider_type:
                 url = urljoin('https://storage.googleapis.com', object_path)
@@ -156,10 +158,10 @@ class LibCloudStorage(Storage):
     def _read(self, name):
         obj = self._get_object(name)
         # TOFIX : we should be able to read chunk by chunk
-        return next(self.driver.download_object_as_stream(obj, obj.size))
+        return next(self._get_driver().download_object_as_stream(obj, obj.size))
 
     def _save(self, name, file):
-        self.driver.upload_object_via_stream(iter(file), self._get_bucket(), name)
+        self._get_driver().upload_object_via_stream(iter(file), self._get_bucket(), name)
         return name
 
 
