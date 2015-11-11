@@ -165,6 +165,8 @@ class S3BotoStorageTests(S3BotoTestCase):
         name = 'test_open_for_writing.txt'
         content = 'new content'
 
+        # Set the encryption flag used for multipart uploads
+        self.storage.encryption = True
         # Set the ACL header used when creating/writing data.
         self.storage.bucket.connection.provider.acl_header = 'x-amz-acl'
         # Set the mocked key's bucket
@@ -183,6 +185,7 @@ class S3BotoStorageTests(S3BotoTestCase):
                 'x-amz-acl': 'public-read',
             },
             reduced_redundancy=self.storage.reduced_redundancy,
+            encrypt_key=True,
         )
 
         # Save the internal file before closing
