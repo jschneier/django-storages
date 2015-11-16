@@ -146,7 +146,8 @@ class S3BotoStorageFile(File):
             self._multipart = self._storage.bucket.initiate_multipart_upload(
                 self.key.name,
                 headers=upload_headers,
-                reduced_redundancy=self._storage.reduced_redundancy
+                reduced_redundancy=self._storage.reduced_redundancy,
+                encrypt_key=self._storage.encryption,
             )
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
