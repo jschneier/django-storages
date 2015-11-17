@@ -263,9 +263,7 @@ class S3BotoStorageTests(S3BotoTestCase):
         url = 'http://aws.amazon.com/%s' % name
         self.storage.connection.generate_url.return_value = url
 
-        self.assertEquals(self.storage.url(name), url)
-        self.storage.connection.generate_url.assert_called_with(
-            self.storage.querystring_expire,
+        kwargs = dict(
             method='GET',
             bucket=self.storage.bucket.name,
             key=name,
@@ -273,6 +271,20 @@ class S3BotoStorageTests(S3BotoTestCase):
             force_http=not self.storage.secure_urls,
             headers=None,
             response_headers=None,
+        )
+
+        self.assertEquals(self.storage.url(name), url)
+        self.storage.connection.generate_url.assert_called_with(
+            self.storage.querystring_expire,
+            **kwargs
+        )
+
+        custom_expire = 123
+
+        self.assertEquals(self.storage.url(name, expire=custom_expire), url)
+        self.storage.connection.generate_url.assert_called_with(
+            custom_expire,
+            **kwargs
         )
 
     def test_generated_url_is_encoded(self):
