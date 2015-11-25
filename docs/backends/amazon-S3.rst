@@ -72,6 +72,19 @@ Enable server-side file encryption while at rest, by setting ``encrypt_key`` par
 
 By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
 
+CloudFront
+~~~~~~~~~~
+
+If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
+to serve those files using that::
+
+    AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
+
+Keep in mind you'll have to configure CloudFront to use the proper bucket as an
+origin manually for this to work.
+
+If you need to use multiple storages that are served via CloudFront, pass the
+`custom_domain` parameter to their constructors.
 
 Fields
 ------
