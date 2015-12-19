@@ -30,6 +30,9 @@ class LibCloudStorage(Storage):
         if not self.provider:
             raise ImproperlyConfigured(
                 'LIBCLOUD_PROVIDERS %s not defined or invalid' % provider_name)
+
+        self.proxy_url = getattr(settings, 'LIBCLOUD_PROXY_URL', None)
+
         extra_kwargs = {}
         if 'region' in self.provider:
             extra_kwargs['region'] = self.provider['region']
@@ -128,7 +131,9 @@ class LibCloudStorage(Storage):
             url = self.driver.get_object_cdn_url(obj)
         except NotImplementedError as e:
             object_path = '%s/%s' % (self.bucket, obj.name)
-            if 's3' in provider_type:
+            if self.proxy_url is not None:
+                url = urljoin(self.proxy_url, object_path)
+            elif 's3' in provider_type:
                 base_url = 'https://%s' % self.driver.connection.host
                 url = urljoin(base_url, object_path)
             elif 'google' in provider_type:
