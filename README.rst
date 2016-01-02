@@ -71,9 +71,9 @@ Issues are tracked via GitHub issues at the `project issue page
 
 Documentation
 =============
-The original documentation for django-storages is located at http://django-storages.readthedocs.org/.
-Stay tuned for forthcoming documentation updates.
-
+The documentation for this fork lives at
+http://django-storages-redux.readthedocs.org/, the `django-storages` being already
+taken by the original fork.
 
 Contributing
 ============
@@ -87,4 +87,3 @@ Contributing
    correctly.
 #. Bug me until I can merge your pull request. Also, don't forget to add
    yourself to ``AUTHORS``.
-
