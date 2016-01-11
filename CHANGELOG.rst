@@ -9,11 +9,13 @@ X.X.X (XXXX-XX-XX)
 * Various fixes to the ``apache_libcloud`` backend [return the number of bytes asked for by ``.read``, make ``.name`` non-private, don't
   initialize to an empty ``BytesIO`` object] thanks @kaedroho (`#55`_)
 * Fix multi-part uploads in ``s3boto`` backend not respecting ``AWS_S3_ENCRYPTION`` thanks @andersontep (`#94`_)
+* Automatically gzip svg files thanks @comandrei (`#100`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/45
 .. _#76: https://github.com/jschneier/django-storages/pull/76
 .. _#55: https://github.com/jschneier/django-storages/pull/55
 .. _#94: https://github.com/jschneier/django-storages/pull/94
+.. _#100: https://github.com/jschneier/django-storages/pull/100
 
 
 1.3 (2015-08-14)
