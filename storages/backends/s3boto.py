@@ -226,6 +226,7 @@ class S3BotoStorage(Storage):
         'text/javascript',
         'application/javascript',
         'application/x-javascript',
+        'image/svg+xml',
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
     host = setting('AWS_S3_HOST', S3Connection.DefaultHost)
