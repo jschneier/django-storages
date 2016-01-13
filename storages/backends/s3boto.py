@@ -474,17 +474,26 @@ class S3BotoStorage(Storage):
         # Parse the last_modified string to a local datetime object.
         return parse_ts(entry.last_modified)
 
-    def url(self, name, headers=None, response_headers=None):
+    def url(self, name, headers=None, response_headers=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
-        return self.connection.generate_url(self.querystring_expire,
-                                            method='GET', bucket=self.bucket.name, key=self._encode_name(name),
-                                            headers=headers,
-                                            query_auth=self.querystring_auth, force_http=not self.secure_urls,
-                                            response_headers=response_headers)
+
+        if expire is None:
+            expire = self.querystring_expire
+
+        return self.connection.generate_url(
+            expire,
+            method='GET',
+            bucket=self.bucket.name,
+            key=self._encode_name(name),
+            headers=headers,
+            query_auth=self.querystring_auth,
+            force_http=not self.secure_urls,
+            response_headers=response_headers,
+        )
 
     def get_available_name(self, name, max_length=None):
         """ Overwrite existing file with the same name. """
