@@ -1,6 +1,16 @@
 django-storages change log
 ==========================
 
+1.3.2 (XXXX-XX-XX)
+******************
+
+* Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_) thanks @kmmbvnr
+* Allow easily specifying a custom expiry time when generating a url for ``S3BotoStorage`` (`#96`_) thanks @mattbriancon
+
+.. _#106: https://github.com/jschneier/django-storages/pull/106
+.. _#96: https://github.com/jschneier/django-storages/pull/96
+
+
 1.3.1 (2016-01-12)
 ******************
 
@@ -8,7 +18,7 @@ django-storages change log
 * Add support for a Dropbox (``dropbox``) storage backend, thanks @ZuluPro (`#76`_)
 * Various fixes to the ``apache_libcloud`` backend [return the number of bytes asked for by ``.read``, make ``.name`` non-private, don't
   initialize to an empty ``BytesIO`` object] thanks @kaedroho (`#55`_)
-* Fix multi-part uploads in ``s3boto`` backend not respecting ``AWS_S3_ENCRYPTION`` thanks @andersontep (`#94`_)
+* Fix multi-part uploads in ``s3boto`` backend not respecting ``AWS_S3_ENCRYPTION`` (`#94`_) thanks @andersontep
 * Automatically gzip svg files thanks @comandrei (`#100`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/45
