@@ -182,6 +182,9 @@ class S3BotoStorageFile(File):
             if not self._multipart is None:
                 self._multipart.cancel_upload()
         self.key.close()
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
 
 @deconstructible
