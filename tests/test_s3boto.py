@@ -10,6 +10,7 @@ from django.test import TestCase
 from django.core.files.base import ContentFile
 import django
 
+from boto.exception import S3ResponseError
 from boto.s3.key import Key
 from boto.utils import parse_ts, ISO8601
 
@@ -195,6 +196,13 @@ class S3BotoStorageTests(S3BotoTestCase):
             _file, 1, headers=self.storage.headers,
         )
         file._multipart.complete_upload.assert_called_once()
+
+    def test_storage_exists_bucket(self):
+        self.storage._connection.get_bucket.side_effect = S3ResponseError(404, 'No bucket')
+        self.assertFalse(self.storage.exists(''))
+
+        self.storage._connection.get_bucket.side_effect = None
+        self.assertTrue(self.storage.exists(''))
 
     def test_storage_exists(self):
         key = self.storage.bucket.new_key.return_value

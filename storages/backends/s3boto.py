@@ -428,6 +428,13 @@ class S3BotoStorage(Storage):
         self.bucket.delete_key(self._encode_name(name))
 
     def exists(self, name):
+        if not name:  # root element aka the bucket
+            try:
+                self.bucket
+                return True
+            except ImproperlyConfigured:
+                return False
+
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
             return name in self.entries
