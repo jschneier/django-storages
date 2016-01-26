@@ -6,9 +6,13 @@ django-storages change log
 
 * Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_) thanks @kmmbvnr
 * Allow easily specifying a custom expiry time when generating a url for ``S3BotoStorage`` (`#96`_) thanks @mattbriancon
+* Check for bucket existence when the empty path ('') is passed to ``storage.exists`` in ``S3BotoStorage`` -
+  this prevents a crash when running ``collecstatic -c`` on Django 1.9.1 (`#112`_) fixed in `#116`_ thanks @xblitz
 
 .. _#106: https://github.com/jschneier/django-storages/pull/106
 .. _#96: https://github.com/jschneier/django-storages/pull/96
+.. _#112: https://github.com/jschneier/django-storages/issues/112
+.. _#116: https://github.com/jschneier/django-storages/pull/116
 
 
 1.3.1 (2016-01-12)
