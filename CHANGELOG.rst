@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.3.2 (XXXX-XX-XX)
+1.3.2 (2016-01-26)
 ******************
 
 * Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_) thanks @kmmbvnr
