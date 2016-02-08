@@ -1,4 +1,4 @@
-Django>=1.6.2
+Django>=1.7
 pytest==2.6.4
 boto>=2.32.0
 dropbox>=3.24
