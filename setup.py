@@ -6,12 +6,13 @@ def read(filename):
     with open(filename) as f:
         return f.read()
 
+
 def get_requirements_tests():
     with open('requirements-tests.txt') as f:
         return f.readlines()
 
 setup(
-    name='django-storages-redux',
+    name='django-storages',
     version=storages.__version__,
     packages=['storages', 'storages.backends'],
     author='Josh Schneier',

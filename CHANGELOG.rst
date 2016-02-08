@@ -1,6 +1,12 @@
 django-storages change log
 ==========================
 
+1.4 (2016-02-07)
+****************
+
+* This package is now released on PyPI as `django-storages`. Please update your requirements files to
+  `django-storages==1.4`.
+
 1.3.2 (2016-01-26)
 ******************
 

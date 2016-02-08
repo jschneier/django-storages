@@ -6,8 +6,8 @@ django-storages
     :target: https://travis-ci.org/jschneier/django-storages
     :alt: Build Status
 
-.. image:: https://pypip.in/v/django-storages-redux/badge.png
-    :target: https://pypi.python.org/pypi/django-storages-redux
+.. image:: https://pypip.in/v/django-storages/badge.png
+    :target: https://pypi.python.org/pypi/django-storages
     :alt: PyPI Version
 
 
@@ -15,7 +15,7 @@ Installation
 ============
 Installing from PyPI is as easy as doing::
 
-  pip install django-storages-redux
+  pip install django-storages
 
 If you'd prefer to install from source (maybe there is a bugfix in master that
 hasn't been released yet) then the magic incantation you are looking for is::
