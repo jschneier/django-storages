@@ -41,7 +41,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'django-storages'
+project = u'django-storages-redux'
 copyright = u'2011-2013, David Larlet, et. al.'
 
 # The version info for the project you're documenting, acts as replacement for
