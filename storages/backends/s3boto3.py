@@ -89,13 +89,9 @@ class S3Boto3StorageFile(File):
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
         self.obj = storage.bucket.Object(storage._encode_name(name))
-        # TODO: Is this explicitly necessary? Done to emulate old
-        # behavior, but the code would misbehave already if self.obj is None.
         if 'w' not in mode:
-            try:
-                self.obj.load()
-            except storage.connection_response_error:
-                self.obj = None
+            # Force early RAII-style exception if object does not exist
+            self.obj.load()
         self._is_dirty = False
         self._file = None
         self._multipart = None
@@ -136,7 +132,7 @@ class S3Boto3StorageFile(File):
             raise AttributeError("File was not opened in read mode.")
         return super(S3Boto3StorageFile, self).read(*args, **kwargs)
 
-    def write(self, content, *args, **kwargs):
+    def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
@@ -152,7 +148,7 @@ class S3Boto3StorageFile(File):
             self._multipart = self.obj.initiate_multipart_upload(**parameters)
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
-        return super(S3Boto3StorageFile, self).write(force_bytes(content), *args, **kwargs)
+        return super(S3Boto3StorageFile, self).write(force_bytes(content))
 
     @property
     def _buffer_file_size(self):
@@ -171,8 +167,6 @@ class S3Boto3StorageFile(File):
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
             part.upload(Body=self.file.read())
-            self.file.close()
-            self._file = None
 
     def close(self):
         if self._is_dirty:
@@ -187,6 +181,9 @@ class S3Boto3StorageFile(File):
         else:
             if self._multipart is not None:
                 self._multipart.abort()
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
 
 @deconstructible
@@ -465,6 +462,12 @@ class S3Boto3Storage(Storage):
         self.bucket.Object(self._encode_name(name)).delete()
 
     def exists(self, name):
+        if not name:
+            try:
+                self.bucket
+                return True
+            except ImproperlyConfigured:
+                return False
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
             return name in self.entries
