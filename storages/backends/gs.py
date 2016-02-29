@@ -63,6 +63,7 @@ class GSBotoStorage(S3BotoStorage):
         'application/x-javascript',
     ))
     url_protocol = setting('GS_URL_PROTOCOL', 'http:')
+    host = setting('GS_HOST', GSConnection.DefaultHost)
 
     def _save_content(self, key, content, headers):
         # only pass backwards incompatible arguments if they vary from the default
