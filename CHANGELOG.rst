@@ -1,6 +1,15 @@
 django-storages change log
 ==========================
 
+1.4.1 (XXXX-XX-XX)
+******************
+
+* Add ``GS_HOST`` setting (with a default of ``GSConnection.DefaultHost``) to fix ``GSBotoStorage``.
+  Issue `#124`_. Fixed in `#125`_. Thanks @patgmiller @dcgoss.
+
+.. _#124: https://github.com/jschneier/django-storages/issues/124
+.. _#125: https://github.com/jschneier/django-storages/pull/125
+
 1.4 (2016-02-07)
 ****************
 
