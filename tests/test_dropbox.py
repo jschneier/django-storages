@@ -48,6 +48,10 @@ FILES_FIXTURE = {
     'size': '0 bytes',
     'thumb_exists': False
 }
+FILE_MEDIA_FIXTURE = {
+    'url': "https://dl.dropboxusercontent.com/1/view/foo",
+    'expires: "Fri, 16 Sep 2011 01:01:25 +0000"
+}
 
 __all__ = [
     'DropBoxTest',
@@ -120,6 +124,12 @@ class DropBoxTest(TestCase):
     def test_read(self, *args):
         content = self.storage._read('foo')
         self.assertEqual(content, 'bar')
+
+    @mock.patch('dropbox.client.DropboxClient.media',
+                return_value=FILE_MEDIA_FIXTURE)
+    def test_url(self, *args):
+        url = self.storage.url('foo')
+        self.assertEqual(url, FILE_MEDIA_FIXTURE['url'])
 
 
 class DropBoxFileTest(TestCase):
