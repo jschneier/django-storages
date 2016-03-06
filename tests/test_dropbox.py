@@ -49,8 +49,8 @@ FILES_FIXTURE = {
     'thumb_exists': False
 }
 FILE_MEDIA_FIXTURE = {
-    'url': "https://dl.dropboxusercontent.com/1/view/foo",
-    'expires: "Fri, 16 Sep 2011 01:01:25 +0000"
+    'url': 'https://dl.dropboxusercontent.com/1/view/foo',
+    'expires': 'Fri, 16 Sep 2011 01:01:25 +0000',
 }
 
 __all__ = [
