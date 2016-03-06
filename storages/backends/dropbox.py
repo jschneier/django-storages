@@ -81,6 +81,10 @@ class DropBoxStorage(Storage):
         acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
         return acc_time
 
+    def url(self, name):
+        media = self.client.media(name)
+        return media['url']
+
     def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(name, self)
         return remote_file
