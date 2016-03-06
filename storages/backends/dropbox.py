@@ -18,6 +18,7 @@ from storages.compat import BytesIO, Storage
 from storages.utils import setting
 
 from dropbox.client import DropboxClient
+from dropbox.rest import ErrorResponse
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 
@@ -51,8 +52,10 @@ class DropBoxStorage(Storage):
         self.client.file_delete(name)
 
     def exists(self, name):
-        response = self.client.search('/', name, file_limit=1)
-        return bool(response)
+        try:
+            return bool(self.client.metadata(name))
+        except ErrorResponse:
+            return False
 
     def listdir(self, path):
         directories, files = [], []
