@@ -67,13 +67,13 @@ class DropBoxTest(TestCase):
     def test_delete(self, *args):
         self.storage.delete('foo')
 
-    @mock.patch('dropbox.client.DropboxClient.search',
+    @mock.patch('dropbox.client.DropboxClient.metadata',
                 return_value=[FILE_FIXTURE])
     def test_exists(self, *args):
         exists = self.storage.exists('foo')
         self.assertTrue(exists)
 
-    @mock.patch('dropbox.client.DropboxClient.search',
+    @mock.patch('dropbox.client.DropboxClient.metadata',
                 return_value=[])
     def test_not_exists(self, *args):
         exists = self.storage.exists('bar')
