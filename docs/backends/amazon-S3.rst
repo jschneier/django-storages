@@ -135,7 +135,7 @@ Files can be read in a little at a time, if necessary::
     >>> '-'.join(obj1.normal.chunks(chunk_size=2))
     'co-nt-en-t'
 
-Save another file with the same name::
+Save another file with the same name, having AWS_S3_FILE_OVERWRITE=False into your settings::
 
     >>> obj2 = MyStorage()
     >>> obj2.normal.save('django_test.txt', ContentFile('more content'))
@@ -143,6 +143,8 @@ Save another file with the same name::
     <FieldFile: tests/django_test_.txt>
     >>> obj2.normal.size
     12
+
+ATTENTION: AWS_S3_FILE_OVERWRITE=True is the default value so if you haven't AWS_S3_FILE_OVERWRITE into your settings, uploading a file with the same name WILL OVERWRITE the previous one!
 
 Push the objects into the cache to make sure they pickle properly::
 
