@@ -416,9 +416,12 @@ class S3Boto3Storage(Storage):
 
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
-        f = self.file_class(name, mode, self)
-        if not f.obj:
-            raise IOError('File does not exist: %s' % name)
+        try:
+            f = self.file_class(name, mode, self)
+        except self.connection_response_error as err:
+            if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+                raise IOError('File does not exist: %s' % name)
+            raise  # Let it bubble up if it was some other error
         return f
 
     def _save(self, name, content):
