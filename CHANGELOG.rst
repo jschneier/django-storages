@@ -4,10 +4,14 @@ django-storages change log
 1.4.1 (XXXX-XX-XX)
 ******************
 
+* Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding
+  in the ``s3boto`` backend. Compressable types such as ``application/javascript`` will still be gzipped.
+  PR `#122`_ thanks @cambonf
 * Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`_) thanks @zuck
 * Add ``GS_HOST`` setting (with a default of ``GSConnection.DefaultHost``) to fix ``GSBotoStorage``.
   Issue `#124`_. Fixed in `#125`_. Thanks @patgmiller @dcgoss.
 
+.. _#122: https://github.com/jschneier/django-storages/pull/122
 .. _#127: https://github.com/jschneier/django-storages/pull/127
 .. _#124: https://github.com/jschneier/django-storages/issues/124
 .. _#125: https://github.com/jschneier/django-storages/pull/125
