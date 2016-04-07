@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.4.1 (XXXX-XX-XX)
+1.4.1 (2016-04-07)
 ******************
 
 * Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding
