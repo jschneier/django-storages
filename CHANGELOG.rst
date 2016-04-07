@@ -4,7 +4,7 @@ django-storages change log
 1.4.1 (XXXX-XX-XX)
 ******************
 
-* Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`) thanks @zuck
+* Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`_) thanks @zuck
 * Add ``GS_HOST`` setting (with a default of ``GSConnection.DefaultHost``) to fix ``GSBotoStorage``.
   Issue `#124`_. Fixed in `#125`_. Thanks @patgmiller @dcgoss.
 
