@@ -390,8 +390,9 @@ class S3BotoStorage(Storage):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
         headers = self.headers.copy()
+        _type, encoding = mimetypes.guess_type(name)
         content_type = getattr(content, 'content_type',
-                               mimetypes.guess_type(name)[0] or self.key_class.DefaultContentType)
+                               _type or self.key_class.DefaultContentType)
 
         # setting the content_type in the key object is not enough.
         headers.update({'Content-Type': content_type})
@@ -399,6 +400,9 @@ class S3BotoStorage(Storage):
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
+        elif encoding:
+            # If the content already has a particular encoding, set it
+            headers.update({'Content-Encoding': encoding})
 
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
