@@ -141,7 +141,7 @@ class LibCloudStorage(Storage):
             else:
                 raise e
         if 'local' in provider_type and settings.MEDIA_ROOT != "" and settings.MEDIA_ROOT in url:
-            base_url = settings.MEDIA_URL
+            base_url = urljoin(Site.objects.get_current().domain, settings.MEDIA_URL)
             url = os.path.join(base_url, url.split(settings.MEDIA_ROOT)[-1])
         return url
 
