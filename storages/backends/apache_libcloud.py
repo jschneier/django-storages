@@ -8,6 +8,7 @@ from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.six import string_types
 from django.utils.six.moves.urllib.parse import urljoin
+from django.contrib.sites.models import Site
 
 from storages.compat import BytesIO, deconstructible, Storage
 
@@ -139,6 +140,9 @@ class LibCloudStorage(Storage):
                 url = urljoin(base_url, object_path)
             else:
                 raise e
+        if 'local' in provider_type and settings.MEDIA_ROOT != "" and settings.MEDIA_ROOT in url:
+            base_url = settings.MEDIA_URL
+            url = os.path.join(base_url, url.split(settings.MEDIA_ROOT)[-1])
         return url
 
     def _open(self, name, mode='rb'):
