@@ -5,9 +5,15 @@ import os
 
 from django.conf import settings
 from django.core.files.base import File
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, AppRegistryNotReady
 from django.utils.six import string_types
 from django.utils.six.moves.urllib.parse import urljoin
+
+try:
+    from django.contrib.sites.models import Site
+except AppRegistryNotReady:
+    # Ignore exception for testing purposes. Must override LibCloudStorage._get_current_site_domain
+    pass
 
 from storages.compat import BytesIO, deconstructible, Storage
 
@@ -120,7 +126,6 @@ class LibCloudStorage(Storage):
         return obj.size if obj else -1
 
     def _get_current_site_domain(self):
-        from django.contrib.sites.models import Site
         return Site.objects.get_current().domain
 
     def url(self, name):
