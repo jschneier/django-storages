@@ -1,12 +1,15 @@
 import os
 
-MEDIA_ROOT = os.path.normcase(os.path.dirname(os.path.abspath(__file__)))
+MEDIA_ROOT = os.path.join(os.path.normcase(os.path.dirname(os.path.abspath(__file__))), 'media')
 MEDIA_URL = '/media/'
+
+SITE_ID = 1
 
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.contenttypes',
+    'django.contrib.sites',
     'storages'
 )
 
@@ -28,3 +31,15 @@ DEFAULT_FILE_STORAGE = 'backends.s3boto.S3BotoStorage'
 AWS_IS_GZIPPED = True
 GS_IS_GZIPPED = True
 SECRET_KEY = 'hailthesunshine'
+
+# apache-libcloud settings
+DEFAULT_LIBCLOUD_PROVIDER = 'libcloud_local'
+LIBCLOUD_DIR = os.path.join(MEDIA_ROOT, 'libcloud')
+LIBCLOUD_PROVIDERS = {
+    'libcloud_local': {
+        'type': 'libcloud.storage.types.Provider.LOCAL',
+        'user': LIBCLOUD_DIR,
+        'key': '',
+        'bucket': 'local'
+    },
+}

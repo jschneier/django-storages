@@ -120,6 +120,9 @@ class LibCloudStorage(Storage):
         obj = self._get_object(name)
         return obj.size if obj else -1
 
+    def _get_current_site_domain(self):
+        return Site.objects.get_current().domain
+
     def url(self, name):
         provider_type = self.provider['type'].lower()
         obj = self._get_object(name)
@@ -141,8 +144,11 @@ class LibCloudStorage(Storage):
             else:
                 raise e
         if 'local' in provider_type and settings.MEDIA_ROOT != "" and settings.MEDIA_ROOT in url:
-            base_url = urljoin(Site.objects.get_current().domain, settings.MEDIA_URL)
-            url = os.path.join(base_url, url.split(settings.MEDIA_ROOT)[-1])
+            rel_object_path = url.split(settings.MEDIA_ROOT)[-1]
+            if rel_object_path.startswith('/'):
+                rel_object_path = rel_object_path[1:]
+            object_path = urljoin(settings.MEDIA_URL, rel_object_path)
+            url = urljoin(self._get_current_site_domain(), object_path)
         return url
 
     def _open(self, name, mode='rb'):
