@@ -27,7 +27,7 @@ Your Amazon Web Services storage bucket name, as a string.
 
 ``AWS_DEFAULT_ACL`` (optional)
 
-If set to ``private`` changes files uploaded from the default ``public-read`` to privzte. 
+If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
 
 ``AWS_AUTO_CREATE_BUCKET`` (optional)
 
