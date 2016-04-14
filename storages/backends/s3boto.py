@@ -1,6 +1,7 @@
 import os
 import posixpath
 import mimetypes
+import time
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
@@ -483,7 +484,7 @@ class S3BotoStorage(Storage):
         # Parse the last_modified string to a local datetime object.
         # return parse_ts(entry.last_modified)
         modified = timezone.datetime.strptime(str(entry.last_modified), '%Y-%m-%dT%H:%M:%S.000Z')
-        modified += timezone.timedelta(hours=-6)
+        modified += timezone.timedelta(hours=time.localtime().tm_gmtoff / 3600)
         return modified
 
     def url(self, name, headers=None, response_headers=None, expire=None):
