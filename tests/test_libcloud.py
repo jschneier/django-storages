@@ -3,15 +3,16 @@ import shutil
 from django.test import TestCase
 from django.core.files.base import ContentFile
 from django.conf import settings
-from django.contrib.sites.models import Site
 
 from storages.backends.apache_libcloud import LibCloudStorage
 from libcloud.storage.types import ContainerAlreadyExistsError
 
 TEST_PATH_PREFIX = 'django-storages-test'
 
+
 def get_current_site_domain(*args, **kwargs):
     return "http://example.com"
+
 
 class LibCloudLocalTest(TestCase):
 
@@ -38,7 +39,7 @@ class LibCloudLocalTest(TestCase):
     def test_create_container(self):
         store = LibCloudStorage('libcloud_local')
         store.driver.create_container('test-bucket')
-        new_dir = os.path.join(settings.LIBCLOUD_DIR, 'test-bucket') 
+        new_dir = os.path.join(settings.LIBCLOUD_DIR, 'test-bucket')
         self.assertTrue(os.path.exists(new_dir))
 
         with self.assertRaises(ContainerAlreadyExistsError):
