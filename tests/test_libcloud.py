@@ -50,12 +50,12 @@ class LibCloudLocalTest(TestCase):
         Test saving a file
         """
         name = 'test_storage_save.txt'
-        content = 'new content'
+        content = b'new content'
         content_file = ContentFile(content)
         self.storage.save(name, content_file)
         fpath = os.path.join(self.provider_path, name)
         self.assertTrue(os.path.exists(fpath))
-        with open(fpath, 'r') as f:
+        with open(fpath, 'rb') as f:
             self.assertEqual(content, f.read())
 
     def test_url(self):
@@ -63,7 +63,7 @@ class LibCloudLocalTest(TestCase):
         Test loading a file's url
         """
         name = 'test_url.txt'
-        content = 'url test content'
+        content = b'url test content'
         content_file = ContentFile(content)
         self.storage.save(name, content_file)
 

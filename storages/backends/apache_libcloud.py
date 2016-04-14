@@ -8,7 +8,6 @@ from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.six import string_types
 from django.utils.six.moves.urllib.parse import urljoin
-from django.contrib.sites.models import Site
 
 from storages.compat import BytesIO, deconstructible, Storage
 
@@ -121,6 +120,7 @@ class LibCloudStorage(Storage):
         return obj.size if obj else -1
 
     def _get_current_site_domain(self):
+        from django.contrib.sites.models import Site
         return Site.objects.get_current().domain
 
     def url(self, name):
