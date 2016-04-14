@@ -1,10 +1,3 @@
-==============
-Caleb's fork
-==============
-This fork is a hack to correct bad timezone detection when using collectstatic and S3. I could never consistently get collectstatic to detect when a local file is newer than a remote file on S3 and replace it so I hardcoded the time difference into backends/s3boto.py line 486, for me the time difference between utc is -6 hours. Feel free to download this and change that value. Yeah I know that's a pretty terrible way to do this. There's probably a better way to calculate the timedelta using Django's timezone stuff but this is just a quick hack for me to get this working.
-
-Below is the original readme.
-
 ===============
 django-storages
 ===============
