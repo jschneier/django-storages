@@ -1,6 +1,13 @@
 django-storages change log
 ==========================
 
+1.4.2 (XXXX-XX-XX)
+******************
+
+* Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_) thanks @fladi
+
+.. _#145: https://github.com/jschneier/django-storages/pull/145
+
 1.4.1 (2016-04-07)
 ******************
 
