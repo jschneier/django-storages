@@ -44,6 +44,21 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
     STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
+
+CloudFront
+~~~~~~~~~~
+
+If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
+to serve those files using that::
+
+    AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
+
+Keep in mind you'll have to configure CloudFront to use the proper bucket as an
+origin manually for this to work.
+
+If you need to use multiple storages that are served via CloudFront, pass the
+`custom_domain` parameter to their constructors.
+
 Fields
 ------
 
