@@ -8,7 +8,7 @@ syntax:glob
 *.log
 *.orig
 *.pyc
-*.swp
+*.sw[po]
 *.tmp
 *~
 .tox/

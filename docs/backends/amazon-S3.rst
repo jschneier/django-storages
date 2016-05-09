@@ -40,9 +40,40 @@ If you'd like to set headers sent with each file of the storage::
         'Cache-Control': 'max-age=86400',
     }
 
-To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
+To allow ``django-admin.py`` collectstatic to automatically put your static
+files in your bucket set the following in your settings.py:::
 
     STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+
+``AWS_DEFAULT_ACL`` (optional)
+
+Canned ACL to apply on bucket's content. Possible values are:
+
+- ``'private'``
+- ``'public-read'``
+- ``'public-read-write'``
+- ``'aws-exec-read'``
+- ``'authenticated-read'``
+- ``'bucket-owner-read'``
+- ``'bucket-owner-full-control'``
+- ``'log-delivery-write'``
+
+Default value is `'public-read'` See `Amazon's ACL documentation` for their
+description.
+
+``AWS_BUCKET_ACL`` (optional)
+
+Canned ACL applied when bucket is auto-created.
+
+``AWS_S3_CUSTOM_DOMAIN`` (optional):
+
+If you have a custom domain name applied to your bucket, inquire this with
+that parameter.
+
+``AWS_S3_SECURE_URLS`` (optional):
+
+By default URLs are rendered with secure scheme (HTTPS), if you want to use an
+unsecure protocol set it to ``False``.
 
 Fields
 ------
@@ -186,3 +217,5 @@ Clean up the temporary files::
     >>> obj2.normal.delete()
     >>> obj3.default.delete()
     >>> obj4.random.delete()
+
+.. _`Amazon's ACL documentation`: http://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
