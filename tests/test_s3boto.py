@@ -338,3 +338,17 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.storage.file_overwrite = False
         self.storage.exists = lambda name: False
         self.storage.get_available_name('gogogo', max_length=255)
+
+    def test_get_headers_default(self):
+        result = self.storage.get_headers("filename")
+        self.assertEqual(result, {})
+
+    def test_get_extra_headers(self):
+        extra_headers = [
+            ("storage/img/.*", {"extra header": "value"})
+        ]
+        self.storage.extra_headers = extra_headers
+        result = self.storage.get_extra_headers("storage/img/testimage")
+        self.assertDictEqual(result, extra_headers[0][1])
+        result = self.storage.get_extra_headers("storage/not/matching/file")
+        self.assertDictEqual(result, {})
