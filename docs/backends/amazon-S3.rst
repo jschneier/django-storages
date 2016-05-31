@@ -40,6 +40,16 @@ If you'd like to set headers sent with each file of the storage::
         'Cache-Control': 'max-age=86400',
     }
 
+
+``AWS_EXTRA_HEADERS`` (optional)
+
+This option allows to set additional headers for files matching special regex
+For example if you want to add "Cache-Control" header for all png images add
+
+AWS_EXTRA_HEADERS = [
+  (".*png", {"Cache-Control": "max-age=86400"})
+]
+
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
