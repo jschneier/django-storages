@@ -164,15 +164,14 @@ class SFTPStorage(Storage):
             self._chown(path, uid=self._uid, gid=self._gid)
 
     def _save(self, name, content):
-        """Save file via SFTP."""
-        content.open()
+        """Save file via SFTP. content param is a bytes object."""
         path = self._remote_path(name)
         dirname = self._pathmod.dirname(path)
         if not self.exists(dirname):
             self._mkdir(dirname)
 
         f = self.sftp.open(path, 'wb')
-        f.write(content.file.read())
+        f.write(content)
         f.close()
 
         # set file permissions if configured
@@ -251,7 +250,6 @@ class SFTPStorageFile(File):
         if not self._is_read:
             self.file = self._storage._read(self._name)
             self._is_read = True
-
         return self.file.read(num_bytes)
 
     def write(self, content):
