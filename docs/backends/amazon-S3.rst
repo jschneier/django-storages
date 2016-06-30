@@ -40,9 +40,25 @@ If you'd like to set headers sent with each file of the storage::
         'Cache-Control': 'max-age=86400',
     }
 
+``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
+
+Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
+authentication`_ from generated URLs. This can be useful if your S3 buckets are
+public.
+
+``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
+
+The number of seconds that a generated URL with `query parameter
+authentication`_ is valid for.
+
+
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+
+
+.. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+
 
 Fields
 ------
