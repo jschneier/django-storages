@@ -1,6 +1,9 @@
 sudo: false
 language: python
 
+python:
+  - 3.5
+
 env:
   - TOX_ENV=py27-django17
   - TOX_ENV=py33-django17
@@ -12,12 +15,6 @@ env:
   - TOX_ENV=py27-django19
   - TOX_ENV=py34-django19
   - TOX_ENV=py35-django19
-
-matrix:
-  # Python 3.5 not yet available on travis, watch this to see when it is.
-  allow_failures:
-    - env: TOX_ENV=py35-django18
-    - env: TOX_ENV=py35-django19
 
 before_install:
   - pip install codecov

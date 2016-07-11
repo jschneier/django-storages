@@ -214,7 +214,7 @@ class S3BotoStorageTests(S3BotoTestCase):
         file._multipart.upload_part_from_file.assert_called_with(
             _file, 1, headers=self.storage.headers,
         )
-        file._multipart.complete_upload.assert_called_once()
+        file._multipart.complete_upload.assert_called_once_with()
 
     def test_storage_exists_bucket(self):
         self.storage._connection.get_bucket.side_effect = S3ResponseError(404, 'No bucket')
