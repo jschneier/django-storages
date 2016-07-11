@@ -5,8 +5,10 @@ django-storages change log
 ******************
 
 * Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_) thanks @fladi
+* Enable CI testing of Python3.5 and fix test failure from api change (`#171`_) thanks @tnir
 
 .. _#145: https://github.com/jschneier/django-storages/pull/145
+.. _#171: https://github.com/jschneier/django-storages/pull/171
 
 1.4.1 (2016-04-07)
 ******************
