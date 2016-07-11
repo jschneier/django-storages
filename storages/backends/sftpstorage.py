@@ -16,8 +16,8 @@ from __future__ import print_function
 # SFTP_STORAGE_PARAMS (Optional) - A dictionary containing connection
 # parameters to be passed as keyword arguments to
 # paramiko.SSHClient().connect() (do not include hostname here).  See
-# http://www.lag.net/paramiko/docs/paramiko.SSHClient-class.html#connect for
-# details
+# http://docs.paramiko.org/en/latest/api/client.html#paramiko.client.SSHClient.connect
+# for details
 #
 # SFTP_STORAGE_INTERACTIVE (Optional) - A boolean indicating whether to prompt
 # for a password if the connection cannot be made using keys, and there is not
