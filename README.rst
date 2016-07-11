@@ -38,8 +38,7 @@ This library is compatible with Django >= 1.7. It should also works with 1.6.2+ 
 History
 =======
 This repo began as a fork of the original library under the package name of django-storages-redux and
-became the official successor (releasing under django-storages on PyPI) in February of 2016. The initial
-reasons for the fork are explained at the bottom of this document.
+became the official successor (releasing under django-storages on PyPI) in February of 2016.
 
 Found a Bug? Something Unsupported?
 ===================================
