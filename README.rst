@@ -68,21 +68,3 @@ Contributing
    correctly.
 #. Bug me until I can merge your pull request. Also, don't forget to add
    yourself to ``AUTHORS``.
-
-Why Fork?
-====================
-The BitBucket repo of the original django-storages has seen no commit applied
-since March 2014 (it is currently December 2014) and no PyPi release since
-March 2013 despite a wealth of bugfixes that were applied in that year-long
-gap. There is plenty of community support for the django-storages project
-(especially the S3BotoStorage piece) and I have a personal need for a Python3
-compatible version.
-
-All of the Python3 compatible forks that currently exist (and there are a few)
-are lacking in some way. This can be anything from the fact that they don't
-release to PyPi, have no ongoing testing, didn't apply many important bugfixes
-that have occurred on the Bitbucket repo since forking or don't support older
-versions of Python and Django (vital to finding bugs and keeping a large
-community). For this fork I've done the small bit of work necessary to get a
-tox + travis ci matrix going for all of the supported Python + Django versions.
-In many cases the various forks are lacking in a few of the above ways.
