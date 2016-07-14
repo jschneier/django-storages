@@ -90,7 +90,13 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.put_file(name, content)
+        name = name.replace ('\\','/')
+        try:
+            file_metadata = self.client.metadata(name)
+            the_rev = file_metadata['rev']
+        except:
+            the_rev = ''
+        self.client.put_file(name, content, overwrite=True, parent_rev=the_rev)
         return name
 
     def _read(self, name, num_bytes=None):
