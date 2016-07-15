@@ -153,7 +153,9 @@ class LibCloudStorage(Storage):
             if rel_object_path.startswith('/'):
                 rel_object_path = rel_object_path[1:]
             object_path = urljoin(settings.MEDIA_URL, rel_object_path)
-            url = urljoin(self._get_current_site_domain(), object_path)
+            if object_path.startswith('/'):
+                object_path = object_path[1:]
+            url = "http://{0}/{1}".format(self._get_current_site_domain(), object_path) 
         return url
 
     def _open(self, name, mode='rb'):

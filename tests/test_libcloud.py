@@ -11,7 +11,7 @@ TEST_PATH_PREFIX = 'django-storages-test'
 
 
 def get_current_site_domain(*args, **kwargs):
-    return "http://example.com"
+    return "example.com"
 
 
 class LibCloudLocalTest(TestCase):
@@ -68,5 +68,5 @@ class LibCloudLocalTest(TestCase):
         self.storage.save(name, content_file)
 
         # http://example.com/media/libcloud/local/test_url.txt
-        result = get_current_site_domain() + os.path.join(settings.MEDIA_URL, 'libcloud', self.provider['bucket'], name)
+        result = "http://" + get_current_site_domain() + os.path.join(settings.MEDIA_URL, 'libcloud', self.provider['bucket'], name)
         self.assertEquals(result, self.storage.url(name))
