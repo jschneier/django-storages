@@ -39,7 +39,7 @@ class FTPStorage(Storage):
             raise ImproperlyConfigured("You must set a location at "
                                        "instanciation or at "
                                        " settings.FTP_STORAGE_LOCATION'.")
-
+        self.location = location
         base_url = base_url or settings.MEDIA_URL
         self._config = self._decode_location(location)
         self._base_url = base_url
@@ -192,7 +192,7 @@ class FTPStorage(Storage):
         self._start_connection()
         try:
             dirs, files = self._get_dir_details(path)
-            return dirs.keys(), files.keys()
+            return list(dirs.keys()), list(files.keys())
         except FTPStorageException:
             raise
 
