@@ -7,6 +7,8 @@ except ImportError:  # Python 3.2 and below
 
 from django.test import TestCase
 from django.core.files.base import File, ContentFile
+from django.core.exceptions import ImproperlyConfigured, \
+                                   SuspiciousFileOperation
 
 from storages.backends import dropbox
 
@@ -64,7 +66,11 @@ class DropBoxTest(TestCase):
                 re.compile(r'.*'))
     @mock.patch('dropbox.client.DropboxOAuth2Session')
     def setUp(self, *args):
-        self.storage = dropbox.DropBoxStorage('')
+        self.storage = dropbox.DropBoxStorage('foo')
+
+    def test_no_access_token(self, *args):
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(None)
 
     @mock.patch('dropbox.client.DropboxClient.file_delete',
                 return_value=FILE_FIXTURE)
@@ -89,8 +95,8 @@ class DropBoxTest(TestCase):
         dirs, files = self.storage.listdir('/')
         self.assertGreater(len(dirs), 0)
         self.assertGreater(len(files), 0)
-        self.assertEqual(dirs[0], '/bar')
-        self.assertEqual(files[0], '/foo.txt')
+        self.assertEqual(dirs[0], 'bar')
+        self.assertEqual(files[0], 'foo.txt')
 
     @mock.patch('dropbox.client.DropboxClient.metadata',
                 return_value=FILE_FIXTURE)
@@ -119,17 +125,19 @@ class DropBoxTest(TestCase):
     def test_save(self, *args):
         self.storage._save('foo', b'bar')
 
-    @mock.patch('dropbox.client.DropboxClient.get_file',
-                return_value=ContentFile('bar'))
-    def test_read(self, *args):
-        content = self.storage._read('foo')
-        self.assertEqual(content, 'bar')
-
     @mock.patch('dropbox.client.DropboxClient.media',
                 return_value=FILE_MEDIA_FIXTURE)
     def test_url(self, *args):
         url = self.storage.url('foo')
         self.assertEqual(url, FILE_MEDIA_FIXTURE['url'])
+
+    def test_formats(self, *args):
+        self.storage = dropbox.DropBoxStorage('foo')
+        files = self.storage._full_path('')
+        self.assertEqual(files, self.storage._full_path('/'))
+        self.assertEqual(files, self.storage._full_path('.'))
+        self.assertEqual(files, self.storage._full_path('..'))
+        self.assertEqual(files, self.storage._full_path('../..'))
 
 
 class DropBoxFileTest(TestCase):
@@ -137,16 +145,35 @@ class DropBoxFileTest(TestCase):
                 re.compile(r'.*'))
     @mock.patch('dropbox.client.DropboxOAuth2Session')
     def setUp(self, *args):
-        self.storage = dropbox.DropBoxStorage('')
+        self.storage = dropbox.DropBoxStorage('foo')
         self.file = dropbox.DropBoxFile('/foo.txt', self.storage)
 
-    @mock.patch('dropbox.client.DropboxClient.put_file',
-                return_value='foo')
-    def test_write(self, *args):
-        self.storage._save('foo', b'bar')
-
     @mock.patch('dropbox.client.DropboxClient.get_file',
-                return_value=ContentFile('bar'))
+                return_value=ContentFile(b'bar'))
     def test_read(self, *args):
-        content = self.storage._read('foo')
-        self.assertEqual(content, 'bar')
+        file = self.storage._open(b'foo')
+        self.assertEqual(file.read(), b'bar')
+
+
+@mock.patch('dropbox.client._OAUTH2_ACCESS_TOKEN_PATTERN',
+            re.compile(r'.*'))
+@mock.patch('dropbox.client.DropboxOAuth2Session')
+@mock.patch('dropbox.client.DropboxClient.metadata',
+            return_value={'contents': []})
+class DropBoxRootPathTest(TestCase):
+    def test_jailed(self, *args):
+        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        dirs, files = self.storage.listdir('/')
+        self.assertFalse(dirs)
+        self.assertFalse(files)
+
+    def test_suspicious(self, *args):
+        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        with self.assertRaises((SuspiciousFileOperation, ValueError)):
+            self.storage._full_path('..')
+
+    def test_formats(self, *args):
+        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        files = self.storage._full_path('')
+        self.assertEqual(files, self.storage._full_path('/'))
+        self.assertEqual(files, self.storage._full_path('.'))

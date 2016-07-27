@@ -6,15 +6,19 @@
 #
 # Add below to settings.py:
 # DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
+# DROPBOX_ROOT_PATH = '/dir/'
 
 from __future__ import absolute_import
 
 from datetime import datetime
+from tempfile import SpooledTemporaryFile
+from shutil import copyfileobj
 
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
+from django.utils._os import safe_join
 
-from storages.compat import BytesIO, Storage
+from storages.compat import Storage
 from storages.utils import setting
 
 from dropbox.client import DropboxClient
@@ -28,39 +32,52 @@ class DropBoxStorageException(Exception):
 
 
 class DropBoxFile(File):
-    def __init__(self, name, storage, mode='rb'):
+    def __init__(self, name, storage):
         self.name = name
         self._storage = storage
 
-    def read(self, num_bytes=None):
-        return self._storage._read(self.name, num_bytes=num_bytes)
-
-    def write(self, content):
-        self._storage._save(self.name, content)
+    @property
+    def file(self):
+        if not hasattr(self, '_file'):
+            response = self._storage.client.get_file(self.name)
+            self._file = SpooledTemporaryFile()
+            copyfileobj(response, self._file)
+            self._file.seek(0)
+        return self._file
 
 
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
 
-    def __init__(self, oauth2_access_token=setting('DROPBOX_OAUTH2_TOKEN')):
+    def __init__(self, oauth2_access_token=None, root_path=None):
+        oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
+        self.root_path = root_path or setting('DROPBOX_ROOT_PATH', '/')
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure a token auth at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
         self.client = DropboxClient(oauth2_access_token)
 
+    def _full_path(self, name):
+        if name == '/':
+            name = ''
+        return safe_join(self.root_path, name)
+
     def delete(self, name):
-        self.client.file_delete(name)
+        self.client.file_delete(self._full_path(name))
 
     def exists(self, name):
         try:
-            return bool(self.client.metadata(name))
+            return bool(self.client.metadata(self._full_path(name)))
         except ErrorResponse:
             return False
 
     def listdir(self, path):
         directories, files = [], []
-        metadata = self.client.metadata(path)
+        full_path = self._full_path(path)
+        metadata = self.client.metadata(full_path)
         for entry in metadata['contents']:
+            entry['path'] = entry['path'].replace(full_path, '', 1)
+            entry['path'] = entry['path'].replace('/', '', 1)
             if entry['is_dir']:
                 directories.append(entry['path'])
             else:
@@ -68,31 +85,27 @@ class DropBoxStorage(Storage):
         return directories, files
 
     def size(self, name):
-        metadata = self.client.metadata(name)
+        metadata = self.client.metadata(self._full_path(name))
         return metadata['bytes']
 
     def modified_time(self, name):
-        metadata = self.client.metadata(name)
+        metadata = self.client.metadata(self._full_path(name))
         mod_time = datetime.strptime(metadata['modified'], DATE_FORMAT)
         return mod_time
 
     def accessed_time(self, name):
-        metadata = self.client.metadata(name)
+        metadata = self.client.metadata(self._full_path(name))
         acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
         return acc_time
 
     def url(self, name):
-        media = self.client.media(name)
+        media = self.client.media(self._full_path(name))
         return media['url']
 
     def _open(self, name, mode='rb'):
-        remote_file = DropBoxFile(name, self)
+        remote_file = DropBoxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
-        self.client.put_file(name, content)
+        self.client.put_file(self._full_path(name), content)
         return name
-
-    def _read(self, name, num_bytes=None):
-        data = self.client.get_file(name)
-        return data.read(num_bytes)
