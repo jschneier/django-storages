@@ -59,29 +59,36 @@ from django.conf import settings
 from django.core.files.base import File
 
 from storages.compat import urlparse, BytesIO, Storage
+from storages.utils import setting
 
 
 class SFTPStorage(Storage):
 
-    def __init__(self):
-        self._host = settings.SFTP_STORAGE_HOST
+    def __init__(self, host, params=None, interactive=None, file_mode=None,
+                 dir_mode=None, uid=None, gid=None, known_host_file=None,
+                 root_path=None, base_url=None):
+        self._host = host or settings('SFTP_STORAGE_HOST')
 
         # if present, settings.SFTP_STORAGE_PARAMS should be a dict with params
         # matching the keyword arguments to paramiko.SSHClient().connect().  So
         # you can put username/password there.  Or you can omit all that if
         # you're using keys.
-        self._params = getattr(settings, 'SFTP_STORAGE_PARAMS', {})
-        self._interactive = getattr(settings, 'SFTP_STORAGE_INTERACTIVE',
-                                    False)
-        self._file_mode = getattr(settings, 'SFTP_STORAGE_FILE_MODE', None)
-        self._dir_mode = getattr(settings, 'SFTP_STORAGE_DIR_MODE', None)
+        self._params = params or setting('SFTP_STORAGE_PARAMS', {})
+        self._interactive = setting('SFTP_STORAGE_INTERACTIVE', False) \
+            if interactive is None else interactive
+        self._file_mode = setting('SFTP_STORAGE_FILE_MODE') \
+            if file_mode is None else file_mode
+        self._dir_mode = setting('SFTP_STORAGE_DIR_MODE') if \
+            dir_mode is None else dir_mode
 
-        self._uid = getattr(settings, 'SFTP_STORAGE_UID', None)
-        self._gid = getattr(settings, 'SFTP_STORAGE_GID', None)
-        self._known_host_file = getattr(settings, 'SFTP_KNOWN_HOST_FILE', None)
+        self._uid = setting('SFTP_STORAGE_UID') if uid is None else uid
+        self._gid = setting('SFTP_STORAGE_GID') if gid is None else gid
+        self._known_host_file = setting('SFTP_KNOWN_HOST_FILE') \
+            if known_host_file is None else known_host_file
 
-        self._root_path = settings.SFTP_STORAGE_ROOT
-        self._base_url = settings.MEDIA_URL
+        self._root_path = setting('SFTP_STORAGE_ROOT', '') \
+            if root_path is None else root_path
+        self._base_url = setting('MEDIA_URL') if base_url is None else base_url
 
         # for now it's all posix paths.  Maybe someday we'll support figuring
         # out if the remote host is windows.
@@ -263,5 +270,5 @@ class SFTPStorageFile(File):
 
     def close(self):
         if self._is_dirty:
-            self._storage._save(self._name, self.file.getvalue())
+            self._storage._save(self._name, self)
         self.file.close()
