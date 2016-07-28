@@ -4,49 +4,6 @@ from __future__ import print_function
 # License: MIT
 #
 # Modeled on the FTP storage by Rafal Jonca <jonca.rafal@gmail.com>
-#
-# Settings:
-#
-# SFTP_STORAGE_HOST - The hostname where you want the files to be saved.
-#
-# SFTP_STORAGE_ROOT - The root directory on the remote host into which files
-# should be placed.  Should work the same way that STATIC_ROOT works for local
-# files.  Must include a trailing slash.
-#
-# SFTP_STORAGE_PARAMS (Optional) - A dictionary containing connection
-# parameters to be passed as keyword arguments to
-# paramiko.SSHClient().connect() (do not include hostname here).  See
-# http://docs.paramiko.org/en/latest/api/client.html#paramiko.client.SSHClient.connect
-# for details
-#
-# SFTP_STORAGE_INTERACTIVE (Optional) - A boolean indicating whether to prompt
-# for a password if the connection cannot be made using keys, and there is not
-# already a password in SFTP_STORAGE_PARAMS.  You can set this to True to
-# enable interactive login when running 'manage.py collectstatic', for example.
-#
-#   DO NOT set SFTP_STORAGE_INTERACTIVE to True if you are using this storage
-#   for files being uploaded to your site by users, because you'll have no way
-#   to enter the password when they submit the form..
-#
-# SFTP_STORAGE_FILE_MODE (Optional) - A bitmask for setting permissions on
-# newly-created files.  See http://docs.python.org/library/os.html#os.chmod for
-# acceptable values.
-#
-# SFTP_STORAGE_DIR_MODE (Optional) - A bitmask for setting permissions on
-# newly-created directories.  See
-# http://docs.python.org/library/os.html#os.chmod for acceptable values.
-#
-#   Hint: if you start the mode number with a 0 you can express it in octal
-#   just like you would when doing "chmod 775 myfile" from bash.
-#
-# SFTP_STORAGE_UID (Optional) - uid of the account that should be set as owner
-# of the files on the remote host.  You have to be root to set this.
-#
-# SFTP_STORAGE_GID (Optional) - gid of the group that should be set on the
-# files on the remote host.  You have to be a member of the group to set this.
-# SFTP_KNOWN_HOST_FILE (Optional) - absolute path of know host file, if it isn't
-# set "~/.ssh/known_hosts" will be used
-
 
 import getpass
 import os
@@ -69,10 +26,6 @@ class SFTPStorage(Storage):
                  root_path=None, base_url=None):
         self._host = host or settings('SFTP_STORAGE_HOST')
 
-        # if present, settings.SFTP_STORAGE_PARAMS should be a dict with params
-        # matching the keyword arguments to paramiko.SSHClient().connect().  So
-        # you can put username/password there.  Or you can omit all that if
-        # you're using keys.
         self._params = params or setting('SFTP_STORAGE_PARAMS', {})
         self._interactive = setting('SFTP_STORAGE_INTERACTIVE', False) \
             if interactive is None else interactive
