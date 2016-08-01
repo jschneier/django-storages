@@ -23,6 +23,7 @@ from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
 
 from storages.compat import urlparse, BytesIO, Storage
+from storages.utils import setting
 
 
 class FTPStorageException(Exception):
@@ -32,8 +33,14 @@ class FTPStorageException(Exception):
 class FTPStorage(Storage):
     """FTP Storage class for Django pluggable storage system."""
 
-    def __init__(self, location=settings.FTP_STORAGE_LOCATION,
-                 base_url=settings.MEDIA_URL):
+    def __init__(self, location=None, base_url=None):
+        location = location or setting('FTP_STORAGE_LOCATION')
+        if location is None:
+            raise ImproperlyConfigured("You must set a location at "
+                                       "instanciation or at "
+                                       " settings.FTP_STORAGE_LOCATION'.")
+        self.location = location
+        base_url = base_url or settings.MEDIA_URL
         self._config = self._decode_location(location)
         self._base_url = base_url
         self._connection = None
@@ -134,6 +141,7 @@ class FTPStorage(Storage):
             self._connection.retrbinary('RETR ' + os.path.basename(name),
                                         memory_file.write)
             self._connection.cwd(pwd)
+            memory_file.seek(0)
             return memory_file
         except ftplib.all_errors:
             raise FTPStorageException('Error reading file %s' % name)
@@ -184,7 +192,7 @@ class FTPStorage(Storage):
         self._start_connection()
         try:
             dirs, files = self._get_dir_details(path)
-            return dirs.keys(), files.keys()
+            return list(dirs.keys()), list(files.keys())
         except FTPStorageException:
             raise
 
@@ -248,12 +256,18 @@ class FTPStorageFile(File):
             self._size = self._storage.size(self.name)
         return self._size
 
+    def readlines(self):
+        if not self._is_read:
+            self._storage._start_connection()
+            self.file = self._storage._read(self.name)
+            self._is_read = True
+        return self.file.readlines()
+
     def read(self, num_bytes=None):
         if not self._is_read:
             self._storage._start_connection()
             self.file = self._storage._read(self.name)
             self._is_read = True
-
         return self.file.read(num_bytes)
 
     def write(self, content):
