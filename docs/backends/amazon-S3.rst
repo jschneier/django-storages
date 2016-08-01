@@ -59,6 +59,9 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
+``AWS_S3_ENCRYPTION`` (optional; default is False)
+
+Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
 
 Fields
 ------
