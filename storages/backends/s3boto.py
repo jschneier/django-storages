@@ -380,6 +380,8 @@ class S3BotoStorage(Storage):
         return content
 
     def _open(self, name, mode='rb'):
+        if mode == 'a':
+            raise NotImplementedError("Opening files for appending ('a') is not supported with S3")
         name = self._normalize_name(self._clean_name(name))
         f = self.file_class(name, mode, self)
         if not f.key:

@@ -338,3 +338,10 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.storage.file_overwrite = False
         self.storage.exists = lambda name: False
         self.storage.get_available_name('gogogo', max_length=255)
+
+    def test_open_append_raises_exception(self):
+        """
+        S3 does not support an append operation
+        """
+        with self.assertRaises(NotImplementedError):
+            self.storage.open('test.txt', 'a')
