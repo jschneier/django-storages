@@ -4,9 +4,11 @@ try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
+from datetime import datetime, timedelta, tzinfo
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
+from django.utils.timezone import is_aware, utc
 import django
 
 from botocore.exceptions import ClientError
@@ -267,6 +269,21 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         name = 'file.txt'
         self.assertEqual(self.storage.size(name), obj.content_length)
+
+    def test_storage_mtime(self):
+        obj = self.storage.bucket.Object.return_value
+        obj.last_modified = datetime.now(utc)
+
+        name = 'file.txt'
+        self.assertFalse(
+            is_aware(self.storage.modified_time(name)),
+            'Naive datetime object expected from modified_time()'
+        )
+
+        self.assertTrue(
+            is_aware(self.storage.get_modified_time(name)),
+            'Aware datetime object expected from get_modified_time()'
+        )
 
     def test_storage_url(self):
         name = 'test_storage_size.txt'

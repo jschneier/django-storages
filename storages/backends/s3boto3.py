@@ -7,6 +7,7 @@ from tempfile import SpooledTemporaryFile
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from django.utils.timezone import localtime
 
 try:
     from boto3 import resource
@@ -511,14 +512,26 @@ class S3Boto3Storage(Storage):
             return 0
         return self.bucket.Object(self._encode_name(name)).content_length
 
-    def modified_time(self, name):
+    def get_modified_time(self, name):
+        """
+        Returns an (aware) datetime object containing the last modified time if
+        USE_TZ is True, otherwise returns a naive datetime in the local timezone.
+        """
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
         # only call self.bucket.Object() if the key is not found
         # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.Object(self._encode_name(name))
-        return entry.last_modified
+        if setting('USE_TZ'):
+            # boto3 returns TZ aware timestamps
+            return entry.last_modified
+        else:
+            return localtime(entry.last_modified).replace(tzinfo=None)
+
+    def modified_time(self, name):
+        """Returns a naive datetime object containing the last modified time."""
+        return localtime(self.get_modified_time(name)).replace(tzinfo=None)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
