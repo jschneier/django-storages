@@ -153,8 +153,7 @@ class S3BotoStorageTests(S3BotoTestCase):
         """
         Test saving a file with gzip enabled.
         """
-        if not s3boto.S3BotoStorage.gzip:  # Gzip not available.
-            return
+        self.storage.gzip = True
         name = 'test_storage_save.css'
         content = ContentFile("I should be gzip'd")
         self.storage.save(name, content)
@@ -172,8 +171,6 @@ class S3BotoStorageTests(S3BotoTestCase):
         """
         Test that file returned by _compress_content() is readable.
         """
-        if not s3boto.S3BotoStorage.gzip:  # Gzip not available.
-            return
         content = ContentFile("I should be gzip'd")
         content = self.storage._compress_content(content)
         self.assertTrue(len(content.read()) > 0)
