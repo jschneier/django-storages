@@ -8,6 +8,9 @@ from tempfile import SpooledTemporaryFile
 from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from django.utils import timezone as tzutils
+from dateutil.parser import parse
+from dateutil.tz import tzlocal
 
 try:
     from boto import __version__ as boto_version
@@ -28,6 +31,17 @@ if boto_version_info[:2] < (2, 32):
     raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
 
+
+def parse_ts_extended(ts):
+    rv = parse(ts)
+
+    # convert it to the system timezone
+    rv = rv.astimezone(tzlocal())
+
+    # remove the timezone awareness so collectstatic can compare
+    # it with another timezone unaware datetime object
+    rv = tzutils.make_naive(rv, tzlocal())
+    return rv
 
 def safe_join(base, *paths):
     """
@@ -484,7 +498,7 @@ class S3BotoStorage(Storage):
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
         # Parse the last_modified string to a local datetime object.
-        return parse_ts(entry.last_modified)
+        return parse_ts_extended(entry.last_modified)
 
     def url(self, name, headers=None, response_headers=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
