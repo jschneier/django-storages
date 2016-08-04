@@ -52,7 +52,7 @@ Issues are tracked via GitHub issues at the `project issue page
 
 Documentation
 =============
-The original documentation for django-storages is located at http://django-storages.readthedocs.org/.
+The original documentation for django-storages is located at https://django-storages.readthedocs.org/.
 Stay tuned for forthcoming documentation updates.
 
 Contributing
