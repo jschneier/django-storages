@@ -1,6 +1,13 @@
 django-storages change log
 ==========================
 
+1.5.1 (XXXX-XX-XX)
+******************
+
+* Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
+
+.. _#181: https://github.com/jschneier/django-storages/pull/181
+
 1.5.0 (2016-08-02)
 ******************
 
