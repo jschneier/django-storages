@@ -4,9 +4,13 @@ import mimetypes
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
-from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
+from django.core.files.base import File
+from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.six import BytesIO
 from django.utils.timezone import localtime
 
 try:
@@ -19,7 +23,6 @@ except ImportError:
                                "See https://github.com/boto/boto3")
 
 from storages.utils import setting
-from storages.compat import urlparse, BytesIO, deconstructible, Storage
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('-')[0].split('.')])
 

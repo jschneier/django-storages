@@ -1,8 +1,8 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.six import BytesIO
 
 from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile
 from storages.utils import setting
-from storages.compat import BytesIO
 
 try:
     from boto.gs.connection import GSConnection, SubdomainCallingFormat

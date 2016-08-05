@@ -5,11 +5,11 @@ import os
 
 from django.conf import settings
 from django.core.files.base import File
+from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.six import string_types
+from django.utils.deconstruct import deconstructible
+from django.utils.six import string_types, BytesIO
 from django.utils.six.moves.urllib.parse import urljoin
-
-from storages.compat import BytesIO, deconstructible, Storage
 
 try:
     from libcloud.storage.providers import get_driver

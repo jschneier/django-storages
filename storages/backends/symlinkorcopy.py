@@ -1,7 +1,7 @@
 import os
 
 from django.conf import settings
-from storages.compat import FileSystemStorage
+from django.core.files.storage import FileSystemStorage
 
 __doc__ = """
 I needed to efficiently create a mirror of a directory tree (so that

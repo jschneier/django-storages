@@ -1,19 +1,17 @@
+from datetime import datetime
 import gzip
-import unittest
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
-from datetime import datetime, timedelta, tzinfo
 
 from django.test import TestCase
 from django.core.files.base import ContentFile
+from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_aware, utc
-import django
 
 from botocore.exceptions import ClientError
 
-from storages.compat import urlparse
 from storages.backends import s3boto3
 
 __all__ = (
@@ -314,13 +312,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(parsed_url.path,
                          "/whacky%20%26%20filename.mp4")
         self.assertFalse(self.storage.bucket.meta.client.generate_presigned_url.called)
-
-    @unittest.skipIf(django.VERSION >= (1, 8),
-                     'Only test backward compat of max_length for versions before 1.8')
-    def test_max_length_compat_okay(self):
-        self.storage.file_overwrite = False
-        self.storage.exists = lambda name: False
-        self.storage.get_available_name('gogogo', max_length=255)
 
     def test_strip_signing_parameters(self):
         expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
