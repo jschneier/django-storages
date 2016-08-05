@@ -6,7 +6,7 @@ from time import mktime
 
 from django.core.files.base import ContentFile
 from django.core.exceptions import ImproperlyConfigured
-from storages.compat import Storage
+from django.core.files.storage import Storage
 
 try:
     import azure  # noqa

@@ -1,7 +1,9 @@
-import os, hashlib, errno
+import errno
+import hashlib
+import os
 
+from django.core.files.storage import FileSystemStorage
 from django.utils.encoding import force_text, force_bytes
-from storages.compat import FileSystemStorage
 
 
 class HashPathStorage(FileSystemStorage):

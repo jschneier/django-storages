@@ -7,9 +7,10 @@ import os
 
 from django.conf import settings
 from django.core.files import File
+from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
-
-from storages.compat import urlparse, BytesIO, Storage
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.six import BytesIO
 
 try:
     import couchdb
@@ -17,8 +18,8 @@ except ImportError:
     raise ImproperlyConfigured("Could not load couchdb dependency.\
     \nSee http://code.google.com/p/couchdb-python/")
 
-DEFAULT_SERVER= getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
-STORAGE_OPTIONS= getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
+DEFAULT_SERVER = getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
+STORAGE_OPTIONS = getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
 
 
 class CouchDBStorage(Storage):
@@ -26,9 +27,9 @@ class CouchDBStorage(Storage):
     CouchDBStorage - a Django Storage class for CouchDB.
 
     The CouchDBStorage can be configured in settings.py, e.g.::
-    
+
         COUCHDB_STORAGE_OPTIONS = {
-            'server': "http://example.org", 
+            'server': "http://example.org",
             'database': 'database_name'
         }
 
