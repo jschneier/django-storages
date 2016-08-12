@@ -107,6 +107,9 @@ class AzureStorage(Storage):
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
 
     def listdir(self, path):
+        if not path:
+            path = None
+
         blobs = self.connection.list_blobs(
             container_name=self.azure_container,
             prefix=path,
@@ -116,7 +119,6 @@ class AzureStorage(Storage):
             results.append(path.name)
 
         return ((), results)
-
 
     def modified_time(self, name):
         try:
