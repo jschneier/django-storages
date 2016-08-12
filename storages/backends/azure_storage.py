@@ -115,8 +115,8 @@ class AzureStorage(Storage):
             prefix=path,
         )
         results = []
-        for path in blobs:
-            results.append(path.name.replace(path, ''))
+        for f in blobs:
+            results.append(f.name.replace(path, ''))
 
         return ((), results)
 
