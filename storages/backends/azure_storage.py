@@ -116,7 +116,10 @@ class AzureStorage(Storage):
         )
         results = []
         for f in blobs:
-            results.append(f.name.replace(path, ''))
+            name = f.name
+            if path:
+                name = name.replace(path, '')
+            results.append(name)
 
         return ((), results)
 
