@@ -6,7 +6,10 @@ django-storages change log
 
 * **Drop support for Django 1.7** (`#185`_)
 * Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
+* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_ `#190`_) thanks @leonsmith
 
+.. _#190: https://github.com/jschneier/django-storages/pull/190
+.. _#189: https://github.com/jschneier/django-storages/issues/189
 .. _#185: https://github.com/jschneier/django-storages/pull/185
 .. _#181: https://github.com/jschneier/django-storages/pull/181
 
