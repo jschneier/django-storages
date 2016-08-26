@@ -3,9 +3,11 @@ import hashlib
 import os
 
 from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, force_bytes
 
 
+@deconstructible
 class HashPathStorage(FileSystemStorage):
     """
     Creates a hash from the uploaded file to build the path.

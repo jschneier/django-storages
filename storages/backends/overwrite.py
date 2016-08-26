@@ -1,6 +1,8 @@
 from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 
 
+@deconstructible
 class OverwriteStorage(FileSystemStorage):
     """
     Comes from http://www.djangosnippets.org/snippets/976/

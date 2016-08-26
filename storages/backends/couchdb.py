@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.deconstruct import deconstructible
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.six import BytesIO
 
@@ -22,6 +23,7 @@ DEFAULT_SERVER = getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.loc
 STORAGE_OPTIONS = getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
 
 
+@deconstructible
 class CouchDBStorage(Storage):
     """
     CouchDBStorage - a Django Storage class for CouchDB.
