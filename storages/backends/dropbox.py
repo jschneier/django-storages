@@ -17,6 +17,7 @@ from shutil import copyfileobj
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
 from django.utils._os import safe_join
 
 from storages.utils import setting
@@ -46,6 +47,7 @@ class DropBoxFile(File):
         return self._file
 
 
+@deconstructible
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
 

@@ -4,6 +4,7 @@ import mimetypes
 
 from django.conf import settings
 from django.core.cache import cache
+from django.utils.deconstruct import deconstructible
 from django.utils.text import force_text
 from django.http import HttpResponse, HttpResponseNotFound
 from django.core.exceptions import ImproperlyConfigured
@@ -16,6 +17,7 @@ except ImportError:
     \nSee http://mogilefs.pbworks.com/Client-Libraries")
 
 
+@deconstructible
 class MogileFSStorage(Storage):
     """MogileFS filesystem storage"""
     def __init__(self, base_url=settings.MEDIA_URL):

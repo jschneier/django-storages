@@ -2,6 +2,7 @@ import os
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 
 __doc__ = """
 I needed to efficiently create a mirror of a directory tree (so that
@@ -26,6 +27,7 @@ a temporary directory, e.g. /tmp/image.jpg.
 """
 
 
+@deconstructible
 class SymlinkOrCopyStorage(FileSystemStorage):
     """Stores symlinks to files instead of actual files whenever possible
 

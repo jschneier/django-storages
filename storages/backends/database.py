@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.deconstruct import deconstructible
 from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 
@@ -17,6 +18,7 @@ except ImportError:
 REQUIRED_FIELDS = ('db_table', 'fname_column', 'blob_column', 'size_column', 'base_url')
 
 
+@deconstructible
 class DatabaseStorage(Storage):
     """
     Class DatabaseStorage provides storing files in the database.

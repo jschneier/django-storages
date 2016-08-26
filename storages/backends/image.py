@@ -3,6 +3,7 @@ import os
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 
 try:
     from PIL import ImageFile as PILImageFile
@@ -11,6 +12,7 @@ except ImportError:
     \nSee http://www.pythonware.com/products/pil/")
 
 
+@deconstructible
 class ImageStorage(FileSystemStorage):
     """
     A FileSystemStorage which normalizes extensions for images.
