@@ -447,7 +447,17 @@ class S3Boto3Storage(Storage):
         if self.preload_metadata:
             self._entries[encoded_name] = obj
 
-        self._save_content(obj, content, parameters=parameters)
+        # django.core.files.storage.Storage.save method waiting for
+        # `django.core.files.File` or any file-like object to be
+        # wrapped in File object.
+        # ``File.__bool__`` method depends on file name.
+        # If file name is empty or None, later your request can be rejected with
+        # `XAmzContentSHA256Mismatch` error, because statement
+        # `request_dict['body']` in botocore.handlers.calculate_md5
+        # returns False even if wrapped file-like object exists.
+        # To avoid this behavior, pass internal file-like object and pray it
+        # has no overridden __bool__ method, based on ``name``
+        self._save_content(obj, content.file, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
         # the next time it is accessed; no need to specifically reload it.
         return cleaned_name
