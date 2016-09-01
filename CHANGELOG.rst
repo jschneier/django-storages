@@ -1,6 +1,37 @@
 django-storages change log
 ==========================
 
+1.5.1 (XXXX-XX-XX)
+******************
+
+* **Drop support for Django 1.7** (`#185`_)
+* Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
+* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_ `#190`_) thanks @leonsmith
+
+.. _#190: https://github.com/jschneier/django-storages/pull/190
+.. _#189: https://github.com/jschneier/django-storages/issues/189
+.. _#185: https://github.com/jschneier/django-storages/pull/185
+.. _#181: https://github.com/jschneier/django-storages/pull/181
+
+1.5.0 (2016-08-02)
+******************
+
+* Add new backend ``S3Boto3Storage`` (`#179`_) MASSIVE THANKS @mbarrien
+* Add a `strict` option to `utils.setting` (`#176`_) thanks @ZuluPro
+* Tests, documentation, fixing ``.close`` for ``SFTPStorage`` (`#177`_) thanks @ZuluPro
+* Tests, documentation, add `.readlines` for ``FTPStorage`` (`#175`_) thanks @ZuluPro
+* Tests and documentation for ``DropBoxStorage`` (`#174`_) thanks @ZuluPro
+* Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_) thanks @fladi
+* Enable CI testing of Python3.5 and fix test failure from api change (`#171`_) thanks @tnir
+
+.. _#145: https://github.com/jschneier/django-storages/pull/145
+.. _#171: https://github.com/jschneier/django-storages/pull/171
+.. _#174: https://github.com/jschneier/django-storages/pull/174
+.. _#175: https://github.com/jschneier/django-storages/pull/175
+.. _#177: https://github.com/jschneier/django-storages/pull/177
+.. _#176: https://github.com/jschneier/django-storages/pull/176
+.. _#179: https://github.com/jschneier/django-storages/pull/179
+
 1.4.1 (2016-04-07)
 ******************
 

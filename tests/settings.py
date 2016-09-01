@@ -31,6 +31,8 @@ DEFAULT_FILE_STORAGE = 'backends.s3boto.S3BotoStorage'
 AWS_IS_GZIPPED = True
 GS_IS_GZIPPED = True
 SECRET_KEY = 'hailthesunshine'
+USE_TZ = True
+TIME_ZONE = 'America/Chicago'
 
 # apache-libcloud settings
 DEFAULT_LIBCLOUD_PROVIDER = 'libcloud_local'
@@ -43,3 +45,4 @@ LIBCLOUD_PROVIDERS = {
         'bucket': 'local'
     },
 }
+

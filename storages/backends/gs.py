@@ -1,8 +1,9 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.deconstruct import deconstructible
+from django.utils.six import BytesIO
 
 from storages.backends.s3boto import S3BotoStorage, S3BotoStorageFile
 from storages.utils import setting
-from storages.compat import BytesIO
 
 try:
     from boto.gs.connection import GSConnection, SubdomainCallingFormat
@@ -30,6 +31,7 @@ class GSBotoStorageFile(S3BotoStorageFile):
         self.key.close()
 
 
+@deconstructible
 class GSBotoStorage(S3BotoStorage):
     connection_class = GSConnection
     connection_response_error = GSResponseError
