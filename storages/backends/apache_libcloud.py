@@ -17,8 +17,6 @@ except AppRegistryNotReady:
     # Ignore exception for testing purposes. Must override LibCloudStorage._get_current_site_domain
     pass
 
-from storages.compat import BytesIO, deconstructible, Storage
-
 try:
     from libcloud.storage.providers import get_driver
     from libcloud.storage.types import ObjectDoesNotExistError, Provider
