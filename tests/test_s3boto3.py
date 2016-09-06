@@ -1,12 +1,15 @@
 from datetime import datetime
 import gzip
+
+from io import BytesIO
+
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
 
 from django.test import TestCase
-from django.core.files.base import ContentFile
+from django.core.files.base import ContentFile, File
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_aware, utc
 
@@ -118,10 +121,52 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.put.assert_called_with(
-            Body=content,
-            ContentType='text/plain',
-            ACL=self.storage.default_acl,
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                "ContentType": 'text/plain',
+                "ACL": self.storage.default_acl
+            },
+            Config=self.storage.transfer_config
+        )
+
+    def test_storage_save_file_like_object(self):
+        """
+        Test saving a python file-like object
+        """
+        name = 'test_storage_save.txt'
+        content = BytesIO(b'new content')
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                "ContentType": 'text/plain',
+                "ACL": self.storage.default_acl
+            },
+            Config=self.storage.transfer_config
+        )
+
+    def test_storage_save_file_like_object_wrapped(self):
+        """
+        Test saving a python file-like object manually wrapped in
+        Django's File object.
+        """
+        name = 'test_storage_save.txt'
+        content = BytesIO(b'new content')
+        self.storage.save(name, File(content))
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                "ContentType": 'text/plain',
+                "ACL": self.storage.default_acl
+            },
+            Config=self.storage.transfer_config
         )
 
     def test_storage_save_gzip(self):
@@ -133,13 +178,16 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         content = ContentFile("I should be gzip'd")
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
-        obj.put.assert_called_with(
-            Body=mock.ANY,
-            ContentType='text/css',
-            ContentEncoding='gzip',
-            ACL=self.storage.default_acl
+        obj.upload_fileobj.assert_called_with(
+            mock.ANY,
+            ExtraArgs={
+                "ContentType": 'text/css',
+                "ContentEncoding": 'gzip',
+                "ACL": self.storage.default_acl
+            },
+            Config=self.storage.transfer_config
         )
-        body = obj.put.call_args[1]['Body']
+        body = obj.upload_fileobj.call_args[0][0]
         zfile = gzip.GzipFile(mode='rb', fileobj=body)
         self.assertEquals(zfile.read(), b"I should be gzip'd")
 

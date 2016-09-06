@@ -15,6 +15,7 @@ from django.utils.timezone import localtime
 
 try:
     from boto3 import resource
+    from boto3.s3.transfer import TransferConfig
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
@@ -206,6 +207,7 @@ class S3Boto3Storage(Storage):
     file_class = S3Boto3StorageFile
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
+    transfer_config = None
 
     # used for looking up the access and secret key from env vars
     access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
@@ -277,6 +279,9 @@ class S3Boto3Storage(Storage):
         if not self.config:
             self.config = Config(s3={'addressing_style': self.addressing_style},
                                  signature_version=self.signature_version)
+
+        if not self.transfer_config:
+            self.transfer_config = TransferConfig()
 
     @property
     def connection(self):
@@ -447,17 +452,18 @@ class S3Boto3Storage(Storage):
         if self.preload_metadata:
             self._entries[encoded_name] = obj
 
-        # django.core.files.storage.Storage.save method waiting for
-        # `django.core.files.File` or any file-like object to be
-        # wrapped in File object.
-        # ``File.__bool__`` method depends on file name.
-        # If file name is empty or None, later your request can be rejected with
-        # `XAmzContentSHA256Mismatch` error, because statement
-        # `request_dict['body']` in botocore.handlers.calculate_md5
-        # returns False even if wrapped file-like object exists.
-        # To avoid this behavior, pass internal file-like object and pray it
-        # has no overridden __bool__ method, based on ``name``
-        self._save_content(obj, content.file, parameters=parameters)
+        # If both `name` and `content.name` are empty or None, your request
+        # can be rejected with `XAmzContentSHA256Mismatch` error, because in
+        # `django.core.files.storage.Storage.save` method your file-like object
+        # will be wrapped in `django.core.files.File` if no `chunks` method
+        # provided. `File.__bool__`  method is Django-specific and depends on
+        # file name, for this reason`botocore.handlers.calculate_md5` can fail
+        # even if wrapped file-like object exists. To avoid Django-specific
+        # logic, pass internal file-like object if `content` is `File`
+        # class instance.
+        if type(content) is File:
+            content = content.file
+        self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
         # the next time it is accessed; no need to specifically reload it.
         return cleaned_name
@@ -472,7 +478,8 @@ class S3Boto3Storage(Storage):
         if self.default_acl:
             put_parameters['ACL'] = self.default_acl
         content.seek(0, os.SEEK_SET)
-        obj.put(Body=content, **put_parameters)
+        obj.upload_fileobj(content, ExtraArgs=put_parameters,
+                           Config=self.transfer_config)
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
