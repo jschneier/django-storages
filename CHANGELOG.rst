@@ -1,6 +1,11 @@
 django-storages change log
 ==========================
 
+1.5.2 (XXXX-XX-XX)
+******************
+
+* Fix ``S3Boto3Storage`` to avoid race conditions in a multithreaded WSGI environment
+
 1.5.1 (2016-09-13)
 ******************
 
@@ -301,4 +306,3 @@ since March 2013.
 
 .. _#89: https://bitbucket.org/david/django-storages/issue/89/112-broke-the-mosso-backend
 .. _pull request #5: https://bitbucket.org/david/django-storages/pull-request/5/fixed-path-bug-and-added-testcase-for
-
