@@ -5,9 +5,13 @@ django-storages change log
 ******************
 
 * **Drop support for Django 1.7** (`#185`_)
+* Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
+  allowing files greater than 5GB to be put on S3 (`#194`_ , `#201`_)
 * Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
-* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_ `#190`_) thanks @leonsmith
+* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_) thanks @leonsmith
 
+.. _#201: https://github.com/jschneier/django-storages/pull/201
+.. _#194: https://github.com/jschneier/django-storages/issues/194
 .. _#190: https://github.com/jschneier/django-storages/pull/190
 .. _#189: https://github.com/jschneier/django-storages/issues/189
 .. _#185: https://github.com/jschneier/django-storages/pull/185
