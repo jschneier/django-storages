@@ -118,10 +118,12 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.put.assert_called_with(
-            Body=content,
-            ContentType='text/plain',
-            ACL=self.storage.default_acl,
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+                'ACL': self.storage.default_acl,
+            }
         )
 
     def test_storage_save_gzip(self):
@@ -133,14 +135,17 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         content = ContentFile("I should be gzip'd")
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
-        obj.put.assert_called_with(
-            Body=mock.ANY,
-            ContentType='text/css',
-            ContentEncoding='gzip',
-            ACL=self.storage.default_acl
+        obj.upload_fileobj.assert_called_with(
+            mock.ANY,
+            ExtraArgs={
+                'ContentType': 'text/css',
+                'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
+            }
         )
-        body = obj.put.call_args[1]['Body']
-        zfile = gzip.GzipFile(mode='rb', fileobj=body)
+        args, kwargs = obj.upload_fileobj.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
         self.assertEquals(zfile.read(), b"I should be gzip'd")
 
     def test_compress_content_len(self):
