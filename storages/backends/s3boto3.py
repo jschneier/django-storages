@@ -123,7 +123,7 @@ class S3Boto3StorageFile(File):
                 self._file.write(self.obj.get()['Body'].read())
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
-                self._file = GzipFile(mode=self._mode, fileobj=self._file)
+                self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
         return self._file
 
     def _set_file(self, value):
