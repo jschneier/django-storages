@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import mimetypes
+import warnings
 
 from django.conf import settings
 from django.core.cache import cache
@@ -15,6 +16,12 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load mogilefs dependency.\
     \nSee http://mogilefs.pbworks.com/Client-Libraries")
+
+warnings.warn(
+    'MogileFSStorage is unmaintained and will be removed in the next django-storages version'
+    'See https://github.com/jschneier/django-storages/issues/202',
+    PendingDeprecationWarning
+)
 
 
 @deconstructible

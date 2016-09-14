@@ -1,5 +1,6 @@
 # DatabaseStorage for django.
 # 2009 (c) GameKeeper Gambling Ltd, Ivanov E.
+import warnings
 
 from django.conf import settings
 from django.core.files import File
@@ -16,6 +17,11 @@ except ImportError:
     \nSee https://github.com/mkleehammer/pyodbc")
 
 REQUIRED_FIELDS = ('db_table', 'fname_column', 'blob_column', 'size_column', 'base_url')
+warnings.warn(
+    'DatabaseStorage is unmaintained and will be removed in the next version of django-storages.'
+    'See https://github.com/jschneier/django-storages/issues/202',
+    PendingDeprecationWarning
+)
 
 
 @deconstructible

@@ -1,5 +1,5 @@
-
 import os
+import warnings
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import FileSystemStorage
@@ -10,6 +10,13 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load PIL dependency.\
     \nSee http://www.pythonware.com/products/pil/")
+
+
+warnings.warn(
+    'ImageStorage backend is unmaintainted and will be removed in the next django-storages version'
+    'See https://github.com/jschneier/django-storages/issues/202',
+    PendingDeprecationWarning
+)
 
 
 @deconstructible

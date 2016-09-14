@@ -4,6 +4,7 @@ Created by Christian Klein.
 (c) Copyright 2009 HUDORA GmbH. All Rights Reserved.
 """
 import os
+import warnings
 
 from django.conf import settings
 from django.core.files import File
@@ -21,6 +22,13 @@ except ImportError:
 
 DEFAULT_SERVER = getattr(settings, 'COUCHDB_DEFAULT_SERVER', 'http://couchdb.local:5984')
 STORAGE_OPTIONS = getattr(settings, 'COUCHDB_STORAGE_OPTIONS', {})
+
+
+warnings.warn(
+    'CouchDBStorage is unmaintained and will be removed in the next version of django-storages '
+    'See https://github.com/jschneier/django-storages/issues/202',
+    PendingDeprecationWarning
+)
 
 
 @deconstructible

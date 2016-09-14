@@ -5,6 +5,8 @@ django-storages change log
 ******************
 
 * **Drop support for Django 1.7** (`#185`_)
+* **Deprecate hashpath, image, overwrite, mogile, symlinkorcopy, database, mogile, couchdb.**
+  See (`issue #202`_) to discuss maintenance going forward
 * Use a fixed ``mtime`` argument for ``GzipFile`` in ``S3BotoStorage`` and ``S3Boto3Storage`` to ensure
   a stable output for gzipped files
 * Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
@@ -12,6 +14,7 @@ django-storages change log
 * Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
 * Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_) thanks @leonsmith
 
+.. _issue #202: https://github.com/jschneier/django-storages/issues/202
 .. _#201: https://github.com/jschneier/django-storages/pull/201
 .. _#194: https://github.com/jschneier/django-storages/issues/194
 .. _#190: https://github.com/jschneier/django-storages/pull/190
