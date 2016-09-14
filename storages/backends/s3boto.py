@@ -372,7 +372,11 @@ class S3BotoStorage(Storage):
     def _compress_content(self, content):
         """Gzip a given string content."""
         zbuf = BytesIO()
-        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+        #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
+        #  This means each time a file is compressed it changes even if the other contents don't change
+        #  For S3 this defeats detection of changes using MD5 sums on gzipped files
+        #  Fixing the mtime at 0.0 at compression time avoids this problem
+        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf, mtime=0.0)
         try:
             zfile.write(force_bytes(content.read()))
         finally:
