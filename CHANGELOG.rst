@@ -5,6 +5,8 @@ django-storages change log
 ******************
 
 * **Drop support for Django 1.7** (`#185`_)
+* Use a fixed ``mtime`` argument for ``GzipFile`` in ``S3BotoStorage`` and ``S3Boto3Storage`` to ensure
+  a stable output for gzipped files
 * Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
   allowing files greater than 5GB to be put on S3 (`#194`_ , `#201`_)
 * Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
