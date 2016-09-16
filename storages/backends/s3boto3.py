@@ -14,7 +14,7 @@ from django.utils.six import BytesIO
 from django.utils.timezone import localtime
 
 try:
-    from boto3 import resource
+    import boto3.session
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
@@ -62,6 +62,11 @@ def safe_join(base, *paths):
                          ' component')
 
     return final_path.lstrip('/')
+
+
+def resource(*args, **kwargs):
+    session = boto3.session.Session()
+    return session.resource(*args, **kwargs)
 
 
 @deconstructible
