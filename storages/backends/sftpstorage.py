@@ -12,7 +12,6 @@ import posixpath
 import stat
 from datetime import datetime
 
-from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
@@ -25,10 +24,10 @@ from storages.utils import setting
 @deconstructible
 class SFTPStorage(Storage):
 
-    def __init__(self, host, params=None, interactive=None, file_mode=None,
+    def __init__(self, host=None, params=None, interactive=None, file_mode=None,
                  dir_mode=None, uid=None, gid=None, known_host_file=None,
                  root_path=None, base_url=None):
-        self._host = host or settings('SFTP_STORAGE_HOST')
+        self._host = host or setting('SFTP_STORAGE_HOST')
 
         self._params = params or setting('SFTP_STORAGE_PARAMS', {})
         self._interactive = setting('SFTP_STORAGE_INTERACTIVE', False) \
