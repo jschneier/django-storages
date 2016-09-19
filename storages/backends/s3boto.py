@@ -328,7 +328,7 @@ class S3BotoStorage(Storage):
             return self.connection.get_bucket(name, validate=self.auto_create_bucket)
         except self.connection_response_error:
             if self.auto_create_bucket:
-                bucket = self.connection.create_bucket(name)
+                bucket = self.connection.create_bucket(name, location=self.location)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
