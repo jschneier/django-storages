@@ -218,6 +218,7 @@ class S3BotoStorage(Storage):
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
     reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
     location = setting('AWS_LOCATION', '')
+    origin = setting('AWS_ORIGIN', '')
     encryption = setting('AWS_S3_ENCRYPTION', False)
     custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
     calling_format = setting('AWS_S3_CALLING_FORMAT', SubdomainCallingFormat())
@@ -328,7 +329,7 @@ class S3BotoStorage(Storage):
             return self.connection.get_bucket(name, validate=self.auto_create_bucket)
         except self.connection_response_error:
             if self.auto_create_bucket:
-                bucket = self.connection.create_bucket(name, location=self.location)
+                bucket = self.connection.create_bucket(name, location=self.origin)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
