@@ -1,6 +1,13 @@
 django-storages change log
 ==========================
 
+1.5.2 (XXXX-XX-XX)
+******************
+
+* Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
+
+.. _#204: https://github.com/jschneier/django-storages/pull/204
+
 1.5.1 (2016-09-13)
 ******************
 
