@@ -5,6 +5,7 @@ Usage
 *****
 
 There is one backend for interacting with S3 based on the boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
+Another for interacting via Boto3 was added in version 1.5
 
 Settings
 --------
@@ -63,9 +64,14 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
-``AWS_S3_ENCRYPTION`` (optional; default is False)
+``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
 
 Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
+
+``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
+
+By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
+
 
 Fields
 ------
