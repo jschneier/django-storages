@@ -15,7 +15,7 @@ from django.utils.six.moves.urllib import parse as urlparse
 
 try:
     from boto import __version__ as boto_version
-    from boto.s3.connection import S3Connection, SubdomainCallingFormat
+    from boto.s3.connection import S3Connection, SubdomainCallingFormat, Location
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
     from boto.utils import parse_ts, ISO8601
@@ -218,6 +218,7 @@ class S3BotoStorage(Storage):
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
     reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
     location = setting('AWS_LOCATION', '')
+    origin = setting('AWS_ORIGIN', Location.DEFAULT)
     encryption = setting('AWS_S3_ENCRYPTION', False)
     custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
     calling_format = setting('AWS_S3_CALLING_FORMAT', SubdomainCallingFormat())
@@ -328,7 +329,7 @@ class S3BotoStorage(Storage):
             return self.connection.get_bucket(name, validate=self.auto_create_bucket)
         except self.connection_response_error:
             if self.auto_create_bucket:
-                bucket = self.connection.create_bucket(name)
+                bucket = self.connection.create_bucket(name, location=self.origin)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
