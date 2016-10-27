@@ -13,6 +13,11 @@ Settings
 To use s3boto set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+    
+To use the boto3 version of the backend::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
 
 ``AWS_ACCESS_KEY_ID``
 
