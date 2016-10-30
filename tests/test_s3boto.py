@@ -31,20 +31,20 @@ class S3BotoTestCase(TestCase):
 class SafeJoinTest(TestCase):
     def test_normal(self):
         path = s3boto.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
-        self.assertEquals(path, "path/to/somewhere/other/path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
 
     def test_with_dot(self):
         path = s3boto.safe_join("", "path/./somewhere/../other", "..",
                                 ".", "to/./somewhere")
-        self.assertEquals(path, "path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere")
 
     def test_base_url(self):
         path = s3boto.safe_join("base_url", "path/to/somewhere")
-        self.assertEquals(path, "base_url/path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_base_url_with_slash(self):
         path = s3boto.safe_join("base_url/", "path/to/somewhere")
-        self.assertEquals(path, "base_url/path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_suspicious_operation(self):
         self.assertRaises(ValueError,
@@ -55,14 +55,14 @@ class SafeJoinTest(TestCase):
         Test safe_join with paths that end with a trailing slash.
         """
         path = s3boto.safe_join("base_url/", "path/to/somewhere/")
-        self.assertEquals(path, "base_url/path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
 
     def test_trailing_slash_multi(self):
         """
         Test safe_join with multiple paths that end with a trailing slash.
         """
         path = s3boto.safe_join("base_url/", "path/to/" "somewhere/")
-        self.assertEquals(path, "base_url/path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
 
 
 class S3BotoStorageTests(S3BotoTestCase):
@@ -295,7 +295,7 @@ class S3BotoStorageTests(S3BotoTestCase):
             response_headers=None,
         )
 
-        self.assertEquals(self.storage.url(name), url)
+        self.assertEqual(self.storage.url(name), url)
         self.storage.connection.generate_url.assert_called_with(
             self.storage.querystring_expire,
             **kwargs
@@ -303,7 +303,7 @@ class S3BotoStorageTests(S3BotoTestCase):
 
         custom_expire = 123
 
-        self.assertEquals(self.storage.url(name, expire=custom_expire), url)
+        self.assertEqual(self.storage.url(name, expire=custom_expire), url)
         self.storage.connection.generate_url.assert_called_with(
             custom_expire,
             **kwargs

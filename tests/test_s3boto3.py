@@ -30,20 +30,20 @@ class S3Boto3TestCase(TestCase):
 class SafeJoinTest(TestCase):
     def test_normal(self):
         path = s3boto3.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
-        self.assertEquals(path, "path/to/somewhere/other/path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
 
     def test_with_dot(self):
         path = s3boto3.safe_join("", "path/./somewhere/../other", "..",
                                  ".", "to/./somewhere")
-        self.assertEquals(path, "path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere")
 
     def test_base_url(self):
         path = s3boto3.safe_join("base_url", "path/to/somewhere")
-        self.assertEquals(path, "base_url/path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_base_url_with_slash(self):
         path = s3boto3.safe_join("base_url/", "path/to/somewhere")
-        self.assertEquals(path, "base_url/path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_suspicious_operation(self):
         self.assertRaises(ValueError,
@@ -54,14 +54,14 @@ class SafeJoinTest(TestCase):
         Test safe_join with paths that end with a trailing slash.
         """
         path = s3boto3.safe_join("base_url/", "path/to/somewhere/")
-        self.assertEquals(path, "base_url/path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
 
     def test_trailing_slash_multi(self):
         """
         Test safe_join with multiple paths that end with a trailing slash.
         """
         path = s3boto3.safe_join("base_url/", "path/to/" "somewhere/")
-        self.assertEquals(path, "base_url/path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
 
 
 class S3Boto3StorageTests(S3Boto3TestCase):
@@ -146,7 +146,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
         zfile = gzip.GzipFile(mode='rb', fileobj=content)
-        self.assertEquals(zfile.read(), b"I should be gzip'd")
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
 
     def test_compress_content_len(self):
         """
@@ -293,7 +293,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         url = 'http://aws.amazon.com/%s' % name
         self.storage.bucket.meta.client.generate_presigned_url.return_value = url
         self.storage.bucket.name = 'bucket'
-        self.assertEquals(self.storage.url(name), url)
+        self.assertEqual(self.storage.url(name), url)
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
@@ -302,7 +302,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         custom_expire = 123
 
-        self.assertEquals(self.storage.url(name, expire=custom_expire), url)
+        self.assertEqual(self.storage.url(name, expire=custom_expire), url)
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
@@ -320,7 +320,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_strip_signing_parameters(self):
         expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
-        self.assertEquals(self.storage._strip_signing_parameters(
+        self.assertEqual(self.storage._strip_signing_parameters(
             '%s?X-Amz-Date=12345678&X-Amz-Signature=Signature' % expected), expected)
-        self.assertEquals(self.storage._strip_signing_parameters(
+        self.assertEqual(self.storage._strip_signing_parameters(
             '%s?expires=12345678&signature=Signature' % expected), expected)
