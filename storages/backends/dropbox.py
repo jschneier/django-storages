@@ -65,7 +65,7 @@ class DropBoxStorage(Storage):
         return safe_join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
-        self.client.file_delete(self._full_path(name))
+        self.client.files_delete(self._full_path(name))
 
     def exists(self, name):
         try:
@@ -109,5 +109,5 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.put_file(self._full_path(name), content)
+        self.client.files_upload(content, self._full_path(name))
         return name
