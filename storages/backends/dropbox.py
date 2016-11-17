@@ -69,14 +69,14 @@ class DropBoxStorage(Storage):
 
     def exists(self, name):
         try:
-            return bool(self.client.metadata(self._full_path(name)))
+            return bool(self.client.files_get_metadata(self._full_path(name)))
         except ErrorResponse:
             return False
 
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
-        metadata = self.client.metadata(full_path)
+        metadata = self.client.files_get_metadata(full_path)
         for entry in metadata['contents']:
             entry['path'] = entry['path'].replace(full_path, '', 1)
             entry['path'] = entry['path'].replace('/', '', 1)
@@ -87,16 +87,16 @@ class DropBoxStorage(Storage):
         return directories, files
 
     def size(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata['bytes']
 
     def modified_time(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         mod_time = datetime.strptime(metadata['modified'], DATE_FORMAT)
         return mod_time
 
     def accessed_time(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
         return acc_time
 
