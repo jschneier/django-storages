@@ -22,7 +22,7 @@ from django.utils._os import safe_join
 
 from storages.utils import setting
 
-from dropbox.client import DropboxClient
+from dropbox import Dropbox
 from dropbox.rest import ErrorResponse
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
@@ -57,7 +57,7 @@ class DropBoxStorage(Storage):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure a token auth at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        self.client = DropboxClient(oauth2_access_token)
+        self.client = Dropbox(oauth2_access_token)
 
     def _full_path(self, name):
         if name == '/':
