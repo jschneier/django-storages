@@ -23,7 +23,7 @@ from django.utils._os import safe_join
 from storages.utils import setting
 
 from dropbox import Dropbox
-from dropbox.rest import ErrorResponse
+from dropbox.exceptions import ApiError
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 
@@ -70,7 +70,7 @@ class DropBoxStorage(Storage):
     def exists(self, name):
         try:
             return bool(self.client.files_get_metadata(self._full_path(name)))
-        except ErrorResponse:
+        except ApiError:
             return False
 
     def listdir(self, path):
