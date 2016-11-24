@@ -285,14 +285,20 @@ class S3Boto3Storage(Storage):
         # urllib/requests libraries read. See https://github.com/boto/boto3/issues/338
         # and http://docs.python-requests.org/en/latest/user/advanced/#proxies
         if self._connection is None:
+            kwargs = {
+                'region_name': self.region_name,
+                'use_ssl': self.use_ssl,
+                'endpoint_url': self.endpoint_url,
+                'config': self.config,
+            }
+            if self.access_key and self.secret_key:
+                # boto3 can automatically retreive AWS credentials when running
+                # on an ec2 instance with an AMI role. In that case, the credentials
+                # must not be set explicitly
+                kwargs['aws_access_key_id'] = self.access_key,
+                kwargs['aws_secret_access_key'] = self.secret_key,
             self._connection = self.connection_class(
-                self.connection_service_name,
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=self.config
+                self.connection_service_name, **kwargs
             )
         return self._connection
 
