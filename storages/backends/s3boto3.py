@@ -510,8 +510,12 @@ class S3Boto3Storage(Storage):
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
             entry = self.entries.get(name)
+
             if entry:
-                return entry.content_length
+                if hasattr(entry, 'content_length'):
+                    return entry.content_length
+                if hasattr(entry, 'size'):
+                    return entry.size
             return 0
         return self.bucket.Object(self._encode_name(name)).content_length
 
