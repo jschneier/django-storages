@@ -8,10 +8,10 @@ from storages.compat import Storage
 from storages.utils import setting
 
 try:
-    from gcloud.storage.client import Client
-    from gcloud.storage.bucket import Bucket
-    from gcloud.storage.blob import Blob
-    from gcloud.exceptions import NotFound
+    from google.cloud.storage.client import Client
+    from google.cloud.storage.bucket import Bucket
+    from google.cloud.storage.blob import Blob
+    from google.cloud.exceptions import NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
