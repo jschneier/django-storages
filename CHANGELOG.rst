@@ -5,6 +5,7 @@ django-storages change log
 ******************
 
 * Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
+* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment
 
 .. _#204: https://github.com/jschneier/django-storages/pull/204
 

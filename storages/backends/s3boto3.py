@@ -14,7 +14,7 @@ from django.utils.six import BytesIO
 from django.utils.timezone import localtime
 
 try:
-    from boto3 import resource
+    import boto3.session
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
@@ -199,7 +199,6 @@ class S3Boto3Storage(Storage):
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
-    connection_class = staticmethod(resource)
     connection_service_name = 's3'
     default_content_type = 'application/octet-stream'
     connection_response_error = ClientError
@@ -285,7 +284,8 @@ class S3Boto3Storage(Storage):
         # urllib/requests libraries read. See https://github.com/boto/boto3/issues/338
         # and http://docs.python-requests.org/en/latest/user/advanced/#proxies
         if self._connection is None:
-            self._connection = self.connection_class(
+            session = boto3.session.Session()
+            self._connection = session.resource(
                 self.connection_service_name,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
