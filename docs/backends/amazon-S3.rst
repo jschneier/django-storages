@@ -112,6 +112,33 @@ This way, if you define a new FileField, it will use the S3 storage::
     >>> print resume.pdf.storage
     <S3Storage.S3Storage object at ...>
 
+AWS4-HMAC-SHA256 signatures
+---------------------------
+
+.. versionadded:: 1.5.0
+
+If you got errors like:
+
+    The authorization mechanism you have provided is not supported. Please use AWS4-HMAC-SHA256.
+
+It mean your region doesn't support signature version 2 which is default for django-storages. Any new Amazon S3 regions after January 30, 2014 support only signature version 4. For more information about signatures, see go to `Signing and Authenticating REST Requests`_ of Amazon Simple Storage Service docs.
+
+.. _Signing and Authenticating REST Requests: http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html
+
+If you like use this regions you have to use ``S3Boto3Storage`` backend. Using them require installation python package ``boto3`` like this:
+
+.. code:: bash
+
+    pip install boto3
+
+Next to update settings accordingly:
+
+.. code:: python
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_S3_REGION_NAME = 'eu-central-1'  # adjust for your bucket
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+
 Tests
 *****
 
