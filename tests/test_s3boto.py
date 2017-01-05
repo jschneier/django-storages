@@ -70,30 +70,10 @@ class S3BotoStorageTests(S3BotoTestCase):
 
     def test_clean_name(self):
         """
-        Test the base case of _clean_name
+        Test the base case of _clean_name - more tests are performed in
+        test_utils
         """
         path = self.storage._clean_name("path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
-    def test_clean_name_normalize(self):
-        """
-        Test the normalization of _clean_name
-        """
-        path = self.storage._clean_name("path/to/../somewhere")
-        self.assertEqual(path, "path/somewhere")
-
-    def test_clean_name_trailing_slash(self):
-        """
-        Test the _clean_name when the path has a trailing slash
-        """
-        path = self.storage._clean_name("path/to/somewhere/")
-        self.assertEqual(path, "path/to/somewhere/")
-
-    def test_clean_name_windows(self):
-        """
-        Test the _clean_name when the path has a trailing slash
-        """
-        path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
     def test_storage_url_slashes(self):
