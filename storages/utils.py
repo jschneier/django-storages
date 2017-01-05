@@ -1,3 +1,5 @@
+import posixpath
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
@@ -20,3 +22,19 @@ def setting(name, default=None, strict=False):
         msg = "You must provide settings.%s" % name
         raise ImproperlyConfigured(msg)
     return getattr(settings, name, default)
+
+
+def clean_name(name):
+    """
+    Cleans the name so that Windows style paths work
+    """
+    # Normalize Windows style paths
+    clean_name = posixpath.normpath(name).replace('\\', '/')
+
+    # os.path.normpath() can strip trailing slashes so we implement
+    # a workaround here.
+    if name.endswith('/') and not clean_name.endswith('/'):
+        # Add a trailing slash as it was stripped.
+        return clean_name + '/'
+    else:
+        return clean_name

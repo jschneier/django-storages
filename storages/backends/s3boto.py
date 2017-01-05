@@ -1,5 +1,4 @@
 import os
-import posixpath
 import mimetypes
 from datetime import datetime
 from gzip import GzipFile
@@ -24,7 +23,7 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
 
-from storages.utils import setting
+from storages.utils import clean_name, setting
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -348,15 +347,7 @@ class S3BotoStorage(Storage):
         """
         Cleans the name so that Windows style paths work
         """
-        # Normalize Windows style paths
-        clean_name = posixpath.normpath(name).replace('\\', '/')
-
-        # os.path.normpath() can strip trailing slashes so we implement
-        # a workaround here.
-        if name.endswith('/') and not clean_name.endswith('/'):
-            # Add a trailing slash as it was stripped.
-            clean_name += '/'
-        return clean_name
+        return clean_name(name)
 
     def _normalize_name(self, name):
         """
