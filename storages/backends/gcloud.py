@@ -5,7 +5,7 @@ from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, force_text, smart_str
 from storages.compat import Storage
-from storages.utils import setting
+from storages.utils import clean_name, setting
 
 try:
     from google.cloud.storage.client import Client
@@ -141,16 +141,7 @@ class GoogleCloudStorage(Storage):
         """
         Cleans the name so that Windows style paths work
         """
-        # Normalize Windows style paths
-        clean_name = name.replace('\\', '/')
-
-        # os.path.normpath() can strip trailing slashes so we implement
-        # a workaround here.
-        if name.endswith('/') and not clean_name.endswith('/'):
-            # Add a trailing slash as it was stripped.
-            return clean_name + '/'
-        else:
-            return clean_name
+        return clean_name(name)
 
     def _encode_name(self, name):
         return smart_str(name, encoding=self.file_name_charset)
