@@ -130,13 +130,6 @@ class GoogleCloudStorage(Storage):
                                        "setting GS_AUTO_CREATE_BUCKET to "
                                        "``True``." % name)
 
-    def _normalize_name(self, name):
-        """
-        No normalizing supported. This can be implemented later.
-        TODO: Implement normalizing, like the s3boto backend.
-        """
-        return name
-
     def _clean_name(self, name):
         """
         Cleans the name so that Windows style paths work
@@ -150,25 +143,24 @@ class GoogleCloudStorage(Storage):
         return force_text(name, encoding=self.file_name_charset)
 
     def _open(self, name, mode='rb'):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._clean_name(name)
         file_object = self.file_class(name, mode, self)
         if not file_object.blob:
             raise IOError('File does not exist: %s' % name)
         return file_object
 
     def _save(self, name, content):
-        cleaned_name = self._clean_name(name)
-        name = self._normalize_name(cleaned_name)
+        name = self._clean_name(name)
         size = getattr(content, 'size')
 
-        content.name = cleaned_name
+        content.name = name
         encoded_name = self._encode_name(name)
         file = self.file_class(encoded_name, 'rw', self)
         file.blob.upload_from_file(content, size=size)
-        return cleaned_name
+        return name
 
     def delete(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._clean_name(name)
         self.bucket.delete_blob(self._encode_name(name))
 
     def exists(self, name):
@@ -179,11 +171,11 @@ class GoogleCloudStorage(Storage):
             except ImproperlyConfigured:
                 return False
 
-        name = self._normalize_name(self._clean_name(name))
+        name = self._clean_name(name)
         return bool(self.bucket.get_blob(self._encode_name(name)))
 
     def listdir(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._clean_name(name)
         # for the bucket.list and logic below name needs to end in /
         # But for the root path "" we leave it as an empty string
         if name and not name.endswith('/'):
@@ -206,18 +198,18 @@ class GoogleCloudStorage(Storage):
         return list(dirs), files
 
     def size(self, name):
-        name = self._encode_name(self._normalize_name(self._clean_name(name)))
+        name = self._encode_name(self._clean_name(name))
         blob = self.bucket.get_blob(self._encode_name(name))
         return blob.size if blob else 0
 
     def modified_time(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._clean_name(name)
         blob = self.bucket.get_blob(self._encode_name(name))
         return blob.updated if blob else None
 
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
-        name = self._normalize_name(self._clean_name(name))
+        name = self._clean_name(name)
         blob = self.bucket.get_blob(self._encode_name(name))
         return blob.public_url if blob else None
 
