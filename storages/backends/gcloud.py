@@ -13,7 +13,7 @@ try:
     from google.cloud.storage.blob import Blob
     from google.cloud.exceptions import NotFound
 except ImportError:
-    raise ImproperlyConfigured("Could not load Google Storage bindings.\n"
+    raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
 
 
