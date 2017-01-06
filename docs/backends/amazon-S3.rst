@@ -5,6 +5,7 @@ Usage
 *****
 
 There is one backend for interacting with S3 based on the boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
+Another for interacting via Boto3 was added in version 1.5
 
 Settings
 --------
@@ -25,6 +26,15 @@ Your Amazon Web Services secret access key, as a string.
 
 Your Amazon Web Services storage bucket name, as a string.
 
+``AWS_DEFAULT_ACL`` (optional)
+
+If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
+
+``AWS_AUTO_CREATE_BUCKET`` (optional)
+
+If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
+
+
 ``AWS_HEADERS`` (optional)
 
 If you'd like to set headers sent with each file of the storage::
@@ -35,9 +45,46 @@ If you'd like to set headers sent with each file of the storage::
         'Cache-Control': 'max-age=86400',
     }
 
+``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
+
+Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
+authentication`_ from generated URLs. This can be useful if your S3 buckets are
+public.
+
+``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
+
+The number of seconds that a generated URL with `query parameter
+authentication`_ is valid for.
+
+
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+
+
+.. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+
+``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
+
+Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
+
+``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
+
+By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
+
+CloudFront
+~~~~~~~~~~
+
+If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
+to serve those files using that::
+
+    AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
+
+Keep in mind you'll have to configure CloudFront to use the proper bucket as an
+origin manually for this to work.
+
+If you need to use multiple storages that are served via CloudFront, pass the
+`custom_domain` parameter to their constructors.
 
 Fields
 ------

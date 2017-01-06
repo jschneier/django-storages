@@ -1,12 +1,103 @@
 django-storages change log
 ==========================
 
-1.3.1 (XXXX-XX-XX)
+1.5.2 (XXXX-XX-XX)
 ******************
 
-* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__)
+* Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
+
+.. _#204: https://github.com/jschneier/django-storages/pull/204
+
+1.5.1 (2016-09-13)
+******************
+
+* **Drop support for Django 1.7** (`#185`_)
+* **Deprecate hashpath, image, overwrite, mogile, symlinkorcopy, database, mogile, couchdb.**
+  See (`issue #202`_) to discuss maintenance going forward
+* Use a fixed ``mtime`` argument for ``GzipFile`` in ``S3BotoStorage`` and ``S3Boto3Storage`` to ensure
+  a stable output for gzipped files
+* Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
+  allowing files greater than 5GB to be put on S3 (`#194`_ , `#201`_)
+* Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
+* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_) thanks @leonsmith
+
+.. _issue #202: https://github.com/jschneier/django-storages/issues/202
+.. _#201: https://github.com/jschneier/django-storages/pull/201
+.. _#194: https://github.com/jschneier/django-storages/issues/194
+.. _#190: https://github.com/jschneier/django-storages/pull/190
+.. _#189: https://github.com/jschneier/django-storages/issues/189
+.. _#185: https://github.com/jschneier/django-storages/pull/185
+.. _#181: https://github.com/jschneier/django-storages/pull/181
+
+1.5.0 (2016-08-02)
+******************
+
+* Add new backend ``S3Boto3Storage`` (`#179`_) MASSIVE THANKS @mbarrien
+* Add a `strict` option to `utils.setting` (`#176`_) thanks @ZuluPro
+* Tests, documentation, fixing ``.close`` for ``SFTPStorage`` (`#177`_) thanks @ZuluPro
+* Tests, documentation, add `.readlines` for ``FTPStorage`` (`#175`_) thanks @ZuluPro
+* Tests and documentation for ``DropBoxStorage`` (`#174`_) thanks @ZuluPro
+* Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_) thanks @fladi
+* Enable CI testing of Python3.5 and fix test failure from api change (`#171`_) thanks @tnir
+
+.. _#145: https://github.com/jschneier/django-storages/pull/145
+.. _#171: https://github.com/jschneier/django-storages/pull/171
+.. _#174: https://github.com/jschneier/django-storages/pull/174
+.. _#175: https://github.com/jschneier/django-storages/pull/175
+.. _#177: https://github.com/jschneier/django-storages/pull/177
+.. _#176: https://github.com/jschneier/django-storages/pull/176
+.. _#179: https://github.com/jschneier/django-storages/pull/179
+
+1.4.1 (2016-04-07)
+******************
+
+* Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding
+  in the ``s3boto`` backend. Compressable types such as ``application/javascript`` will still be gzipped.
+  PR `#122`_ thanks @cambonf
+* Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`_) thanks @zuck
+* Add ``GS_HOST`` setting (with a default of ``GSConnection.DefaultHost``) to fix ``GSBotoStorage``.
+  Issue `#124`_. Fixed in `#125`_. Thanks @patgmiller @dcgoss.
+
+.. _#122: https://github.com/jschneier/django-storages/pull/122
+.. _#127: https://github.com/jschneier/django-storages/pull/127
+.. _#124: https://github.com/jschneier/django-storages/issues/124
+.. _#125: https://github.com/jschneier/django-storages/pull/125
+
+1.4 (2016-02-07)
+****************
+
+* This package is now released on PyPI as `django-storages`. Please update your requirements files to
+  `django-storages==1.4`.
+
+1.3.2 (2016-01-26)
+******************
+
+* Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_) thanks @kmmbvnr
+* Allow easily specifying a custom expiry time when generating a url for ``S3BotoStorage`` (`#96`_) thanks @mattbriancon
+* Check for bucket existence when the empty path ('') is passed to ``storage.exists`` in ``S3BotoStorage`` -
+  this prevents a crash when running ``collecstatic -c`` on Django 1.9.1 (`#112`_) fixed in `#116`_ thanks @xblitz
+
+.. _#106: https://github.com/jschneier/django-storages/pull/106
+.. _#96: https://github.com/jschneier/django-storages/pull/96
+.. _#112: https://github.com/jschneier/django-storages/issues/112
+.. _#116: https://github.com/jschneier/django-storages/pull/116
+
+
+1.3.1 (2016-01-12)
+******************
+
+* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__) thanks @erlingbo
+* Add support for a Dropbox (``dropbox``) storage backend, thanks @ZuluPro (`#76`_)
+* Various fixes to the ``apache_libcloud`` backend [return the number of bytes asked for by ``.read``, make ``.name`` non-private, don't
+  initialize to an empty ``BytesIO`` object] thanks @kaedroho (`#55`_)
+* Fix multi-part uploads in ``s3boto`` backend not respecting ``AWS_S3_ENCRYPTION`` (`#94`_) thanks @andersontep
+* Automatically gzip svg files thanks @comandrei (`#100`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/45
+.. _#76: https://github.com/jschneier/django-storages/pull/76
+.. _#55: https://github.com/jschneier/django-storages/pull/55
+.. _#94: https://github.com/jschneier/django-storages/pull/94
+.. _#100: https://github.com/jschneier/django-storages/pull/100
 
 
 1.3 (2015-08-14)

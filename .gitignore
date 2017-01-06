@@ -20,3 +20,5 @@ local_settings.py
 setuptools*
 *.sqlite
 __pycache__
+.coverage
+.cache

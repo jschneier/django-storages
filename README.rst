@@ -6,8 +6,8 @@ django-storages
     :target: https://travis-ci.org/jschneier/django-storages
     :alt: Build Status
 
-.. image:: https://pypip.in/v/django-storages-redux/badge.png
-    :target: https://pypi.python.org/pypi/django-storages-redux
+.. image:: https://pypip.in/v/django-storages/badge.png
+    :target: https://pypi.python.org/pypi/django-storages
     :alt: PyPI Version
 
 
@@ -15,7 +15,7 @@ Installation
 ============
 Installing from PyPI is as easy as doing::
 
-  pip install django-storages-redux
+  pip install django-storages
 
 If you'd prefer to install from source (maybe there is a bugfix in master that
 hasn't been released yet) then the magic incantation you are looking for is::
@@ -32,32 +32,15 @@ please consult the documentation for a comprehensive list.
 
 About
 =====
-django-storages was (is) a project to provide a variety of storage backends in
-a single library. This is its maintained, Python 3 compatible fork. The reasons
-for the fork are given in the next section.
+django-storages is a project to provide a variety of storage backends in a single library.
 
-At the moment the only tested Python 3 compatible backend is the S3 Boto one
-but some of them should work without issue (hashpath, symlink, overwrite).
+This library is usually compatible with the currently supported versions of
+Django. Check the trove classifiers in setup.py to be sure.
 
-This library is compatible with Django >= 1.6.2
-
-Why Fork?
-=========
-The BitBucket repo of the original django-storages has seen no commit applied
-since March 2014 (it is currently December 2014) and no PyPi release since
-March 2013 despite a wealth of bugfixes that were applied in that year-long
-gap. There is plenty of community support for the django-storages project
-(especially the S3BotoStorage piece) and I have a personal need for a Python3
-compatible version.
-
-All of the Python3 compatible forks that currently exist (and there are a few)
-are lacking in some way. This can be anything from the fact that they don't
-release to PyPi, have no ongoing testing, didn't apply many important bugfixes
-that have occurred on the Bitbucket repo since forking or don't support older
-versions of Python and Django (vital to finding bugs and keeping a large
-community). For this fork I've done the small bit of work necessary to get a
-tox + travis ci matrix going for all of the supported Python + Django versions.
-In many cases the various forks are lacking in a few of the above ways.
+History
+=======
+This repo began as a fork of the original library under the package name of django-storages-redux and
+became the official successor (releasing under django-storages on PyPI) in February of 2016.
 
 Found a Bug? Something Unsupported?
 ===================================
@@ -71,9 +54,8 @@ Issues are tracked via GitHub issues at the `project issue page
 
 Documentation
 =============
-The original documentation for django-storages is located at http://django-storages.readthedocs.org/.
+The original documentation for django-storages is located at https://django-storages.readthedocs.org/.
 Stay tuned for forthcoming documentation updates.
-
 
 Contributing
 ============
@@ -87,4 +69,3 @@ Contributing
    correctly.
 #. Bug me until I can merge your pull request. Also, don't forget to add
    yourself to ``AUTHORS``.
-

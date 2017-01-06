@@ -1,6 +1,16 @@
-from storages.compat import FileSystemStorage
+import warnings
+
+from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
+
+warnings.warn(
+    'OverwriteStorage is unmaintained and will be removed in the next django-storages version.'
+    'See https://github.com/jschneier/django-storages/issues/202',
+    PendingDeprecationWarning
+)
 
 
+@deconstructible
 class OverwriteStorage(FileSystemStorage):
     """
     Comes from http://www.djangosnippets.org/snippets/976/
