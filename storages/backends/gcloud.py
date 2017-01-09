@@ -9,7 +9,6 @@ from storages.utils import clean_name, setting
 
 try:
     from google.cloud.storage.client import Client
-    from google.cloud.storage.bucket import Bucket
     from google.cloud.storage.blob import Blob
     from google.cloud.exceptions import NotFound
 except ImportError:
@@ -71,7 +70,6 @@ class GoogleCloudFile(File):
 @deconstructible
 class GoogleCloudStorage(Storage):
     client_class = Client
-    bucket_class = Bucket
     file_class = GoogleCloudFile
 
     not_found_exception = NotFound
