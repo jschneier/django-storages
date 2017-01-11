@@ -56,4 +56,4 @@ Note: It returns special path, which should be mapped to special view, which ret
         response['Content-Disposition'] = 'inline; filename=%s'%filename
         return response
 
-Note: If filename exist, blob will be overwritten, to change this remove get_available_name(self, name), so Storage.get_available_name(self, name) will be used to generate new filename.
+.. note:: If filename exist, blob will be overwritten, to change this remove get_available_name(self, name), so Storage.get_available_name(self, name) will be used to generate new filename.
