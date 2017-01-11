@@ -24,7 +24,7 @@ except ImportError:
 
 from storages.utils import setting
 
-boto3_version_info = tuple([int(i) for i in boto3_version.split('-')[0].split('.')])
+boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
 if boto3_version_info[:2] < (1, 2):
     raise ImproperlyConfigured("The installed Boto3 library must be 1.2.0 or "
