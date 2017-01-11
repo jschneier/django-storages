@@ -37,7 +37,7 @@ class GCloudStorageTests(GCloudTestCase):
         """
         Test opening a file and reading from it
         """
-        data = 'This is some test read data.'
+        data = b'This is some test read data.'
 
         f = self.storage.open(self.filename)
         self.storage._client.get_bucket.assert_called_with(self.bucket_name)
