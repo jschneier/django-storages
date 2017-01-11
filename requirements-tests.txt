@@ -1,5 +1,5 @@
 Django>=1.7
-pytest-cov==2.2.1
+pytest-cov>=2.2.1
 boto>=2.32.0
 boto3>=1.2.3
 dropbox>=3.24
