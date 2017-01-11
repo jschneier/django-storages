@@ -2,9 +2,9 @@ from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
+from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, force_text, smart_str
-from storages.compat import Storage
 from storages.utils import clean_name, safe_join, setting
 
 try:
