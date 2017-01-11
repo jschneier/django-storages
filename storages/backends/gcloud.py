@@ -145,9 +145,6 @@ class GoogleCloudStorage(Storage):
     def _encode_name(self, name):
         return smart_str(name, encoding=self.file_name_charset)
 
-    def _decode_name(self, name):
-        return force_text(name, encoding=self.file_name_charset)
-
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
         file_object = self.file_class(name, mode, self)
