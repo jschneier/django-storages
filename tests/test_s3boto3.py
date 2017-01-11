@@ -21,8 +21,7 @@ __all__ = (
 
 
 class S3Boto3TestCase(TestCase):
-    @mock.patch('storages.backends.s3boto3.resource')
-    def setUp(self, resource):
+    def setUp(self):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connection = mock.MagicMock()
 
