@@ -10,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 from django.utils.six import BytesIO
-from django.utils.six.moves.urllib import parse as urlparse
 from django.utils import timezone as tz
 
 try:
@@ -23,46 +22,13 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
 
-from storages.utils import clean_name, setting
+from storages.utils import clean_name, safe_join, setting
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
 if boto_version_info[:2] < (2, 32):
     raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
-
-
-def safe_join(base, *paths):
-    """
-    A version of django.utils._os.safe_join for S3 paths.
-
-    Joins one or more path components to the base path component
-    intelligently. Returns a normalized version of the final path.
-
-    The final path must be located inside of the base path component
-    (otherwise a ValueError is raised).
-
-    Paths outside the base path indicate a possible security
-    sensitive operation.
-    """
-    base_path = force_text(base)
-    base_path = base_path.rstrip('/')
-    paths = [force_text(p) for p in paths]
-
-    final_path = base_path
-    for path in paths:
-        final_path = urlparse.urljoin(final_path.rstrip('/') + '/', path)
-
-    # Ensure final_path starts with base_path and that the next character after
-    # the final path is '/' (or nothing, in which case final_path must be
-    # equal to base_path).
-    base_path_len = len(base_path)
-    if (not final_path.startswith(base_path) or
-            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
-        raise ValueError('the joined path is located outside of the base path'
-                         ' component')
-
-    return final_path.lstrip('/')
 
 
 @deconstructible

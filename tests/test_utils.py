@@ -44,3 +44,40 @@ class CleanNameTests(TestCase):
         """
         path = utils.clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
+
+
+class SafeJoinTest(TestCase):
+    def test_normal(self):
+        path = utils.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
+
+    def test_with_dot(self):
+        path = utils.safe_join("", "path/./somewhere/../other", "..",
+                                ".", "to/./somewhere")
+        self.assertEqual(path, "path/to/somewhere")
+
+    def test_base_url(self):
+        path = utils.safe_join("base_url", "path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
+
+    def test_base_url_with_slash(self):
+        path = utils.safe_join("base_url/", "path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
+
+    def test_suspicious_operation(self):
+        self.assertRaises(ValueError,
+                          utils.safe_join, "base", "../../../../../../../etc/passwd")
+
+    def test_trailing_slash(self):
+        """
+        Test safe_join with paths that end with a trailing slash.
+        """
+        path = utils.safe_join("base_url/", "path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
+
+    def test_trailing_slash_multi(self):
+        """
+        Test safe_join with multiple paths that end with a trailing slash.
+        """
+        path = utils.safe_join("base_url/", "path/to/" "somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
