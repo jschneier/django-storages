@@ -21,7 +21,9 @@ class GoogleCloudFile(File):
         self.name = name
         self._mode = mode
         self._storage = storage
-        self.blob = Blob(self.name, storage.bucket)
+        self.blob = storage.bucket.get_blob(name)
+        if not self.blob and 'w' in mode:
+            self.blob = Blob(self.name, storage.bucket)
         self._file = None
         self._is_dirty = False
 
