@@ -347,6 +347,8 @@ class S3Boto3Storage(Storage):
                                                "region than we are connecting to. Set "
                                                "the region to connect to by setting "
                                                "AWS_S3_REGION_NAME to the correct region." % name)
+
+                elif err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                     # Notes: When using the us-east-1 Standard endpoint, you can create
                     # buckets in other regions. The same is not true when hitting region specific
                     # endpoints. However, when you create the bucket not in the same region, the
