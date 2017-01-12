@@ -11,7 +11,7 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.six import BytesIO
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, is_naive
 
 try:
     import boto3.session
@@ -534,7 +534,12 @@ class S3Boto3Storage(Storage):
 
     def modified_time(self, name):
         """Returns a naive datetime object containing the last modified time."""
-        return localtime(self.get_modified_time(name)).replace(tzinfo=None)
+        # If get_modified_time already returns a naive DateTime object, which happens 
+        # when USE_TZ=False, return it directly instead of transfer it.
+        mtime = self.get_modified_time(name)
+        if is_naive(mtime):
+            return mtime
+        return localtime(mtime).replace(tzinfo=None)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
