@@ -93,9 +93,9 @@ class AzureStorage(Storage):
         else:
             content_data = content.read()
 
-            self.connection.put_block_blob_from_bytes(self.azure_container, name,
-                                                      content_data,
-                                                      x_ms_blob_content_type=content_type)
+        self.connection.put_block_blob_from_bytes(self.azure_container, name,
+                                                  content_data,
+                                                  x_ms_blob_content_type=content_type)
         return name
 
     def url(self, name):
