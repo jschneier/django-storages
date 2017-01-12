@@ -5,9 +5,14 @@ django-storages change log
 ******************
 
 * Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
-* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment
+* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment (`#238`_ thanks @jdufresne)
+* Fix trying to localize a naive datetime when ``settings.USE_TZ`` is ``False`` in ``S3Boto3Storage.modified_time``.
+  (thanks to @tomchuk and @piglei for the reports and the patches, `#235`_, `#234`_)
 
 .. _#204: https://github.com/jschneier/django-storages/pull/204
+.. _#238: https://github.com/jschneier/django-storages/pull/238
+.. _#234: https://github.com/jschneier/django-storages/issues/234
+.. _#235: https://github.com/jschneier/django-storages/pull/235
 
 1.5.1 (2016-09-13)
 ******************
