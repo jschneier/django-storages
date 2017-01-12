@@ -534,12 +534,10 @@ class S3Boto3Storage(Storage):
 
     def modified_time(self, name):
         """Returns a naive datetime object containing the last modified time."""
-        # If get_modified_time already returns a naive DateTime object, which happens 
-        # when USE_TZ=False, return it directly instead of transfer it.
+        # If USE_TZ=False then get_modified_time will return a naive datetime
+        # so we just return that, else we have to localize and strip the tz
         mtime = self.get_modified_time(name)
-        if is_naive(mtime):
-            return mtime
-        return localtime(mtime).replace(tzinfo=None)
+        return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
