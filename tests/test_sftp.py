@@ -52,7 +52,7 @@ class SFTPStorageTest(TestCase):
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_save(self, mock_sftp):
         self.storage._save('foo', File(BytesIO(b'foo'), 'foo'))
-        self.assertTrue(mock_sftp.open.return_value.write.called)
+        self.assertTrue(mock_sftp.open.return_value.pufo)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
         'stat.side_effect': (IOError(), True)

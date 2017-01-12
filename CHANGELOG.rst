@@ -1,6 +1,13 @@
 django-storages change log
 ==========================
 
+1.5.3 (2016-10-10)
+******************
+
+* Use paramiko's ``putfo()`` function to store files
+
+.. _#213: https://github.com/jschneier/django-storages/issues/213
+
 1.5.2 (XXXX-XX-XX)
 ******************
 
