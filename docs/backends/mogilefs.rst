@@ -5,11 +5,23 @@ This storage allows you to use MogileFS, it comes from this blog post.
 
 The MogileFS storage backend is fairly simple: it uses URLs (or, rather, parts of URLs) as keys into the mogile database. When the user requests a file stored by mogile (say, an avatar), the URL gets passed to a view which, using a client to the mogile tracker, retrieves the "correct" path (the path that points to the actual file data). The view will then either return the path(s) to perlbal to reproxy, or, if you're not using perlbal to reproxy (which you should), it serves the data of the file directly from django.
 
-* ``MOGILEFS_DOMAIN``: The mogile domain that files should read from/written to, e.g "production"
-* ``MOGILEFS_TRACKERS``: A list of trackers to connect to, e.g. ["foo.sample.com:7001", "bar.sample.com:7001"]
-* ``MOGILEFS_MEDIA_URL`` (optional): The prefix for URLs that point to mogile files. This is used in a similar way to ``MEDIA_URL``, e.g. "/mogilefs/"
-* ``SERVE_WITH_PERLBAL``: Boolean that, when True, will pass the paths back in the response in the ``X-REPROXY-URL`` header. If False, django will serve all mogile media files itself (bad idea for production, but useful if you're testing on a setup that doesn't have perlbal running)
-* ``DEFAULT_FILE_STORAGE``: This is the class that's used for the backend. You'll want to set this to ``project.app.storages.MogileFSStorage`` (or wherever you've installed the backend)
+To use `MogileFSStorage` set::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.mogile.MogileFSStorage'
+
+The following settings are available:
+
+``MOGILEFS_DOMAIN``
+    The mogile domain that files should read from/written to, e.g "production"
+
+``MOGILEFS_TRACKERS``
+    A list of trackers to connect to, e.g. ["foo.sample.com:7001", "bar.sample.com:7001"]
+
+``MOGILEFS_MEDIA_URL`` (optional)
+    The prefix for URLs that point to mogile files. This is used in a similar way to ``MEDIA_URL``, e.g. "/mogilefs/"
+
+``SERVE_WITH_PERLBAL``
+    Boolean that, when True, will pass the paths back in the response in the ``X-REPROXY-URL`` header. If False, django will serve all mogile media files itself (bad idea for production, but useful if you're testing on a setup that doesn't have perlbal running)
 
 Getting files into mogile
 *************************
