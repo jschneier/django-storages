@@ -70,6 +70,9 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
 
+``AWS_LOCATION`` (optional: default is `''`)
+    A path prefix that will be prepended to all uploads
+
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
 CloudFront
