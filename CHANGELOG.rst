@@ -9,6 +9,7 @@ django-storages change log
 * Fix trying to localize a naive datetime when ``settings.USE_TZ`` is ``False`` in ``S3Boto3Storage.modified_time``.
   (thanks to @tomchuk and @piglei for the reports and the patches, `#235`_, `#234`_)
 * Fix automatic bucket creation in ``S3Boto3Storage`` when ``AWS_AUTO_CREATE_BUCKET`` is ``True`` (`#196`_ thanks @linuxlewis)
+* Improve the documentation for the S3 backends (thanks to various contributors!)
 
 .. _#204: https://github.com/jschneier/django-storages/pull/204
 .. _#238: https://github.com/jschneier/django-storages/pull/238
