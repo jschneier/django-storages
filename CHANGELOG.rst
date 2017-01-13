@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.5.2 (XXXX-XX-XX)
+1.5.2 (2017-01-13)
 ******************
 
 * Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
