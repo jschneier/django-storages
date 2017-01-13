@@ -4,24 +4,30 @@ Amazon S3
 Usage
 *****
 
-There is one backend for interacting with S3 based on the boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
-Another for interacting via Boto3 was added in version 1.5
+There are two backends for interacting with Amazon's S3, one based
+on boto3 and an older one based on boto3. It is highly recommended that all
+new projects (at least) use the boto3 backend since it has many bug fixes
+and performance improvements over boto and is the future; boto is lightly
+maintained if at all. The boto based backed will continue to be maintained
+for the forseeable future.
+
+For historical completeness an extreme legacy backend was removed
+in version 1.2
 
 Settings
 --------
 
-To use s3boto set::
-
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
-    
-To use the boto3 version of the backend::
+To use boto3 set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    
+
+To use the boto version of the backend set::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto.S3Boto3Storage'
 
 Available are numerous settings. It should be especially noted the following:
 
@@ -79,42 +85,6 @@ origin manually for this to work.
 
 If you need to use multiple storages that are served via CloudFront, pass the
 `custom_domain` parameter to their constructors.
-
-Fields
-------
-
-Once you're done, default_storage will be the S3 storage::
-
-    >>> from django.core.files.storage import default_storage
-    >>> print default_storage.__class__
-    <class 'S3Storage.S3Storage'>
-
-The above doesn't seem to be true for django 1.3+ instead look at::
-
-    >>> from django.core.files.storage import default_storage
-    >>> print default_storage.connection
-    S3Connection:s3.amazonaws.com
-
-This way, if you define a new FileField, it will use the S3 storage::
-
-    >>> from django.db import models
-    >>> class Resume(models.Model):
-    ...     pdf = models.FileField(upload_to='pdfs')
-    ...     photos = models.ImageField(upload_to='photos')
-    ...
-    >>> resume = Resume()
-    >>> print resume.pdf.storage
-    <S3Storage.S3Storage object at ...>
-
-Tests
-*****
-
-Initialization::
-
-    >>> from django.core.files.storage import default_storage
-    >>> from django.core.files.base import ContentFile
-    >>> from django.core.cache import cache
-    >>> from models import MyStorage
 
 Storage
 -------
