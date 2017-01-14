@@ -5,7 +5,7 @@ Usage
 *****
 
 There are two backends for interacting with Amazon's S3, one based
-on boto3 and an older one based on boto3. It is highly recommended that all
+on boto3 and an older one based on boto. It is highly recommended that all
 new projects (at least) use the boto3 backend since it has many bug fixes
 and performance improvements over boto and is the future; boto is lightly
 maintained if at all. The boto based backed will continue to be maintained
@@ -27,7 +27,7 @@ To use the boto version of the backend set::
 
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto.S3Boto3Storage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 Available are numerous settings. It should be especially noted the following:
 
