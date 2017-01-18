@@ -116,16 +116,6 @@ Next to update settings accordingly:
     AWS_S3_REGION_NAME = 'eu-central-1'  # adjust for your bucket
     AWS_S3_SIGNATURE_VERSION = 's3v4'
 
-Tests
-*****
-
-Initialization::
-
-    >>> from django.core.files.storage import default_storage
-    >>> from django.core.files.base import ContentFile
-    >>> from django.core.cache import cache
-    >>> from models import MyStorage
-
 Storage
 -------
 
