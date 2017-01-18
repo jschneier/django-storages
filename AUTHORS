@@ -25,6 +25,7 @@ By order of apparition, thanks:
     * Anthony Monthe (Dropbox)
     * EunPyo (Andrew) Hong (Azure)
     * Michael Barrientos (S3 with Boto3)
+    * piglei (patches)
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).

@@ -1,12 +1,21 @@
 django-storages change log
 ==========================
 
-1.5.2 (XXXX-XX-XX)
+1.5.2 (2017-01-13)
 ******************
 
 * Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
+* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment (`#238`_ thanks @jdufresne)
+* Fix trying to localize a naive datetime when ``settings.USE_TZ`` is ``False`` in ``S3Boto3Storage.modified_time``.
+  (thanks to @tomchuk and @piglei for the reports and the patches, `#235`_, `#234`_)
+* Fix automatic bucket creation in ``S3Boto3Storage`` when ``AWS_AUTO_CREATE_BUCKET`` is ``True`` (`#196`_ thanks @linuxlewis)
+* Improve the documentation for the S3 backends (thanks to various contributors!)
 
 .. _#204: https://github.com/jschneier/django-storages/pull/204
+.. _#238: https://github.com/jschneier/django-storages/pull/238
+.. _#234: https://github.com/jschneier/django-storages/issues/234
+.. _#235: https://github.com/jschneier/django-storages/pull/235
+.. _#196: https://github.com/jschneier/django-storages/pull/196
 
 1.5.1 (2016-09-13)
 ******************

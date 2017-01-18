@@ -11,10 +11,10 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.six import BytesIO
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, is_naive
 
 try:
-    from boto3 import resource
+    import boto3.session
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
@@ -24,7 +24,7 @@ except ImportError:
 
 from storages.utils import setting
 
-boto3_version_info = tuple([int(i) for i in boto3_version.split('-')[0].split('.')])
+boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
 if boto3_version_info[:2] < (1, 2):
     raise ImproperlyConfigured("The installed Boto3 library must be 1.2.0 or "
@@ -199,7 +199,6 @@ class S3Boto3Storage(Storage):
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
-    connection_class = staticmethod(resource)
     connection_service_name = 's3'
     default_content_type = 'application/octet-stream'
     connection_response_error = ClientError
@@ -285,7 +284,8 @@ class S3Boto3Storage(Storage):
         # urllib/requests libraries read. See https://github.com/boto/boto3/issues/338
         # and http://docs.python-requests.org/en/latest/user/advanced/#proxies
         if self._connection is None:
-            self._connection = self.connection_class(
+            session = boto3.session.Session()
+            self._connection = session.resource(
                 self.connection_service_name,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
@@ -347,6 +347,8 @@ class S3Boto3Storage(Storage):
                                                "region than we are connecting to. Set "
                                                "the region to connect to by setting "
                                                "AWS_S3_REGION_NAME to the correct region." % name)
+
+                elif err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                     # Notes: When using the us-east-1 Standard endpoint, you can create
                     # buckets in other regions. The same is not true when hitting region specific
                     # endpoints. However, when you create the bucket not in the same region, the
@@ -534,7 +536,10 @@ class S3Boto3Storage(Storage):
 
     def modified_time(self, name):
         """Returns a naive datetime object containing the last modified time."""
-        return localtime(self.get_modified_time(name)).replace(tzinfo=None)
+        # If USE_TZ=False then get_modified_time will return a naive datetime
+        # so we just return that, else we have to localize and strip the tz
+        mtime = self.get_modified_time(name)
+        return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
