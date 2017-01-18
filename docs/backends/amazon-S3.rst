@@ -98,7 +98,7 @@ If you got errors like:
 
     The authorization mechanism you have provided is not supported. Please use AWS4-HMAC-SHA256.
 
-It mean your region doesn't support signature version 2 which is default for django-storages. Any new Amazon S3 regions after January 30, 2014 support only signature version 4. For more information about signatures, see go to `Signing and Authenticating REST Requests`_ of Amazon Simple Storage Service docs.
+It mean your region doesn't support signature version 2 which is default for django-storages. Any new Amazon S3 regions after January 30, 2014 support only signature version 4. For more information about signatures, go to `Signing and Authenticating REST Requests`_ of Amazon Simple Storage Service docs.
 
 .. _Signing and Authenticating REST Requests: http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html
 
