@@ -6,7 +6,7 @@ django-storages
     :target: https://travis-ci.org/jschneier/django-storages
     :alt: Build Status
 
-.. image:: https://pypip.in/v/django-storages/badge.png
+.. image:: https://img.shields.io/pypi/v/django-storages.png
     :target: https://pypi.python.org/pypi/django-storages
     :alt: PyPI Version
 
