@@ -6,6 +6,10 @@ It aims to provide a consistent API for dealing with cloud storage (and, more
 broadly, the many other services provided by cloud providers, such as device
 provisioning, load balancer configuration, and DNS configuration).
 
+Use pip to install apache-libcloud from PyPI::
+
+    pip install apache-libcloud
+
 As of v0.10.1, Libcloud supports the following cloud storage providers:
     * `Amazon S3`_
     * `Google Cloud Storage`_
