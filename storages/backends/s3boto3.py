@@ -365,7 +365,7 @@ class S3Boto3Storage(Storage):
                     if region_name != 'us-east-1':
                         bucket_params['CreateBucketConfiguration'] = {
                             'LocationConstraint': region_name}
-                    bucket.create(ACL=self.bucket_acl)
+                    bucket.create(**bucket_params)
                 else:
                     raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
                                                "can be automatically created by "
