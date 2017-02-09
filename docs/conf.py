@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'django-storages'
-copyright = u'2011-2013, David Larlet, et. al.'
+copyright = u'2011-2017, David Larlet, et. al.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -223,7 +223,7 @@ man_pages = [
 epub_title = u'django-storages'
 epub_author = u'David Larlet, et. al.'
 epub_publisher = u'David Larlet, et. al.'
-epub_copyright = u'2011-2013, David Larlet, et. al.'
+epub_copyright = u'2011-2017, David Larlet, et. al.'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
