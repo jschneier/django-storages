@@ -1,6 +1,14 @@
 django-storages change log
 ==========================
 
+1.5.3 (XXXX-XX-XX)
+******************
+
+* Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
+
+.. _#257: https://github.com/jschneier/django-storages/issues/257
+.. _#258: https://github.com/jschneier/django-storages/pull/258
+
 1.5.2 (2017-01-13)
 ******************
 
