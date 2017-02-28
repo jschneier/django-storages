@@ -46,12 +46,19 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_AUTO_CREATE_BUCKET`` (optional)
     If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
 
-``AWS_HEADERS`` (optional)
+``AWS_HEADERS`` (optional - boto only, for boto3 see ``AWS_S3_OBJECT_PARAMETERS``)
     If you'd like to set headers sent with each file of the storage::
 
         # see http://developer.yahoo.com/performance/rules.html#expires
         AWS_HEADERS = {
             'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
+            'Cache-Control': 'max-age=86400',
+        }
+
+``AWS_S3_OBJECT_PARAMETERS`` (optional - boto3 only)
+  Use this to set arbitrary parameters on your object (such as Cache-Control)::
+
+        AWS_S3_OBJECT_PARAMETERS = {
             'Cache-Control': 'max-age=86400',
         }
 
