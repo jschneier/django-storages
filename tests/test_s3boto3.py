@@ -193,14 +193,22 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
 
-    # def test_storage_exists_bucket(self):
-    #     bucket = self.storage._connection.Bucket.return_value
-    #     bucket.meta.client.head_bucket.side_effect = ClientError(
-    #         {'Error': {'Code': 123, 'Message': 'Fake'}}, 'load')
-    #     self.assertFalse(self.storage.exists(''))
-    #
-    #     self.storage.bucket.meta.client.head_bucket.side_effect = None
-    #     self.assertTrue(self.storage.exists(''))
+    def test_auto_creating_bucket(self):
+        self.storage.auto_create_bucket = True
+        Bucket = mock.MagicMock()
+        self.storage._connection.Bucket.return_value = Bucket
+        self.storage._connection.meta.client.meta.region_name = 'sa-east-1'
+
+        Bucket.meta.client.head_bucket.side_effect = ClientError({'Error': {},
+                                                                  'ResponseMetadata': {'HTTPStatusCode': 404}},
+                                                                 'head_bucket')
+        self.storage._get_or_create_bucket('testbucketname')
+        Bucket.create.assert_called_once_with(
+            ACL='public-read',
+            CreateBucketConfiguration={
+                'LocationConstraint': 'sa-east-1',
+            }
+        )
 
     def test_storage_exists(self):
         obj = self.storage.bucket.Object.return_value
