@@ -40,7 +40,7 @@ class DropBoxFile(File):
     @property
     def file(self):
         if not hasattr(self, '_file'):
-            response = self._storage.client.get_file(self.name)
+            response = self._storage.client.files_download(self.name)
             self._file = SpooledTemporaryFile()
             copyfileobj(response, self._file)
             self._file.seek(0)
@@ -101,8 +101,8 @@ class DropBoxStorage(Storage):
         return acc_time
 
     def url(self, name):
-        media = self.client.media(self._full_path(name))
-        return media['url']
+        media = self.client.files_get_temporary_link(self._full_path(name))
+        return media['link']
 
     def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(self._full_path(name), self)
