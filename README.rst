@@ -2,14 +2,14 @@
 django-storages
 ===============
 
-.. image:: https://travis-ci.org/jschneier/django-storages.png?branch=master
-    :target: https://travis-ci.org/jschneier/django-storages
-    :alt: Build Status
 
-.. image:: https://img.shields.io/pypi/v/django-storages.png
+.. image:: https://img.shields.io/pypi/v/django-storages.svg
     :target: https://pypi.python.org/pypi/django-storages
     :alt: PyPI Version
 
+.. image:: https://travis-ci.org/jschneier/django-storages.svg?branch=master
+    :target: https://travis-ci.org/jschneier/django-storages
+    :alt: Build Status
 
 Installation
 ============
