@@ -80,6 +80,12 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_LOCATION`` (optional: default is `''`)
     A path prefix that will be prepended to all uploads
 
+``AWS_IS_GZIPPED`` (optional: default is ``False``)
+    Whether or not to enable gzipping of content types specified by ``GZIP_CONTENT_TYPES``
+
+``GZIP_CONTENT_TYPES`` (optional: default is ``text/css``, ``text/javascript``, ``application/javascript``, ``application/x-javascript``, ``image/svg+xml``)
+    When ``AWS_IS_GZIPPED`` is set to ``True`` the content types which will be gzipped
+
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
 CloudFront
