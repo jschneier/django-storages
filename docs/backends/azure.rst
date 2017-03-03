@@ -1,5 +1,5 @@
 Azure Storage
-===========
+=============
 
 A custom storage system for Django using Windows Azure Storage backend.
 
@@ -15,7 +15,7 @@ Add to your requirements file::
 
 
 Settings
-*******
+********
 
 To use `AzureStorage` set::
 
