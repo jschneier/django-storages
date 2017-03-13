@@ -18,7 +18,7 @@ setup(
     author='Josh Schneier',
     author_email='josh.schneier@gmail.com',
     license='BSD',
-    description='Support for many storages (S3, Libcloud, etc in Django.',
+    description='Support for many storage backends in Django',
     long_description=read('README.rst') + '\n\n' + read('CHANGELOG.rst'),
     url='https://github.com/jschneier/django-storages',
     classifiers=[
