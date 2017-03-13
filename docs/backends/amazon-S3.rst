@@ -56,10 +56,10 @@ Available are numerous settings. It should be especially noted the following:
         }
 
 ``AWS_S3_OBJECT_PARAMETERS`` (optional - boto3 only)
-  Use this to set arbitrary parameters on your object (such as Cache-Control)::
+  Use this to set object parameters on your object (such as CacheControl)::
 
         AWS_S3_OBJECT_PARAMETERS = {
-            'Cache-Control': 'max-age=86400',
+            'CacheControl': 'max-age=86400',
         }
 
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
