@@ -1,11 +1,13 @@
 django-storages change log
 ==========================
 
-1.5.3 (XXXX-XX-XX)
+1.6.0 (XXXX-XX-XX)
 ******************
 
+* **Remove backends deprecated in v1.5.1** (`#280`_)
 * Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
 
+.. _#280: https://github.com/jschneier/django-storages/pull/280
 .. _#257: https://github.com/jschneier/django-storages/issues/257
 .. _#258: https://github.com/jschneier/django-storages/pull/258
 
