@@ -14,11 +14,12 @@ from datetime import datetime
 from tempfile import SpooledTemporaryFile
 from shutil import copyfileobj
 
-from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured
+from django.core.files.base import File
+from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
 from django.utils._os import safe_join
 
-from storages.compat import Storage
 from storages.utils import setting
 
 from dropbox.client import DropboxClient
@@ -46,6 +47,7 @@ class DropBoxFile(File):
         return self._file
 
 
+@deconstructible
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
 

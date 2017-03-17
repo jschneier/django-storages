@@ -1,7 +1,9 @@
 import os
+import warnings
 
 from django.conf import settings
-from storages.compat import FileSystemStorage
+from django.core.files.storage import FileSystemStorage
+from django.utils.deconstruct import deconstructible
 
 __doc__ = """
 I needed to efficiently create a mirror of a directory tree (so that
@@ -24,8 +26,14 @@ The rationale is that unmodified files will exist in their original location,
 e.g. /htdocs/example.com/image.jpg and modified files will be stored in
 a temporary directory, e.g. /tmp/image.jpg.
 """
+warnings.warn(
+    'SymlinkOrCopyStorage is unmaintained and will be removed in the next django-storages version.'
+    'See https://github.com/jschneier/django-storages/issues/202',
+    PendingDeprecationWarning
+)
 
 
+@deconstructible
 class SymlinkOrCopyStorage(FileSystemStorage):
     """Stores symlinks to files instead of actual files whenever possible
 

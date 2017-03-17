@@ -4,100 +4,90 @@ Amazon S3
 Usage
 *****
 
-There is one backend for interacting with S3 based on the boto library. A legacy backend backed on the Amazon S3 Python library was removed in version 1.2.
+There are two backends for interacting with Amazon's S3, one based
+on boto3 and an older one based on boto3. It is highly recommended that all
+new projects (at least) use the boto3 backend since it has many bug fixes
+and performance improvements over boto and is the future; boto is lightly
+maintained if at all. The boto based backed will continue to be maintained
+for the forseeable future.
+
+For historical completeness an extreme legacy backend was removed
+in version 1.2
 
 Settings
 --------
 
-To use s3boto set::
+To use boto3 set::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+To use the boto version of the backend set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
-``AWS_ACCESS_KEY_ID``
-
-Your Amazon Web Services access key, as a string.
-
-``AWS_SECRET_ACCESS_KEY``
-
-Your Amazon Web Services secret access key, as a string.
-
-``AWS_STORAGE_BUCKET_NAME``
-
-Your Amazon Web Services storage bucket name, as a string.
-
-``AWS_AUTO_CREATE_BUCKET`` (optional)
-
-If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
-
-
-``AWS_HEADERS`` (optional)
-
-If you'd like to set headers sent with each file of the storage::
-
-    # see http://developer.yahoo.com/performance/rules.html#expires
-    AWS_HEADERS = {
-        'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
-        'Cache-Control': 'max-age=86400',
-    }
-
-``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
-
-Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
-authentication`_ from generated URLs. This can be useful if your S3 buckets are
-public.
-
-``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
-
-The number of seconds that a generated URL with `query parameter
-authentication`_ is valid for.
-
-
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto.S3Boto3Storage'
 
+Available are numerous settings. It should be especially noted the following:
+
+``AWS_ACCESS_KEY_ID``
+    Your Amazon Web Services access key, as a string.
+
+``AWS_SECRET_ACCESS_KEY``
+    Your Amazon Web Services secret access key, as a string.
+
+``AWS_STORAGE_BUCKET_NAME``
+    Your Amazon Web Services storage bucket name, as a string.
+
+``AWS_DEFAULT_ACL`` (optional)
+    If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
+
+``AWS_AUTO_CREATE_BUCKET`` (optional)
+    If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
+
+``AWS_HEADERS`` (optional)
+    If you'd like to set headers sent with each file of the storage::
+
+        # see http://developer.yahoo.com/performance/rules.html#expires
+        AWS_HEADERS = {
+            'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
+            'Cache-Control': 'max-age=86400',
+        }
+
+``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
+    Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
+    authentication`_ from generated URLs. This can be useful if your S3 buckets are
+    public.
+
+``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
+    The number of seconds that a generated URL with `query parameter
+    authentication`_ is valid for.
+
+``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
+    Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
+
+``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
+    By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
+
+``AWS_LOCATION`` (optional: default is `''`)
+    A path prefix that will be prepended to all uploads
 
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
-``AWS_S3_ENCRYPTION`` (optional; default is False)
+CloudFront
+~~~~~~~~~~
 
-Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
+If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
+to serve those files using that::
 
-Fields
-------
+    AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
 
-Once you're done, default_storage will be the S3 storage::
+Keep in mind you'll have to configure CloudFront to use the proper bucket as an
+origin manually for this to work.
 
-    >>> from django.core.files.storage import default_storage
-    >>> print default_storage.__class__
-    <class 'S3Storage.S3Storage'>
-
-The above doesn't seem to be true for django 1.3+ instead look at::
-
-    >>> from django.core.files.storage import default_storage
-    >>> print default_storage.connection
-    S3Connection:s3.amazonaws.com
-
-This way, if you define a new FileField, it will use the S3 storage::
-
-    >>> from django.db import models
-    >>> class Resume(models.Model):
-    ...     pdf = models.FileField(upload_to='pdfs')
-    ...     photos = models.ImageField(upload_to='photos')
-    ...
-    >>> resume = Resume()
-    >>> print resume.pdf.storage
-    <S3Storage.S3Storage object at ...>
-
-Tests
-*****
-
-Initialization::
-
-    >>> from django.core.files.storage import default_storage
-    >>> from django.core.files.base import ContentFile
-    >>> from django.core.cache import cache
-    >>> from models import MyStorage
+If you need to use multiple storages that are served via CloudFront, pass the
+`custom_domain` parameter to their constructors.
 
 Storage
 -------

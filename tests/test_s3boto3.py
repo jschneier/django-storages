@@ -1,17 +1,18 @@
+from datetime import datetime
 import gzip
-import unittest
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
 
 from django.test import TestCase
+from django.conf import settings
 from django.core.files.base import ContentFile
-import django
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.timezone import is_aware, utc
 
 from botocore.exceptions import ClientError
 
-from storages.compat import urlparse
 from storages.backends import s3boto3
 
 __all__ = (
@@ -21,8 +22,7 @@ __all__ = (
 
 
 class S3Boto3TestCase(TestCase):
-    @mock.patch('storages.backends.s3boto3.resource')
-    def setUp(self, resource):
+    def setUp(self):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connection = mock.MagicMock()
 
@@ -30,20 +30,20 @@ class S3Boto3TestCase(TestCase):
 class SafeJoinTest(TestCase):
     def test_normal(self):
         path = s3boto3.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
-        self.assertEquals(path, "path/to/somewhere/other/path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
 
     def test_with_dot(self):
         path = s3boto3.safe_join("", "path/./somewhere/../other", "..",
                                  ".", "to/./somewhere")
-        self.assertEquals(path, "path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere")
 
     def test_base_url(self):
         path = s3boto3.safe_join("base_url", "path/to/somewhere")
-        self.assertEquals(path, "base_url/path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_base_url_with_slash(self):
         path = s3boto3.safe_join("base_url/", "path/to/somewhere")
-        self.assertEquals(path, "base_url/path/to/somewhere")
+        self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_suspicious_operation(self):
         self.assertRaises(ValueError,
@@ -54,14 +54,14 @@ class SafeJoinTest(TestCase):
         Test safe_join with paths that end with a trailing slash.
         """
         path = s3boto3.safe_join("base_url/", "path/to/somewhere/")
-        self.assertEquals(path, "base_url/path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
 
     def test_trailing_slash_multi(self):
         """
         Test safe_join with multiple paths that end with a trailing slash.
         """
         path = s3boto3.safe_join("base_url/", "path/to/" "somewhere/")
-        self.assertEquals(path, "base_url/path/to/somewhere/")
+        self.assertEqual(path, "base_url/path/to/somewhere/")
 
 
 class S3Boto3StorageTests(S3Boto3TestCase):
@@ -118,10 +118,12 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.put.assert_called_with(
-            Body=content,
-            ContentType='text/plain',
-            ACL=self.storage.default_acl,
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+                'ACL': self.storage.default_acl,
+            }
         )
 
     def test_storage_save_gzip(self):
@@ -133,15 +135,18 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         content = ContentFile("I should be gzip'd")
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
-        obj.put.assert_called_with(
-            Body=mock.ANY,
-            ContentType='text/css',
-            ContentEncoding='gzip',
-            ACL=self.storage.default_acl
+        obj.upload_fileobj.assert_called_with(
+            mock.ANY,
+            ExtraArgs={
+                'ContentType': 'text/css',
+                'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
+            }
         )
-        body = obj.put.call_args[1]['Body']
-        zfile = gzip.GzipFile(mode='rb', fileobj=body)
-        self.assertEquals(zfile.read(), b"I should be gzip'd")
+        args, kwargs = obj.upload_fileobj.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
 
     def test_compress_content_len(self):
         """
@@ -268,12 +273,37 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'file.txt'
         self.assertEqual(self.storage.size(name), obj.content_length)
 
+    def test_storage_mtime(self):
+        # Test both USE_TZ cases
+        for use_tz in (True, False):
+            with self.settings(USE_TZ=use_tz):
+                self._test_storage_mtime(use_tz)
+
+    def _test_storage_mtime(self, use_tz):
+        obj = self.storage.bucket.Object.return_value
+        obj.last_modified = datetime.now(utc)
+
+        name = 'file.txt'
+        self.assertFalse(
+            is_aware(self.storage.modified_time(name)),
+            'Naive datetime object expected from modified_time()'
+        )
+
+        self.assertIs(
+            settings.USE_TZ,
+            is_aware(self.storage.get_modified_time(name)),
+            '%s datetime object expected from get_modified_time() when USE_TZ=%s' % (
+                ('Naive', 'Aware')[settings.USE_TZ],
+                settings.USE_TZ
+            )
+        )
+
     def test_storage_url(self):
         name = 'test_storage_size.txt'
         url = 'http://aws.amazon.com/%s' % name
         self.storage.bucket.meta.client.generate_presigned_url.return_value = url
         self.storage.bucket.name = 'bucket'
-        self.assertEquals(self.storage.url(name), url)
+        self.assertEqual(self.storage.url(name), url)
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
@@ -282,7 +312,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         custom_expire = 123
 
-        self.assertEquals(self.storage.url(name, expire=custom_expire), url)
+        self.assertEqual(self.storage.url(name, expire=custom_expire), url)
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
@@ -298,16 +328,9 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                          "/whacky%20%26%20filename.mp4")
         self.assertFalse(self.storage.bucket.meta.client.generate_presigned_url.called)
 
-    @unittest.skipIf(django.VERSION >= (1, 8),
-                     'Only test backward compat of max_length for versions before 1.8')
-    def test_max_length_compat_okay(self):
-        self.storage.file_overwrite = False
-        self.storage.exists = lambda name: False
-        self.storage.get_available_name('gogogo', max_length=255)
-
     def test_strip_signing_parameters(self):
         expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
-        self.assertEquals(self.storage._strip_signing_parameters(
+        self.assertEqual(self.storage._strip_signing_parameters(
             '%s?X-Amz-Date=12345678&X-Amz-Signature=Signature' % expected), expected)
-        self.assertEquals(self.storage._strip_signing_parameters(
+        self.assertEqual(self.storage._strip_signing_parameters(
             '%s?expires=12345678&signature=Signature' % expected), expected)

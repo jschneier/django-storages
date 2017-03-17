@@ -20,9 +20,12 @@ import ftplib
 
 from django.conf import settings
 from django.core.files.base import File
+from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.deconstruct import deconstructible
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.six import BytesIO
 
-from storages.compat import urlparse, BytesIO, Storage
 from storages.utils import setting
 
 
@@ -30,6 +33,7 @@ class FTPStorageException(Exception):
     pass
 
 
+@deconstructible
 class FTPStorage(Storage):
     """FTP Storage class for Django pluggable storage system."""
 

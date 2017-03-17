@@ -6,12 +6,16 @@ from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
 from django.core.files.base import File
+from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
+from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from django.utils.six import BytesIO
+from django.utils.six.moves.urllib import parse as urlparse
 
 try:
     from boto import __version__ as boto_version
-    from boto.s3.connection import S3Connection, SubdomainCallingFormat
+    from boto.s3.connection import S3Connection, SubdomainCallingFormat, Location
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
     from boto.utils import parse_ts, ISO8601
@@ -20,7 +24,6 @@ except ImportError:
                                "See https://github.com/boto/boto")
 
 from storages.utils import setting
-from storages.compat import urlparse, BytesIO, deconstructible, Storage
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -215,6 +218,7 @@ class S3BotoStorage(Storage):
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
     reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
     location = setting('AWS_LOCATION', '')
+    origin = setting('AWS_ORIGIN', Location.DEFAULT)
     encryption = setting('AWS_S3_ENCRYPTION', False)
     custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
     calling_format = setting('AWS_S3_CALLING_FORMAT', SubdomainCallingFormat())
@@ -325,7 +329,7 @@ class S3BotoStorage(Storage):
             return self.connection.get_bucket(name, validate=self.auto_create_bucket)
         except self.connection_response_error:
             if self.auto_create_bucket:
-                bucket = self.connection.create_bucket(name)
+                bucket = self.connection.create_bucket(name, location=self.origin)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
@@ -369,7 +373,11 @@ class S3BotoStorage(Storage):
     def _compress_content(self, content):
         """Gzip a given string content."""
         zbuf = BytesIO()
-        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
+        #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
+        #  This means each time a file is compressed it changes even if the other contents don't change
+        #  For S3 this defeats detection of changes using MD5 sums on gzipped files
+        #  Fixing the mtime at 0.0 at compression time avoids this problem
+        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf, mtime=0.0)
         try:
             zfile.write(force_bytes(content.read()))
         finally:

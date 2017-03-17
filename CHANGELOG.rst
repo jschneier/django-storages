@@ -1,6 +1,43 @@
 django-storages change log
 ==========================
 
+1.5.2 (2017-01-13)
+******************
+
+* Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
+* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment (`#238`_ thanks @jdufresne)
+* Fix trying to localize a naive datetime when ``settings.USE_TZ`` is ``False`` in ``S3Boto3Storage.modified_time``.
+  (thanks to @tomchuk and @piglei for the reports and the patches, `#235`_, `#234`_)
+* Fix automatic bucket creation in ``S3Boto3Storage`` when ``AWS_AUTO_CREATE_BUCKET`` is ``True`` (`#196`_ thanks @linuxlewis)
+* Improve the documentation for the S3 backends (thanks to various contributors!)
+
+.. _#204: https://github.com/jschneier/django-storages/pull/204
+.. _#238: https://github.com/jschneier/django-storages/pull/238
+.. _#234: https://github.com/jschneier/django-storages/issues/234
+.. _#235: https://github.com/jschneier/django-storages/pull/235
+.. _#196: https://github.com/jschneier/django-storages/pull/196
+
+1.5.1 (2016-09-13)
+******************
+
+* **Drop support for Django 1.7** (`#185`_)
+* **Deprecate hashpath, image, overwrite, mogile, symlinkorcopy, database, mogile, couchdb.**
+  See (`issue #202`_) to discuss maintenance going forward
+* Use a fixed ``mtime`` argument for ``GzipFile`` in ``S3BotoStorage`` and ``S3Boto3Storage`` to ensure
+  a stable output for gzipped files
+* Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
+  allowing files greater than 5GB to be put on S3 (`#194`_ , `#201`_)
+* Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
+* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_) thanks @leonsmith
+
+.. _issue #202: https://github.com/jschneier/django-storages/issues/202
+.. _#201: https://github.com/jschneier/django-storages/pull/201
+.. _#194: https://github.com/jschneier/django-storages/issues/194
+.. _#190: https://github.com/jschneier/django-storages/pull/190
+.. _#189: https://github.com/jschneier/django-storages/issues/189
+.. _#185: https://github.com/jschneier/django-storages/pull/185
+.. _#181: https://github.com/jschneier/django-storages/pull/181
+
 1.5.0 (2016-08-02)
 ******************
 

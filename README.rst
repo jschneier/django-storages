@@ -33,7 +33,9 @@ please consult the documentation for a comprehensive list.
 About
 =====
 django-storages is a project to provide a variety of storage backends in a single library.
-This library is compatible with Django >= 1.7. It should also works with 1.6.2+ but no guarantees are made.
+
+This library is usually compatible with the currently supported versions of
+Django. Check the trove classifiers in setup.py to be sure.
 
 History
 =======
@@ -52,7 +54,7 @@ Issues are tracked via GitHub issues at the `project issue page
 
 Documentation
 =============
-The original documentation for django-storages is located at http://django-storages.readthedocs.org/.
+The original documentation for django-storages is located at https://django-storages.readthedocs.org/.
 Stay tuned for forthcoming documentation updates.
 
 Contributing

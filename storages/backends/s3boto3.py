@@ -4,12 +4,17 @@ import mimetypes
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
-from django.core.files.base import File
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
+from django.core.files.base import File
+from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.six import BytesIO
+from django.utils.timezone import localtime, is_naive
 
 try:
-    from boto3 import resource
+    import boto3.session
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
@@ -18,9 +23,8 @@ except ImportError:
                                "See https://github.com/boto/boto3")
 
 from storages.utils import setting
-from storages.compat import urlparse, BytesIO, deconstructible, Storage
 
-boto3_version_info = tuple([int(i) for i in boto3_version.split('-')[0].split('.')])
+boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
 if boto3_version_info[:2] < (1, 2):
     raise ImproperlyConfigured("The installed Boto3 library must be 1.2.0 or "
@@ -119,7 +123,7 @@ class S3Boto3StorageFile(File):
                 self._file.write(self.obj.get()['Body'].read())
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
-                self._file = GzipFile(mode=self._mode, fileobj=self._file)
+                self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
         return self._file
 
     def _set_file(self, value):
@@ -195,7 +199,6 @@ class S3Boto3Storage(Storage):
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
-    connection_class = staticmethod(resource)
     connection_service_name = 's3'
     default_content_type = 'application/octet-stream'
     connection_response_error = ClientError
@@ -281,7 +284,8 @@ class S3Boto3Storage(Storage):
         # urllib/requests libraries read. See https://github.com/boto/boto3/issues/338
         # and http://docs.python-requests.org/en/latest/user/advanced/#proxies
         if self._connection is None:
-            self._connection = self.connection_class(
+            session = boto3.session.Session()
+            self._connection = session.resource(
                 self.connection_service_name,
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
@@ -309,7 +313,7 @@ class S3Boto3Storage(Storage):
         """
         if self.preload_metadata and not self._entries:
             self._entries = dict((self._decode_name(entry.key), entry)
-                                 for entry in self.bucket.objects.filter(prefix=self.location))
+                                 for entry in self.bucket.objects.filter(Prefix=self.location))
         return self._entries
 
     def _get_access_keys(self):
@@ -343,6 +347,8 @@ class S3Boto3Storage(Storage):
                                                "region than we are connecting to. Set "
                                                "the region to connect to by setting "
                                                "AWS_S3_REGION_NAME to the correct region." % name)
+
+                elif err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                     # Notes: When using the us-east-1 Standard endpoint, you can create
                     # buckets in other regions. The same is not true when hitting region specific
                     # endpoints. However, when you create the bucket not in the same region, the
@@ -458,7 +464,7 @@ class S3Boto3Storage(Storage):
         if self.default_acl:
             put_parameters['ACL'] = self.default_acl
         content.seek(0, os.SEEK_SET)
-        obj.put(Body=content, **put_parameters)
+        obj.upload_fileobj(content, ExtraArgs=put_parameters)
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -511,14 +517,29 @@ class S3Boto3Storage(Storage):
             return 0
         return self.bucket.Object(self._encode_name(name)).content_length
 
-    def modified_time(self, name):
+    def get_modified_time(self, name):
+        """
+        Returns an (aware) datetime object containing the last modified time if
+        USE_TZ is True, otherwise returns a naive datetime in the local timezone.
+        """
         name = self._normalize_name(self._clean_name(name))
         entry = self.entries.get(name)
         # only call self.bucket.Object() if the key is not found
         # in the preloaded metadata.
         if entry is None:
             entry = self.bucket.Object(self._encode_name(name))
-        return entry.last_modified
+        if setting('USE_TZ'):
+            # boto3 returns TZ aware timestamps
+            return entry.last_modified
+        else:
+            return localtime(entry.last_modified).replace(tzinfo=None)
+
+    def modified_time(self, name):
+        """Returns a naive datetime object containing the last modified time."""
+        # If USE_TZ=False then get_modified_time will return a naive datetime
+        # so we just return that, else we have to localize and strip the tz
+        mtime = self.get_modified_time(name)
+        return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
