@@ -86,6 +86,15 @@ Available are numerous settings. It should be especially noted the following:
 ``GZIP_CONTENT_TYPES`` (optional: default is ``text/css``, ``text/javascript``, ``application/javascript``, ``application/x-javascript``, ``image/svg+xml``)
     When ``AWS_IS_GZIPPED`` is set to ``True`` the content types which will be gzipped
 
+``AWS_S3_REGION_NAME`` (optional: default is ``None``)
+    Name of the AWS S3 region to use (eg. eu-west-1)
+
+``AWS_S3_USE_SSL`` (optional: default is ``True``)
+    Whether or not to use SSL when connecting to S3.
+
+``AWS_S3_ENDPOINT_URL`` (optional: default is ``None``)
+    Custom S3 URL to use when connecting to S3, including scheme. Overrides ``AWS_S3_REGION_NAME`` and ``AWS_S3_USE_SSL``.
+
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
 CloudFront
