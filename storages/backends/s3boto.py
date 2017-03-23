@@ -18,7 +18,8 @@ try:
     from boto.s3.connection import S3Connection, SubdomainCallingFormat, Location
     from boto.exception import S3ResponseError
     from boto.s3.key import Key as S3Key
-    from boto.utils import parse_ts, ISO8601
+    from boto.compat import six
+    from boto.utils import parse_ts, ISO8601, get_instance_metadata
 except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
@@ -208,6 +209,7 @@ class S3BotoStorage(Storage):
 
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
+    security_token = setting('AWS_S3_SECURITY_TOKEN', None)
     file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
     headers = setting('AWS_HEADERS', {})
     bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
@@ -269,7 +271,8 @@ class S3BotoStorage(Storage):
         self._connection = None
 
         if not self.access_key and not self.secret_key:
-            self.access_key, self.secret_key = self._get_access_keys()
+            self.access_key, self.secret_key,
+            self.security_token = self._get_access_keys()
 
     @property
     def connection(self):
@@ -277,6 +280,7 @@ class S3BotoStorage(Storage):
             self._connection = self.connection_class(
                 self.access_key,
                 self.secret_key,
+                security_token=self.security_token,
                 is_secure=self.use_ssl,
                 calling_format=self.calling_format,
                 host=self.host,
@@ -311,15 +315,38 @@ class S3BotoStorage(Storage):
         Gets the access keys to use when accessing S3. If none
         are provided to the class in the constructor or in the
         settings then get them from the environment variables.
+        Lastly, attempt to retrieve the keys from instance
+        metadata.
         """
         def lookup_env(names):
             for name in names:
                 value = os.environ.get(name)
                 if value:
                     return value
+
+        def convert_key_to_str(key):
+            if isinstance(key, six.text_type):
+                # The secret key must be bytes and not unicode to work
+                # properly with hmac.new.
+                return str(key)
+            return key
+
         access_key = self.access_key or lookup_env(self.access_key_names)
         secret_key = self.secret_key or lookup_env(self.secret_key_names)
-        return access_key, secret_key
+        security_token = None
+
+        if not access_key and not secret_key:
+            metadata = get_instance_metadata(
+                data='meta-data/iam/security-credentials/')
+
+            if metadata:
+                # Assume there is only one role
+                security = list(metadata.values())[0]
+                access_key = security['AccessKeyId']
+                secret_key = convert_key_to_str(security['SecretAccessKey'])
+                security_token = security['Token']
+
+        return access_key, secret_key, security_token
 
     def _get_or_create_bucket(self, name):
         """
