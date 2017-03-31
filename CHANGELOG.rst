@@ -6,7 +6,10 @@ django-storages change log
 
 * **Remove backends deprecated in v1.5.1** (`#280`_)
 * Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
+* Add support for reading ``AWS_SESSION_TOKEN`` and ``AWS_SECURITY_TOKEN`` from the environment
+  to ``S3Boto3Storage`` and ``S3BotoStorage``. (`#283`_ thanks @bxm156)
 
+.. _#283: https://github.com/jschneier/django-storages/pull/280
 .. _#280: https://github.com/jschneier/django-storages/pull/280
 .. _#257: https://github.com/jschneier/django-storages/issues/257
 .. _#258: https://github.com/jschneier/django-storages/pull/258
