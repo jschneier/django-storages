@@ -95,6 +95,9 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_ENDPOINT_URL`` (optional: default is ``None``)
     Custom S3 URL to use when connecting to S3, including scheme. Overrides ``AWS_S3_REGION_NAME`` and ``AWS_S3_USE_SSL``.
 
+``AWS_S3_CALLING_FORMAT`` (optional: default is ``SubdomainCallingFormat()``)
+    Defines the S3 calling format to use to connect to the static bucket.
+
 .. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
 CloudFront
