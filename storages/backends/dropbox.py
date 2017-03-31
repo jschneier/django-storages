@@ -18,12 +18,11 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils._os import safe_join
-
 from storages.utils import setting
 
 from dropbox.client import DropboxClient
 from dropbox.rest import ErrorResponse
+from os.path import join
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 
@@ -62,7 +61,7 @@ class DropBoxStorage(Storage):
     def _full_path(self, name):
         if name == '/':
             name = ''
-        return safe_join(self.root_path, name)
+        return join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
         self.client.file_delete(self._full_path(name))
