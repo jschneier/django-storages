@@ -269,6 +269,7 @@ class S3BotoStorage(Storage):
         self._bucket = None
         self._connection = None
 
+        self.security_token = None
         if not self.access_key and not self.secret_key:
             self.access_key, self.secret_key = self._get_access_keys()
             self.security_token = self._get_security_token()
