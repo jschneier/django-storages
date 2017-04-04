@@ -1,10 +1,12 @@
 import os
 import posixpath
 import mimetypes
+import time
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.utils import timezone
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -499,7 +501,10 @@ class S3BotoStorage(Storage):
         if entry is None:
             entry = self.bucket.get_key(self._encode_name(name))
         # Parse the last_modified string to a local datetime object.
-        return parse_ts(entry.last_modified)
+        # return parse_ts(entry.last_modified)
+        modified = timezone.datetime.strptime(str(entry.last_modified), '%Y-%m-%dT%H:%M:%S.000Z')
+        modified += timezone.timedelta(hours=time.localtime().tm_gmtoff / 3600)
+        return modified
 
     def url(self, name, headers=None, response_headers=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
