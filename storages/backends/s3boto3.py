@@ -393,9 +393,8 @@ class S3Boto3Storage(Storage):
         # a workaround here.
         if name.endswith('/') and not clean_name.endswith('/'):
             # Add a trailing slash as it was stripped.
-            return clean_name + '/'
-        else:
-            return clean_name
+            clean_name += '/'
+        return clean_name
 
     def _normalize_name(self, name):
         """

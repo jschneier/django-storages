@@ -51,7 +51,7 @@ def safe_join(base, *paths):
 
     final_path = base_path
     for path in paths:
-        final_path = urlparse.urljoin(final_path.rstrip('/') + "/", path)
+        final_path = urlparse.urljoin(final_path.rstrip('/') + '/', path)
 
     # Ensure final_path starts with base_path and that the next character after
     # the final path is '/' (or nothing, in which case final_path must be
@@ -114,8 +114,8 @@ class S3BotoStorageFile(File):
         if self._file is None:
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
-                suffix=".S3BotoStorageFile",
-                dir=setting("FILE_UPLOAD_TEMP_DIR", None)
+                suffix='.S3BotoStorageFile',
+                dir=setting('FILE_UPLOAD_TEMP_DIR', None)
             )
             if 'r' in self._mode:
                 self._is_dirty = False
@@ -132,12 +132,12 @@ class S3BotoStorageFile(File):
 
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:
-            raise AttributeError("File was not opened in read mode.")
+            raise AttributeError('File was not opened in read mode.')
         return super(S3BotoStorageFile, self).read(*args, **kwargs)
 
     def write(self, content, *args, **kwargs):
         if 'w' not in self._mode:
-            raise AttributeError("File was not opened in write mode.")
+            raise AttributeError('File was not opened in write mode.')
         self._is_dirty = True
         if self._multipart is None:
             provider = self.key.bucket.connection.provider
@@ -165,9 +165,6 @@ class S3BotoStorageFile(File):
         return length
 
     def _flush_write_buffer(self):
-        """
-        Flushes the write buffer.
-        """
         if self._buffer_file_size:
             self._write_counter += 1
             self.file.seek(0)
@@ -180,7 +177,7 @@ class S3BotoStorageFile(File):
             self._flush_write_buffer()
             self._multipart.complete_upload()
         else:
-            if not self._multipart is None:
+            if self._multipart is not None:
                 self._multipart.cancel_upload()
         self.key.close()
         if self._file is not None:
@@ -341,10 +338,10 @@ class S3BotoStorage(Storage):
                 bucket = self.connection.create_bucket(name, location=self.origin)
                 bucket.set_acl(self.bucket_acl)
                 return bucket
-            raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
-                                       "can be automatically created by "
-                                       "setting AWS_AUTO_CREATE_BUCKET to "
-                                       "``True``." % name)
+            raise ImproperlyConfigured('Bucket %s does not exist. Buckets '
+                                       'can be automatically created by '
+                                       'setting AWS_AUTO_CREATE_BUCKET to '
+                                       '``True``.' % name)
 
     def _clean_name(self, name):
         """
@@ -471,9 +468,9 @@ class S3BotoStorage(Storage):
         dirlist = self.bucket.list(self._encode_name(name))
         files = []
         dirs = set()
-        base_parts = name.split("/")[:-1]
+        base_parts = name.split('/')[:-1]
         for item in dirlist:
-            parts = item.name.split("/")
+            parts = item.name.split('/')
             parts = parts[len(base_parts):]
             if len(parts) == 1:
                 # File
@@ -506,7 +503,7 @@ class S3BotoStorage(Storage):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
-            return "%s//%s/%s" % (self.url_protocol,
+            return '%s//%s/%s' % (self.url_protocol,
                                   self.custom_domain, filepath_to_uri(name))
 
         if expire is None:
