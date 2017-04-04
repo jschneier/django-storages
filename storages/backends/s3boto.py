@@ -12,6 +12,7 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
 from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
+from django.utils import timezone as tz
 
 try:
     from boto import __version__ as boto_version
@@ -440,6 +441,12 @@ class S3BotoStorage(Storage):
                                    reduced_redundancy=self.reduced_redundancy,
                                    rewind=True, **kwargs)
 
+    def _get_key(self, name):
+        name = self._normalize_name(self._clean_name(name))
+        if self.entries:
+            return self.entries[name]
+        return self.bucket.get_key(self._encode_name(name))
+
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
         self.bucket.delete_key(self._encode_name(name))
@@ -452,11 +459,7 @@ class S3BotoStorage(Storage):
             except ImproperlyConfigured:
                 return False
 
-        name = self._normalize_name(self._clean_name(name))
-        if self.entries:
-            return name in self.entries
-        k = self.bucket.new_key(self._encode_name(name))
-        return k.exists()
+        return self._get_key(name) is not None
 
     def listdir(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -481,13 +484,7 @@ class S3BotoStorage(Storage):
         return list(dirs), files
 
     def size(self, name):
-        name = self._normalize_name(self._clean_name(name))
-        if self.entries:
-            entry = self.entries.get(name)
-            if entry:
-                return entry.size
-            return 0
-        return self.bucket.get_key(self._encode_name(name)).size
+        return self._get_key(name).size
 
     def modified_time(self, name):
         name = self._normalize_name(self._clean_name(name))

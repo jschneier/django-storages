@@ -219,13 +219,11 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.assertTrue(self.storage.exists(''))
 
     def test_storage_exists(self):
-        key = self.storage.bucket.new_key.return_value
-        key.exists.return_value = True
+        self.storage.bucket.get_key.return_value = mock.MagicMock(spec=Key)
         self.assertTrue(self.storage.exists("file.txt"))
 
     def test_storage_exists_false(self):
-        key = self.storage.bucket.new_key.return_value
-        key.exists.return_value = False
+        self.storage.bucket.get_key.return_value = None
         self.assertFalse(self.storage.exists("file.txt"))
 
     def test_storage_delete(self):
