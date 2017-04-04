@@ -326,3 +326,26 @@ class S3BotoStorageTests(S3BotoTestCase):
             self.storage.save(name, content)
             self.assertEqual(self.storage.modified_time(name),
                              parse_ts(utcnow.strftime(ISO8601)))
+
+    @mock.patch('storages.backends.s3boto.S3BotoStorage._get_key')
+    def test_get_modified_time(self, getkey):
+        utcnow = datetime.datetime.utcnow().strftime(ISO8601)
+
+        with self.settings(USE_TZ=True, TIME_ZONE='America/New_York'):
+            key = mock.MagicMock(spec=Key)
+            key.last_modified = utcnow
+            getkey.return_value = key
+            modtime = self.storage.get_modified_time('foo')
+            self.assertFalse(tz.is_naive(modtime))
+            self.assertEqual(modtime,
+                             tz.make_aware(datetime.datetime.strptime(utcnow, ISO8601), tz.utc))
+
+        with self.settings(USE_TZ=False, TIME_ZONE='America/New_York'):
+            key = mock.MagicMock(spec=Key)
+            key.last_modified = utcnow
+            getkey.return_value = key
+            modtime = self.storage.get_modified_time('foo')
+            self.assertTrue(tz.is_naive(modtime))
+            self.assertEqual(modtime,
+                             tz.make_naive(tz.make_aware(
+                                datetime.datetime.strptime(utcnow, ISO8601), tz.utc)))

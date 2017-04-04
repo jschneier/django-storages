@@ -486,6 +486,10 @@ class S3BotoStorage(Storage):
     def size(self, name):
         return self._get_key(name).size
 
+    def get_modified_time(self, name):
+        dt = tz.make_aware(parse_ts(self._get_key(name).last_modified), tz.utc)
+        return dt if setting('USE_TZ') else tz.make_naive(dt)
+
     def modified_time(self, name):
         dt = tz.make_aware(parse_ts(self._get_key(name).last_modified), tz.utc)
         return tz.make_naive(dt)
