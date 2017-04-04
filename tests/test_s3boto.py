@@ -8,6 +8,7 @@ import datetime
 from django.test import TestCase
 from django.core.files.base import ContentFile
 from django.utils.six.moves.urllib import parse as urlparse
+from django.utils import timezone as tz
 
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
@@ -320,7 +321,7 @@ class S3BotoStorageTests(S3BotoTestCase):
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
         utcnow = datetime.datetime.utcnow()
-        with mock.patch('storages.backends.s3boto.datetime') as mock_datetime:
+        with mock.patch('storages.backends.s3boto.datetime') as mock_datetime, self.settings(TIME_ZONE='UTC'):
             mock_datetime.utcnow.return_value = utcnow
             self.storage.save(name, content)
             self.assertEqual(self.storage.modified_time(name),

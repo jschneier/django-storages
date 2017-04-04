@@ -487,14 +487,8 @@ class S3BotoStorage(Storage):
         return self._get_key(name).size
 
     def modified_time(self, name):
-        name = self._normalize_name(self._clean_name(name))
-        entry = self.entries.get(name)
-        # only call self.bucket.get_key() if the key is not found
-        # in the preloaded metadata.
-        if entry is None:
-            entry = self.bucket.get_key(self._encode_name(name))
-        # Parse the last_modified string to a local datetime object.
-        return parse_ts(entry.last_modified)
+        dt = tz.make_aware(parse_ts(self._get_key(name).last_modified), tz.utc)
+        return tz.make_naive(dt)
 
     def url(self, name, headers=None, response_headers=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
