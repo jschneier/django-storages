@@ -8,7 +8,7 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
+from django.utils.encoding import force_text, smart_text, filepath_to_uri, force_bytes
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.six import BytesIO
 from django.utils.timezone import localtime, is_naive
@@ -409,7 +409,7 @@ class S3Boto3Storage(Storage):
                                       name)
 
     def _encode_name(self, name):
-        return smart_str(name, encoding=self.file_name_charset)
+        return smart_text(name, encoding=self.file_name_charset)
 
     def _decode_name(self, name):
         return force_text(name, encoding=self.file_name_charset)

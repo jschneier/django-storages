@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from datetime import datetime
 import gzip
 try:
@@ -161,7 +164,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         """
         Test opening a file in write mode
         """
-        name = 'test_open_for_writing.txt'
+        name = 'test_open_for_writïng.txt'
         content = 'new content'
 
         # Set the encryption flag used for multipart uploads
@@ -335,6 +338,18 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(parsed_url.path,
                          "/whacky%20%26%20filename.mp4")
         self.assertFalse(self.storage.bucket.meta.client.generate_presigned_url.called)
+
+    def test_special_characters(self):
+        self.storage.custom_domain = "mock.cloudfront.net"
+
+        name = "ãlöhâ.jpg"
+        content = ContentFile('new content')
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        url = self.storage.url(name)
+        parsed_url = urlparse.urlparse(url)
+        self.assertEqual(parsed_url.path, "/%C3%A3l%C3%B6h%C3%A2.jpg")
 
     def test_strip_signing_parameters(self):
         expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
