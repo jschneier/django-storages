@@ -8,8 +8,11 @@ django-storages change log
 * Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
 * Add support for reading ``AWS_SESSION_TOKEN`` and ``AWS_SECURITY_TOKEN`` from the environment
   to ``S3Boto3Storage`` and ``S3BotoStorage``. (`#283`_ thanks @bxm156)
+* Fix Boto3 non-ascii filenames on Python2.7 (`#216`_, `#217`_ thanks @AGASS007)
 
-.. _#283: https://github.com/jschneier/django-storages/pull/280
+.. _#217: https://github.com/jschneier/django-storages/pull/217
+.. _#216: https://github.com/jschneier/django-storages/issues/216
+.. _#283: https://github.com/jschneier/django-storages/pull/283
 .. _#280: https://github.com/jschneier/django-storages/pull/280
 .. _#257: https://github.com/jschneier/django-storages/issues/257
 .. _#258: https://github.com/jschneier/django-storages/pull/258
