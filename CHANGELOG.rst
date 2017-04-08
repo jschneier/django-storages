@@ -4,11 +4,13 @@ django-storages change log
 1.6.0 (XXXX-XX-XX)
 ******************
 
-* **Remove backends deprecated in v1.5.1** (`#280`_)
+* *Breaking: Remove backends deprecated in v1.5.1* (`#280`_)
 * Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
 * Add support for reading ``AWS_SESSION_TOKEN`` and ``AWS_SECURITY_TOKEN`` from the environment
   to ``S3Boto3Storage`` and ``S3BotoStorage``. (`#283`_ thanks @bxm156)
-* Fix Boto3 non-ascii filenames on Python2.7 (`#216`_, `#217`_ thanks @AGASS007)
+* Fix Boto3 non-ascii filenames on Python 2.7 (`#216`_, `#217`_ thanks @AGASS007)
+* Fix ``collectstatic`` timezone handling in and add ``get_modified_time`` to ``S3BotoStorage`` (`#290`_)
+* Add support for Django 1.11 (`#295`_ thanks @jdufresne)
 
 .. _#217: https://github.com/jschneier/django-storages/pull/217
 .. _#216: https://github.com/jschneier/django-storages/issues/216
@@ -16,6 +18,8 @@ django-storages change log
 .. _#280: https://github.com/jschneier/django-storages/pull/280
 .. _#257: https://github.com/jschneier/django-storages/issues/257
 .. _#258: https://github.com/jschneier/django-storages/pull/258
+.. _#290: https://github.com/jschneier/django-storages/pull/290
+.. _#295: https://github.com/jschneier/django-storages/pull/295
 
 1.5.2 (2017-01-13)
 ******************
@@ -36,8 +40,8 @@ django-storages change log
 1.5.1 (2016-09-13)
 ******************
 
-* **Drop support for Django 1.7** (`#185`_)
-* **Deprecate hashpath, image, overwrite, mogile, symlinkorcopy, database, mogile, couchdb.**
+* *Breaking: Drop support for Django 1.7* (`#185`_)
+* *Breaking: Deprecate hashpath, image, overwrite, mogile, symlinkorcopy, database, mogile, couchdb.*
   See (`issue #202`_) to discuss maintenance going forward
 * Use a fixed ``mtime`` argument for ``GzipFile`` in ``S3BotoStorage`` and ``S3Boto3Storage`` to ensure
   a stable output for gzipped files
@@ -63,7 +67,7 @@ django-storages change log
 * Tests, documentation, add `.readlines` for ``FTPStorage`` (`#175`_) thanks @ZuluPro
 * Tests and documentation for ``DropBoxStorage`` (`#174`_) thanks @ZuluPro
 * Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_) thanks @fladi
-* Enable CI testing of Python3.5 and fix test failure from api change (`#171`_) thanks @tnir
+* Enable CI testing of Python 3.5 and fix test failure from api change (`#171`_) thanks @tnir
 
 .. _#145: https://github.com/jschneier/django-storages/pull/145
 .. _#171: https://github.com/jschneier/django-storages/pull/171
@@ -100,7 +104,7 @@ django-storages change log
 * Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_) thanks @kmmbvnr
 * Allow easily specifying a custom expiry time when generating a url for ``S3BotoStorage`` (`#96`_) thanks @mattbriancon
 * Check for bucket existence when the empty path ('') is passed to ``storage.exists`` in ``S3BotoStorage`` -
-  this prevents a crash when running ``collecstatic -c`` on Django 1.9.1 (`#112`_) fixed in `#116`_ thanks @xblitz
+  this prevents a crash when running ``collectstatic -c`` on Django 1.9.1 (`#112`_) fixed in `#116`_ thanks @xblitz
 
 .. _#106: https://github.com/jschneier/django-storages/pull/106
 .. _#96: https://github.com/jschneier/django-storages/pull/96
@@ -128,7 +132,7 @@ django-storages change log
 1.3 (2015-08-14)
 ****************
 
-* **Drop Support for Django 1.5 and Python2.6**
+* *Breaking: Drop Support for Django 1.5 and Python 2.6*
 * Remove previously deprecated mongodb backend
 * Remove previously deprecated ``parse_ts_extended`` from s3boto storage
 * Add support for Django 1.8+ (`#36`__)
