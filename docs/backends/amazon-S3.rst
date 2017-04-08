@@ -107,6 +107,9 @@ If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
 to serve those files using that::
 
     AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
+**NOTE:** Django's `STATIC_URL` `must end in a slash`_ and the `AWS_S3_CUSTOM_DOMAIN` *must not*. It is best to set this variable indepedently of `STATIC_URL`.
+
+.. _must end in a slash: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
 
 Keep in mind you'll have to configure CloudFront to use the proper bucket as an
 origin manually for this to work.
