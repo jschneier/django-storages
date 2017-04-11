@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
@@ -52,6 +54,14 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertRaises(IOError, self.storage.open, self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
+    def test_open_read_nonexistent_unicode(self):
+        filename = 'ủⓝï℅ⅆℇ.txt'
+
+        self.storage._bucket = mock.MagicMock()
+        self.storage._bucket.get_blob.return_value = None
+
+        self.assertRaises(IOError, self.storage.open, filename)
+
     @mock.patch('storages.backends.gcloud.Blob')
     def test_open_write(self, MockBlob):
         """
@@ -78,6 +88,17 @@ class GCloudStorageTests(GCloudTestCase):
         content = ContentFile(data)
 
         self.storage.save(self.filename, content)
+
+        self.storage._client.get_bucket.assert_called_with(self.bucket_name)
+        self.storage._bucket.get_blob().upload_from_file.assert_called_with(
+            content, size=len(data))
+
+    def test_save(self):
+        data = 'This is some test ủⓝï℅ⅆℇ content.'
+        filename = 'ủⓝï℅ⅆℇ.txt'
+        content = ContentFile(data)
+
+        self.storage.save(filename, content)
 
         self.storage._client.get_bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
@@ -249,3 +270,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage.file_overwrite = False
         self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
+
+    def test_get_available_name_unicode(self):
+        filename = 'ủⓝï℅ⅆℇ.txt'
+        self.assertEqual(self.storage.get_available_name(filename), filename)
