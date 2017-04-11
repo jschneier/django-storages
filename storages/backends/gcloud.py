@@ -5,6 +5,7 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, force_text, smart_str
+from django.utils import timezone
 from storages.utils import clean_name, safe_join, setting
 
 try:
@@ -208,7 +209,13 @@ class GoogleCloudStorage(Storage):
     def modified_time(self, name):
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(self._encode_name(name))
-        return blob.updated
+        return timezone.make_naive(blob.updated)
+
+    def get_modified_time(self, name):
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        updated = blob.updated
+        return updated if setting('USE_TZ') else timezone.make_naive(updated)
 
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
