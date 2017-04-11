@@ -9,6 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 
+from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
 
 from storages.backends import gcloud
@@ -20,18 +21,15 @@ class GCloudTestCase(TestCase):
         self.filename = 'test_file.txt'
 
         self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
-        self.storage.client_class = mock.MagicMock
+
+        self.client_patcher = mock.patch('storages.backends.gcloud.Client')
+        self.client_patcher.start()
+
+    def tearDown(self):
+        self.client_patcher.stop()
 
 
 class GCloudStorageTests(GCloudTestCase):
-
-    def test_clean_name(self):
-        """
-        Test the base case of _clean_name - more tests are performed in
-        test_utils
-        """
-        path = self.storage._clean_name("path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere")
 
     def test_open_read(self):
         """
@@ -103,8 +101,7 @@ class GCloudStorageTests(GCloudTestCase):
     def test_exists_no_bucket(self):
         # exists('') should return False if the bucket doesn't exist
         self.storage._client = mock.MagicMock()
-        self.storage._client.get_bucket.side_effect = self.storage.not_found_exception(
-            'dang')
+        self.storage._client.get_bucket.side_effect = NotFound('dang')
         self.assertFalse(self.storage.exists(''))
 
     def test_exists_bucket(self):
@@ -116,8 +113,7 @@ class GCloudStorageTests(GCloudTestCase):
         # auto_create_bucket is configured
         self.storage.auto_create_bucket = True
         self.storage._client = mock.MagicMock()
-        self.storage._client.get_bucket.side_effect = self.storage.not_found_exception(
-            'dang')
+        self.storage._client.get_bucket.side_effect = NotFound('dang')
 
         self.assertTrue(self.storage.exists(''))
         self.storage._client.create_bucket.assert_called_with(self.bucket_name)
@@ -177,6 +173,12 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(self.storage.size(self.filename), size)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
+    def test_size_no_file(self):
+        self.storage._bucket = mock.MagicMock()
+        self.storage._bucket.get_blob.return_value = None
+
+        self.assertRaises(NotFound, self.storage.size, self.filename)
+
     def test_modified_time(self):
         date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
 
@@ -188,6 +190,12 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(self.storage.modified_time(self.filename), date)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
+    def test_modified_time_no_file(self):
+        self.storage._bucket = mock.MagicMock()
+        self.storage._bucket.get_blob.return_value = None
+
+        self.assertRaises(NotFound, self.storage.modified_time, self.filename)
+
     def test_url(self):
         url = 'https://example.com/mah-bukkit/{}'.format(self.filename)
 
@@ -198,6 +206,12 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertEqual(self.storage.url(self.filename), url)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
+
+    def test_url_no_file(self):
+        self.storage._bucket = mock.MagicMock()
+        self.storage._bucket.get_blob.return_value = None
+
+        self.assertRaises(NotFound, self.storage.url, self.filename)
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True

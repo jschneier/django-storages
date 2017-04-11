@@ -71,11 +71,6 @@ class GoogleCloudFile(File):
 
 @deconstructible
 class GoogleCloudStorage(Storage):
-    client_class = Client
-    file_class = GoogleCloudFile
-
-    not_found_exception = NotFound
-
     project_id = setting('GS_PROJECT_ID', None)
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
@@ -101,7 +96,7 @@ class GoogleCloudStorage(Storage):
     @property
     def client(self):
         if self._client is None:
-            self._client = self.client_class(
+            self._client = Client(
                 project=self.project_id,
                 credentials=self.credentials
             )
@@ -119,7 +114,7 @@ class GoogleCloudStorage(Storage):
         """
         try:
             return self.client.get_bucket(name)
-        except self.not_found_exception:
+        except NotFound:
             if self.auto_create_bucket:
                 bucket = self.client.create_bucket(name)
                 bucket.acl.all().grant(self.bucket_acl)
@@ -129,12 +124,6 @@ class GoogleCloudStorage(Storage):
                                        "can be automatically created by "
                                        "setting GS_AUTO_CREATE_BUCKET to "
                                        "``True``." % name)
-
-    def _clean_name(self, name):
-        """
-        Cleans the name so that Windows style paths work
-        """
-        return clean_name(name)
 
     def _normalize_name(self, name):
         """
@@ -148,25 +137,24 @@ class GoogleCloudStorage(Storage):
         return smart_str(name, encoding=self.file_name_charset)
 
     def _open(self, name, mode='rb'):
-        name = self._normalize_name(self._clean_name(name))
-        file_object = self.file_class(name, mode, self)
+        name = self._normalize_name(clean_name(name))
+        file_object = GoogleCloudFile(name, mode, self)
         if not file_object.blob:
             raise IOError('File does not exist: %s' % name)
         return file_object
 
     def _save(self, name, content):
-        cleaned_name = self._clean_name(name)
+        cleaned_name = clean_name(name)
         name = self._normalize_name(cleaned_name)
-        size = getattr(content, 'size')
 
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
-        file = self.file_class(encoded_name, 'rw', self)
-        file.blob.upload_from_file(content, size=size)
+        file = GoogleCloudFile(encoded_name, 'rw', self)
+        file.blob.upload_from_file(content, size=content.size)
         return cleaned_name
 
     def delete(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         self.bucket.delete_blob(self._encode_name(name))
 
     def exists(self, name):
@@ -177,11 +165,11 @@ class GoogleCloudStorage(Storage):
             except ImproperlyConfigured:
                 return False
 
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         return bool(self.bucket.get_blob(self._encode_name(name)))
 
     def listdir(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         # for the bucket.list and logic below name needs to end in /
         # But for the root path "" we leave it as an empty string
         if name and not name.endswith('/'):
@@ -203,24 +191,33 @@ class GoogleCloudStorage(Storage):
                 dirs.add(parts[0])
         return list(dirs), files
 
+    def _get_blob(self, name):
+        # Wrap google.cloud.storage's blob to raise if the file doesn't exist
+        blob = self.bucket.get_blob(name)
+
+        if blob is None:
+            raise NotFound('File does not exist')
+
+        return blob
+
     def size(self, name):
-        name = self._normalize_name(self._clean_name(name))
-        blob = self.bucket.get_blob(self._encode_name(name))
-        return blob.size if blob else 0
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        return blob.size
 
     def modified_time(self, name):
-        name = self._normalize_name(self._clean_name(name))
-        blob = self.bucket.get_blob(self._encode_name(name))
-        return blob.updated if blob else None
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        return blob.updated
 
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
-        name = self._normalize_name(self._clean_name(name))
-        blob = self.bucket.get_blob(self._encode_name(name))
-        return blob.public_url if blob else None
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        return blob.public_url
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:
-            name = self._clean_name(name)
+            name = clean_name(name)
             return name
         return super(GoogleCloudStorage, self).get_available_name(name, max_length)
