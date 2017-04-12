@@ -444,7 +444,7 @@ class S3BotoStorage(Storage):
     def _get_key(self, name):
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
-            return self.entries[name]
+            return self.entries.get(name)
         return self.bucket.get_key(self._encode_name(name))
 
     def delete(self, name):
