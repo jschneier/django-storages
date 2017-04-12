@@ -18,7 +18,7 @@ except ImportError:
 
 
 class GoogleCloudFile(File):
-    def __init__(self, name, mode, storage, buffer_size=None):
+    def __init__(self, name, mode, storage):
         self.name = name
         self._mode = mode
         self._storage = storage
@@ -197,7 +197,7 @@ class GoogleCloudStorage(Storage):
         blob = self.bucket.get_blob(name)
 
         if blob is None:
-            raise NotFound('File does not exist')
+            raise NotFound(u'File does not exist: {}'.format(name))
 
         return blob
 
