@@ -1,3 +1,13 @@
+# DEPRECATION NOTICE: This backend is deprecated in favour of the
+# "gcloud" backend.  This backend uses Google Cloud Storage's XML
+# Interoperable API which uses keyed-hash message authentication code
+# (a.k.a. developer keys) that are linked to your Google account.  The
+# interoperable API is really meant for migration to Google Cloud
+# Storage. The biggest problem with the developer keys is security and
+# privacy. Developer keys should not be shared with anyone as they can
+# be used to gain access to other Google Cloud Storage buckets linked
+# to your Google account.
+
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.deconstruct import deconstructible
 from django.utils.six import BytesIO
