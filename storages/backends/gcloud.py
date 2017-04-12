@@ -50,16 +50,19 @@ class GoogleCloudFile(File):
 
     file = property(_get_file, _set_file)
 
-    def read(self, *args, **kwargs):
+    def read(self, num_bytes=None):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return super(GoogleCloudFile, self).read(*args, **kwargs)
+        if num_bytes is not None:
+            return super(GoogleCloudFile, self).read(num_bytes)
+        else:
+            return super(GoogleCloudFile, self).read()
 
-    def write(self, content, *args, **kwargs):
+    def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super(GoogleCloudFile, self).write(force_bytes(content), *args, **kwargs)
+        return super(GoogleCloudFile, self).write(force_bytes(content))
 
     def close(self):
         if self._file is not None:
