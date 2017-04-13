@@ -23,9 +23,9 @@ hasn't been released yet) then the magic incantation you are looking for is::
   pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
 
 Once that is done add ``storages`` to your ``INSTALLED_APPS`` and set ``DEFAULT_FILE_STORAGE`` to the
-backend of your choice. If, for example, you want to use the s3boto backend you would set::
+backend of your choice. If, for example, you want to use the boto3 backend you would set::
 
-  DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+  DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 There are also a number of settings available to control how each storage backend functions,
 please consult the documentation for a comprehensive list.
