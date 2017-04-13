@@ -12,6 +12,8 @@ django-storages change log
 * Fix ``collectstatic`` timezone handling in and add ``get_modified_time`` to ``S3BotoStorage`` (`#290`_)
 * Add support for Django 1.11 (`#295`_ thanks @jdufresne)
 * Add ``project`` keyword support to GCS in ``LibCloudStorage`` backend (`#269`_ thanks @slightfoot)
+* Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding in
+  the ``s3boto3`` backend (issue `#263`_ pr `#264`_ thanks @ldng)
 
 .. _#217: https://github.com/jschneier/django-storages/pull/217
 .. _#216: https://github.com/jschneier/django-storages/issues/216
@@ -22,6 +24,8 @@ django-storages change log
 .. _#290: https://github.com/jschneier/django-storages/pull/290
 .. _#295: https://github.com/jschneier/django-storages/pull/295
 .. _#269: https://github.com/jschneier/django-storages/pull/269
+.. _#263: https://github.com/jschneier/django-storages/issues/263
+.. _#264: https://github.com/jschneier/django-storages/pull/264
 
 1.5.2 (2017-01-13)
 ******************
