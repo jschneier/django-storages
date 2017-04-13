@@ -133,16 +133,14 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_storage_save.gz'
         content = ContentFile("I am gzip'd")
         self.storage.save(name, content)
-        key = self.storage.bucket.get_key.return_value
-        key.set_metadata.assert_called_with('Content-Type',
-                                            'application/octet-stream')
-        key.set_contents_from_file.assert_called_with(
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
             content,
-            headers={'Content-Type': 'application/octet-stream',
-                     'Content-Encoding': 'gzip'},
-            policy=self.storage.default_acl,
-            reduced_redundancy=self.storage.reduced_redundancy,
-            rewind=True,
+            ExtraArgs={
+                'ContentType': 'application/octet-stream',
+                'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
+            }
         )
 
     def test_storage_save_gzip(self):
