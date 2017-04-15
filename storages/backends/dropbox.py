@@ -62,7 +62,7 @@ class DropBoxStorage(Storage):
     def _full_path(self, name):
         if name == '/':
             name = ''
-        return safe_join(self.root_path, name)
+        return safe_join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
         self.client.file_delete(self._full_path(name))
