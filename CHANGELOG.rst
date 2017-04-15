@@ -14,6 +14,7 @@ django-storages change log
 * Add ``project`` keyword support to GCS in ``LibCloudStorage`` backend (`#269`_ thanks @slightfoot)
 * Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding in
   the ``s3boto3`` backend (issue `#263`_ pr `#264`_ thanks @ldng)
+* The Dropbox backend now properly translates backslashes in Windows paths into forward slashes (`e52a127`_)
 
 .. _#217: https://github.com/jschneier/django-storages/pull/217
 .. _#216: https://github.com/jschneier/django-storages/issues/216
@@ -26,6 +27,7 @@ django-storages change log
 .. _#269: https://github.com/jschneier/django-storages/pull/269
 .. _#263: https://github.com/jschneier/django-storages/issues/263
 .. _#264: https://github.com/jschneier/django-storages/pull/264
+.. _e52a127: https://github.com/jschneier/django-storages/commit/e52a127523fdd5be50bb670ccad566c5d527f3d1
 
 1.5.2 (2017-01-13)
 ******************
