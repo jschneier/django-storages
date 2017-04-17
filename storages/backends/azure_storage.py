@@ -61,7 +61,7 @@ class AzureStorage(Storage):
 
     def _open(self, name, mode="rb"):
         contents = self.connection.get_blob_to_bytes(self.azure_container, name)
-        return ContentFile(contents)
+        return ContentFile(contents.content)
 
     def exists(self, name):
         return self.__get_blob_properties(name) is not None
