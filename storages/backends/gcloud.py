@@ -79,8 +79,7 @@ class GoogleCloudStorage(Storage):
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
-    default_acl = setting('GS_DEFAULT_ACL', 'public-read')
-    bucket_acl = setting('GS_BUCKET_ACL', default_acl)
+    auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
     # The max amount of memory a returned file can take up before being
@@ -121,8 +120,7 @@ class GoogleCloudStorage(Storage):
         except NotFound:
             if self.auto_create_bucket:
                 bucket = self.client.create_bucket(name)
-                bucket.acl.all().grant(self.bucket_acl)
-                bucket.acl.save()
+                bucket.acl.save_predefined(self.auto_create_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
                                        "can be automatically created by "

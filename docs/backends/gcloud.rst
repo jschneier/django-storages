@@ -41,13 +41,17 @@ back to the default inferred from the environment.
 
 If True, attempt to create the bucket if it does not exist.
 
-``GS_DEFAULT_ACL`` (optional)
+``GS_AUTO_CREATE_ACL`` (optional, default is ``projectPrivate``)
 
-If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
+ACL used when creating a new bucket, from the
+`list of predefined ACLs <https://cloud.google.com/storage/docs/access-control/lists#predefined-acl>`_.
+(A "JSON API" ACL is preferred but an "XML API/gsutil" ACL will be
+translated.)
 
-``GS_BUCKET_ACL`` (optional)
-
-ACL used when creating a new bucket; defaults to ``GS_DEFAULT_ACL``.
+Note that the ACL you select must still give the service account
+running the gcloud backend to have OWNER permission on the bucket. If
+you're using the default service account, this means you're restricted
+to the ``projectPrivate`` ACL.
 
 ``GS_FILE_CHARSET`` (optional)
 
