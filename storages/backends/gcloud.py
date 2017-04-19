@@ -53,10 +53,11 @@ class GoogleCloudFile(File):
     def read(self, num_bytes=None):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        if num_bytes is not None:
-            return super(GoogleCloudFile, self).read(num_bytes)
-        else:
-            return super(GoogleCloudFile, self).read()
+
+        if num_bytes is None:
+            num_bytes = -1
+
+        return super(GoogleCloudFile, self).read(num_bytes)
 
     def write(self, content):
         if 'w' not in self._mode:

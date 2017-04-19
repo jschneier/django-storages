@@ -7,7 +7,7 @@ warnings.warn("DEPRECATION NOTICE: This backend is deprecated in favour of the "
               "Storage.  The biggest problem with the developer keys is security and "
               "privacy.  Developer keys should not be shared with anyone as they can "
               "be used to gain access to other Google Cloud Storage buckets linked "
-              "to your Google account.")
+              "to your Google account.", DeprecationWarning)
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.deconstruct import deconstructible
