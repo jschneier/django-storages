@@ -5,6 +5,9 @@ django-storages change log
 ******************
 
 * **Breaking:** Remove backends deprecated in v1.5.1 (`#280`_)
+* **Deprecation:** The undocumented ``gs.GSBotoStorage`` backend. See the new ``gcloud.GoogleCloudStorage``
+  or ``apache_libcloud.LibCloudStorage`` backends instead. (`#236`_)
+* Add a new backend, ``gcloud.GoogleCloudStorage`` based on the ``google-cloud`` bindings. (`#236`_ thanks @scjody)
 * Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
 * Add support for reading ``AWS_SESSION_TOKEN`` and ``AWS_SECURITY_TOKEN`` from the environment
   to ``S3Boto3Storage`` and ``S3BotoStorage``. (`#283`_ thanks @bxm156)
@@ -28,6 +31,7 @@ django-storages change log
 .. _#263: https://github.com/jschneier/django-storages/issues/263
 .. _#264: https://github.com/jschneier/django-storages/pull/264
 .. _e52a127: https://github.com/jschneier/django-storages/commit/e52a127523fdd5be50bb670ccad566c5d527f3d1
+.. _#236: https://github.com/jschneier/django-storages/pull/236
 
 1.5.2 (2017-01-13)
 ******************
