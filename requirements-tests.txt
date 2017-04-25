@@ -5,3 +5,4 @@ boto3>=1.2.3
 dropbox>=3.24
 mock
 paramiko
+azure>=0.20.0
