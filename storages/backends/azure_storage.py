@@ -107,6 +107,23 @@ class AzureStorage(Storage):
                                  x_ms_blob_content_type=content_type)
         return name
 
+    def listdir(self, path):
+        if not path:
+            path = None
+
+        blobs = self.connection.list_blobs(
+            container_name=self.azure_container,
+            prefix=path,
+        )
+        results = []
+        for blob in blobs:
+            name = blob.name
+            if path:
+                name = name.replace(path, '')
+            results.append(name)
+
+        return ((), results)
+
     def url(self, name):
         if hasattr(self.connection, 'make_blob_url'):
             return self.connection.make_blob_url(
