@@ -10,6 +10,8 @@
 
 from __future__ import absolute_import
 
+import StringIO
+
 from datetime import datetime
 from tempfile import SpooledTemporaryFile
 from shutil import copyfileobj
@@ -23,6 +25,7 @@ from django.utils._os import safe_join
 from storages.utils import setting
 
 from dropbox import Dropbox
+from dropbox.files import UploadSessionCursor, CommitInfo
 from dropbox.exceptions import ApiError
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
@@ -51,6 +54,8 @@ class DropBoxFile(File):
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
 
+    CHUNK_SIZE = 4 * 1024 * 1024
+
     def __init__(self, oauth2_access_token=None, root_path=None):
         oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
         self.root_path = root_path or setting('DROPBOX_ROOT_PATH', '/')
@@ -58,6 +63,32 @@ class DropBoxStorage(Storage):
             raise ImproperlyConfigured("You must configure a token auth at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
         self.client = Dropbox(oauth2_access_token)
+
+    def _chunked_upload(self, content, dest_path):
+        """use chunked upload session for large files. stolen from
+        https://goo.gl/4XV0yT"""
+
+        file_size = len(content)
+        f = StringIO.StringIO(content)
+
+        upload_session_start_result = (
+            self.client.files_upload_session_start(f.read(self.CHUNK_SIZE)))
+        cursor = UploadSessionCursor(
+            session_id=upload_session_start_result.session_id,
+            offset=f.tell())
+        commit = CommitInfo(path=dest_path)
+
+        while f.tell() < file_size:
+            if ((file_size - f.tell()) <= self.fCHUNK_SIZE):
+                self.client.files_upload_session_finish(
+                    f.read(self.CHUNK_SIZE), cursor, commit)
+            else:
+                self.client.files_upload_session_append(
+                    f.read(self.CHUNK_SIZE), cursor.session_id,
+                    cursor.offset)
+                cursor.offset = f.tell()
+
+        del f
 
     def _full_path(self, name):
         if name == '/':
@@ -109,5 +140,9 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.files_upload(content, self._full_path(name))
+        file_size = len(content)
+        if file_size <= self.CHUNK_SIZE:
+            self.client.files_upload(content, self._full_path(name))
+        else:
+            self._chunked_upload(content, self._full_path(name))
         return name
