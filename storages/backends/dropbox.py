@@ -69,25 +69,23 @@ class DropBoxStorage(Storage):
         https://goo.gl/4XV0yT"""
 
         file_size = len(content)
-        f = StringIO.StringIO(content)
+        content.seek(0)
 
         upload_session_start_result = (
-            self.client.files_upload_session_start(f.read(self.CHUNK_SIZE)))
+            self.client.files_upload_session_start(content.read(self.CHUNK_SIZE)))
         cursor = UploadSessionCursor(
             session_id=upload_session_start_result.session_id,
-            offset=f.tell())
+            offset=content.tell())
         commit = CommitInfo(path=dest_path)
 
-        while f.tell() < file_size:
-            if ((file_size - f.tell()) <= self.CHUNK_SIZE):
+        while content.tell() < file_size:
+            if ((file_size - content.tell()) <= self.CHUNK_SIZE):
                 self.client.files_upload_session_finish(
-                    f.read(self.CHUNK_SIZE), cursor, commit)
+                    content.read(self.CHUNK_SIZE), cursor, commit)
             else:
                 self.client.files_upload_session_append_v2(
-                    f.read(self.CHUNK_SIZE), cursor)
-                cursor.offset = f.tell()
-
-        del f
+                    content.read(self.CHUNK_SIZE), cursor)
+                cursor.offset = content.tell()
 
     def _full_path(self, name):
         if name == '/':
