@@ -1,4 +1,7 @@
 import re
+import string
+import random
+
 from datetime import datetime
 try:
     from unittest import mock
@@ -124,6 +127,14 @@ class DropBoxTest(TestCase):
                 return_value='foo')
     def test_save(self, *args):
         self.storage._save('foo', b'bar')
+
+    @mock.patch('dropbox.Dropbox.files_upload_session_append',
+                return_value='foo')
+    def test_save_large_files(self, *args):
+        s = u''
+        for i in xrange(self.storage.CHUNK_SIZE + 1):
+            s += random.choice(string.letters)
+        self.storage._save('foo', b'{}'.format(s))
 
     @mock.patch('dropbox.Dropbox.files_get_temporary_link',
                 return_value=FILE_MEDIA_FIXTURE)
