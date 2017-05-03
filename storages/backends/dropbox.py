@@ -79,7 +79,7 @@ class DropBoxStorage(Storage):
         commit = CommitInfo(path=dest_path)
 
         while f.tell() < file_size:
-            if ((file_size - f.tell()) <= self.fCHUNK_SIZE):
+            if ((file_size - f.tell()) <= self.CHUNK_SIZE):
                 self.client.files_upload_session_finish(
                     f.read(self.CHUNK_SIZE), cursor, commit)
             else:
