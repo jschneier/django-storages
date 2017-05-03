@@ -10,7 +10,7 @@
 
 from __future__ import absolute_import
 
-import StringIO
+import sys
 
 from datetime import datetime
 from tempfile import SpooledTemporaryFile
@@ -29,6 +29,36 @@ from dropbox.files import UploadSessionCursor, CommitInfo
 from dropbox.exceptions import ApiError
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
+
+# -*- coding: utf-8 -*-
+
+
+# Print iterations progress
+# https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
+def print_progress(iteration, total, prefix='', suffix='', decimals=1,
+                   bar_length=100):
+    """
+    Call in a loop to create terminal progress bar
+
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        bar_length  - Optional  : character length of bar (Int)
+    """
+    str_format = "{0:." + str(decimals) + "f}"
+    percents = str_format.format(100 * (iteration / float(total)))
+    filled_length = int(round(bar_length * iteration / float(total)))
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+    sys.stdout.write(
+        '\x1b[2K\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix))
+
+    if iteration == total:
+        sys.stdout.write('\n')
+    sys.stdout.flush()
 
 
 class DropBoxStorageException(Exception):
@@ -82,10 +112,12 @@ class DropBoxStorage(Storage):
             if ((file_size - content.tell()) <= self.CHUNK_SIZE):
                 self.client.files_upload_session_finish(
                     content.read(self.CHUNK_SIZE), cursor, commit)
+                print_progress(cursor.offset, file_size)
             else:
                 self.client.files_upload_session_append_v2(
                     content.read(self.CHUNK_SIZE), cursor)
                 cursor.offset = content.tell()
+                print_progress(cursor.offset, file_size)
 
     def _full_path(self, name):
         if name == '/':
