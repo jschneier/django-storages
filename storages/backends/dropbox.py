@@ -83,7 +83,7 @@ class DropBoxStorage(Storage):
                 self.client.files_upload_session_finish(
                     f.read(self.CHUNK_SIZE), cursor, commit)
             else:
-                self.client.files_upload_session_append(
+                self.client.files_upload_session_append_v2(
                     f.read(self.CHUNK_SIZE), cursor.session_id,
                     cursor.offset)
                 cursor.offset = f.tell()
