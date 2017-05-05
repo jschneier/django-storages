@@ -83,7 +83,6 @@ class GoogleCloudStorage(Storage):
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
-    use_standard_request_uri = setting('GS_USE_STANDARD_REQUEST_URI', False)
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
@@ -225,7 +224,7 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(clean_name(name))
         
         # using standard request uri we can avoid an API call to GCS
-        if self.use_standard_request_uri:
+        if setting('GS_USE_STANDARD_REQUEST_URI'):
             return 'https://%s.storage.googleapis.com/%s' % (self.bucket_name, filepath_to_uri(name))
 
         blob = self._get_blob(self._encode_name(name))
