@@ -96,7 +96,7 @@ class AzureStorage(Storage):
         self.connection.put_blob(self.azure_container, name,
                                  content_data, "BlockBlob",
                                  x_ms_blob_content_type=content_type)
-        return name
+        return clean_name(name)
 
     def url(self, name):
         if hasattr(self.connection, 'make_blob_url'):
