@@ -17,7 +17,7 @@ except ImportError:
         "See https://github.com/WindowsAzure/azure-sdk-for-python")
 
 try:
-    # azure-storage 0.20.0
+    # azure-storage 0.20.3
     from azure.storage.blob.blobservice import BlobService
     from azure.common import AzureMissingResourceHttpError
 except ImportError:
@@ -107,6 +107,20 @@ class AzureStorage(Storage):
             )
         else:
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
+
+    def listdir(self, path):
+        if not path:
+            path = None
+
+        blobs = self.connection.list_blobs(
+            container_name=self.azure_container,
+            prefix=path,
+        )
+        results = []
+        for path in blobs:
+            results.append(path.name)
+
+        return ((), results)
 
     def modified_time(self, name):
         try:
