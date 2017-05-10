@@ -108,9 +108,10 @@ class AzureStorage(Storage):
                 today_plus_delta = today + timedelta(seconds=expire)
                 today_plus_delta = today_plus_delta.replace(microsecond=0).isoformat() + 'Z'
                 sas_token = self.connection.generate_shared_access_signature(self.azure_container, name,
-                                                                            SharedAccessPolicy(
-                                                                                AccessPolicy(mode, today_plus_delta,
-                                                                                             None), None))
+                                                                             SharedAccessPolicy(
+                                                                                AccessPolicy(permission=mode,
+                                                                                             expiry=today_plus_delta),
+                                                                                None))
             return self.connection.make_blob_url(
                 container_name=self.azure_container,
                 blob_name=name,
