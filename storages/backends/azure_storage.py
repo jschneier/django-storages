@@ -101,21 +101,20 @@ class AzureStorage(Storage):
 
     def url(self, name, expire=None, mode='r'):
         if hasattr(self.connection, 'make_blob_url'):
-            sasToken = None
+            sas_token = None
 
             if expire:
                 today = datetime.utcnow()
-                todayPlusDelta = today + timedelta(seconds=expire)
-                todayPlusDelta = todayPlusDelta.isoformat()
-                sasToken = self.connection.generate_shared_access_signature(self.azure_container, name,
+                today_plus_delta = today + timedelta(seconds=expire)
+                today_plus_delta = today_plus_delta.isoformat()
+                sas_token = self.connection.generate_shared_access_signature(self.azure_container, name,
                                                                             SharedAccessPolicy(
-                                                                                AccessPolicy(None, todayPlusDelta, mode), None))
-
+                                                                                AccessPolicy(None, today_plus_delta, mode), None))
             return self.connection.make_blob_url(
                 container_name=self.azure_container,
                 blob_name=name,
                 protocol=self.azure_protocol,
-                sasToken=sasToken
+                sas_token=sas_token
             )
         else:
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
