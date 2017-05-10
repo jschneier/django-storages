@@ -106,7 +106,7 @@ class AzureStorage(Storage):
             if expire:
                 today = datetime.utcnow()
                 today_plus_delta = today + timedelta(seconds=expire)
-                today_plus_delta = today_plus_delta.isoformat()
+                today_plus_delta = today_plus_delta.replace(microsecond=0).isoformat() + 'Z'
                 sas_token = self.connection.generate_shared_access_signature(self.azure_container, name,
                                                                             SharedAccessPolicy(
                                                                                 AccessPolicy(None, today_plus_delta, mode), None))
