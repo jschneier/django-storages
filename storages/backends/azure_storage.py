@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import os.path
 import mimetypes
 import time
@@ -104,8 +104,8 @@ class AzureStorage(Storage):
             sasToken = None
 
             if expire:
-                today = datetime.datetime.utcnow()
-                todayPlusDelta = today + datetime.timedelta(seconds=expire)
+                today = datetime.utcnow()
+                todayPlusDelta = today + timedelta(seconds=expire)
                 todayPlusDelta = todayPlusDelta.isoformat()
                 sasToken = self.connection.generate_shared_access_signature(self.azure_container, name,
                                                                             SharedAccessPolicy(
