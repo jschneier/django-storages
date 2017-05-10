@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
+from azure.storage import AccessPolicy, SharedAccessPolicy
 
 try:
     import azure  # noqa
@@ -98,12 +99,23 @@ class AzureStorage(Storage):
                                  x_ms_blob_content_type=content_type)
         return name
 
-    def url(self, name):
+    def url(self, name, expire=None, mode='r'):
         if hasattr(self.connection, 'make_blob_url'):
+            sasToken = None
+
+            if expire:
+                today = datetime.datetime.utcnow()
+                todayPlusDelta = today + datetime.timedelta(seconds=expire)
+                todayPlusDelta = todayPlusDelta.isoformat()
+                sasToken = self.connection.generate_shared_access_signature(self.azure_container, name,
+                                                                            SharedAccessPolicy(
+                                                                                AccessPolicy(None, todayPlusDelta, mode), None))
+
             return self.connection.make_blob_url(
                 container_name=self.azure_container,
                 blob_name=name,
                 protocol=self.azure_protocol,
+                sasToken=sasToken
             )
         else:
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
