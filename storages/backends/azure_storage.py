@@ -36,9 +36,12 @@ class AzureStorageFile(File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
+                # I set max connection to 1 since spooledtempfile is not seekable which is required if we use
+                # max_conection > 1
                 self._storage.connection.get_blob_to_stream(container_name=self._storage.azure_container,
                                                             blob_name=self._name, stream=self._file,
-                                                            max_connections=setting("AZURE_MAX_CONNECTIONS", 2))
+                                                            max_connections=1)
+
                 self._file.seek(0)
         return self._file
 

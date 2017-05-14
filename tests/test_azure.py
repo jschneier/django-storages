@@ -44,6 +44,7 @@ class AzureStorageTest(TestCase):
             stream = kwargs['stream']
             stream.write(mocked_binary)
             sent_kwargs.update(kwargs)
+            assert kwargs['max_connections'] == 1
 
         self.storage.connection.get_blob_to_stream.side_effect = mocked_stream
         with self.storage.open(blob_name, "rb") as f:
