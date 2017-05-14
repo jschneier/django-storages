@@ -50,6 +50,23 @@ class AzureStorageFile(File):
             raise AttributeError("File was not opened in read mode.")
         return super(AzureStorageFile, self).read(*args, **kwargs)
 
+    def write(self, content):
+        if 'w' not in self._mode:
+            raise AttributeError("File was not opened in write mode.")
+        self._is_dirty = True
+        create_kwargs = {'container_name': self._storage.azure_container,
+                         'blob_name': self._name,
+                         'max_connections': setting("AZURE_MAX_CONNECTIONS", 2)
+                         }
+        if 'wb' in self._mode:
+            # write binaries
+            create_kwargs['blob'] = content
+            self._storage.connection.create_blob_from_bytes(**create_kwargs)
+        else:
+            # write text
+            create_kwargs['text'] = content
+            self._storage.connection.create_blob_from_text(**create_kwargs)
+
 
 @deconstructible
 class AzureStorage(Storage):
@@ -75,15 +92,6 @@ class AzureStorage(Storage):
         if self.azure_ssl:
             return 'https'
         return 'http' if self.azure_ssl is not None else None
-
-    def __get_blob_properties(self, name):
-        try:
-            return self.connection.get_blob_properties(
-                self.azure_container,
-                name
-            )
-        except AzureMissingResourceHttpError:
-            return None
 
     def _open(self, name, mode="rb"):
         return AzureStorageFile(name, mode, self)
