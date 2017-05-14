@@ -123,7 +123,7 @@ class AzureStorage(Storage):
         content_settings = ContentSettings(content_type=content_type)
         self.connection.create_blob_from_stream(container_name=self.azure_container,
                                                 blob_name=name,
-                                                content=content,
+                                                stream=content,
                                                 content_settings=content_settings)
         return name
 

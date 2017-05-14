@@ -134,7 +134,7 @@ class AzureStorageTest(TestCase):
             sent_kwargs.update(kwargs)
             content_settings = kwargs['content_settings']
             assert content_settings.content_type == 'text/plain'
-            content = kwargs['content']
+            content = kwargs['stream']
             assert content == f
 
         self.storage.connection.create_blob_from_stream.side_effect = validate_create_blob_from_stream
