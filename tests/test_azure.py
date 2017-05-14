@@ -86,3 +86,40 @@ class AzureStorageTest(TestCase):
                                                                                      accepted_time})
         time = self.storage.modified_time("name")
         self.assertEqual(accepted_time, time)
+
+    def test_url_blob(self):
+        sas_token = "token"
+        url = "url"
+        blob = "blob"
+        self.storage.connection.generate_blob_shared_access_signature.return_value = sas_token
+        self.storage.connection.make_blob_url.return_value = url
+        actual_url = self.storage.url(blob)
+        self.assertEqual(url, actual_url)
+        self.storage.connection.generate_blob_shared_access_signature.assert_not_called()
+        self.storage.connection.make_blob_url.assert_called_once_with(blob_name=blob,
+                                                                      container_name=self.container_name)
+
+    def test_url_blob_with_expiry(self):
+        sas_token = "token"
+        url = "url"
+        blob = "blob"
+        self.storage.connection.generate_blob_shared_access_signature.return_value = sas_token
+        self.storage.connection.make_blob_url.return_value = url
+        self.storage._expire_at = mock.MagicMock(return_value=("now", 'expires_at'))
+        actual_url = self.storage.url(blob, expire=30)
+        self.assertEqual(url, actual_url)
+        self.storage.connection.generate_blob_shared_access_signature.assert_called_once_with(self.container_name,
+                                                                                              blob,
+                                                                                              'r',
+                                                                                              expiry='expires_at')
+        self.storage.connection.make_blob_url.assert_called_once_with(blob_name=blob,
+                                                                      container_name=self.container_name,
+                                                                      sas_token=sas_token)
+
+    def test_expires_at(self):
+        expected_now = datetime.datetime.utcnow()
+        now, now_plus_delta = self.storage._expire_at(expire=30)
+        expected_now_plus_delta = now + datetime.timedelta(seconds=30)
+        expected_now_plus_delta = expected_now_plus_delta.replace(microsecond=0).isoformat() + 'Z'
+        self.assertEqual(expected_now_plus_delta, now_plus_delta)
+        self.assertLess(now - expected_now, datetime.timedelta(seconds=1))

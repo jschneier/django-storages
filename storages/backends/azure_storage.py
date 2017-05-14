@@ -1,13 +1,8 @@
 from datetime import datetime, timedelta
 import os.path
 import mimetypes
-import time
-from time import mktime
-
-from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from azure.storage import AccessPolicy
 from azure.storage import CloudStorageAccount
 from storages.utils import setting
 from tempfile import SpooledTemporaryFile
@@ -128,24 +123,29 @@ class AzureStorage(Storage):
                                  x_ms_blob_content_type=content_type)
         return name
 
+    def _expire_at(self, expire):
+            now = datetime.utcnow()
+            now_plus_delta = now + timedelta(seconds=expire)
+            now_plus_delta = now_plus_delta.replace(microsecond=0).isoformat() + 'Z'
+            return now, now_plus_delta
+
     def url(self, name, expire=None, mode='r'):
         if hasattr(self.connection, 'make_blob_url'):
             sas_token = None
-
+            make_blob_url_kwargs = {}
             if expire:
-                today = datetime.utcnow()
-                today_plus_delta = today + timedelta(seconds=expire)
-                today_plus_delta = today_plus_delta.replace(microsecond=0).isoformat() + 'Z'
-                sas_token = self.connection.generate_shared_access_signature(self.azure_container, name,
-                                                                             SharedAccessPolicy(
-                                                                                AccessPolicy(permission=mode,
-                                                                                             expiry=today_plus_delta),
-                                                                                None))
+                now, now_plus_delta = self._expire_at(expire)
+                sas_token = self.connection.generate_blob_shared_access_signature(self.azure_container,
+                                                                                  name, 'r',
+                                                                                  expiry=now_plus_delta)
+                make_blob_url_kwargs['sas_token'] = sas_token
+
+            if self.azure_protocol:
+                make_blob_url_kwargs['protocol'] = self.azure_protocol
             return self.connection.make_blob_url(
                 container_name=self.azure_container,
                 blob_name=name,
-                protocol=self.azure_protocol,
-                sas_token=sas_token
+                **make_blob_url_kwargs
             )
         else:
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
