@@ -109,8 +109,8 @@ class AzureStorage(Storage):
 
     def size(self, name):
         properties = self.connection.get_blob_properties(
-            self.azure_container, name)
-        return properties["content-length"]
+            self.azure_container, name).properties
+        return properties["content_length"]
 
     def _save(self, name, content):
         if hasattr(content.file, 'content_type'):
@@ -151,12 +151,7 @@ class AzureStorage(Storage):
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
 
     def modified_time(self, name):
-        try:
-            modified = self.__get_blob_properties(name)['last-modified']
-        except (TypeError, KeyError):
-            return super(AzureStorage, self).modified_time(name)
-
-        modified = time.strptime(modified, '%a, %d %b %Y %H:%M:%S %Z')
-        modified = datetime.fromtimestamp(mktime(modified))
-
+        properties = self.connection.get_blob_properties(
+            self.azure_container, name).properties
+        modified = properties["last_modified"]
         return modified

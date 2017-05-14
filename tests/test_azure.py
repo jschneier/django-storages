@@ -4,6 +4,12 @@ try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
+import datetime
+
+
+class MockedPorperties(object):
+    def __init__(self, properties):
+        self.properties = properties
 
 
 class AzureStorageTest(TestCase):
@@ -68,3 +74,15 @@ class AzureStorageTest(TestCase):
         self.storage.delete("name")
         self.storage.connection.delete_blob.assert_called_once_with(container_name=self.container_name,
                                                                     blob_name="name")
+
+    def test_size_of_file(self):
+        self.storage.connection.get_blob_properties.return_value = MockedPorperties({"content_length": 12})
+        size = self.storage.size("name")
+        self.assertEqual(12, size)
+
+    def test_last_modfied_of_file(self):
+        accepted_time = datetime.datetime(2017, 5, 11, 8, 52, 4,)
+        self.storage.connection.get_blob_properties.return_value = MockedPorperties({'last_modified':
+                                                                                     accepted_time})
+        time = self.storage.modified_time("name")
+        self.assertEqual(accepted_time, time)
