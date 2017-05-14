@@ -7,8 +7,10 @@ from azure.storage import CloudStorageAccount
 from storages.utils import setting
 from tempfile import SpooledTemporaryFile
 from django.core.files.base import File
+from io import BytesIO
 
 from azure.common import AzureMissingResourceHttpError
+from azure.storage.blob import ContentSettings
 
 
 def clean_name(name):
@@ -113,14 +115,13 @@ class AzureStorage(Storage):
         else:
             content_type = mimetypes.guess_type(name)[0]
 
-        if hasattr(content, 'chunks'):
-            content_data = b''.join(chunk for chunk in content.chunks())
-        else:
-            content_data = content.read()
-
-        self.connection.put_blob(self.azure_container, name,
-                                 content_data, "BlockBlob",
-                                 x_ms_blob_content_type=content_type)
+        # if hasattr(content, 'chunks'):
+            # content = BytesIO(b''.join(chunk for chunk in content.chunks()))
+        content_settings = ContentSettings(content_type=content_type)
+        self.connection.create_blob_from_stream(container_name=self.azure_container,
+                                                blob_name=name,
+                                                content=content,
+                                                content_settings=content_settings)
         return name
 
     def _expire_at(self, expire):

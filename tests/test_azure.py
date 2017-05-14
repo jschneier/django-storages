@@ -5,6 +5,7 @@ try:
 except ImportError:  # Python 3.2 and below
     import mock
 import datetime
+from django.core.files.base import ContentFile
 
 
 class MockedPorperties(object):
@@ -123,3 +124,18 @@ class AzureStorageTest(TestCase):
         expected_now_plus_delta = expected_now_plus_delta.replace(microsecond=0).isoformat() + 'Z'
         self.assertEqual(expected_now_plus_delta, now_plus_delta)
         self.assertLess(now - expected_now, datetime.timedelta(seconds=1))
+
+    def test_save(self):
+        sent_kwargs = {}
+        f = ContentFile("content")
+
+        def validate_create_blob_from_stream(*args, **kwargs):
+            sent_kwargs.update(kwargs)
+            content_settings = kwargs['content_settings']
+            assert content_settings.content_type == 'text/plain'
+            content = kwargs['content']
+            assert content == f
+
+        self.storage.connection.create_blob_from_stream.side_effect = validate_create_blob_from_stream
+        self.storage._save("bla.txt", f)
+        self.storage.connection.create_blob_from_stream.assert_called_once_with(**sent_kwargs)
