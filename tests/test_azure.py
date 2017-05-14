@@ -63,3 +63,8 @@ class AzureStorageTest(TestCase):
         self.storage.connection.create_blob_from_text.assert_called_once_with(text=mocked_text, blob_name="name",
                                                                               max_connections=2,
                                                                               container_name=self.container_name)
+
+    def test_delete_blob(self):
+        self.storage.delete("name")
+        self.storage.connection.delete_blob.assert_called_once_with(container_name=self.container_name,
+                                                                    blob_name="name")

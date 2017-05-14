@@ -13,6 +13,8 @@ from storages.utils import setting
 from tempfile import SpooledTemporaryFile
 from django.core.files.base import File
 
+from azure.common import AzureMissingResourceHttpError
+
 
 def clean_name(name):
     return os.path.normpath(name).replace("\\", "/")
@@ -101,7 +103,7 @@ class AzureStorage(Storage):
 
     def delete(self, name):
         try:
-            self.connection.delete_blob(self.azure_container, name)
+            self.connection.delete_blob(container_name=self.azure_container, blob_name=name)
         except AzureMissingResourceHttpError:
             pass
 
