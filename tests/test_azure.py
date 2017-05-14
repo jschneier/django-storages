@@ -6,11 +6,7 @@ except ImportError:  # Python 3.2 and below
     import mock
 import datetime
 from django.core.files.base import ContentFile
-
-
-class MockedPorperties(object):
-    def __init__(self, properties):
-        self.properties = properties
+from azure.storage.blob import BlobProperties, Blob
 
 
 class AzureStorageTest(TestCase):
@@ -78,14 +74,17 @@ class AzureStorageTest(TestCase):
                                                                     blob_name="name")
 
     def test_size_of_file(self):
-        self.storage.connection.get_blob_properties.return_value = MockedPorperties({"content_length": 12})
+        props = BlobProperties()
+        props.content_length = 12
+        self.storage.connection.get_blob_properties.return_value = Blob(props=props)
         size = self.storage.size("name")
         self.assertEqual(12, size)
 
     def test_last_modfied_of_file(self):
+        props = BlobProperties()
         accepted_time = datetime.datetime(2017, 5, 11, 8, 52, 4,)
-        self.storage.connection.get_blob_properties.return_value = MockedPorperties({'last_modified':
-                                                                                     accepted_time})
+        props.last_modified = accepted_time
+        self.storage.connection.get_blob_properties.return_value = Blob(props=props)
         time = self.storage.modified_time("name")
         self.assertEqual(accepted_time, time)
 

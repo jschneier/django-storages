@@ -110,7 +110,7 @@ class AzureStorage(Storage):
     def size(self, name):
         properties = self.connection.get_blob_properties(
             self.azure_container, name).properties
-        return properties["content_length"]
+        return properties.content_length
 
     def _save(self, name, content):
         if hasattr(content.file, 'content_type'):
@@ -157,5 +157,5 @@ class AzureStorage(Storage):
     def modified_time(self, name):
         properties = self.connection.get_blob_properties(
             self.azure_container, name).properties
-        modified = properties["last_modified"]
+        modified = properties.last_modified
         return modified
