@@ -92,14 +92,14 @@ class AzureStorageTest(TestCase):
 
     def test_blob_open_text_write_3_times_small_buffer_size(self):
         contents = ["cont", "content2", "content3"]
-        self.storage.buffer_size = len(contents[1])
+        self.storage.buffer_size = 2
 
         with self.storage.open("name", "w") as f:
             for content in contents:
                 f.write(content)
         self.storage.connection._put_blob.assert_called_once_with(self.container_name, "name", None)
         put_block_args_list = self.storage.connection.put_block.call_args_list
-        self.assertEqual(3, len(put_block_args_list))
+        self.assertEqual(11, len(put_block_args_list))
         actual_content = bytes()
         for idx, args in enumerate(put_block_args_list):
             self.assertEqual(self.container_name, args[0][0])
@@ -112,7 +112,7 @@ class AzureStorageTest(TestCase):
         put_block_args = put_block_list_call_list[0]
         self.assertEqual(self.container_name, put_block_args[0][0])
         self.assertEqual("name", put_block_args[0][1])
-        self.assertEqual(3, len(put_block_args[0][2]))
+        self.assertEqual(11, len(put_block_args[0][2]))
         for blob_block in put_block_args[0][2]:
             self.assertIsInstance(blob_block, BlobBlock)
 

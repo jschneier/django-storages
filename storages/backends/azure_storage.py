@@ -69,13 +69,14 @@ class AzureStorageFile(File):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
         ret = super(AzureStorageFile, self).write(force_bytes(content))
-        if self._needs_flush:
+        if self._needs_flush():
             self._flush_all_buffers()
         return ret
 
-    @property
-    def _needs_flush(self):
-        buffer_size = self.file.tell() - self._last_commit_pos
+    def _needs_flush(self, current_pos=None):
+        if not(current_pos):
+            current_pos = self.file.tell()
+        buffer_size = current_pos - self._last_commit_pos
         ret_val = buffer_size >= self._storage.buffer_size
         return ret_val
 
@@ -85,8 +86,9 @@ class AzureStorageFile(File):
         block_id = base64.urlsafe_b64encode(block_id)
         block_id = urllib.parse.quote_plus(block_id)
         self.file.seek(self._last_commit_pos)
+        content = self.file.read(self._storage.buffer_size)
         self._storage.connection.put_block(self._storage.azure_container, self._name,
-                                           self.file.read(self._storage.buffer_size), block_id)
+                                           content, block_id)
         self._block_list.append(BlobBlock(block_id))
         self._last_commit_pos = self.file.tell()
 
@@ -95,7 +97,7 @@ class AzureStorageFile(File):
         Flushes the write buffer.
         """
         pos_before_flush = self.file.tell()
-        while self._needs_flush:
+        while self._needs_flush(pos_before_flush):
             self._flush_buffer()
         self.file.seek(pos_before_flush)
 
