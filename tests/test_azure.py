@@ -106,7 +106,7 @@ class AzureStorageTest(TestCase):
             self.assertEqual("name", args[0][1])
             self.assertLessEqual(len(args[0][2]), self.storage.buffer_size)
             actual_content = actual_content + (args[0][2])
-        self.assertEqual(bytes("".join(contents), 'utf-8'), actual_content)
+        self.assertEqual(force_bytes("".join(contents)), actual_content)
         put_block_list_call_list = self.storage.connection.put_block_list.call_args_list
         self.assertEqual(1, len(put_block_list_call_list))
         put_block_args = put_block_list_call_list[0]
