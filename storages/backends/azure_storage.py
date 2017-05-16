@@ -37,6 +37,7 @@ class AzureStorageFile(File):
             self._storage.connection._put_blob(self._storage.azure_container, self._name, None)
         self._write_counter = 0
         self._block_list = list()
+        self._last_commit_pos = 0
 
     def _get_file(self):
         if self._file is None:
@@ -67,35 +68,40 @@ class AzureStorageFile(File):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        if self._storage.buffer_size <= self._buffer_file_size:
-            self._flush_write_buffer()
-        return super(AzureStorageFile, self).write(force_bytes(content))
+        ret = super(AzureStorageFile, self).write(force_bytes(content))
+        if self._needs_flush:
+            self._flush_all_buffers()
+        return ret
 
     @property
-    def _buffer_file_size(self):
-        pos = self.file.tell()
-        self.file.seek(0, os.SEEK_END)
-        length = self.file.tell()
-        self.file.seek(pos)
-        return length
+    def _needs_flush(self):
+        buffer_size = self.file.tell() - self._last_commit_pos
+        ret_val = buffer_size >= self._storage.buffer_size
+        return ret_val
 
-    def _flush_write_buffer(self):
+    def _flush_buffer(self):
+        self._write_counter += 1
+        block_id = force_bytes(pad_left("{}{}".format(self._name, self._write_counter), 32), 'utf-8')
+        block_id = base64.urlsafe_b64encode(block_id)
+        block_id = urllib.parse.quote_plus(block_id)
+        self.file.seek(self._last_commit_pos)
+        self._storage.connection.put_block(self._storage.azure_container, self._name,
+                                           self.file.read(self._storage.buffer_size), block_id)
+        self._block_list.append(BlobBlock(block_id))
+        self._last_commit_pos = self.file.tell()
+
+    def _flush_all_buffers(self):
         """
         Flushes the write buffer.
         """
-        if self._buffer_file_size:
-            self._write_counter += 1
-            self.file.seek(0)
-            block_id = force_bytes(pad_left("{}{}".format(self._name, self._write_counter), 32), 'utf-8')
-            block_id = base64.urlsafe_b64encode(block_id)
-            block_id = urllib.parse.quote_plus(block_id)
-            self._storage.connection.put_block(self._storage.azure_container, self._name, self.file.read(), block_id)
-            self._block_list.append(BlobBlock(block_id))
-            self.file.seek(0)
+        pos_before_flush = self.file.tell()
+        while self._needs_flush:
+            self._flush_buffer()
+        self.file.seek(pos_before_flush)
 
     def close(self):
         if self._is_dirty:
-            self._flush_write_buffer()
+            self._flush_buffer()
             self._storage.connection.put_block_list(self._storage.azure_container, self._name, self._block_list)
         if self._file is not None:
             self._file.close()
