@@ -6,7 +6,8 @@ except ImportError:  # Python 3.2 and below
     import mock
 import datetime
 from django.core.files.base import ContentFile
-from azure.storage.blob import BlobProperties, Blob
+from azure.storage.blob import BlobProperties, Blob, BlobBlock
+from django.utils.encoding import force_bytes
 
 
 class AzureStorageTest(TestCase):
@@ -50,23 +51,67 @@ class AzureStorageTest(TestCase):
         # the known parameter since a stream is an internal object that I don't have access to
         self.storage.connection.get_blob_to_stream.assert_called_once_with(**sent_kwargs)
 
-    def test_blob_open_write(self):
-        mocked_binary = b"written text"
-        with self.storage.open("name", "wb") as f:
-            f.write(mocked_binary)
-            f.close()
-        self.storage.connection.create_blob_from_bytes.assert_called_once_with(blob=mocked_binary, blob_name="name",
-                                                                               max_connections=2,
-                                                                               container_name=self.container_name)
 
     def test_blob_open_text_write(self):
         mocked_text = "written text"
+
         with self.storage.open("name", "w") as f:
             f.write(mocked_text)
-            f.close()
-        self.storage.connection.create_blob_from_text.assert_called_once_with(text=mocked_text, blob_name="name",
-                                                                              max_connections=2,
-                                                                              container_name=self.container_name)
+        self.storage.connection._put_blob.assert_called_once_with(self.container_name, "name", None)
+        self.storage.connection.put_block.assert_called_once_with(self.container_name,
+                                                                  "name", force_bytes(mocked_text),
+                                                                  'MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwbmFtZTE%3D')
+        put_block_list_call_list = self.storage.connection.put_block_list.call_args_list
+        self.assertEqual(1, len(put_block_list_call_list))
+        put_block_args = put_block_list_call_list[0]
+        self.assertEqual(self.container_name, put_block_args[0][0])
+        self.assertEqual("name", put_block_args[0][1])
+        self.assertEqual(1, len(put_block_args[0][2]))
+        self.assertIsInstance(put_block_args[0][2][0], BlobBlock)
+
+    def test_blob_open_text_write_3_times(self):
+        content1 = "content1"
+        content2 = "content2"
+        content3 = "content3"
+
+        with self.storage.open("name", "w") as f:
+            f.write(content1)
+            f.write(content2)
+            f.write(content3)
+        self.storage.connection._put_blob.assert_called_once_with(self.container_name, "name", None)
+        self.storage.connection.put_block.assert_called_once_with(self.container_name,
+                                                                  "name", force_bytes(content1+content2+content3),
+                                                                  'MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwbmFtZTE%3D')
+        put_block_list_call_list = self.storage.connection.put_block_list.call_args_list
+        self.assertEqual(1, len(put_block_list_call_list))
+        put_block_args = put_block_list_call_list[0]
+        self.assertEqual(self.container_name, put_block_args[0][0])
+        self.assertEqual("name", put_block_args[0][1])
+        self.assertEqual(1, len(put_block_args[0][2]))
+        self.assertIsInstance(put_block_args[0][2][0], BlobBlock)
+
+    def test_blob_open_text_write_3_times_small_buffer_size(self):
+        contents = ["content1", "content2", "content3"]
+        self.storage.buffer_size = len(contents[0])
+
+        with self.storage.open("name", "w") as f:
+            for content in contents:
+                f.write(content)
+        self.storage.connection._put_blob.assert_called_once_with(self.container_name, "name", None)
+        put_block_args_list = self.storage.connection.put_block.call_args_list
+        self.assertEqual(3, len(put_block_args_list))
+        for idx, args in enumerate(put_block_args_list):
+            self.assertEqual(self.container_name, args[0][0])
+            self.assertEqual("name", args[0][1])
+            self.assertEqual(force_bytes(contents[idx]), args[0][2])
+        put_block_list_call_list = self.storage.connection.put_block_list.call_args_list
+        self.assertEqual(1, len(put_block_list_call_list))
+        put_block_args = put_block_list_call_list[0]
+        self.assertEqual(self.container_name, put_block_args[0][0])
+        self.assertEqual("name", put_block_args[0][1])
+        self.assertEqual(3, len(put_block_args[0][2]))
+        for blob_block in put_block_args[0][2]:
+            self.assertIsInstance(blob_block, BlobBlock)
 
     def test_delete_blob(self):
         self.storage.delete("name")

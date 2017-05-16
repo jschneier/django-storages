@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from azure.storage.blob import BlobBlock
 import os.path
 import mimetypes
 from django.core.files.storage import Storage
@@ -7,14 +8,20 @@ from azure.storage import CloudStorageAccount
 from storages.utils import setting
 from tempfile import SpooledTemporaryFile
 from django.core.files.base import File
-from io import BytesIO
+from django.utils.encoding import force_bytes
 
 from azure.common import AzureMissingResourceHttpError
 from azure.storage.blob import ContentSettings
+import base64
+from django.utils.six.moves import urllib
 
 
 def clean_name(name):
     return os.path.normpath(name).replace("\\", "/")
+
+
+def pad_left(n, width, pad="0"):
+    return ((pad * width) + str(n))[-width:]
 
 
 @deconstructible
@@ -26,6 +33,10 @@ class AzureStorageFile(File):
         self._storage = storage
         self._is_dirty = False
         self._file = None
+        if 'w' in self._mode:
+            self._storage.connection._put_blob(self._storage.azure_container, self._name, None)
+        self._write_counter = 0
+        self._block_list = list()
 
     def _get_file(self):
         if self._file is None:
@@ -56,18 +67,39 @@ class AzureStorageFile(File):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        create_kwargs = {'container_name': self._storage.azure_container,
-                         'blob_name': self._name,
-                         'max_connections': setting("AZURE_MAX_CONNECTIONS", 2)
-                         }
-        if 'wb' in self._mode:
-            # write binaries
-            create_kwargs['blob'] = content
-            self._storage.connection.create_blob_from_bytes(**create_kwargs)
-        else:
-            # write text
-            create_kwargs['text'] = content
-            self._storage.connection.create_blob_from_text(**create_kwargs)
+        if self._storage.buffer_size <= self._buffer_file_size:
+            self._flush_write_buffer()
+        return super(AzureStorageFile, self).write(force_bytes(content))
+
+    @property
+    def _buffer_file_size(self):
+        pos = self.file.tell()
+        self.file.seek(0, os.SEEK_END)
+        length = self.file.tell()
+        self.file.seek(pos)
+        return length
+
+    def _flush_write_buffer(self):
+        """
+        Flushes the write buffer.
+        """
+        if self._buffer_file_size:
+            self._write_counter += 1
+            self.file.seek(0)
+            block_id = force_bytes(pad_left("{}{}".format(self._name, self._write_counter), 32), 'utf-8')
+            block_id = base64.urlsafe_b64encode(block_id)
+            block_id = urllib.parse.quote_plus(block_id)
+            self._storage.connection.put_block(self._storage.azure_container, self._name, self.file.read(), block_id)
+            self._block_list.append(BlobBlock(block_id))
+            self.file.seek(0)
+
+    def close(self):
+        if self._is_dirty:
+            self._flush_write_buffer()
+            self._storage.connection.put_block_list(self._storage.azure_container, self._name, self._block_list)
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
 
 @deconstructible
@@ -77,6 +109,7 @@ class AzureStorage(Storage):
     azure_container = setting("AZURE_CONTAINER")
     azure_ssl = setting("AZURE_SSL")
     max_memory_size = setting('AZURE_BLOB_MAX_MEMORY_SIZE', 0)
+    buffer_size = setting('AZURE_FILE_BUFFER_SIZE', 4194304)
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
