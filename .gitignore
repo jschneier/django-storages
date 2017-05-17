@@ -22,4 +22,5 @@ setuptools*
 __pycache__
 .coverage
 .cache
-.idea
+
+.idea/

@@ -1,3 +1,4 @@
+import mimetypes
 from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
@@ -21,6 +22,7 @@ except ImportError:
 class GoogleCloudFile(File):
     def __init__(self, name, mode, storage):
         self.name = name
+        self.mime_type = mimetypes.guess_type(name)[0]
         self._mode = mode
         self._storage = storage
         self.blob = storage.bucket.get_blob(name)
@@ -70,7 +72,7 @@ class GoogleCloudFile(File):
         if self._file is not None:
             if self._is_dirty:
                 self.file.seek(0)
-                self.blob.upload_from_file(self.file)
+                self.blob.upload_from_file(self.file, content_type=self.mime_type)
             self._file.close()
             self._file = None
 
@@ -154,7 +156,8 @@ class GoogleCloudStorage(Storage):
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
-        file.blob.upload_from_file(content, size=content.size)
+        file.blob.upload_from_file(content, size=content.size,
+                                   content_type=file.mime_type)
         return cleaned_name
 
     def delete(self, name):
