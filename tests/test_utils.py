@@ -1,3 +1,5 @@
+import datetime
+
 from django.test import TestCase
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -65,8 +67,10 @@ class SafeJoinTest(TestCase):
         self.assertEqual(path, "base_url/path/to/somewhere")
 
     def test_suspicious_operation(self):
-        self.assertRaises(ValueError,
-                          utils.safe_join, "base", "../../../../../../../etc/passwd")
+        with self.assertRaises(ValueError):
+            utils.safe_join("base", "../../../../../../../etc/passwd")
+        with self.assertRaises(ValueError):
+            utils.safe_join("base", "/etc/passwd")
 
     def test_trailing_slash(self):
         """
@@ -79,5 +83,10 @@ class SafeJoinTest(TestCase):
         """
         Test safe_join with multiple paths that end with a trailing slash.
         """
-        path = utils.safe_join("base_url/", "path/to/" "somewhere/")
+        path = utils.safe_join("base_url/", "path/to/", "somewhere/")
         self.assertEqual(path, "base_url/path/to/somewhere/")
+
+    def test_datetime_isoformat(self):
+        dt = datetime.datetime(2017, 5, 19, 14, 45, 37, 123456)
+        path = utils.safe_join('base_url', dt.isoformat())
+        self.assertEqual(path, 'base_url/2017-05-19T14:45:37.123456')
