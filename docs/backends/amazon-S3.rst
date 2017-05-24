@@ -43,6 +43,10 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_DEFAULT_ACL`` (optional)
     If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
 
+``AWS_DEFAULT_ACL`` (optional)
+
+If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
+
 ``AWS_AUTO_CREATE_BUCKET`` (optional)
     If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
 
