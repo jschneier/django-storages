@@ -53,11 +53,12 @@ class SFTPStorage(Storage):
     def _connect(self):
         self._ssh = paramiko.SSHClient()
 
-        if self._known_host_file is not None:
+        known_host_file = self._known_host_file or os.path.expanduser(
+            os.path.join("~", ".ssh", "known_hosts")
+        )
+
+        if os.path.exists(known_host_file):
             self._ssh.load_host_keys(self._known_host_file)
-        else:
-            # automatically add host keys from current user.
-            self._ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
 
         # and automatically add new host keys for hosts we haven't seen before.
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -152,6 +153,7 @@ class SFTPStorage(Storage):
     def exists(self, name):
         # Try to retrieve file info.  Return true on success, false on failure.
         remote_path = self._remote_path(name)
+
         try:
             self.sftp.stat(remote_path)
             return True
