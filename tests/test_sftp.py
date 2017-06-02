@@ -18,6 +18,12 @@ class SFTPStorageTest(TestCase):
         pass
 
     @patch('paramiko.SSHClient')
+    def test_no_known_hosts_file(self, mock_ssh):
+        self.storage._known_host_file = "not_existed_file"
+        self.storage._connect()
+        self.assertEqual('foo', mock_ssh.return_value.connect.call_args[0][0])
+
+    @patch('paramiko.SSHClient')
     def test_connect(self, mock_ssh):
         self.storage._connect()
         self.assertEqual('foo', mock_ssh.return_value.connect.call_args[0][0])
