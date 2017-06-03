@@ -7,7 +7,6 @@ except ImportError:  # Python 3.2 and below
 
 import datetime
 
-from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.test import TestCase
@@ -104,7 +103,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, size=len(data))
 
-    def test_save(self):
+    def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
         filename = 'ủⓝï℅ⅆℇ.txt'
         content = ContentFile(data)

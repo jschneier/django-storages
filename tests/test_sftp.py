@@ -34,7 +34,7 @@ class SFTPStorageTest(TestCase):
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_read(self, mock_sftp):
-        file_ = self.storage._read('foo')
+        self.storage._read('foo')
         self.assertTrue(mock_sftp.open.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')

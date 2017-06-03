@@ -44,11 +44,25 @@ class FTPTest(TestCase):
 
     def test_decode_location(self):
         config = self.storage._decode_location(URL)
-        wanted_config = {'passwd': 'b@r', 'host': 'localhost', 'user': 'foo', 'active': False, 'path': '/', 'port': 2121}
+        wanted_config = {
+            'passwd': 'b@r',
+            'host': 'localhost',
+            'user': 'foo',
+            'active': False,
+            'path': '/',
+            'port': 2121,
+        }
         self.assertEqual(config, wanted_config)
         # Test active FTP
         config = self.storage._decode_location('a'+URL)
-        wanted_config = {'passwd': 'b@r', 'host': 'localhost', 'user': 'foo', 'active': True, 'path': '/', 'port': 2121}
+        wanted_config = {
+            'passwd': 'b@r',
+            'host': 'localhost',
+            'user': 'foo',
+            'active': True,
+            'path': '/',
+            'port': 2121,
+        }
         self.assertEqual(config, wanted_config)
 
     def test_decode_location_error(self):
@@ -84,7 +98,7 @@ class FTPTest(TestCase):
         self.storage.disconnect()
         self.assertIsNone(self.storage._connection)
 
-    @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo',})
+    @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo'})
     def test_mkremdirs(self, mock_ftp):
         self.storage._start_connection()
         self.storage._mkremdirs('foo/bar')
@@ -116,7 +130,7 @@ class FTPTest(TestCase):
         self.storage._read('foo')
 
     @patch('ftplib.FTP', **{'return_value.pwd.side_effect': IOError()})
-    def test_read(self, mock_ftp):
+    def test_read2(self, mock_ftp):
         self.storage._start_connection()
         with self.assertRaises(ftp.FTPStorageException):
             self.storage._read('foo')
