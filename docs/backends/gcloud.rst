@@ -66,6 +66,11 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 The maximum amount of memory a returned file can take up before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
 
+``GS_USE_STANDARD_REQUEST_URI`` (optional: default is ``False``)
+
+Directly retrieve a Google Cloud Storage object url using the standard request uri endpoint.
+No API call is performed to obtain the public url for the object.
+
 Fields
 ------
 

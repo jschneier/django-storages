@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, force_text, smart_str
+from django.utils.encoding import force_bytes, force_text, smart_str, filepath_to_uri
 from django.utils import timezone
 from storages.utils import clean_name, safe_join, setting
 
@@ -222,6 +222,11 @@ class GoogleCloudStorage(Storage):
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
+        
+        # using standard request uri we can avoid an API call to GCS
+        if setting('GS_USE_STANDARD_REQUEST_URI'):
+            return 'https://%s.storage.googleapis.com/%s' % (self.bucket_name, filepath_to_uri(name))
+
         blob = self._get_blob(self._encode_name(name))
         return blob.public_url
 

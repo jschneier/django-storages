@@ -285,3 +285,8 @@ class GCloudStorageTests(GCloudTestCase):
     def test_get_available_name_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
         self.assertEqual(self.storage.get_available_name(filename), filename)
+
+    def test_standard_request_uri(self):
+        with self.settings(GS_USE_STANDARD_REQUEST_URI=True):
+            standard_request_uri = 'https://{}.storage.googleapis.com/{}'.format(self.bucket_name, self.filename)
+            self.assertEqual(self.storage.url(self.filename), standard_request_uri)
