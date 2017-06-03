@@ -110,7 +110,9 @@ class S3BotoStorageFile(File):
             upload_headers = {
                 provider.acl_header: self._storage.default_acl
             }
-            upload_headers.update({'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType})
+            upload_headers.update({
+                'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType
+            })
             upload_headers.update(self._storage.headers)
             self._multipart = self._storage.bucket.initiate_multipart_upload(
                 self.key.name,

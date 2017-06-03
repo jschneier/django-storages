@@ -53,7 +53,7 @@ class SafeJoinTest(TestCase):
 
     def test_with_dot(self):
         path = utils.safe_join("", "path/./somewhere/../other", "..",
-                                ".", "to/./somewhere")
+                               ".", "to/./somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
     def test_base_url(self):

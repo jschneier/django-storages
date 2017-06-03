@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, force_text, smart_str
+from django.utils.encoding import force_bytes, smart_str
 from django.utils import timezone
 from storages.utils import clean_name, safe_join, setting
 
