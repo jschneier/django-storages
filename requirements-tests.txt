@@ -1,9 +1,9 @@
-Django>=1.8
-flake8
-pytest-cov>=2.2.1
-boto>=2.32.0
 boto3>=1.2.3
+boto>=2.32.0
+Django>=1.8
 dropbox>=3.24
+flake8
+google-cloud>=0.25.0
 mock
 paramiko
-google-cloud>=0.25.0
+pytest-cov>=2.2.1
