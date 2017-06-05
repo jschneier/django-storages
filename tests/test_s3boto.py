@@ -16,10 +16,6 @@ from boto.utils import parse_ts, ISO8601
 
 from storages.backends import s3boto
 
-__all__ = (
-    'S3BotoStorageTests',
-)
-
 
 class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
