@@ -18,53 +18,11 @@ from botocore.exceptions import ClientError
 
 from storages.backends import s3boto3
 
-__all__ = (
-    'SafeJoinTest',
-    'S3Boto3StorageTests',
-)
-
 
 class S3Boto3TestCase(TestCase):
     def setUp(self):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connection = mock.MagicMock()
-
-
-class SafeJoinTest(TestCase):
-    def test_normal(self):
-        path = s3boto3.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
-
-    def test_with_dot(self):
-        path = s3boto3.safe_join("", "path/./somewhere/../other", "..",
-                                 ".", "to/./somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
-    def test_base_url(self):
-        path = s3boto3.safe_join("base_url", "path/to/somewhere")
-        self.assertEqual(path, "base_url/path/to/somewhere")
-
-    def test_base_url_with_slash(self):
-        path = s3boto3.safe_join("base_url/", "path/to/somewhere")
-        self.assertEqual(path, "base_url/path/to/somewhere")
-
-    def test_suspicious_operation(self):
-        self.assertRaises(ValueError,
-                          s3boto3.safe_join, "base", "../../../../../../../etc/passwd")
-
-    def test_trailing_slash(self):
-        """
-        Test safe_join with paths that end with a trailing slash.
-        """
-        path = s3boto3.safe_join("base_url/", "path/to/somewhere/")
-        self.assertEqual(path, "base_url/path/to/somewhere/")
-
-    def test_trailing_slash_multi(self):
-        """
-        Test safe_join with multiple paths that end with a trailing slash.
-        """
-        path = s3boto3.safe_join("base_url/", "path/to/" "somewhere/")
-        self.assertEqual(path, "base_url/path/to/somewhere/")
 
 
 class S3Boto3StorageTests(S3Boto3TestCase):

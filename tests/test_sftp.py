@@ -35,8 +35,6 @@ class SFTPStorageTest(TestCase):
         self.storage._ssh.load_host_keys.assert_called_once_with("/path/to/known_hosts")
 
 
-
-
     @patch('paramiko.SSHClient')
     def test_connect(self, mock_ssh):
         self.storage._connect()
@@ -48,7 +46,7 @@ class SFTPStorageTest(TestCase):
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_read(self, mock_sftp):
-        file_ = self.storage._read('foo')
+        self.storage._read('foo')
         self.assertTrue(mock_sftp.open.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')

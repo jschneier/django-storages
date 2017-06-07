@@ -22,46 +22,13 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings.\n"
                                "See https://github.com/boto/boto3")
 
-from storages.utils import setting
+from storages.utils import setting, safe_join
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
 if boto3_version_info[:2] < (1, 2):
     raise ImproperlyConfigured("The installed Boto3 library must be 1.2.0 or "
                                "higher.\nSee https://github.com/boto/boto3")
-
-
-def safe_join(base, *paths):
-    """
-    A version of django.utils._os.safe_join for S3 paths.
-
-    Joins one or more path components to the base path component
-    intelligently. Returns a normalized version of the final path.
-
-    The final path must be located inside of the base path component
-    (otherwise a ValueError is raised).
-
-    Paths outside the base path indicate a possible security
-    sensitive operation.
-    """
-    base_path = force_text(base)
-    base_path = base_path.rstrip('/')
-    paths = [force_text(p) for p in paths]
-
-    final_path = base_path
-    for path in paths:
-        final_path = urlparse.urljoin(final_path.rstrip('/') + "/", path)
-
-    # Ensure final_path starts with base_path and that the next character after
-    # the final path is '/' (or nothing, in which case final_path must be
-    # equal to base_path).
-    base_path_len = len(base_path)
-    if (not final_path.startswith(base_path) or
-            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
-        raise ValueError('the joined path is located outside of the base path'
-                         ' component')
-
-    return final_path.lstrip('/')
 
 
 @deconstructible

@@ -5,6 +5,9 @@ django-storages change log
 ******************
 
 * **Breaking:** Remove backends deprecated in v1.5.1 (`#280`_)
+* **Breaking:** The ``SFTPStorage`` backend now checks for the existence of the fallback ``~/.ssh/known_hosts``
+  before attempting to load it.  If you had previously been passing in a path to a non-existent file it will no longer
+  attempt to load the fallback.
 * **Deprecation:** The undocumented ``gs.GSBotoStorage`` backend. See the new ``gcloud.GoogleCloudStorage``
   or ``apache_libcloud.LibCloudStorage`` backends instead. (`#236`_)
 * Add a new backend, ``gcloud.GoogleCloudStorage`` based on the ``google-cloud`` bindings. (`#236`_ thanks @scjody)

@@ -3,7 +3,6 @@ import posixpath
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import force_text
-from django.utils.six.moves.urllib import parse as urlparse
 
 
 def setting(name, default=None, strict=False):
@@ -63,16 +62,15 @@ def safe_join(base, *paths):
     base_path = base_path.rstrip('/')
     paths = [force_text(p) for p in paths]
 
-    final_path = base_path
-    for path in paths:
-        final_path = urlparse.urljoin(final_path.rstrip('/') + '/', path)
+    final_path = posixpath.normpath(posixpath.join(base_path + '/', *paths))
+    # posixpath.normpath() strips the trailing /. Add it back.
+    if paths[-1].endswith('/'):
+        final_path += '/'
 
     # Ensure final_path starts with base_path and that the next character after
-    # the final path is '/' (or nothing, in which case final_path must be
-    # equal to base_path).
+    # the final path is /.
     base_path_len = len(base_path)
-    if (not final_path.startswith(base_path) or
-            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
+    if (not final_path.startswith(base_path) or final_path[base_path_len] != '/'):
         raise ValueError('the joined path is located outside of the base path'
                          ' component')
 

@@ -55,11 +55,6 @@ FILE_MEDIA_FIXTURE = {
     'expires': 'Fri, 16 Sep 2011 01:01:25 +0000',
 }
 
-__all__ = [
-    'DropBoxTest',
-    'DropBoxFileTest'
-]
-
 
 class DropBoxTest(TestCase):
     @mock.patch('dropbox.client._OAUTH2_ACCESS_TOKEN_PATTERN',
