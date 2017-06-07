@@ -7,7 +7,7 @@ django-storages change log
 * **Breaking:** Remove backends deprecated in v1.5.1 (`#280`_)
 * **Breaking:** The ``SFTPStorage`` backend now checks for the existence of the fallback ``~/.ssh/known_hosts``
   before attempting to load it.  If you had previously been passing in a path to a non-existent file it will no longer
-  attempt to load the fallback.
+  attempt to load the fallback. (`issue #118`_ `pr #325`_)
 * **Deprecation:** The undocumented ``gs.GSBotoStorage`` backend. See the new ``gcloud.GoogleCloudStorage``
   or ``apache_libcloud.LibCloudStorage`` backends instead. (`#236`_)
 * Add a new backend, ``gcloud.GoogleCloudStorage`` based on the ``google-cloud`` bindings. (`#236`_ thanks @scjody)
@@ -21,6 +21,7 @@ django-storages change log
 * Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding in
   the ``s3boto3`` backend (issue `#263`_ pr `#264`_ thanks @ldng)
 * The Dropbox backend now properly translates backslashes in Windows paths into forward slashes (`e52a127`_)
+* The S3 backends now permit colons in the keys (`issue #248`_ `pr #322`_)
 
 .. _#217: https://github.com/jschneier/django-storages/pull/217
 .. _#216: https://github.com/jschneier/django-storages/issues/216
@@ -35,6 +36,10 @@ django-storages change log
 .. _#264: https://github.com/jschneier/django-storages/pull/264
 .. _e52a127: https://github.com/jschneier/django-storages/commit/e52a127523fdd5be50bb670ccad566c5d527f3d1
 .. _#236: https://github.com/jschneier/django-storages/pull/236
+.. _issue #118: https://github.com/jschneier/django-storages/issues/118
+.. _pr #325: https://github.com/jschneier/django-storages/pull/325
+.. _issue #248: https://github.com/jschneier/django-storages/issues/248
+.. _pr #322: https://github.com/jschneier/django-storages/pull/322
 
 1.5.2 (2017-01-13)
 ******************
