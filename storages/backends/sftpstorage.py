@@ -58,7 +58,8 @@ class SFTPStorage(Storage):
         )
 
         if os.path.exists(known_host_file):
-            self._ssh.load_host_keys(self._known_host_file)
+            self._ssh.load_host_keys(known_host_file)
+
 
         # and automatically add new host keys for hosts we haven't seen before.
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
