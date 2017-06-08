@@ -181,6 +181,7 @@ class S3Boto3Storage(Storage):
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
     file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
+    headers = setting('AWS_HEADERS', {})
     object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
     bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
     auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
@@ -442,6 +443,10 @@ class S3Boto3Storage(Storage):
             put_parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
         if self.default_acl:
             put_parameters['ACL'] = self.default_acl
+        if 'Cache-Control' in self.headers:
+            put_parameters['CacheControl'] = self.headers['Cache-Control']
+        if 'Expires' in self.headers:
+            put_parameters['Expires'] = self.headers['Expires']
         content.seek(0, os.SEEK_SET)
         obj.upload_fileobj(content, ExtraArgs=put_parameters)
 
