@@ -17,11 +17,11 @@ in version 1.2
 Settings
 --------
 
-To use boto3 set::
+To use boto3, ensure that the Pypi packages ``boto`` and ``boto3`` are installed and set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
-To use the boto version of the backend set::
+To use the boto version of the backend, ensure that the Pypi package ``boto`` is installed and set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
