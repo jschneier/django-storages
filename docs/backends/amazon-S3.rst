@@ -98,8 +98,13 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_CALLING_FORMAT`` (optional: default is ``SubdomainCallingFormat()``)
     Defines the S3 calling format to use to connect to the static bucket.
 
-.. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+``AWS_S3_SIGNATURE_VERSION`` (optional: no default value)
+    Defines the S3 signature version to use. For example for
+    `AWS Signature Version 4`_ you should use ``'s3v4'``. You can see
+    `which S3 regions are compatible with each signature version`_.
 
+.. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+.. _which S3 regions are compatible with each signature version: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 CloudFront
 ~~~~~~~~~~
 
