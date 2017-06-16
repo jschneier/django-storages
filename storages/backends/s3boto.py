@@ -233,6 +233,7 @@ class S3BotoStorage(Storage):
         self._entries = {}
         self._bucket = None
         self._connection = None
+        self._loaded_meta = False
 
         self.security_token = None
         if not self.access_key and not self.secret_key:
@@ -270,9 +271,14 @@ class S3BotoStorage(Storage):
         """
         Get the locally cached files for the bucket.
         """
-        if self.preload_metadata and not self._entries:
-            self._entries = dict((self._decode_name(entry.key), entry)
-                                 for entry in self.bucket.list(prefix=self.location))
+        if self.preload_metadata and not self._loaded_meta:
+            self._entries.update(
+                dict(
+                    (self._decode_name(entry.key), entry)
+                    for entry in self.bucket.list(prefix=self.location)
+                )
+            )
+            self._loaded_meta = True
         return self._entries
 
     def _lookup_env(self, names):
