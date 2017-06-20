@@ -22,8 +22,8 @@ from django.utils._os import safe_join
 
 from storages.utils import setting
 
-from dropbox.client import DropboxClient
-from dropbox.rest import ErrorResponse
+from dropbox import Dropbox
+from dropbox.exceptions import ApiError
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 
@@ -40,7 +40,7 @@ class DropBoxFile(File):
     @property
     def file(self):
         if not hasattr(self, '_file'):
-            response = self._storage.client.get_file(self.name)
+            response = self._storage.client.files_download(self.name)
             self._file = SpooledTemporaryFile()
             copyfileobj(response, self._file)
             self._file.seek(0)
@@ -57,7 +57,7 @@ class DropBoxStorage(Storage):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure a token auth at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        self.client = DropboxClient(oauth2_access_token)
+        self.client = Dropbox(oauth2_access_token)
 
     def _full_path(self, name):
         if name == '/':
@@ -65,18 +65,18 @@ class DropBoxStorage(Storage):
         return safe_join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
-        self.client.file_delete(self._full_path(name))
+        self.client.files_delete(self._full_path(name))
 
     def exists(self, name):
         try:
-            return bool(self.client.metadata(self._full_path(name)))
-        except ErrorResponse:
+            return bool(self.client.files_get_metadata(self._full_path(name)))
+        except ApiError:
             return False
 
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
-        metadata = self.client.metadata(full_path)
+        metadata = self.client.files_get_metadata(full_path)
         for entry in metadata['contents']:
             entry['path'] = entry['path'].replace(full_path, '', 1)
             entry['path'] = entry['path'].replace('/', '', 1)
@@ -87,27 +87,27 @@ class DropBoxStorage(Storage):
         return directories, files
 
     def size(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata['bytes']
 
     def modified_time(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         mod_time = datetime.strptime(metadata['modified'], DATE_FORMAT)
         return mod_time
 
     def accessed_time(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
         return acc_time
 
     def url(self, name):
-        media = self.client.media(self._full_path(name))
-        return media['url']
+        media = self.client.files_get_temporary_link(self._full_path(name))
+        return media['link']
 
     def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
-        self.client.put_file(self._full_path(name), content)
+        self.client.files_upload(content, self._full_path(name))
         return name

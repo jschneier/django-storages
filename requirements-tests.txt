@@ -1,7 +1,7 @@
 boto3>=1.2.3
 boto>=2.32.0
+dropbox>=7.21
 Django>=1.8
-dropbox>=3.24
 flake8
 google-cloud>=0.25.0
 mock
