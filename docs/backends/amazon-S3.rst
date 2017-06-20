@@ -98,13 +98,11 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_CALLING_FORMAT`` (optional: default is ``SubdomainCallingFormat()``)
     Defines the S3 calling format to use to connect to the static bucket.
 
-``AWS_S3_SIGNATURE_VERSION`` (optional: no default value)
-    Defines the S3 signature version to use. For example for
-    `AWS Signature Version 4`_ you should use ``'s3v4'``. You can see
-    `which S3 regions are compatible with each signature version`_.
+``AWS_S3_SIGNATURE_VERSION`` (optional: default is ``s3v4``)
 
-.. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
-.. _which S3 regions are compatible with each signature version: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+  All AWS regions support the v4 version of the signing protocol. To use the legacy v2 set this to ``'s3'``. Some non-Amazon S3
+  implementations might require this change.
+
 CloudFront
 ~~~~~~~~~~
 
@@ -112,6 +110,7 @@ If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
 to serve those files using that::
 
     AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
+
 **NOTE:** Django's `STATIC_URL` `must end in a slash`_ and the `AWS_S3_CUSTOM_DOMAIN` *must not*. It is best to set this variable indepedently of `STATIC_URL`.
 
 .. _must end in a slash: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
