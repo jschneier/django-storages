@@ -5,25 +5,28 @@ django-storages change log
 ******************
 
 * **Breaking:** Remove backends deprecated in v1.5.1 (`#280`_)
+* **Breaking:** ``DropBoxStorage`` has been upgrade to support v2 of the API, v1 will be shut off at the
+  end of the month - upgrading is recommended (`#273`_)
 * **Breaking:** The ``SFTPStorage`` backend now checks for the existence of the fallback ``~/.ssh/known_hosts``
   before attempting to load it.  If you had previously been passing in a path to a non-existent file it will no longer
   attempt to load the fallback. (`issue #118`_ `pr #325`_)
 * **Deprecation:** The undocumented ``gs.GSBotoStorage`` backend. See the new ``gcloud.GoogleCloudStorage``
   or ``apache_libcloud.LibCloudStorage`` backends instead. (`#236`_)
-* Add a new backend, ``gcloud.GoogleCloudStorage`` based on the ``google-cloud`` bindings. (`#236`_ thanks @scjody)
-* Pass in the location constraint when auto creating a bucket (`#257`_, `#258`_ thanks @mattayes)
+* Add a new backend, ``gcloud.GoogleCloudStorage`` based on the ``google-cloud`` bindings. (`#236`_)
+* Pass in the location constraint when auto creating a bucket in ``S3Boto3Storage`` (`#257`_, `#258`_)
 * Add support for reading ``AWS_SESSION_TOKEN`` and ``AWS_SECURITY_TOKEN`` from the environment
-  to ``S3Boto3Storage`` and ``S3BotoStorage``. (`#283`_ thanks @bxm156)
-* Fix Boto3 non-ascii filenames on Python 2.7 (`#216`_, `#217`_ thanks @AGASS007)
+  to ``S3Boto3Storage`` and ``S3BotoStorage``. (`#283`_)
+* Fix Boto3 non-ascii filenames on Python 2.7 (`#216`_, `#217`_)
 * Fix ``collectstatic`` timezone handling in and add ``get_modified_time`` to ``S3BotoStorage`` (`#290`_)
-* Add support for Django 1.11 (`#295`_ thanks @jdufresne)
-* Add ``project`` keyword support to GCS in ``LibCloudStorage`` backend (`#269`_ thanks @slightfoot)
+* Add support for Django 1.11 (`#295`_)
+* Add ``project`` keyword support to GCS in ``LibCloudStorage`` backend (`#269`_)
 * Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding in
-  the ``s3boto3`` backend (issue `#263`_ pr `#264`_ thanks @ldng)
+  the ``s3boto3`` backend (issue `#263`_ pr `#264`_)
 * The Dropbox backend now properly translates backslashes in Windows paths into forward slashes (`e52a127`_)
 * The S3 backends now permit colons in the keys (`issue #248`_ `pr #322`_)
 
 .. _#217: https://github.com/jschneier/django-storages/pull/217
+.. _#273: https://github.com/jschneier/django-storages/pull/273
 .. _#216: https://github.com/jschneier/django-storages/issues/216
 .. _#283: https://github.com/jschneier/django-storages/pull/283
 .. _#280: https://github.com/jschneier/django-storages/pull/280
