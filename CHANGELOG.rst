@@ -10,6 +10,8 @@ django-storages change log
 * **Breaking:** The ``SFTPStorage`` backend now checks for the existence of the fallback ``~/.ssh/known_hosts``
   before attempting to load it.  If you had previously been passing in a path to a non-existent file it will no longer
   attempt to load the fallback. (`issue #118`_ `pr #325`_)
+* **Breaking:** The default version value for ``AWS_S3_SIGNATURE_VERSION`` is now ``'s3v4'``. No changes should
+  be required (`#335`_)
 * **Deprecation:** The undocumented ``gs.GSBotoStorage`` backend. See the new ``gcloud.GoogleCloudStorage``
   or ``apache_libcloud.LibCloudStorage`` backends instead. (`#236`_)
 * Add a new backend, ``gcloud.GoogleCloudStorage`` based on the ``google-cloud`` bindings. (`#236`_)
@@ -43,6 +45,7 @@ django-storages change log
 .. _pr #325: https://github.com/jschneier/django-storages/pull/325
 .. _issue #248: https://github.com/jschneier/django-storages/issues/248
 .. _pr #322: https://github.com/jschneier/django-storages/pull/322
+.. _#335: https://github.com/jschneier/django-storages/pull/335
 
 1.5.2 (2017-01-13)
 ******************
