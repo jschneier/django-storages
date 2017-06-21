@@ -1,9 +1,9 @@
 boto3>=1.2.3
 boto>=2.32.0
-dropbox>=7.21
+dropbox>=7.2.1
 Django>=1.8
 flake8
-google-cloud>=0.25.0
+google-cloud-storage>=0.22.0
 mock
 paramiko
 pytest-cov>=2.2.1
