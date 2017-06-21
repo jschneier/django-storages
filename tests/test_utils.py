@@ -90,3 +90,7 @@ class SafeJoinTest(TestCase):
         dt = datetime.datetime(2017, 5, 19, 14, 45, 37, 123456)
         path = utils.safe_join('base_url', dt.isoformat())
         self.assertEqual(path, 'base_url/2017-05-19T14:45:37.123456')
+
+    def test_join_empty_string(self):
+        path = utils.safe_join('base_url', '')
+        self.assertEqual(path, 'base_url/')
