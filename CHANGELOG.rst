@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.6.0 (XXXX-XX-XX)
+1.6 (2017-06-21)
 ******************
 
 * **Breaking:** Remove backends deprecated in v1.5.1 (`#280`_)
