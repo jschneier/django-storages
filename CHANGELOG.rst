@@ -1,6 +1,12 @@
 django-storages change log
 ==========================
 
+1.6.1 (UNRELEASED)
+******************
+
+* Fix regression in ``safe_join()`` to allow joining a base path with an empty
+  string.
+
 1.6 (2017-06-21)
 ******************
 
@@ -363,4 +369,3 @@ since March 2013.
 
 .. _#89: https://bitbucket.org/david/django-storages/issue/89/112-broke-the-mosso-backend
 .. _pull request #5: https://bitbucket.org/david/django-storages/pull-request/5/fixed-path-bug-and-added-testcase-for
-
