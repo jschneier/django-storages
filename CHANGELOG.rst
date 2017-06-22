@@ -1,6 +1,12 @@
 django-storages change log
 ==========================
 
+1.6.2 (UNRELEASED)
+******************
+
+* Fix regression in ``safe_join()`` to handle a trailing slash in an
+  intermediate path.
+
 1.6.1 (2017-06-22)
 ******************
 
