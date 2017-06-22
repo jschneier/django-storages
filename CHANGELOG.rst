@@ -71,12 +71,12 @@ django-storages change log
 1.5.2 (2017-01-13)
 ******************
 
-* Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_ thanks @jbittel)
-* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment (`#238`_ thanks @jdufresne)
+* Actually use ``SFTP_STORAGE_HOST`` in ``SFTPStorage`` backend (`#204`_)
+* Fix ``S3Boto3Storage`` to avoid race conditions in a multi-threaded WSGI environment (`#238`_)
 * Fix trying to localize a naive datetime when ``settings.USE_TZ`` is ``False`` in ``S3Boto3Storage.modified_time``.
-  (thanks to @tomchuk and @piglei for the reports and the patches, `#235`_, `#234`_)
-* Fix automatic bucket creation in ``S3Boto3Storage`` when ``AWS_AUTO_CREATE_BUCKET`` is ``True`` (`#196`_ thanks @linuxlewis)
-* Improve the documentation for the S3 backends (thanks to various contributors!)
+  (`#235`_, `#234`_)
+* Fix automatic bucket creation in ``S3Boto3Storage`` when ``AWS_AUTO_CREATE_BUCKET`` is ``True`` (`#196`_)
+* Improve the documentation for the S3 backends
 
 .. _#204: https://github.com/jschneier/django-storages/pull/204
 .. _#238: https://github.com/jschneier/django-storages/pull/238
@@ -94,8 +94,8 @@ django-storages change log
   a stable output for gzipped files
 * Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
   allowing files greater than 5GB to be put on S3 (`#194`_ , `#201`_)
-* Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``) thanks @JshWright
-* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_) thanks @leonsmith
+* Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``)
+* Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_)
 
 .. _issue #202: https://github.com/jschneier/django-storages/issues/202
 .. _#201: https://github.com/jschneier/django-storages/pull/201
@@ -108,13 +108,13 @@ django-storages change log
 1.5.0 (2016-08-02)
 ******************
 
-* Add new backend ``S3Boto3Storage`` (`#179`_) MASSIVE THANKS @mbarrien
-* Add a `strict` option to `utils.setting` (`#176`_) thanks @ZuluPro
-* Tests, documentation, fixing ``.close`` for ``SFTPStorage`` (`#177`_) thanks @ZuluPro
-* Tests, documentation, add `.readlines` for ``FTPStorage`` (`#175`_) thanks @ZuluPro
-* Tests and documentation for ``DropBoxStorage`` (`#174`_) thanks @ZuluPro
-* Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_) thanks @fladi
-* Enable CI testing of Python 3.5 and fix test failure from api change (`#171`_) thanks @tnir
+* Add new backend ``S3Boto3Storage`` (`#179`_)
+* Add a `strict` option to `utils.setting` (`#176`_)
+* Tests, documentation, fixing ``.close`` for ``SFTPStorage`` (`#177`_)
+* Tests, documentation, add `.readlines` for ``FTPStorage`` (`#175`_)
+* Tests and documentation for ``DropBoxStorage`` (`#174`_)
+* Fix ``MANIFEST.in`` to not ship ``.pyc`` files. (`#145`_)
+* Enable CI testing of Python 3.5 and fix test failure from api change (`#171`_)
 
 .. _#145: https://github.com/jschneier/django-storages/pull/145
 .. _#171: https://github.com/jschneier/django-storages/pull/171
@@ -129,10 +129,10 @@ django-storages change log
 
 * Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding
   in the ``s3boto`` backend. Compressable types such as ``application/javascript`` will still be gzipped.
-  PR `#122`_ thanks @cambonf
-* Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`_) thanks @zuck
+  PR `#122`_
+* Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`_)
 * Add ``GS_HOST`` setting (with a default of ``GSConnection.DefaultHost``) to fix ``GSBotoStorage``.
-  Issue `#124`_. Fixed in `#125`_. Thanks @patgmiller @dcgoss.
+  Issue `#124`_. Fixed in `#125`_.
 
 .. _#122: https://github.com/jschneier/django-storages/pull/122
 .. _#127: https://github.com/jschneier/django-storages/pull/127
@@ -148,10 +148,10 @@ django-storages change log
 1.3.2 (2016-01-26)
 ******************
 
-* Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_) thanks @kmmbvnr
-* Allow easily specifying a custom expiry time when generating a url for ``S3BotoStorage`` (`#96`_) thanks @mattbriancon
+* Fix memory leak from not closing underlying temp file in ``s3boto`` backend (`#106`_)
+* Allow easily specifying a custom expiry time when generating a url for ``S3BotoStorage`` (`#96`_)
 * Check for bucket existence when the empty path ('') is passed to ``storage.exists`` in ``S3BotoStorage`` -
-  this prevents a crash when running ``collectstatic -c`` on Django 1.9.1 (`#112`_) fixed in `#116`_ thanks @xblitz
+  this prevents a crash when running ``collectstatic -c`` on Django 1.9.1 (`#112`_) fixed in `#116`_
 
 .. _#106: https://github.com/jschneier/django-storages/pull/106
 .. _#96: https://github.com/jschneier/django-storages/pull/96
@@ -162,12 +162,12 @@ django-storages change log
 1.3.1 (2016-01-12)
 ******************
 
-* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__) thanks @erlingbo
-* Add support for a Dropbox (``dropbox``) storage backend, thanks @ZuluPro (`#76`_)
+* A few Azure Storage fixes [pass the content-type to Azure, handle chunked content, fix ``url``] (`#45`__)
+* Add support for a Dropbox (``dropbox``) storage backend
 * Various fixes to the ``apache_libcloud`` backend [return the number of bytes asked for by ``.read``, make ``.name`` non-private, don't
-  initialize to an empty ``BytesIO`` object] thanks @kaedroho (`#55`_)
-* Fix multi-part uploads in ``s3boto`` backend not respecting ``AWS_S3_ENCRYPTION`` (`#94`_) thanks @andersontep
-* Automatically gzip svg files thanks @comandrei (`#100`_)
+  initialize to an empty ``BytesIO`` object] (`#55`_)
+* Fix multi-part uploads in ``s3boto`` backend not respecting ``AWS_S3_ENCRYPTION`` (`#94`_)
+* Automatically gzip svg files (`#100`_)
 
 .. __: https://github.com/jschneier/django-storages/pull/45
 .. _#76: https://github.com/jschneier/django-storages/pull/76
@@ -185,7 +185,7 @@ django-storages change log
 * Add support for Django 1.8+ (`#36`__)
 * Add ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` settings for s3boto backend (`#41`_)
 * Fix Python3K compat issue in apache_libcloud (`#52`_)
-* Fix Google Storage backend not respecting ``GS_IS_GZIPPED`` setting (`#51`__, `#60`_) thanks @stmos
+* Fix Google Storage backend not respecting ``GS_IS_GZIPPED`` setting (`#51`__, `#60`_)
 * Rename FTP ``_name`` attribute to ``name`` which is what the Django ``File`` api is expecting (`#70`_)
 * Put ``StorageMixin`` first in inheritance to maintain backwards compat with older versions of Django (`#63`_)
 
