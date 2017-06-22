@@ -275,12 +275,10 @@ class S3BotoStorage(Storage):
         Get the locally cached files for the bucket.
         """
         if self.preload_metadata and not self._loaded_meta:
-            self._entries.update(
-                dict(
-                    (self._decode_name(entry.key), entry)
-                    for entry in self.bucket.list(prefix=self.location)
-                )
-            )
+            self._entries.update({
+                self._decode_name(entry.key): entry
+                for entry in self.bucket.list(prefix=self.location)
+            })
             self._loaded_meta = True
         return self._entries
 

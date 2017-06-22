@@ -221,15 +221,15 @@ class S3BotoStorageTests(S3BotoTestCase):
         url = 'http://aws.amazon.com/%s' % name
         self.storage.connection.generate_url.return_value = url
 
-        kwargs = dict(
-            method='GET',
-            bucket=self.storage.bucket.name,
-            key=name,
-            query_auth=self.storage.querystring_auth,
-            force_http=not self.storage.secure_urls,
-            headers=None,
-            response_headers=None,
-        )
+        kwargs = {
+            'method': 'GET',
+            'bucket': self.storage.bucket.name,
+            'key': name,
+            'query_auth': self.storage.querystring_auth,
+            'force_http': not self.storage.secure_urls,
+            'headers': None,
+            'response_headers': None,
+        }
 
         self.assertEqual(self.storage.url(name), url)
         self.storage.connection.generate_url.assert_called_with(
