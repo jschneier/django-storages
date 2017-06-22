@@ -109,3 +109,17 @@ class GSBotoStorage(S3BotoStorage):
                                        "can be automatically created by "
                                        "setting GS_AUTO_CREATE_BUCKET to "
                                        "``True``." % name)
+    @property
+    def connection(self):
+        if self._connection is None:
+            self._connection = self.connection_class(
+                self.access_key,
+                self.secret_key,
+                is_secure=self.use_ssl,
+                calling_format=self.calling_format,
+                host=self.host,
+                port=self.port,
+                proxy=self.proxy,
+                proxy_port=self.proxy_port
+            )
+        return self._connection
