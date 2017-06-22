@@ -80,6 +80,11 @@ class GSBotoStorage(S3BotoStorage):
     url_protocol = setting('GS_URL_PROTOCOL', 'http:')
     host = setting('GS_HOST', GSConnection.DefaultHost)
 
+    def _get_connection_kwargs(self):
+        kwargs = super(GSBotoStorage, self)._get_connection_kwargs()
+        del kwargs['security_token']
+        return kwargs
+
     def _save_content(self, key, content, headers):
         # only pass backwards incompatible arguments if they vary from the default
         options = {}

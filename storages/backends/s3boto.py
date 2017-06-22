@@ -246,18 +246,25 @@ class S3BotoStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
+            kwargs = self._get_connection_kwargs()
+
             self._connection = self.connection_class(
                 self.access_key,
                 self.secret_key,
-                security_token=self.security_token,
-                is_secure=self.use_ssl,
-                calling_format=self.calling_format,
-                host=self.host,
-                port=self.port,
-                proxy=self.proxy,
-                proxy_port=self.proxy_port
+                **kwargs
             )
         return self._connection
+
+    def _get_connection_kwargs(self):
+        return dict(
+            security_token=self.security_token,
+            is_secure=self.use_ssl,
+            calling_format=self.calling_format,
+            host=self.host,
+            port=self.port,
+            proxy=self.proxy,
+            proxy_port=self.proxy_port
+        )
 
     @property
     def bucket(self):
