@@ -11,19 +11,18 @@
 from __future__ import absolute_import
 
 from datetime import datetime
-from tempfile import SpooledTemporaryFile
 from shutil import copyfileobj
+from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils.deconstruct import deconstructible
 from django.utils._os import safe_join
-
-from storages.utils import setting
-
+from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
+
+from storages.utils import setting
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 

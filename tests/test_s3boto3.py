@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from datetime import datetime
 import gzip
+from datetime import datetime
+
+from botocore.exceptions import ClientError
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.test import TestCase
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.timezone import is_aware, utc
+
+from storages.backends import s3boto3
+
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
-
-from django.test import TestCase
-from django.conf import settings
-from django.core.files.base import ContentFile
-from django.utils.six.moves.urllib import parse as urlparse
-from django.utils.timezone import is_aware, utc
-
-from botocore.exceptions import ClientError
-
-from storages.backends import s3boto3
 
 
 class S3Boto3TestCase(TestCase):

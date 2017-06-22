@@ -8,9 +8,8 @@ except ImportError:  # Python 3.2 and below
 import datetime
 
 from django.core.files.base import ContentFile
-from django.utils import timezone
 from django.test import TestCase
-
+from django.utils import timezone
 from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
 

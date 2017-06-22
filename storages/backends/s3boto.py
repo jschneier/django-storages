@@ -1,16 +1,20 @@
-import os
 import mimetypes
+import os
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
-from django.utils.six import BytesIO
 from django.utils import timezone as tz
+from django.utils.deconstruct import deconstructible
+from django.utils.encoding import (
+    filepath_to_uri, force_bytes, force_text, smart_str,
+)
+from django.utils.six import BytesIO
+
+from storages.utils import clean_name, safe_join, setting
 
 try:
     from boto import __version__ as boto_version
@@ -22,7 +26,6 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
 
-from storages.utils import clean_name, safe_join, setting
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 

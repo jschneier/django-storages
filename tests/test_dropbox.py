@@ -1,16 +1,19 @@
 import re
 from datetime import datetime
+
+from django.core.exceptions import (
+    ImproperlyConfigured, SuspiciousFileOperation,
+)
+from django.core.files.base import ContentFile, File
+from django.test import TestCase
+
+from storages.backends import dropbox
+
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
 
-from django.test import TestCase
-from django.core.files.base import File, ContentFile
-from django.core.exceptions import ImproperlyConfigured, \
-    SuspiciousFileOperation
-
-from storages.backends import dropbox
 
 FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
 FILE_FIXTURE = {

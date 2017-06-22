@@ -4,9 +4,9 @@ except ImportError:
     from mock import patch
 from datetime import datetime
 
-from django.test import TestCase
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
+from django.test import TestCase
 from django.utils.six import BytesIO
 
 from storages.backends import ftp

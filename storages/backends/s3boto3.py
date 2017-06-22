@@ -1,6 +1,6 @@
+import mimetypes
 import os
 import posixpath
-import mimetypes
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
@@ -8,10 +8,14 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_text, smart_text, filepath_to_uri, force_bytes
-from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.encoding import (
+    filepath_to_uri, force_bytes, force_text, smart_text,
+)
 from django.utils.six import BytesIO
-from django.utils.timezone import localtime, is_naive
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.timezone import is_naive, localtime
+
+from storages.utils import safe_join, setting
 
 try:
     import boto3.session
@@ -22,7 +26,6 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings.\n"
                                "See https://github.com/boto/boto3")
 
-from storages.utils import setting, safe_join
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
