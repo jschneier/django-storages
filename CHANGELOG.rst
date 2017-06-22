@@ -1,11 +1,15 @@
 django-storages change log
 ==========================
 
-1.6.1 (UNRELEASED)
+1.6.1 (XXXX-XX-XX)
 ******************
 
+* Drop support for Django 1.9 (`e89db45`_)
 * Fix regression in ``safe_join()`` to allow joining a base path with an empty
-  string.
+  string. (`#336_`)
+
+.. _e89db45: https://github.com/jschneier/django-storages/commit/e89db451d7e617638b5991e31df4c8de196546a6
+.. _#336: https://github.com/jschneier/django-storages/pull/217
 
 1.6 (2017-06-21)
 ******************
