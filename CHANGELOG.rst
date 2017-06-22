@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.6.1 (XXXX-XX-XX)
+1.6.1 (2017-06-22)
 ******************
 
 * Drop support for Django 1.9 (`e89db45`_)
