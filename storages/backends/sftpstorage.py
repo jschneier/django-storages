@@ -1,17 +1,17 @@
-from __future__ import print_function
 # SFTP storage backend for Django.
 # Author: Brent Tubbs <brent.tubbs@gmail.com>
 # License: MIT
 #
 # Modeled on the FTP storage by Rafal Jonca <jonca.rafal@gmail.com>
+from __future__ import print_function
 
 import getpass
 import os
-import paramiko
 import posixpath
 import stat
 from datetime import datetime
 
+import paramiko
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible

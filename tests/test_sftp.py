@@ -2,15 +2,16 @@ import os
 import stat
 from datetime import datetime
 
+from django.core.files.base import File
+from django.test import TestCase
+from django.utils.six import BytesIO
+
+from storages.backends import sftpstorage
+
 try:
     from unittest.mock import patch, MagicMock
 except ImportError:  # Python 3.2 and below
     from mock import patch, MagicMock
-
-from django.test import TestCase
-from django.core.files.base import File
-from django.utils.six import BytesIO
-from storages.backends import sftpstorage
 
 
 class SFTPStorageTest(TestCase):
