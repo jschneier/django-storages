@@ -59,6 +59,10 @@ class SafeJoinTest(TestCase):
                                ".", "to/./somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
+    def test_with_only_dot(self):
+        path = utils.safe_join("", ".")
+        self.assertEqual(path, "")
+
     def test_base_url(self):
         path = utils.safe_join("base_url", "path/to/somewhere")
         self.assertEqual(path, "base_url/path/to/somewhere")
@@ -94,4 +98,20 @@ class SafeJoinTest(TestCase):
 
     def test_join_empty_string(self):
         path = utils.safe_join('base_url', '')
+        self.assertEqual(path, 'base_url/')
+
+    def test_with_base_url_and_dot(self):
+        path = utils.safe_join('base_url', '.')
+        self.assertEqual(path, 'base_url/')
+
+    def test_with_base_url_and_dot_and_path_and_slash(self):
+        path = utils.safe_join('base_url', '.', 'path/to/', '.')
+        self.assertEqual(path, 'base_url/path/to/')
+
+    def test_join_nothing(self):
+        path = utils.safe_join('')
+        self.assertEqual(path, '')
+
+    def test_with_base_url_join_nothing(self):
+        path = utils.safe_join('base_url')
         self.assertEqual(path, 'base_url/')

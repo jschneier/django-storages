@@ -60,11 +60,16 @@ def safe_join(base, *paths):
     """
     base_path = force_text(base)
     base_path = base_path.rstrip('/')
-    paths = [base_path + '/'] + [force_text(p) for p in paths if p]
+    paths = [force_text(p) for p in paths]
 
-    final_path = posixpath.normpath(posixpath.join(*paths))
-    # posixpath.normpath() strips the trailing /. Add it back.
-    if paths[-1].endswith('/'):
+    final_path = base_path + '/'
+    for path in paths:
+        _final_path = posixpath.normpath(posixpath.join(final_path, path))
+        # posixpath.normpath() strips the trailing /. Add it back.
+        if path.endswith('/') or _final_path + '/' == final_path:
+            _final_path += '/'
+        final_path = _final_path
+    if final_path == base_path:
         final_path += '/'
 
     # Ensure final_path starts with base_path and that the next character after
