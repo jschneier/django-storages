@@ -1,11 +1,16 @@
 django-storages change log
 ==========================
 
-1.6.2 (UNRELEASED)
+1.6.2 (XXXX-XX-XX)
 ******************
 
 * Fix regression in ``safe_join()`` to handle a trailing slash in an
-  intermediate path.
+  intermediate path. (`#341`_)
+* Fix regression in ``gs.GSBotoStorage`` got an unespected kwarg.
+  (`#342`_)
+
+.. _#341: https://github.com/jschneier/django-storages/pull/341
+.. _#342: https://github.com/jschneier/django-storages/pull/342
 
 1.6.1 (2017-06-22)
 ******************
@@ -15,7 +20,7 @@ django-storages change log
   string. (`#336_`)
 
 .. _e89db45: https://github.com/jschneier/django-storages/commit/e89db451d7e617638b5991e31df4c8de196546a6
-.. _#336: https://github.com/jschneier/django-storages/pull/217
+.. _#336: https://github.com/jschneier/django-storages/pull/336
 
 1.6 (2017-06-21)
 ******************
