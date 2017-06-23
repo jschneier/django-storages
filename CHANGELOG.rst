@@ -1,6 +1,15 @@
 django-storages change log
 ==========================
 
+1.6.3 (XXXX-XX-XX)
+******************
+
+* Revert default ``AWS_S3_SIGNATURE_VERSION`` to be V2 to restore backwards
+  compatability in ``S3Boto3``. It's recommended that all new projects set
+  this to be ``'s3v4'``. (`#344`_)
+
+.. _#344: https://github.com/jschneier/django-storages/pull/344
+
 1.6.2 (2017-06-22)
 ******************
 
