@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.6.3 (XXXX-XX-XX)
+1.6.3 (2017-06-23)
 ******************
 
 * Revert default ``AWS_S3_SIGNATURE_VERSION`` to be V2 to restore backwards
