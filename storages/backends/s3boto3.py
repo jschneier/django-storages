@@ -191,7 +191,7 @@ class S3Boto3Storage(Storage):
     bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
     querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
-    signature_version = setting('AWS_S3_SIGNATURE_VERSION', 's3v4')
+    signature_version = setting('AWS_S3_SIGNATURE_VERSION')
     reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
     location = setting('AWS_LOCATION', '')
     encryption = setting('AWS_S3_ENCRYPTION', False)
