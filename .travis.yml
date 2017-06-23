@@ -4,8 +4,7 @@ cache: pip
 
 matrix:
   include:
-    - env: TOX_ENV=flake8
-    - env: TOX_ENV=isort
+    - env: TOX_ENV=lint
     - python: 2.7
       env: TOX_ENV=py27-django18
     - python: 3.3
