@@ -455,18 +455,11 @@ class S3Boto3Storage(Storage):
         self.bucket.Object(self._encode_name(name)).delete()
 
     def exists(self, name):
-        if not name:
-            try:
-                self.bucket
-                return True
-            except ImproperlyConfigured:
-                return False
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
             return name in self.entries
-        obj = self.bucket.Object(self._encode_name(name))
         try:
-            obj.load()
+            self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
         except self.connection_response_error:
             return False
