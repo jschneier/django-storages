@@ -108,5 +108,5 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.files_upload(content, self._full_path(name))
+        self.client.files_upload(content.file.read(), self._full_path(name))
         return name
