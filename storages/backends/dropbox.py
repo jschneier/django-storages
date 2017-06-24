@@ -21,6 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
+from dropbox.files import FileMetadata, FolderMetadata
 
 from storages.utils import setting
 
@@ -75,14 +76,15 @@ class DropBoxStorage(Storage):
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
-        metadata = self.client.files_get_metadata(full_path)
-        for entry in metadata['contents']:
-            entry['path'] = entry['path'].replace(full_path, '', 1)
-            entry['path'] = entry['path'].replace('/', '', 1)
-            if entry['is_dir']:
-                directories.append(entry['path'])
-            else:
-                files.append(entry['path'])
+        # Specify the root folder as an empty string rather than as "/"
+        if full_path == '/':
+            full_path = ''
+        entries = self.client.files_list_folder(full_path).entries
+        for entry in entries:
+            if isinstance(entry, FileMetadata):
+                files.append(entry.name)
+            if isinstance(entry, FolderMetadata):
+                directories.append(entry.name)
         return directories, files
 
     def size(self, name):
