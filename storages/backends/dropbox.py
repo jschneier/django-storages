@@ -21,7 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import FileMetadata, FolderMetadata
+from dropbox.files import FileMetadata, FolderMetadata, UploadSessionCursor, CommitInfo
 
 from storages.utils import setting
 
@@ -110,5 +110,21 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.files_upload(content.file.read(), self._full_path(name))
+        # files_upload
+        CHUNK_SIZE = 20 * 1024 * 1024
+        content.open()
+        f = content.file
+        if content.size < CHUNK_SIZE:
+            self.client.files_upload(f.read(), self._full_path(name))
+        else:
+            upload_session_start_result = self.client.files_upload_session_start(f.read(CHUNK_SIZE))
+            cursor = UploadSessionCursor(session_id=upload_session_start_result.session_id, offset=f.tell())
+            commit = CommitInfo(path=self._full_path(name))
+            while f.tell() < content.size:
+                if ((content.size - f.tell()) <= CHUNK_SIZE):
+                    self.client.files_upload_session_finish(f.read(CHUNK_SIZE), cursor, commit)
+                else:
+                    self.client.files_upload_session_append(f.read(CHUNK_SIZE), cursor.session_id, cursor.offset)
+                    cursor.offset = f.tell()
+        content.close()
         return name
