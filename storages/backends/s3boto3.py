@@ -169,10 +169,7 @@ class S3Boto3Storage(Storage):
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
-    connection_service_name = 's3'
     default_content_type = 'application/octet-stream'
-    connection_response_error = ClientError
-    file_class = S3Boto3StorageFile
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
 
@@ -259,7 +256,7 @@ class S3Boto3Storage(Storage):
         if self._connection is None:
             session = boto3.session.Session()
             self._connection = session.resource(
-                self.connection_service_name,
+                's3',
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
                 aws_session_token=self.security_token,
@@ -322,7 +319,7 @@ class S3Boto3Storage(Storage):
                 # Directly call head_bucket instead of bucket.load() because head_bucket()
                 # fails on wrong region, while bucket.load() does not.
                 bucket.meta.client.head_bucket(Bucket=name)
-            except self.connection_response_error as err:
+            except ClientError as err:
                 if err.response['ResponseMetadata']['HTTPStatusCode'] == 301:
                     raise ImproperlyConfigured("Bucket %s exists, but in a different "
                                                "region than we are connecting to. Set "
@@ -403,8 +400,8 @@ class S3Boto3Storage(Storage):
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
         try:
-            f = self.file_class(name, mode, self)
-        except self.connection_response_error as err:
+            f = S3Boto3StorageFile(name, mode, self)
+        except ClientError as err:
             if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 raise IOError('File does not exist: %s' % name)
             raise  # Let it bubble up if it was some other error
@@ -461,7 +458,7 @@ class S3Boto3Storage(Storage):
         try:
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
-        except self.connection_response_error:
+        except ClientError:
             return False
 
     def listdir(self, name):
