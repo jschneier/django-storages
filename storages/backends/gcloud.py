@@ -6,6 +6,7 @@ from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, smart_str
+from google.cloud.storage import Bucket
 
 from storages.utils import clean_name, safe_join, setting
 
@@ -117,6 +118,9 @@ class GoogleCloudStorage(Storage):
         """
         Retrieves a bucket if it exists, otherwise creates it.
         """
+        if not self.auto_create_bucket:
+            return Bucket(client=self.client, name=name)
+
         try:
             return self.client.get_bucket(name)
         except NotFound:
