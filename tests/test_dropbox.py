@@ -83,7 +83,7 @@ class DropBoxTest(TestCase):
         exists = self.storage.exists('bar')
         self.assertFalse(exists)
 
-    @mock.patch('dropbox.Dropbox.files_get_metadata',
+    @mock.patch('dropbox.Dropbox.files_list_folder',
                 return_value=FILES_FIXTURE)
     def test_listdir(self, *args):
         dirs, files = self.storage.listdir('/')
