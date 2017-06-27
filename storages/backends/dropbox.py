@@ -21,6 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
+from dropbox.files import FileMetadata, FolderMetadata, UploadSessionCursor, CommitInfo
 
 from storages.utils import setting
 
@@ -75,14 +76,15 @@ class DropBoxStorage(Storage):
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
-        metadata = self.client.files_get_metadata(full_path)
-        for entry in metadata['contents']:
-            entry['path'] = entry['path'].replace(full_path, '', 1)
-            entry['path'] = entry['path'].replace('/', '', 1)
-            if entry['is_dir']:
-                directories.append(entry['path'])
-            else:
-                files.append(entry['path'])
+        # Specify the root folder as an empty string rather than as "/"
+        if full_path == '/':
+            full_path = ''
+        entries = self.client.files_list_folder(full_path).entries
+        for entry in entries:
+            if isinstance(entry, FileMetadata):
+                files.append(entry.name)
+            if isinstance(entry, FolderMetadata):
+                directories.append(entry.name)
         return directories, files
 
     def size(self, name):
@@ -108,5 +110,21 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.files_upload(content, self._full_path(name))
+        # files_upload
+        CHUNK_SIZE = 20 * 1024 * 1024
+        content.open()
+        f = content.file
+        if content.size < CHUNK_SIZE:
+            self.client.files_upload(f.read(), self._full_path(name))
+        else:
+            upload_session_start_result = self.client.files_upload_session_start(f.read(CHUNK_SIZE))
+            cursor = UploadSessionCursor(session_id=upload_session_start_result.session_id, offset=f.tell())
+            commit = CommitInfo(path=self._full_path(name))
+            while f.tell() < content.size:
+                if ((content.size - f.tell()) <= CHUNK_SIZE):
+                    self.client.files_upload_session_finish(f.read(CHUNK_SIZE), cursor, commit)
+                else:
+                    self.client.files_upload_session_append(f.read(CHUNK_SIZE), cursor.session_id, cursor.offset)
+                    cursor.offset = f.tell()
+        content.close()
         return name
