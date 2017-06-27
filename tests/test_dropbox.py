@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 
 from django.core.exceptions import (
@@ -60,9 +59,6 @@ FILE_MEDIA_FIXTURE = {
 
 
 class DropBoxTest(TestCase):
-    @mock.patch('dropbox.client._OAUTH2_ACCESS_TOKEN_PATTERN',
-                re.compile(r'.*'))
-    @mock.patch('dropbox.client.DropboxOAuth2Session')
     def setUp(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')
 

@@ -189,17 +189,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
 
     def test_storage_exists(self):
-        obj = self.storage.bucket.Object.return_value
         self.assertTrue(self.storage.exists("file.txt"))
-        self.storage.bucket.Object.assert_called_with("file.txt")
-        obj.load.assert_called_with()
+        self.storage.connection.meta.client.head_object.assert_called_with(
+            Bucket=self.storage.bucket_name,
+            Key="file.txt",
+        )
 
     def test_storage_exists_false(self):
-        obj = self.storage.bucket.Object.return_value
-        obj.load.side_effect = ClientError({'Error': {'Code': 123, 'Message': 'Fake'}}, 'load')
+        self.storage.connection.meta.client.head_object.side_effect = ClientError(
+            {'Error': {'Code': '404', 'Message': 'Not Found'}},
+            'HeadObject',
+        )
         self.assertFalse(self.storage.exists("file.txt"))
-        self.storage.bucket.Object.assert_called_with("file.txt")
-        obj.load.assert_called_with()
+        self.storage.connection.meta.client.head_object.assert_called_with(
+            Bucket=self.storage.bucket_name,
+            Key='file.txt',
+        )
+
+    def test_storage_exists_doesnt_create_bucket(self):
+        with mock.patch.object(self.storage, '_get_or_create_bucket') as method:
+            self.storage.exists('file.txt')
+            method.assert_not_called()
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")

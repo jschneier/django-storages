@@ -1,6 +1,6 @@
 boto3>=1.2.3
 boto>=2.32.0
-dropbox>=7.2.1
+dropbox>=8.0.0
 Django>=1.8
 flake8
 google-cloud-storage>=0.22.0
