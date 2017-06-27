@@ -1,3 +1,8 @@
+**This library has been designated as the official successor of django-storages (as of February 2016). Please update your requirements
+files to point to django-storages.**
+
+All development now happens at https://github.com/jschneier/django-storages
+
 ===============
 django-storages
 ===============

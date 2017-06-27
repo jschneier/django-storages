@@ -1,6 +1,12 @@
 django-storages change log
 ==========================
 
+1.3.3 (2017-06-27)
+******************
+
+* Show a warning indicating the new namespace and update the README to point
+  at the new package.
+
 1.3.2 (2016-01-26)
 ******************
 
