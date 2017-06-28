@@ -6,3 +6,4 @@ dropbox>=3.24
 mock
 paramiko
 google-cloud>=0.25.0
+azure-storage

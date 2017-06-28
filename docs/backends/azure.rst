@@ -7,7 +7,7 @@ Before you start configuration, you will need to install the Azure SDK for Pytho
 
 Install the package::
 
-  pip install azure
+  pip install azure-storage
 
 Add to your requirements file::
 
