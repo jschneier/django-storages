@@ -1,6 +1,6 @@
+import mimetypes
 import os
 import posixpath
-import mimetypes
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
@@ -8,10 +8,14 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_text, smart_text, filepath_to_uri, force_bytes
-from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.encoding import (
+    filepath_to_uri, force_bytes, force_text, smart_text,
+)
 from django.utils.six import BytesIO
-from django.utils.timezone import localtime, is_naive
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.timezone import is_naive, localtime
+
+from storages.utils import safe_join, setting
 
 try:
     import boto3.session
@@ -22,46 +26,12 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings.\n"
                                "See https://github.com/boto/boto3")
 
-from storages.utils import setting
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
 if boto3_version_info[:2] < (1, 2):
     raise ImproperlyConfigured("The installed Boto3 library must be 1.2.0 or "
                                "higher.\nSee https://github.com/boto/boto3")
-
-
-def safe_join(base, *paths):
-    """
-    A version of django.utils._os.safe_join for S3 paths.
-
-    Joins one or more path components to the base path component
-    intelligently. Returns a normalized version of the final path.
-
-    The final path must be located inside of the base path component
-    (otherwise a ValueError is raised).
-
-    Paths outside the base path indicate a possible security
-    sensitive operation.
-    """
-    base_path = force_text(base)
-    base_path = base_path.rstrip('/')
-    paths = [force_text(p) for p in paths]
-
-    final_path = base_path
-    for path in paths:
-        final_path = urlparse.urljoin(final_path.rstrip('/') + "/", path)
-
-    # Ensure final_path starts with base_path and that the next character after
-    # the final path is '/' (or nothing, in which case final_path must be
-    # equal to base_path).
-    base_path_len = len(base_path)
-    if (not final_path.startswith(base_path) or
-            final_path[base_path_len:base_path_len + 1] not in ('', '/')):
-        raise ValueError('the joined path is located outside of the base path'
-                         ' component')
-
-    return final_path.lstrip('/')
 
 
 @deconstructible
@@ -199,10 +169,7 @@ class S3Boto3Storage(Storage):
     mode and supports streaming(buffering) data in chunks to S3
     when writing.
     """
-    connection_service_name = 's3'
     default_content_type = 'application/octet-stream'
-    connection_response_error = ClientError
-    file_class = S3Boto3StorageFile
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
 
@@ -289,7 +256,7 @@ class S3Boto3Storage(Storage):
         if self._connection is None:
             session = boto3.session.Session()
             self._connection = session.resource(
-                self.connection_service_name,
+                's3',
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
                 aws_session_token=self.security_token,
@@ -316,8 +283,10 @@ class S3Boto3Storage(Storage):
         Get the locally cached files for the bucket.
         """
         if self.preload_metadata and not self._entries:
-            self._entries = dict((self._decode_name(entry.key), entry)
-                                 for entry in self.bucket.objects.filter(Prefix=self.location))
+            self._entries = {
+                self._decode_name(entry.key): entry
+                for entry in self.bucket.objects.filter(Prefix=self.location)
+            }
         return self._entries
 
     def _lookup_env(self, names):
@@ -350,7 +319,7 @@ class S3Boto3Storage(Storage):
                 # Directly call head_bucket instead of bucket.load() because head_bucket()
                 # fails on wrong region, while bucket.load() does not.
                 bucket.meta.client.head_bucket(Bucket=name)
-            except self.connection_response_error as err:
+            except ClientError as err:
                 if err.response['ResponseMetadata']['HTTPStatusCode'] == 301:
                     raise ImproperlyConfigured("Bucket %s exists, but in a different "
                                                "region than we are connecting to. Set "
@@ -431,8 +400,8 @@ class S3Boto3Storage(Storage):
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
         try:
-            f = self.file_class(name, mode, self)
-        except self.connection_response_error as err:
+            f = S3Boto3StorageFile(name, mode, self)
+        except ClientError as err:
             if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 raise IOError('File does not exist: %s' % name)
             raise  # Let it bubble up if it was some other error
@@ -483,20 +452,13 @@ class S3Boto3Storage(Storage):
         self.bucket.Object(self._encode_name(name)).delete()
 
     def exists(self, name):
-        if not name:
-            try:
-                self.bucket
-                return True
-            except ImproperlyConfigured:
-                return False
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
             return name in self.entries
-        obj = self.bucket.Object(self._encode_name(name))
         try:
-            obj.load()
+            self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
-        except self.connection_response_error:
+        except ClientError:
             return False
 
     def listdir(self, name):
@@ -562,9 +524,11 @@ class S3Boto3Storage(Storage):
         # from v2 and v4 signatures, regardless of the actual signature version used.
         split_url = urlparse.urlsplit(url)
         qs = urlparse.parse_qsl(split_url.query, keep_blank_values=True)
-        blacklist = set(['x-amz-algorithm', 'x-amz-credential', 'x-amz-date',
-                         'x-amz-expires', 'x-amz-signedheaders', 'x-amz-signature',
-                         'x-amz-security-token', 'awsaccesskeyid', 'expires', 'signature'])
+        blacklist = {
+            'x-amz-algorithm', 'x-amz-credential', 'x-amz-date',
+            'x-amz-expires', 'x-amz-signedheaders', 'x-amz-signature',
+            'x-amz-security-token', 'awsaccesskeyid', 'expires', 'signature',
+        }
         filtered_qs = ((key, val) for key, val in qs if key.lower() not in blacklist)
         # Note: Parameters that did not have a value in the original query string will have
         # an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=

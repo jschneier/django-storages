@@ -1,70 +1,28 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from datetime import datetime
 import gzip
+from datetime import datetime
+
+from botocore.exceptions import ClientError
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.test import TestCase
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.timezone import is_aware, utc
+
+from storages.backends import s3boto3
+
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
-
-from django.test import TestCase
-from django.conf import settings
-from django.core.files.base import ContentFile
-from django.utils.six.moves.urllib import parse as urlparse
-from django.utils.timezone import is_aware, utc
-
-from botocore.exceptions import ClientError
-
-from storages.backends import s3boto3
-
-__all__ = (
-    'SafeJoinTest',
-    'S3Boto3StorageTests',
-)
 
 
 class S3Boto3TestCase(TestCase):
     def setUp(self):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connection = mock.MagicMock()
-
-
-class SafeJoinTest(TestCase):
-    def test_normal(self):
-        path = s3boto3.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
-
-    def test_with_dot(self):
-        path = s3boto3.safe_join("", "path/./somewhere/../other", "..",
-                                 ".", "to/./somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
-    def test_base_url(self):
-        path = s3boto3.safe_join("base_url", "path/to/somewhere")
-        self.assertEqual(path, "base_url/path/to/somewhere")
-
-    def test_base_url_with_slash(self):
-        path = s3boto3.safe_join("base_url/", "path/to/somewhere")
-        self.assertEqual(path, "base_url/path/to/somewhere")
-
-    def test_suspicious_operation(self):
-        self.assertRaises(ValueError,
-                          s3boto3.safe_join, "base", "../../../../../../../etc/passwd")
-
-    def test_trailing_slash(self):
-        """
-        Test safe_join with paths that end with a trailing slash.
-        """
-        path = s3boto3.safe_join("base_url/", "path/to/somewhere/")
-        self.assertEqual(path, "base_url/path/to/somewhere/")
-
-    def test_trailing_slash_multi(self):
-        """
-        Test safe_join with multiple paths that end with a trailing slash.
-        """
-        path = s3boto3.safe_join("base_url/", "path/to/" "somewhere/")
-        self.assertEqual(path, "base_url/path/to/somewhere/")
 
 
 class S3Boto3StorageTests(S3Boto3TestCase):
@@ -231,17 +189,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
 
     def test_storage_exists(self):
-        obj = self.storage.bucket.Object.return_value
         self.assertTrue(self.storage.exists("file.txt"))
-        self.storage.bucket.Object.assert_called_with("file.txt")
-        obj.load.assert_called_with()
+        self.storage.connection.meta.client.head_object.assert_called_with(
+            Bucket=self.storage.bucket_name,
+            Key="file.txt",
+        )
 
     def test_storage_exists_false(self):
-        obj = self.storage.bucket.Object.return_value
-        obj.load.side_effect = ClientError({'Error': {'Code': 123, 'Message': 'Fake'}}, 'load')
+        self.storage.connection.meta.client.head_object.side_effect = ClientError(
+            {'Error': {'Code': '404', 'Message': 'Not Found'}},
+            'HeadObject',
+        )
         self.assertFalse(self.storage.exists("file.txt"))
-        self.storage.bucket.Object.assert_called_with("file.txt")
-        obj.load.assert_called_with()
+        self.storage.connection.meta.client.head_object.assert_called_with(
+            Bucket=self.storage.bucket_name,
+            Key='file.txt',
+        )
+
+    def test_storage_exists_doesnt_create_bucket(self):
+        with mock.patch.object(self.storage, '_get_or_create_bucket') as method:
+            self.storage.exists('file.txt')
+            method.assert_not_called()
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")

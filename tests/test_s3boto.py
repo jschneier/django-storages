@@ -5,20 +5,15 @@ except ImportError:  # Python 3.2 and below
 
 import datetime
 
-from django.test import TestCase
-from django.core.files.base import ContentFile
-from django.utils.six.moves.urllib import parse as urlparse
-from django.utils import timezone as tz
-
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
-from boto.utils import parse_ts, ISO8601
+from boto.utils import ISO8601, parse_ts
+from django.core.files.base import ContentFile
+from django.test import TestCase
+from django.utils import timezone as tz
+from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.backends import s3boto
-
-__all__ = (
-    'S3BotoStorageTests',
-)
 
 
 class S3BotoTestCase(TestCase):
@@ -226,15 +221,15 @@ class S3BotoStorageTests(S3BotoTestCase):
         url = 'http://aws.amazon.com/%s' % name
         self.storage.connection.generate_url.return_value = url
 
-        kwargs = dict(
-            method='GET',
-            bucket=self.storage.bucket.name,
-            key=name,
-            query_auth=self.storage.querystring_auth,
-            force_http=not self.storage.secure_urls,
-            headers=None,
-            response_headers=None,
-        )
+        kwargs = {
+            'method': 'GET',
+            'bucket': self.storage.bucket.name,
+            'key': name,
+            'query_auth': self.storage.querystring_auth,
+            'force_http': not self.storage.secure_urls,
+            'headers': None,
+            'response_headers': None,
+        }
 
         self.assertEqual(self.storage.url(name), url)
         self.storage.connection.generate_url.assert_called_with(
