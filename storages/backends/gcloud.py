@@ -80,6 +80,7 @@ class GoogleCloudStorage(Storage):
     project_id = setting('GS_PROJECT_ID', None)
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
+    location = setting('GS_LOCATION', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
