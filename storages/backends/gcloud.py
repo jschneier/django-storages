@@ -1,7 +1,7 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils import timezone
