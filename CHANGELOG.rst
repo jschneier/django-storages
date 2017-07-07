@@ -1,6 +1,13 @@
 django-storages change log
 ==========================
 
+1.6.4 (XXXX-XX-XX)
+******************
+
+* Fix ``DropBoxStorage.url`` to work. (`#357`_)
+
+.. _#357: https://github.com/jschneier/django-storages/pull/357
+
 1.6.3 (2017-06-23)
 ******************
 

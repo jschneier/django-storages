@@ -14,6 +14,10 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 
+class F(object):
+    pass
+
+
 FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
 FILE_FIXTURE = {
     'bytes': 4,
@@ -52,10 +56,8 @@ FILES_FIXTURE = {
     'size': '0 bytes',
     'thumb_exists': False
 }
-FILE_MEDIA_FIXTURE = {
-    'link': 'https://dl.dropboxusercontent.com/1/view/foo',
-    'expires': 'Fri, 16 Sep 2011 01:01:25 +0000',
-}
+FILE_MEDIA_FIXTURE = F()
+FILE_MEDIA_FIXTURE.link = 'https://dl.dropboxusercontent.com/1/view/foo'
 
 
 class DropBoxTest(TestCase):
@@ -123,7 +125,7 @@ class DropBoxTest(TestCase):
                 return_value=FILE_MEDIA_FIXTURE)
     def test_url(self, *args):
         url = self.storage.url('foo')
-        self.assertEqual(url, FILE_MEDIA_FIXTURE['link'])
+        self.assertEqual(url, FILE_MEDIA_FIXTURE.link)
 
     def test_formats(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')

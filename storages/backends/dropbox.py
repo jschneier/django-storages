@@ -101,7 +101,7 @@ class DropBoxStorage(Storage):
 
     def url(self, name):
         media = self.client.files_get_temporary_link(self._full_path(name))
-        return media['link']
+        return media.link
 
     def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(self._full_path(name), self)
