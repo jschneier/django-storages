@@ -4,8 +4,10 @@ django-storages change log
 1.6.4 (XXXX-XX-XX)
 ******************
 
+* Files uploaded with ``GoogleCloudStorage`` will now set their appropriate mimetype (`#320`_)
 * Fix ``DropBoxStorage.url`` to work. (`#357`_)
 
+.. _#320: https://github.com/jschneier/django-storages/pull/320
 .. _#357: https://github.com/jschneier/django-storages/pull/357
 
 1.6.3 (2017-06-23)
