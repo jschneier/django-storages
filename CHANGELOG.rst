@@ -13,7 +13,7 @@ django-storages change log
 1.6.3 (2017-06-23)
 ******************
 
-* Revert default ``AWS_S3_SIGNATURE_VERSION`` to be V2 to restore backwards
+* Revert default ``AWS_S3_SIGNATURE_VERSION`` to V2 to restore backwards
   compatability in ``S3Boto3``. It's recommended that all new projects set
   this to be ``'s3v4'``. (`#344`_)
 
@@ -24,7 +24,7 @@ django-storages change log
 
 * Fix regression in ``safe_join()`` to handle a trailing slash in an
   intermediate path. (`#341`_)
-* Fix regression in ``gs.GSBotoStorage`` got an unespected kwarg.
+* Fix regression in ``gs.GSBotoStorage`` getting an unexpected kwarg.
   (`#342`_)
 
 .. _#341: https://github.com/jschneier/django-storages/pull/341
