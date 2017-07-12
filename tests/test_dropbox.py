@@ -1,16 +1,22 @@
-import re
 from datetime import datetime
+
+from django.core.exceptions import (
+    ImproperlyConfigured, SuspiciousFileOperation,
+)
+from django.core.files.base import ContentFile, File
+from django.test import TestCase
+
+from storages.backends import dropbox
+
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
 
-from django.test import TestCase
-from django.core.files.base import File, ContentFile
-from django.core.exceptions import ImproperlyConfigured, \
-                                   SuspiciousFileOperation
 
-from storages.backends import dropbox
+class F(object):
+    pass
+
 
 FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
 FILE_FIXTURE = {
@@ -50,21 +56,11 @@ FILES_FIXTURE = {
     'size': '0 bytes',
     'thumb_exists': False
 }
-FILE_MEDIA_FIXTURE = {
-    'url': 'https://dl.dropboxusercontent.com/1/view/foo',
-    'expires': 'Fri, 16 Sep 2011 01:01:25 +0000',
-}
-
-__all__ = [
-    'DropBoxTest',
-    'DropBoxFileTest'
-]
+FILE_MEDIA_FIXTURE = F()
+FILE_MEDIA_FIXTURE.link = 'https://dl.dropboxusercontent.com/1/view/foo'
 
 
 class DropBoxTest(TestCase):
-    @mock.patch('dropbox.client._OAUTH2_ACCESS_TOKEN_PATTERN',
-                re.compile(r'.*'))
-    @mock.patch('dropbox.client.DropboxOAuth2Session')
     def setUp(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')
 
@@ -72,24 +68,24 @@ class DropBoxTest(TestCase):
         with self.assertRaises(ImproperlyConfigured):
             dropbox.DropBoxStorage(None)
 
-    @mock.patch('dropbox.client.DropboxClient.file_delete',
+    @mock.patch('dropbox.Dropbox.files_delete',
                 return_value=FILE_FIXTURE)
     def test_delete(self, *args):
         self.storage.delete('foo')
 
-    @mock.patch('dropbox.client.DropboxClient.metadata',
+    @mock.patch('dropbox.Dropbox.files_get_metadata',
                 return_value=[FILE_FIXTURE])
     def test_exists(self, *args):
         exists = self.storage.exists('foo')
         self.assertTrue(exists)
 
-    @mock.patch('dropbox.client.DropboxClient.metadata',
+    @mock.patch('dropbox.Dropbox.files_get_metadata',
                 return_value=[])
     def test_not_exists(self, *args):
         exists = self.storage.exists('bar')
         self.assertFalse(exists)
 
-    @mock.patch('dropbox.client.DropboxClient.metadata',
+    @mock.patch('dropbox.Dropbox.files_get_metadata',
                 return_value=FILES_FIXTURE)
     def test_listdir(self, *args):
         dirs, files = self.storage.listdir('/')
@@ -98,19 +94,19 @@ class DropBoxTest(TestCase):
         self.assertEqual(dirs[0], 'bar')
         self.assertEqual(files[0], 'foo.txt')
 
-    @mock.patch('dropbox.client.DropboxClient.metadata',
+    @mock.patch('dropbox.Dropbox.files_get_metadata',
                 return_value=FILE_FIXTURE)
     def test_size(self, *args):
         size = self.storage.size('foo')
         self.assertEqual(size, FILE_FIXTURE['bytes'])
 
-    @mock.patch('dropbox.client.DropboxClient.metadata',
+    @mock.patch('dropbox.Dropbox.files_get_metadata',
                 return_value=FILE_FIXTURE)
     def test_modified_time(self, *args):
         mtime = self.storage.modified_time('foo')
         self.assertEqual(mtime, FILE_DATE)
 
-    @mock.patch('dropbox.client.DropboxClient.metadata',
+    @mock.patch('dropbox.Dropbox.files_get_metadata',
                 return_value=FILE_FIXTURE)
     def test_accessed_time(self, *args):
         mtime = self.storage.accessed_time('foo')
@@ -120,16 +116,16 @@ class DropBoxTest(TestCase):
         obj = self.storage._open('foo')
         self.assertIsInstance(obj, File)
 
-    @mock.patch('dropbox.client.DropboxClient.put_file',
+    @mock.patch('dropbox.Dropbox.files_upload',
                 return_value='foo')
     def test_save(self, *args):
         self.storage._save('foo', b'bar')
 
-    @mock.patch('dropbox.client.DropboxClient.media',
+    @mock.patch('dropbox.Dropbox.files_get_temporary_link',
                 return_value=FILE_MEDIA_FIXTURE)
     def test_url(self, *args):
         url = self.storage.url('foo')
-        self.assertEqual(url, FILE_MEDIA_FIXTURE['url'])
+        self.assertEqual(url, FILE_MEDIA_FIXTURE.link)
 
     def test_formats(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')
@@ -141,24 +137,18 @@ class DropBoxTest(TestCase):
 
 
 class DropBoxFileTest(TestCase):
-    @mock.patch('dropbox.client._OAUTH2_ACCESS_TOKEN_PATTERN',
-                re.compile(r'.*'))
-    @mock.patch('dropbox.client.DropboxOAuth2Session')
     def setUp(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')
         self.file = dropbox.DropBoxFile('/foo.txt', self.storage)
 
-    @mock.patch('dropbox.client.DropboxClient.get_file',
+    @mock.patch('dropbox.Dropbox.files_download',
                 return_value=ContentFile(b'bar'))
     def test_read(self, *args):
         file = self.storage._open(b'foo')
         self.assertEqual(file.read(), b'bar')
 
 
-@mock.patch('dropbox.client._OAUTH2_ACCESS_TOKEN_PATTERN',
-            re.compile(r'.*'))
-@mock.patch('dropbox.client.DropboxOAuth2Session')
-@mock.patch('dropbox.client.DropboxClient.metadata',
+@mock.patch('dropbox.Dropbox.files_get_metadata',
             return_value={'contents': []})
 class DropBoxRootPathTest(TestCase):
     def test_jailed(self, *args):

@@ -1,13 +1,17 @@
+import os
 import stat
 from datetime import datetime
+
+from django.core.files.base import File
+from django.test import TestCase
+from django.utils.six import BytesIO
+
+from storages.backends import sftpstorage
+
 try:
     from unittest.mock import patch, MagicMock
 except ImportError:  # Python 3.2 and below
     from mock import patch, MagicMock
-from django.test import TestCase
-from django.core.files.base import File
-from django.utils.six import BytesIO
-from storages.backends import sftpstorage
 
 
 class SFTPStorageTest(TestCase):
@@ -16,6 +20,19 @@ class SFTPStorageTest(TestCase):
 
     def test_init(self):
         pass
+
+    @patch('paramiko.SSHClient')
+    def test_no_known_hosts_file(self, mock_ssh):
+        self.storage._known_host_file = "not_existed_file"
+        self.storage._connect()
+        self.assertEqual('foo', mock_ssh.return_value.connect.call_args[0][0])
+
+    @patch.object(os.path, "expanduser", return_value="/path/to/known_hosts")
+    @patch.object(os.path, "exists", return_value=True)
+    @patch('paramiko.SSHClient')
+    def test_error_when_known_hosts_file_not_defined(self, mock_ssh, *a):
+        self.storage._connect()
+        self.storage._ssh.load_host_keys.assert_called_once_with("/path/to/known_hosts")
 
     @patch('paramiko.SSHClient')
     def test_connect(self, mock_ssh):
@@ -28,7 +45,7 @@ class SFTPStorageTest(TestCase):
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_read(self, mock_sftp):
-        file_ = self.storage._read('foo')
+        self.storage._read('foo')
         self.assertTrue(mock_sftp.open.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')

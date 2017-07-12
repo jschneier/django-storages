@@ -5,20 +5,15 @@ except ImportError:  # Python 3.2 and below
 
 import datetime
 
-from django.test import TestCase
-from django.core.files.base import ContentFile
-from django.utils.six.moves.urllib import parse as urlparse
-
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
-from boto.utils import parse_ts, ISO8601
+from boto.utils import ISO8601, parse_ts
+from django.core.files.base import ContentFile
+from django.test import TestCase
+from django.utils import timezone as tz
+from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.backends import s3boto
-
-__all__ = (
-    'SafeJoinTest',
-    'S3BotoStorageTests',
-)
 
 
 class S3BotoTestCase(TestCase):
@@ -28,71 +23,14 @@ class S3BotoTestCase(TestCase):
         self.storage._connection = mock.MagicMock()
 
 
-class SafeJoinTest(TestCase):
-    def test_normal(self):
-        path = s3boto.safe_join("", "path/to/somewhere", "other", "path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere/other/path/to/somewhere")
-
-    def test_with_dot(self):
-        path = s3boto.safe_join("", "path/./somewhere/../other", "..",
-                                ".", "to/./somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
-    def test_base_url(self):
-        path = s3boto.safe_join("base_url", "path/to/somewhere")
-        self.assertEqual(path, "base_url/path/to/somewhere")
-
-    def test_base_url_with_slash(self):
-        path = s3boto.safe_join("base_url/", "path/to/somewhere")
-        self.assertEqual(path, "base_url/path/to/somewhere")
-
-    def test_suspicious_operation(self):
-        self.assertRaises(ValueError,
-                          s3boto.safe_join, "base", "../../../../../../../etc/passwd")
-
-    def test_trailing_slash(self):
-        """
-        Test safe_join with paths that end with a trailing slash.
-        """
-        path = s3boto.safe_join("base_url/", "path/to/somewhere/")
-        self.assertEqual(path, "base_url/path/to/somewhere/")
-
-    def test_trailing_slash_multi(self):
-        """
-        Test safe_join with multiple paths that end with a trailing slash.
-        """
-        path = s3boto.safe_join("base_url/", "path/to/" "somewhere/")
-        self.assertEqual(path, "base_url/path/to/somewhere/")
-
-
 class S3BotoStorageTests(S3BotoTestCase):
 
     def test_clean_name(self):
         """
-        Test the base case of _clean_name
+        Test the base case of _clean_name - more tests are performed in
+        test_utils
         """
         path = self.storage._clean_name("path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
-    def test_clean_name_normalize(self):
-        """
-        Test the normalization of _clean_name
-        """
-        path = self.storage._clean_name("path/to/../somewhere")
-        self.assertEqual(path, "path/somewhere")
-
-    def test_clean_name_trailing_slash(self):
-        """
-        Test the _clean_name when the path has a trailing slash
-        """
-        path = self.storage._clean_name("path/to/somewhere/")
-        self.assertEqual(path, "path/to/somewhere/")
-
-    def test_clean_name_windows(self):
-        """
-        Test the _clean_name when the path has a trailing slash
-        """
-        path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
     def test_storage_url_slashes(self):
@@ -219,13 +157,11 @@ class S3BotoStorageTests(S3BotoTestCase):
         self.assertTrue(self.storage.exists(''))
 
     def test_storage_exists(self):
-        key = self.storage.bucket.new_key.return_value
-        key.exists.return_value = True
+        self.storage.bucket.get_key.return_value = mock.MagicMock(spec=Key)
         self.assertTrue(self.storage.exists("file.txt"))
 
     def test_storage_exists_false(self):
-        key = self.storage.bucket.new_key.return_value
-        key.exists.return_value = False
+        self.storage.bucket.get_key.return_value = None
         self.assertFalse(self.storage.exists("file.txt"))
 
     def test_storage_delete(self):
@@ -285,15 +221,15 @@ class S3BotoStorageTests(S3BotoTestCase):
         url = 'http://aws.amazon.com/%s' % name
         self.storage.connection.generate_url.return_value = url
 
-        kwargs = dict(
-            method='GET',
-            bucket=self.storage.bucket.name,
-            key=name,
-            query_auth=self.storage.querystring_auth,
-            force_http=not self.storage.secure_urls,
-            headers=None,
-            response_headers=None,
-        )
+        kwargs = {
+            'method': 'GET',
+            'bucket': self.storage.bucket.name,
+            'key': name,
+            'query_auth': self.storage.querystring_auth,
+            'force_http': not self.storage.secure_urls,
+            'headers': None,
+            'response_headers': None,
+        }
 
         self.assertEqual(self.storage.url(name), url)
         self.storage.connection.generate_url.assert_called_with(
@@ -322,8 +258,31 @@ class S3BotoStorageTests(S3BotoTestCase):
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
         utcnow = datetime.datetime.utcnow()
-        with mock.patch('storages.backends.s3boto.datetime') as mock_datetime:
+        with mock.patch('storages.backends.s3boto.datetime') as mock_datetime, self.settings(TIME_ZONE='UTC'):
             mock_datetime.utcnow.return_value = utcnow
             self.storage.save(name, content)
             self.assertEqual(self.storage.modified_time(name),
                              parse_ts(utcnow.strftime(ISO8601)))
+
+    @mock.patch('storages.backends.s3boto.S3BotoStorage._get_key')
+    def test_get_modified_time(self, getkey):
+        utcnow = datetime.datetime.utcnow().strftime(ISO8601)
+
+        with self.settings(USE_TZ=True, TIME_ZONE='America/New_York'):
+            key = mock.MagicMock(spec=Key)
+            key.last_modified = utcnow
+            getkey.return_value = key
+            modtime = self.storage.get_modified_time('foo')
+            self.assertFalse(tz.is_naive(modtime))
+            self.assertEqual(modtime,
+                             tz.make_aware(datetime.datetime.strptime(utcnow, ISO8601), tz.utc))
+
+        with self.settings(USE_TZ=False, TIME_ZONE='America/New_York'):
+            key = mock.MagicMock(spec=Key)
+            key.last_modified = utcnow
+            getkey.return_value = key
+            modtime = self.storage.get_modified_time('foo')
+            self.assertTrue(tz.is_naive(modtime))
+            self.assertEqual(modtime,
+                             tz.make_naive(tz.make_aware(
+                                datetime.datetime.strptime(utcnow, ISO8601), tz.utc)))
