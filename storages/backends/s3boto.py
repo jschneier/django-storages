@@ -177,6 +177,7 @@ class S3BotoStorage(Storage):
 
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
+    security_token = setting('SECURITY_TOKEN', setting('AWS_SESSION_TOKEN'))
     file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
     headers = setting('AWS_HEADERS', {})
     bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
@@ -246,6 +247,29 @@ class S3BotoStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
+            if getattr(self, 'security_token', None):
+                self._connection = self.connection_class(
+                    self.access_key,
+                    self.secret_key,
+                    is_secure=self.use_ssl,
+                    calling_format=self.calling_format,
+                    host=self.host,
+                    port=self.port,
+                    proxy=self.proxy,
+                    proxy_port=self.proxy_port,
+                    security_token=self.security_token
+                )
+            else:
+                self._connection = self.connection_class(
+                    self.access_key,
+                    self.secret_key,
+                    is_secure=self.use_ssl,
+                    calling_format=self.calling_format,
+                    host=self.host,
+                    port=self.port,
+                    proxy=self.proxy,
+                    proxy_port=self.proxy_port
+                )
             kwargs = self._get_connection_kwargs()
 
             self._connection = self.connection_class(
@@ -301,9 +325,15 @@ class S3BotoStorage(Storage):
         are provided to the class in the constructor or in the
         settings then get them from the environment variables.
         """
-        access_key = self.access_key or self._lookup_env(self.access_key_names)
-        secret_key = self.secret_key or self._lookup_env(self.secret_key_names)
-        return access_key, secret_key
+        def lookup_env(names):
+            for name in names:
+                value = os.environ.get(name)
+                if value:
+                    return value
+        access_key = self.access_key or lookup_env(self.access_key_names)
+        secret_key = self.secret_key or lookup_env(self.secret_key_names)
+        security_token = self.security_token or lookup_env(self.security_token_names)
+        return access_key, secret_key, security_token
 
     def _get_security_token(self):
         security_token = self._lookup_env(self.security_token_names)
