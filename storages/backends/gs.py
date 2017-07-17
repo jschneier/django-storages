@@ -43,6 +43,11 @@ class GSBotoStorageFile(S3BotoStorageFile):
                 self._file.seek(0)
         return self._file
 
+    def _set_file(self, value):
+        self._file = value
+
+    file = property(_get_file, _set_file)
+
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
