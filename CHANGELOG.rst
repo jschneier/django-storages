@@ -6,9 +6,11 @@ django-storages change log
 
 * Files uploaded with ``GoogleCloudStorage`` will now set their appropriate mimetype (`#320`_)
 * Fix ``DropBoxStorage.url`` to work. (`#357`_)
+* Fix ``S3Boto3Storage`` when ``AWS_PRELOAD_METADATA = True`` (`#366`_)
 
 .. _#320: https://github.com/jschneier/django-storages/pull/320
 .. _#357: https://github.com/jschneier/django-storages/pull/357
+.. _#366: https://github.com/jschneier/django-storages/pull/366
 
 1.6.3 (2017-06-23)
 ******************
