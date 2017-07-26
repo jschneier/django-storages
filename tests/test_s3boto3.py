@@ -80,7 +80,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            content.file,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
@@ -96,7 +96,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            content.file,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',

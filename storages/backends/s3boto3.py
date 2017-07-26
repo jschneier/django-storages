@@ -430,6 +430,18 @@ class S3Boto3Storage(Storage):
         if self.preload_metadata:
             self._entries[encoded_name] = obj
 
+        # If both `name` and `content.name` are empty or None, your request
+        # can be rejected with `XAmzContentSHA256Mismatch` error, because in
+        # `django.core.files.storage.Storage.save` method your file-like object
+        # will be wrapped in `django.core.files.File` if no `chunks` method
+        # provided. `File.__bool__`  method is Django-specific and depends on
+        # file name, for this reason`botocore.handlers.calculate_md5` can fail
+        # even if wrapped file-like object exists. To avoid Django-specific
+        # logic, pass internal file-like object if `content` is `File`
+        # class instance.
+        if isinstance(content, File):
+            content = content.file
+
         self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
         # the next time it is accessed; no need to specifically reload it.
