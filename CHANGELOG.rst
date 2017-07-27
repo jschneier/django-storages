@@ -57,7 +57,7 @@ django-storages change log
   end of the month - upgrading is recommended (`#273`_)
 * **Breaking:** The ``SFTPStorage`` backend now checks for the existence of the fallback ``~/.ssh/known_hosts``
   before attempting to load it.  If you had previously been passing in a path to a non-existent file it will no longer
-  attempt to load the fallback. (`issue #118`_ `pr #325`_)
+  attempt to load the fallback. (`#118`_, `#325`_)
 * **Breaking:** The default version value for ``AWS_S3_SIGNATURE_VERSION`` is now ``'s3v4'``. No changes should
   be required (`#335`_)
 * **Deprecation:** The undocumented ``gs.GSBotoStorage`` backend. See the new ``gcloud.GoogleCloudStorage``
@@ -71,9 +71,9 @@ django-storages change log
 * Add support for Django 1.11 (`#295`_)
 * Add ``project`` keyword support to GCS in ``LibCloudStorage`` backend (`#269`_)
 * Files that have a guessable encoding (e.g. gzip or compress) will be uploaded with that Content-Encoding in
-  the ``s3boto3`` backend (issue `#263`_ pr `#264`_)
+  the ``s3boto3`` backend (`#263`_, `#264`_)
 * The Dropbox backend now properly translates backslashes in Windows paths into forward slashes (`e52a127`_)
-* The S3 backends now permit colons in the keys (`issue #248`_ `pr #322`_)
+* The S3 backends now permit colons in the keys (`#248`_, `#322`_)
 
 .. _#217: https://github.com/jschneier/django-storages/pull/217
 .. _#273: https://github.com/jschneier/django-storages/pull/273
@@ -89,10 +89,10 @@ django-storages change log
 .. _#264: https://github.com/jschneier/django-storages/pull/264
 .. _e52a127: https://github.com/jschneier/django-storages/commit/e52a127523fdd5be50bb670ccad566c5d527f3d1
 .. _#236: https://github.com/jschneier/django-storages/pull/236
-.. _issue #118: https://github.com/jschneier/django-storages/issues/118
-.. _pr #325: https://github.com/jschneier/django-storages/pull/325
-.. _issue #248: https://github.com/jschneier/django-storages/issues/248
-.. _pr #322: https://github.com/jschneier/django-storages/pull/322
+.. _#118: https://github.com/jschneier/django-storages/issues/118
+.. _#325: https://github.com/jschneier/django-storages/pull/325
+.. _#248: https://github.com/jschneier/django-storages/issues/248
+.. _#322: https://github.com/jschneier/django-storages/pull/322
 .. _#335: https://github.com/jschneier/django-storages/pull/335
 
 1.5.2 (2017-01-13)
@@ -116,7 +116,7 @@ django-storages change log
 
 * **Breaking:** Drop support for Django 1.7 (`#185`_)
 * **Deprecation:** hashpath, image, overwrite, mogile, symlinkorcopy, database, mogile, couchdb.
-  See (`issue #202`_) to discuss maintenance going forward
+  See (`#202`_) to discuss maintenance going forward
 * Use a fixed ``mtime`` argument for ``GzipFile`` in ``S3BotoStorage`` and ``S3Boto3Storage`` to ensure
   a stable output for gzipped files
 * Use ``.putfileobj`` instead of ``.put`` in ``S3Boto3Storage`` to use the transfer manager,
@@ -124,7 +124,7 @@ django-storages change log
 * Update ``S3Boto3Storage`` for Django 1.10 (`#181`_) (``get_modified_time`` and ``get_accessed_time``)
 * Fix bad kwarg name in ``S3Boto3Storage`` when `AWS_PRELOAD_METADATA` is `True` (`#189`_, `#190`_)
 
-.. _issue #202: https://github.com/jschneier/django-storages/issues/202
+.. _#202: https://github.com/jschneier/django-storages/issues/202
 .. _#201: https://github.com/jschneier/django-storages/pull/201
 .. _#194: https://github.com/jschneier/django-storages/issues/194
 .. _#190: https://github.com/jschneier/django-storages/pull/190
@@ -159,7 +159,7 @@ django-storages change log
   PR `#122`_
 * Fix ``DropBoxStorage.exists`` check and add ``DropBoxStorage.url`` (`#127`_)
 * Add ``GS_HOST`` setting (with a default of ``GSConnection.DefaultHost``) to fix ``GSBotoStorage``.
-  Issue `#124`_. Fixed in `#125`_.
+  (`#124`_, `#125`_)
 
 .. _#122: https://github.com/jschneier/django-storages/pull/122
 .. _#127: https://github.com/jschneier/django-storages/pull/127
