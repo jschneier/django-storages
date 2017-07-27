@@ -501,7 +501,7 @@ class S3Boto3Storage(Storage):
         if self.entries:
             entry = self.entries.get(name)
             if entry:
-                return entry.size
+                return entry.size if hasattr(entry, 'size') else entry.content_length
             return 0
         return self.bucket.Object(self._encode_name(name)).content_length
 
