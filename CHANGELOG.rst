@@ -1,7 +1,7 @@
 django-storages change log
 ==========================
 
-1.6.4 (XXXX-XX-XX)
+1.6.4 (2017-07-27)
 ******************
 
 * Files uploaded with ``GoogleCloudStorage`` will now set their appropriate mimetype (`#320`_)
