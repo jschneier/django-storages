@@ -1,6 +1,7 @@
 import mimetypes
 import os
 import posixpath
+import threading
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
@@ -236,7 +237,7 @@ class S3Boto3Storage(Storage):
 
         self._entries = {}
         self._bucket = None
-        self._connection = None
+        self._connections = threading.local()
 
         self.security_token = None
         if not self.access_key and not self.secret_key:
@@ -253,9 +254,10 @@ class S3Boto3Storage(Storage):
         # Note that proxies are handled by environment variables that the underlying
         # urllib/requests libraries read. See https://github.com/boto/boto3/issues/338
         # and http://docs.python-requests.org/en/latest/user/advanced/#proxies
-        if self._connection is None:
+        connection = getattr(self._connections, 'connection', None)
+        if connection is None:
             session = boto3.session.Session()
-            self._connection = session.resource(
+            self._connections.connection = session.resource(
                 's3',
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
@@ -265,7 +267,7 @@ class S3Boto3Storage(Storage):
                 endpoint_url=self.endpoint_url,
                 config=self.config
             )
-        return self._connection
+        return self._connections.connection
 
     @property
     def bucket(self):
