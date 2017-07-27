@@ -8,12 +8,16 @@ django-storages change log
 * Fix ``DropBoxStorage.url`` to work. (`#357`_)
 * Fix ``S3Boto3Storage`` when ``AWS_PRELOAD_METADATA = True`` (`#366`_)
 * Fix ``S3Boto3Storage`` uploading file-like objects without names (`#195`_, `#368`_)
+* ``S3Boto3Storage`` is now threadsafe - a separate session is created on a
+  per-thread basis (`#268`_, `#358`_)
 
 .. _#320: https://github.com/jschneier/django-storages/pull/320
 .. _#357: https://github.com/jschneier/django-storages/pull/357
 .. _#366: https://github.com/jschneier/django-storages/pull/366
 .. _#195: https://github.com/jschneier/django-storages/pull/195
 .. _#368: https://github.com/jschneier/django-storages/pull/368
+.. _#268: https://github.com/jschneier/django-storages/issues/268
+.. _#358: https://github.com/jschneier/django-storages/pull/358
 
 1.6.3 (2017-06-23)
 ******************
