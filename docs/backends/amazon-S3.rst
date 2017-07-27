@@ -149,6 +149,7 @@ Storage
 -------
 
 Standard file access options are available, and work as expected::
+
     >>> from django.core.files.storage import default_storage
     >>> default_storage.exists('storage_test')
     False
