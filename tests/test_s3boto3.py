@@ -128,6 +128,34 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         zfile = gzip.GzipFile(mode='rb', fileobj=content)
         self.assertEqual(zfile.read(), b"I should be gzip'd")
 
+    def test_storage_save_gzip_twice(self):
+        """
+        Test saving the same file content twice with gzip enabled.
+        """
+        # Given
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+
+        # When
+        self.storage.save(name, content)
+        self.storage.save('test_storage_save_2.css', content)
+
+        # Then
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            mock.ANY,
+            ExtraArgs={
+                'ContentType': 'text/css',
+                'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
+            }
+        )
+        args, kwargs = obj.upload_fileobj.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
+
     def test_compress_content_len(self):
         """
         Test that file returned by _compress_content() is readable.
