@@ -1,6 +1,18 @@
 django-storages change log
 ==========================
 
+1.6.5 (2017-08-01)
+******************
+
+* Fix Django 1.11 regression with gzipped content being saved twice
+  resulting in empty files (`#367`_, `#371`_, `#373`_)
+* Fix the ``mtime`` when gzipping content on ``S3Boto3Storage`` (`#374`_)
+
+.. _#367: https://github.com/jschneier/django-storages/issues/367
+.. _#371: https://github.com/jschneier/django-storages/pull/371
+.. _#373: https://github.com/jschneier/django-storages/pull/373
+.. _#374: https://github.com/jschneier/django-storages/pull/374
+
 1.6.4 (2017-07-27)
 ******************
 
