@@ -387,6 +387,7 @@ class S3Boto3Storage(Storage):
 
     def _compress_content(self, content):
         """Gzip a given string content."""
+        content.seek(0)
         zbuf = BytesIO()
         zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf)
         try:
