@@ -71,10 +71,14 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(self.storage.url('path/1'), 'https://example.com/path/1')
         self.assertEqual(self.storage.url('path/1/'), 'https://example.com/path/1/')
 
-    def test_storage_save(self):
+    @mock.patch('storages.backends.s3boto3.io')
+    def test_storage_save(self, mocked_io):
         """
         Test saving a file
         """
+        content_file = mock.Mock()
+        mocked_io.BytesIO.return_value = content_file
+
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
         self.storage.save(name, content)
@@ -82,23 +86,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content_file,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
             }
         )
 
-    def test_storage_save_gzipped(self):
+    @mock.patch('storages.backends.s3boto3.io')
+    def test_storage_save_gzipped(self, mocked_io):
         """
         Test saving a gzipped file
         """
+        content_file = mock.Mock()
+        mocked_io.BytesIO.return_value = content_file
+
         name = 'test_storage_save.gz'
         content = ContentFile("I am gzip'd")
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content_file,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
