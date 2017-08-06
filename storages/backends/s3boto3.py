@@ -1,4 +1,3 @@
-import io
 import mimetypes
 import os
 import posixpath
@@ -448,7 +447,7 @@ class S3Boto3Storage(Storage):
         # logic, pass a copy of internal file-like object if `content` is
         # `File` class instance.
         if isinstance(content, File):
-            content = io.BytesIO(force_bytes(content.file.read()))
+            content = BytesIO(force_bytes(content.file.read()))
 
         self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded

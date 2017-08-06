@@ -71,13 +71,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(self.storage.url('path/1'), 'https://example.com/path/1')
         self.assertEqual(self.storage.url('path/1/'), 'https://example.com/path/1/')
 
-    @mock.patch('storages.backends.s3boto3.io')
-    def test_storage_save(self, mocked_io):
+    @mock.patch('storages.backends.s3boto3.BytesIO')
+    def test_storage_save(self, mocked_BytesIO):
         """
         Test saving a file
         """
         content_file = mock.Mock()
-        mocked_io.BytesIO.return_value = content_file
+        mocked_BytesIO.return_value = content_file
 
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
@@ -93,13 +93,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             }
         )
 
-    @mock.patch('storages.backends.s3boto3.io')
-    def test_storage_save_gzipped(self, mocked_io):
+    @mock.patch('storages.backends.s3boto3.BytesIO')
+    def test_storage_save_gzipped(self, mocked_BytesIO):
         """
         Test saving a gzipped file
         """
         content_file = mock.Mock()
-        mocked_io.BytesIO.return_value = content_file
+        mocked_BytesIO.return_value = content_file
 
         name = 'test_storage_save.gz'
         content = ContentFile("I am gzip'd")
