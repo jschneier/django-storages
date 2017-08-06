@@ -447,6 +447,7 @@ class S3Boto3Storage(Storage):
         # logic, pass a copy of internal file-like object if `content` is
         # `File` class instance.
         if isinstance(content, File):
+            content.file.seek(0)
             content = BytesIO(force_bytes(content.file.read()))
 
         self._save_content(obj, content, parameters=parameters)
