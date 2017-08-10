@@ -5,6 +5,7 @@ from django.core.exceptions import (
 )
 from django.core.files.base import ContentFile, File
 from django.test import TestCase
+from django.utils.six import BytesIO
 
 from storages.backends import dropbox
 
@@ -118,8 +119,9 @@ class DropBoxTest(TestCase):
 
     @mock.patch('dropbox.Dropbox.files_upload',
                 return_value='foo')
-    def test_save(self, *args):
-        self.storage._save('foo', b'bar')
+    def test_save(self, files_upload, *args):
+        self.storage._save('foo', File(BytesIO(b'bar'), 'foo'))
+        self.assertTrue(files_upload.called)
 
     @mock.patch('dropbox.Dropbox.files_get_temporary_link',
                 return_value=FILE_MEDIA_FIXTURE)
