@@ -123,6 +123,19 @@ class DropBoxTest(TestCase):
         self.storage._save('foo', File(BytesIO(b'bar'), 'foo'))
         self.assertTrue(files_upload.called)
 
+    @mock.patch('dropbox.Dropbox.files_upload')
+    @mock.patch('dropbox.Dropbox.files_upload_session_finish')
+    @mock.patch('dropbox.Dropbox.files_upload_session_append_v2')
+    @mock.patch('dropbox.Dropbox.files_upload_session_start',
+                return_value=mock.MagicMock(session_id='foo'))
+    def test_chunked_upload(self, start, append, finish, upload):
+        large_file = File(BytesIO(b'bar' * self.storage.CHUNK_SIZE), 'foo')
+        self.storage._save('foo', large_file)
+        self.assertTrue(start.called)
+        self.assertTrue(append.called)
+        self.assertTrue(finish.called)
+        self.assertFalse(upload.called)
+
     @mock.patch('dropbox.Dropbox.files_get_temporary_link',
                 return_value=FILE_MEDIA_FIXTURE)
     def test_url(self, *args):
