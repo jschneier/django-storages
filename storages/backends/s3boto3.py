@@ -181,6 +181,7 @@ class S3Boto3Storage(Storage):
 
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
+    security_token = self._lookup_env(self.security_token_names)
     file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
     object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
     bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
@@ -239,10 +240,8 @@ class S3Boto3Storage(Storage):
         self._bucket = None
         self._connections = threading.local()
 
-        self.security_token = None
         if not self.access_key and not self.secret_key:
             self.access_key, self.secret_key = self._get_access_keys()
-            self.security_token = self._get_security_token()
 
         if not self.config:
             self.config = Config(s3={'addressing_style': self.addressing_style},
@@ -306,10 +305,6 @@ class S3Boto3Storage(Storage):
         access_key = self.access_key or self._lookup_env(self.access_key_names)
         secret_key = self.secret_key or self._lookup_env(self.secret_key_names)
         return access_key, secret_key
-
-    def _get_security_token(self):
-        security_token = self._lookup_env(self.security_token_names)
-        return security_token
 
     def _get_or_create_bucket(self, name):
         """
