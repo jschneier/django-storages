@@ -21,7 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import UploadSessionCursor, CommitInfo
+from dropbox.files import CommitInfo, UploadSessionCursor
 
 from storages.utils import setting
 
