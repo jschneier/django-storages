@@ -84,6 +84,7 @@ class GoogleCloudStorage(Storage):
     bucket_name = setting('GS_BUCKET_NAME', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
+    expiry_time = setting('GS_QUERYSTRING_EXPIRE', None)
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
     # The max amount of memory a returned file can take up before being
@@ -227,6 +228,8 @@ class GoogleCloudStorage(Storage):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(self._encode_name(name))
+        if self.expiry_time:
+            return blob.generate_signed_url(self.expiry_time)
         return blob.public_url
 
     def get_available_name(self, name, max_length=None):
