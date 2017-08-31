@@ -229,7 +229,7 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(self._encode_name(name))
         if self.expiry_time:
-            client = Client.from_service_account_json(setting('GS_PATH_TO_KEYFILE', None))
+            client = Client.from_service_account_json(setting('GS_PATH_TO_KEYFILE')) if setting('GS_PATH_TO_KEYFILE') else None
             return blob.generate_signed_url(self.expiry_time, client=client)
         return blob.public_url
 
