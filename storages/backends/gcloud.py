@@ -17,6 +17,7 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
+import datetime
 
 
 class GoogleCloudFile(File):
@@ -233,7 +234,7 @@ class GoogleCloudStorage(Storage):
         blob = self._get_blob(self._encode_name(name))
         if self.expiry_time:
             client = Client.from_service_account_json(self.keyfile_path) if self.keyfile_path else None
-            return blob.generate_signed_url(self.expiry_time, client=client)
+            return blob.generate_signed_url(datetime.timedelta(seconds=self.expiry_time), client=client)
         return blob.public_url
 
     def get_available_name(self, name, max_length=None):
