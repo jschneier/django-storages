@@ -90,6 +90,9 @@ class GoogleCloudStorage(Storage):
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
+    # To generate signed key on GCE you can use a standard service account
+    # from a JSON file rather than a GCE service account
+    keyfile_path = setting('GS_PATH_TO_KEYFILE', None)
 
     def __init__(self, **settings):
         # check if some of the settings we've provided as class attributes
@@ -229,7 +232,8 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(self._encode_name(name))
         if self.expiry_time:
-            return blob.generate_signed_url(self.expiry_time)
+            client = Client.from_service_account_json(self.keyfile_path) if self.keyfile_path else None
+            return blob.generate_signed_url(self.expiry_time, client=client)
         return blob.public_url
 
     def get_available_name(self, name, max_length=None):
