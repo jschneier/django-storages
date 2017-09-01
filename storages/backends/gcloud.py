@@ -1,6 +1,11 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
 
+try:
+    from urllib.parse import unquote_plus
+except ImportError:
+    from urllib import unquote_plus
+
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -227,7 +232,7 @@ class GoogleCloudStorage(Storage):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(self._encode_name(name))
-        return blob.public_url
+        return unquote_plus(blob.public_url)
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:
