@@ -15,8 +15,6 @@ try:
 except ImportError:
     from urllib import unquote_plus
 
-
-
 try:
     from google.cloud.storage.client import Client
     from google.cloud.storage.blob import Blob
