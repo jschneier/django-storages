@@ -32,7 +32,7 @@ class DropboxStorageException(Exception):
     pass
 
 
-class DropBoxFile(File):
+class DropboxFile(File):
     def __init__(self, name, storage):
         self.name = name
         self._storage = storage
@@ -107,7 +107,7 @@ class DropboxStorage(Storage):
         return media.link
 
     def _open(self, name, mode='rb'):
-        remote_file = DropBoxFile(self._full_path(name), self)
+        remote_file = DropboxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
