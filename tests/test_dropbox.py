@@ -67,7 +67,7 @@ class DropboxTest(TestCase):
 
     def test_no_access_token(self, *args):
         with self.assertRaises(ImproperlyConfigured):
-            dropbox.DropBoxStorage(None)
+            dropbox.DropboxStorage(None)
 
     @mock.patch('dropbox.Dropbox.files_delete',
                 return_value=FILE_FIXTURE)
@@ -153,8 +153,8 @@ class DropboxTest(TestCase):
 
 class DropboxFileTest(TestCase):
     def setUp(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo')
-        self.file = dropbox.DropBoxFile('/foo.txt', self.storage)
+        self.storage = dropbox.DropboxStorage('foo')
+        self.file = dropbox.DropboxFile('/foo.txt', self.storage)
 
     @mock.patch('dropbox.Dropbox.files_download',
                 return_value=ContentFile(b'bar'))
