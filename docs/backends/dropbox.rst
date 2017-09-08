@@ -1,4 +1,4 @@
-DropBox
+Dropbox
 =======
 
 A custom storage system for Django using Dropbox Storage backend.
@@ -13,12 +13,12 @@ Install the package::
 Settings
 --------
 
-To use DropBoxStorage set::
+To use DropboxStorage set::
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropboxStorage'
 
 ``DROPBOX_OAUTH2_TOKEN``
-    Your DropBox token, if you haven't follow this `guide step`_.
+    Your Dropbox token, if you haven't follow this `guide step`_.
 
 ``DROPBOX_ROOT_PATH``
     Allow to jail your storage to a defined directory.
