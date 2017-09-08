@@ -28,7 +28,7 @@ from storages.utils import setting
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 
 
-class DropBoxStorageException(Exception):
+class DropboxStorageException(Exception):
     pass
 
 
@@ -48,8 +48,8 @@ class DropBoxFile(File):
 
 
 @deconstructible
-class DropBoxStorage(Storage):
-    """DropBox Storage class for Django pluggable storage system."""
+class DropboxStorage(Storage):
+    """Dropbox Storage class for Django pluggable storage system."""
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
