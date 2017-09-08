@@ -61,9 +61,9 @@ FILE_MEDIA_FIXTURE = F()
 FILE_MEDIA_FIXTURE.link = 'https://dl.dropboxusercontent.com/1/view/foo'
 
 
-class DropBoxTest(TestCase):
+class DropboxTest(TestCase):
     def setUp(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo')
+        self.storage = dropbox.DropboxStorage('foo')
 
     def test_no_access_token(self, *args):
         with self.assertRaises(ImproperlyConfigured):
@@ -143,7 +143,7 @@ class DropBoxTest(TestCase):
         self.assertEqual(url, FILE_MEDIA_FIXTURE.link)
 
     def test_formats(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo')
+        self.storage = dropbox.DropboxStorage('foo')
         files = self.storage._full_path('')
         self.assertEqual(files, self.storage._full_path('/'))
         self.assertEqual(files, self.storage._full_path('.'))
@@ -151,7 +151,7 @@ class DropBoxTest(TestCase):
         self.assertEqual(files, self.storage._full_path('../..'))
 
 
-class DropBoxFileTest(TestCase):
+class DropboxFileTest(TestCase):
     def setUp(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')
         self.file = dropbox.DropBoxFile('/foo.txt', self.storage)
@@ -165,20 +165,20 @@ class DropBoxFileTest(TestCase):
 
 @mock.patch('dropbox.Dropbox.files_get_metadata',
             return_value={'contents': []})
-class DropBoxRootPathTest(TestCase):
+class DropboxRootPathTest(TestCase):
     def test_jailed(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        self.storage = dropbox.DropboxStorage('foo', '/bar')
         dirs, files = self.storage.listdir('/')
         self.assertFalse(dirs)
         self.assertFalse(files)
 
     def test_suspicious(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        self.storage = dropbox.DropboxStorage('foo', '/bar')
         with self.assertRaises((SuspiciousFileOperation, ValueError)):
             self.storage._full_path('..')
 
     def test_formats(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        self.storage = dropbox.DropboxStorage('foo', '/bar')
         files = self.storage._full_path('')
         self.assertEqual(files, self.storage._full_path('/'))
         self.assertEqual(files, self.storage._full_path('.'))
