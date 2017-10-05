@@ -21,7 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import CommitInfo, UploadSessionCursor
+from dropbox.files import CommitInfo, UploadSessionCursor, FolderMetadata
 
 from storages.utils import setting
 
@@ -78,19 +78,21 @@ class DropBoxStorage(Storage):
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
-        metadata = self.client.files_get_metadata(full_path)
-        for entry in metadata['contents']:
-            entry['path'] = entry['path'].replace(full_path, '', 1)
-            entry['path'] = entry['path'].replace('/', '', 1)
-            if entry['is_dir']:
-                directories.append(entry['path'])
+        result = self.client.files_list_folder(full_path)
+
+        for entry in result.entries:
+            if isinstance(entry, FolderMetadata):
+                directories.append(entry.name)
             else:
-                files.append(entry['path'])
+                files.append(entry.name)
+
+        assert not result.has_more, "FIXME: Not implemented!"
+
         return directories, files
 
     def size(self, name):
         metadata = self.client.files_get_metadata(self._full_path(name))
-        return metadata['bytes']
+        return metadata.size
 
     def modified_time(self, name):
         metadata = self.client.files_get_metadata(self._full_path(name))

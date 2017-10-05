@@ -8,6 +8,7 @@ from django.test import TestCase
 from django.utils.six import BytesIO
 
 from storages.backends import dropbox
+from dropbox.files import ListFolderResult, FolderMetadata, FileMetadata
 
 try:
     from unittest import mock
@@ -17,6 +18,12 @@ except ImportError:  # Python 3.2 and below
 
 class F(object):
     pass
+
+
+LIST_FOLDER_RESULT = ListFolderResult(entries=[
+    FolderMetadata(name='bar'),
+    FileMetadata(name='foo.txt'),
+], has_more=False)
 
 
 FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
@@ -86,8 +93,8 @@ class DropBoxTest(TestCase):
         exists = self.storage.exists('bar')
         self.assertFalse(exists)
 
-    @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILES_FIXTURE)
+    @mock.patch('dropbox.Dropbox.files_list_folder',
+                return_value=LIST_FOLDER_RESULT)
     def test_listdir(self, *args):
         dirs, files = self.storage.listdir('/')
         self.assertGreater(len(dirs), 0)
@@ -163,8 +170,8 @@ class DropBoxFileTest(TestCase):
         self.assertEqual(file.read(), b'bar')
 
 
-@mock.patch('dropbox.Dropbox.files_get_metadata',
-            return_value={'contents': []})
+@mock.patch('dropbox.Dropbox.files_list_folder',
+            return_value=ListFolderResult(entries=[], has_more=False))
 class DropBoxRootPathTest(TestCase):
     def test_jailed(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', '/bar')
