@@ -10,13 +10,11 @@
 
 from __future__ import absolute_import, unicode_literals
 
-from shutil import copyfileobj
-from tempfile import SpooledTemporaryFile
+from tempfile import NamedTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
@@ -42,10 +40,11 @@ class DropBoxFile(File):
     @property
     def file(self):
         if not hasattr(self, '_file'):
-            response = self._storage.client.files_download(self.name)
-            self._file = SpooledTemporaryFile()
-            copyfileobj(response, self._file)
+            self._file = NamedTemporaryFile()
+            self._storage.client.files_download_to_file(self._file.name,
+                                                        self.name)
             self._file.seek(0)
+
         return self._file
 
 
@@ -114,16 +113,20 @@ class DropBoxStorage(Storage):
         return media.link
 
     def _open(self, name, mode='rb'):
-        remote_file = DropBoxFile(self._full_path(name), self)
-        return remote_file
+        return DropBoxFile(self._full_path(name), self)
 
     def _save(self, name, content):
-        content.open()
-        if content.size <= self.CHUNK_SIZE:
-            self.client.files_upload(content.read(), self._full_path(name))
-        else:
-            self._chunked_upload(content, self._full_path(name))
-        content.close()
+        try:
+            content.open()
+
+            if content.size <= self.CHUNK_SIZE:
+                self.client.files_upload(content.read(), self._full_path(name))
+            else:
+                self._chunked_upload(content, self._full_path(name))
+
+        finally:
+            content.close()
+
         return name
 
     def _chunked_upload(self, content, dest_path):
