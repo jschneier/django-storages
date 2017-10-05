@@ -7,3 +7,4 @@ google-cloud-storage>=0.22.0
 mock
 paramiko
 pytest-cov>=2.2.1
+pathlib2

@@ -8,9 +8,8 @@
 # DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
 # DROPBOX_ROOT_PATH = '/dir/'
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
-from datetime import datetime
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
 
@@ -25,7 +24,10 @@ from dropbox.files import CommitInfo, UploadSessionCursor, FolderMetadata
 
 from storages.utils import setting
 
-DATE_FORMAT = '%a, %d %b %Y %X +0000'
+try:
+    from pathlib import PurePosixPath
+except ImportError:  # Python 3.3 and below
+    from pathlib2 import PurePosixPath
 
 
 class DropBoxStorageException(Exception):
@@ -61,10 +63,14 @@ class DropBoxStorage(Storage):
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
         self.client = Dropbox(oauth2_access_token)
 
-    def _full_path(self, name):
-        if name == '/':
-            name = ''
-        return safe_join(self.root_path, name).replace('\\', '/')
+    def _full_path(self, path):
+        path = PurePosixPath(self.root_path) / path
+        path = str(path)
+
+        if path == '/':
+            path = ''
+
+        return path
 
     def delete(self, name):
         self.client.files_delete(self._full_path(name))
@@ -96,13 +102,12 @@ class DropBoxStorage(Storage):
 
     def modified_time(self, name):
         metadata = self.client.files_get_metadata(self._full_path(name))
-        mod_time = datetime.strptime(metadata['modified'], DATE_FORMAT)
-        return mod_time
+        return metadata.server_modified
 
     def accessed_time(self, name):
         metadata = self.client.files_get_metadata(self._full_path(name))
-        acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
-        return acc_time
+        # Note to the unwary, this is actually an mtime
+        return metadata.client_modified
 
     def url(self, name):
         media = self.client.files_get_temporary_link(self._full_path(name))

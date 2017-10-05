@@ -8,7 +8,9 @@ from django.test import TestCase
 from django.utils.six import BytesIO
 
 from storages.backends import dropbox
+
 from dropbox.files import ListFolderResult, FolderMetadata, FileMetadata
+from dropbox.exceptions import ApiError
 
 try:
     from unittest import mock
@@ -20,50 +22,20 @@ class F(object):
     pass
 
 
+FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
+FILE_METADATA = FileMetadata(name='foo.txt',
+                             path_display='/foo.txt',
+                             path_lower='/foo.txt',
+                             size=4,
+                             rev='23b7cdd80',
+                             client_modified=FILE_DATE,
+                             server_modified=FILE_DATE)
+
 LIST_FOLDER_RESULT = ListFolderResult(entries=[
     FolderMetadata(name='bar'),
-    FileMetadata(name='foo.txt'),
+    FILE_METADATA,
 ], has_more=False)
 
-
-FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
-FILE_FIXTURE = {
-    'bytes': 4,
-    'client_mtime': 'Mon, 24 Aug 2015 15:06:41 +0000',
-    'icon': 'page_white_text',
-    'is_dir': False,
-    'mime_type': 'text/plain',
-    'modified': 'Mon, 24 Aug 2015 15:06:41 +0000',
-    'path': '/foo.txt',
-    'rev': '23b7cdd80',
-    'revision': 2,
-    'root': 'app_folder',
-    'size': '4 bytes',
-    'thumb_exists': False
-}
-FILES_FIXTURE = {
-    'bytes': 0,
-    'contents': [
-        FILE_FIXTURE,
-        {'bytes': 0,
-         'icon': 'folder',
-         'is_dir': True,
-         'modified': 'Mon, 6 Feb 2015 15:06:40 +0000',
-         'path': '/bar',
-         'rev': '33b7cdd80',
-         'revision': 3,
-         'root': 'app_folder',
-         'size': '0 bytes',
-         'thumb_exists': False}
-    ],
-    'hash': 'aeaa0ed65aa4f88b96dfe3d553280efc',
-    'icon': 'folder',
-    'is_dir': True,
-    'path': '/',
-    'root': 'app_folder',
-    'size': '0 bytes',
-    'thumb_exists': False
-}
 FILE_MEDIA_FIXTURE = F()
 FILE_MEDIA_FIXTURE.link = 'https://dl.dropboxusercontent.com/1/view/foo'
 
@@ -77,18 +49,18 @@ class DropBoxTest(TestCase):
             dropbox.DropBoxStorage(None)
 
     @mock.patch('dropbox.Dropbox.files_delete',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA)
     def test_delete(self, *args):
         self.storage.delete('foo')
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=[FILE_FIXTURE])
+                return_value=FILE_METADATA)
     def test_exists(self, *args):
         exists = self.storage.exists('foo')
         self.assertTrue(exists)
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=[])
+                side_effect=ApiError(None, None, None, None))
     def test_not_exists(self, *args):
         exists = self.storage.exists('bar')
         self.assertFalse(exists)
@@ -103,19 +75,19 @@ class DropBoxTest(TestCase):
         self.assertEqual(files[0], 'foo.txt')
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA)
     def test_size(self, *args):
         size = self.storage.size('foo')
-        self.assertEqual(size, FILE_FIXTURE['bytes'])
+        self.assertEqual(size, FILE_METADATA.size)
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA)
     def test_modified_time(self, *args):
         mtime = self.storage.modified_time('foo')
         self.assertEqual(mtime, FILE_DATE)
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA)
     def test_accessed_time(self, *args):
         mtime = self.storage.accessed_time('foo')
         self.assertEqual(mtime, FILE_DATE)
