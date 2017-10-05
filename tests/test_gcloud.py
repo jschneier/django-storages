@@ -84,7 +84,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = None
 
         f = self.storage.open(self.filename, 'wb')
-        MockBlob.assert_called_with(self.filename, self.storage._bucket)
+        MockBlob.assert_called_with(self.filename, self.storage._bucket, chunk_size=None)
 
         f.write(data)
         tmpfile = f._file
