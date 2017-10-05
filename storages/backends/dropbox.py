@@ -18,7 +18,7 @@ from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import CommitInfo, UploadSessionCursor, FolderMetadata
+from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor
 
 from storages.utils import setting
 

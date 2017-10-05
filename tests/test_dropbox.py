@@ -1,17 +1,13 @@
 from datetime import datetime
 
-from django.core.exceptions import (
-    ImproperlyConfigured, SuspiciousFileOperation,
-)
-from django.core.files.base import ContentFile, File
+from django.core.exceptions import ImproperlyConfigured
+from django.core.files.base import File
 from django.test import TestCase
 from django.utils.six import BytesIO
+from dropbox.exceptions import ApiError
+from dropbox.files import FileMetadata, FolderMetadata, ListFolderResult
 
 from storages.backends import dropbox
-
-from requests import Response
-from dropbox.files import ListFolderResult, FolderMetadata, FileMetadata
-from dropbox.exceptions import ApiError
 
 try:
     from unittest import mock
