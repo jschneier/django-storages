@@ -109,8 +109,11 @@ class DropBoxStorage(Storage):
         return metadata.client_modified
 
     def url(self, name):
-        media = self.client.files_get_temporary_link(self._full_path(name))
-        return media.link
+        try:
+            media = self.client.files_get_temporary_link(self._full_path(name))
+            return media.link
+        except ApiError:
+            raise ValueError("This file is not accessible via a URL.")
 
     def _open(self, name, mode='rb'):
         return DropBoxFile(self._full_path(name), self)
