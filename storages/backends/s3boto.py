@@ -393,7 +393,9 @@ class S3BotoStorage(Storage):
 
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
-        key = self.bucket.get_key(encoded_name)
+        # The key is not validated below (by sending a HEAD request) if we're
+        # going to overwrite it anyway.
+        key = self.bucket.get_key(encoded_name, validate=not self.file_overwrite)
         if not key:
             key = self.bucket.new_key(encoded_name)
         if self.preload_metadata:

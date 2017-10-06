@@ -18,8 +18,8 @@ from storages.backends import s3boto
 
 class S3BotoTestCase(TestCase):
     @mock.patch('storages.backends.s3boto.S3Connection')
-    def setUp(self, S3Connection):
-        self.storage = s3boto.S3BotoStorage()
+    def setUp(self, S3Connection, **kwargs):
+        self.storage = s3boto.S3BotoStorage(**kwargs)
         self.storage._connection = mock.MagicMock()
 
 
@@ -51,10 +51,13 @@ class S3BotoStorageTests(S3BotoTestCase):
         """
         Test saving a file
         """
+        self.setUp(file_overwrite=True)  # this is our default
+
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
         self.storage.save(name, content)
-        self.storage.bucket.get_key.assert_called_once_with(name)
+        self.storage.bucket.get_key.assert_called_once_with(
+            name, validate=False)
 
         key = self.storage.bucket.get_key.return_value
         key.set_metadata.assert_called_with('Content-Type', 'text/plain')
@@ -74,7 +77,8 @@ class S3BotoStorageTests(S3BotoTestCase):
         content = ContentFile('data')
         content.content_type = None
         self.storage.save(name, content)
-        self.storage.bucket.get_key.assert_called_once_with(name)
+        self.storage.bucket.get_key.assert_called_once_with(
+            name, validate=False)
 
         key = self.storage.bucket.get_key.return_value
         key.set_metadata.assert_called_with('Content-Type', 'image/jpeg')
@@ -85,6 +89,9 @@ class S3BotoStorageTests(S3BotoTestCase):
             reduced_redundancy=self.storage.reduced_redundancy,
             rewind=True
         )
+
+        # File overwrites are allowed.
+        self.assertEqual(name, self.storage.get_available_name(name))
 
     def test_storage_save_gzipped(self):
         """
