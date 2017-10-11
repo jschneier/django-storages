@@ -11,7 +11,7 @@ from django.utils.encoding import force_bytes, smart_str
 from storages.utils import clean_name, safe_join, setting
 
 try:
-    from google.cloud.storage.client import Client
+    from google.cloud.storage.client import Client, Bucket
     from google.cloud.storage.blob import Blob
     from google.cloud.exceptions import NotFound
 except ImportError:
@@ -84,8 +84,11 @@ class GoogleCloudStorage(Storage):
     bucket_name = setting('GS_BUCKET_NAME', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
+    auto_create_storage_class = setting('GS_AUTO_CREATE_STORAGE_CLASS', None)
+    auto_create_location = setting('GS_AUTO_CREATE_LOCATION', None)
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
+
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
@@ -123,7 +126,13 @@ class GoogleCloudStorage(Storage):
             return self.client.get_bucket(name)
         except NotFound:
             if self.auto_create_bucket:
-                bucket = self.client.create_bucket(name)
+                bucket = Bucket(client=self.client, name=name)
+                if self.auto_create_storage_class:
+                    bucket.storage_class = self.auto_create_storage_class
+                if self.auto_create_location:
+                    bucket.location = self.auto_create_location
+
+                bucket.create()
                 bucket.acl.save_predefined(self.auto_create_acl)
                 return bucket
             raise ImproperlyConfigured("Bucket %s does not exist. Buckets "

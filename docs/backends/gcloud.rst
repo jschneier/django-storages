@@ -53,6 +53,14 @@ running the gcloud backend to have OWNER permission on the bucket. If
 you're using the default service account, this means you're restricted
 to the ``projectPrivate`` ACL.
 
+``GS_AUTO_CREATE_STORAGE_CLASS`` (optional)
+Storage class used when creating a new bucket, from the
+`list of predefined storage classes <https://cloud.google.com/storage/docs/json_api/v1/buckets#storageClass>`_.
+
+``GS_AUTO_CREATE_LOCATION`` (optional)
+Storage location used when creating a new bucket, from the
+`list of predefined locations <https://cloud.google.com/storage/docs/bucket-locations>`_.
+
 ``GS_FILE_CHARSET`` (optional)
 
 Allows overriding the character set used in filenames.
