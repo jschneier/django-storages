@@ -89,6 +89,25 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             }
         )
 
+    def test_content_type(self):
+        """
+        Test saving a file with a None content type.
+        """
+        name = 'test_image.jpg'
+        content = ContentFile('data')
+        content.content_type = None
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content.file,
+            ExtraArgs={
+                'ContentType': 'image/jpeg',
+                'ACL': self.storage.default_acl,
+            }
+        )
+
     def test_storage_save_gzipped(self):
         """
         Test saving a gzipped file
