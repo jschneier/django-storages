@@ -580,3 +580,16 @@ class S3Boto3Storage(Storage):
             name = self._clean_name(name)
             return name
         return super(S3Boto3Storage, self).get_available_name(name, max_length)
+
+    def __getstate__(self):
+        state = {}
+        # remove bucket and threading.local
+        state.update({
+            k: None if k in ('_bucket', '_connections') else v
+            for k, v in self.__dict__.items()
+        })
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self._connections = threading.local()
