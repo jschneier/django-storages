@@ -149,6 +149,30 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertTrue(self.storage.exists(''))
         self.storage._client.create_bucket.assert_called_with(self.bucket_name)
 
+    def test_bucket_auto_create_true(self):
+        self.storage.auto_create_bucket = True
+        self.storage._client = mock.MagicMock()
+        self.storage._client.get_bucket.side_effect = NotFound('dang')
+
+        self.assertIsNotNone(self.storage.bucket)
+        self.storage._client.create_bucket.assert_called_with(self.bucket_name)
+
+    def test_bucket_auto_create_false(self):
+        """
+        If auto_create_bucket is False getting a bucket property should not bother
+        with checking for bucket existence.
+        Let it fail later on usage of non-existent buckets.
+        This prevents preemptive fails when client user does not have privileges to create buckets.
+        """
+        self.storage.auto_create_bucket = False
+        self.storage._client = mock.MagicMock()
+
+        bucket = self.storage.bucket
+        self.assertFalse(self.storage._client.get_bucket.called)
+        self.assertIsNotNone(bucket)
+        self.assertEqual(bucket.name, self.bucket_name)
+        self.assertEqual(bucket.client, self.storage._client)
+
     def test_listdir(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
 
