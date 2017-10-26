@@ -119,6 +119,10 @@ class GoogleCloudStorage(Storage):
         Retrieves a bucket if it exists, otherwise creates it.
         """
         if not self.auto_create_bucket:
+            # If permissions are limited. Call to get_bucket (below) results in:
+            # 403 Caller does not have storage.buckets.get access to bucket.
+            # Even if bucket actually exists
+            # So we don't get_bucket, we just create it's proxy here
             return Bucket(client=self.client, name=name)
 
         try:

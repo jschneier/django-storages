@@ -161,7 +161,13 @@ class GCloudStorageTests(GCloudTestCase):
         """
         If auto_create_bucket is False getting a bucket property should not bother
         with checking for bucket existence.
+
+        If permissions are limited. Call to get_bucket (below) results in:
+        403 Caller does not have storage.buckets.get access to bucket.
+        Even if bucket actually exists
+
         Let it fail later on usage of non-existent buckets.
+
         This prevents preemptive fails when client user does not have privileges to create buckets.
         """
         self.storage.auto_create_bucket = False
