@@ -2,7 +2,9 @@
 from __future__ import unicode_literals
 
 import gzip
+import threading
 from datetime import datetime
+from unittest import skipIf
 
 from botocore.exceptions import ClientError
 from django.conf import settings
@@ -22,7 +24,7 @@ except ImportError:  # Python 3.2 and below
 class S3Boto3TestCase(TestCase):
     def setUp(self):
         self.storage = s3boto3.S3Boto3Storage()
-        self.storage._connection = mock.MagicMock()
+        self.storage._connections.connection = mock.MagicMock()
 
 
 class S3Boto3StorageTests(S3Boto3TestCase):
@@ -80,7 +82,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            content.file,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
@@ -96,7 +98,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            content.file,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
@@ -112,6 +114,34 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_storage_save.css'
         content = ContentFile("I should be gzip'd")
         self.storage.save(name, content)
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            mock.ANY,
+            ExtraArgs={
+                'ContentType': 'text/css',
+                'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
+            }
+        )
+        args, kwargs = obj.upload_fileobj.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
+
+    def test_storage_save_gzip_twice(self):
+        """
+        Test saving the same file content twice with gzip enabled.
+        """
+        # Given
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+
+        # When
+        self.storage.save(name, content)
+        self.storage.save('test_storage_save_2.css', content)
+
+        # Then
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
             mock.ANY,
@@ -174,8 +204,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
     def test_auto_creating_bucket(self):
         self.storage.auto_create_bucket = True
         Bucket = mock.MagicMock()
-        self.storage._connection.Bucket.return_value = Bucket
-        self.storage._connection.meta.client.meta.region_name = 'sa-east-1'
+        self.storage._connections.connection.Bucket.return_value = Bucket
+        self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
 
         Bucket.meta.client.head_bucket.side_effect = ClientError({'Error': {},
                                                                   'ResponseMetadata': {'HTTPStatusCode': 404}},
@@ -342,3 +372,18 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             '%s?X-Amz-Date=12345678&X-Amz-Signature=Signature' % expected), expected)
         self.assertEqual(self.storage._strip_signing_parameters(
             '%s?expires=12345678&signature=Signature' % expected), expected)
+
+    @skipIf(threading is None, 'Test requires threading')
+    def test_connection_threading(self):
+        connections = []
+
+        def thread_storage_connection():
+            connections.append(self.storage.connection)
+
+        for x in range(2):
+            t = threading.Thread(target=thread_storage_connection)
+            t.start()
+            t.join()
+
+        # Connection for each thread needs to be unique
+        self.assertIsNot(connections[0], connections[1])

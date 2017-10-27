@@ -6,6 +6,7 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 import datetime
+import mimetypes
 
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -90,7 +91,8 @@ class GCloudStorageTests(GCloudTestCase):
         # File data is not actually written until close(), so do that.
         f.close()
 
-        MockBlob().upload_from_file.assert_called_with(tmpfile)
+        MockBlob().upload_from_file.assert_called_with(
+            tmpfile, content_type=mimetypes.guess_type(self.filename)[0])
 
     def test_save(self):
         data = 'This is some test content.'
@@ -100,7 +102,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.get_bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, size=len(data))
+            content, size=len(data), content_type=mimetypes.guess_type(self.filename)[0])
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -111,7 +113,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.get_bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, size=len(data))
+            content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
 
     def test_delete(self):
         self.storage.delete(self.filename)

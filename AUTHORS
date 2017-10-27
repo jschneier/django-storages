@@ -30,6 +30,8 @@ By order of apparition, thanks:
     * Eirik Martiniussen Sylliaas (Google Cloud Storage native support)
     * Jody McIntyre (Google Cloud Storage native support)
     * Stanislav Kaledin (Bug fixes in SFTPStorage)
+    * Filip Vavera (Google Cloud MIME types support)
+    * Max Malysh (Dropbox large file support)
     * Janusz Skonieczny (Google Cloud Storage limited permission workaround)
 
 Extra thanks to Marty for adding this in Django,

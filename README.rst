@@ -35,7 +35,7 @@ About
 django-storages is a project to provide a variety of storage backends in a single library.
 
 This library is usually compatible with the currently supported versions of
-Django. Check the trove classifiers in setup.py to be sure.
+Django. Check the Trove classifiers in setup.py to be sure.
 
 History
 =======
