@@ -14,6 +14,12 @@ for the forseeable future.
 For historical completeness an extreme legacy backend was removed
 in version 1.2
 
+If using the boto backend on a new project (not recommended) it is recommended
+that you configure it to also use `AWS Signature Version 4`_. This can be done
+by adding ``S3_USE_SIGV4 = True`` to your settings and setting the ``AWS_S3_HOST``
+configuration option. For regions created after January 2014 this is your only
+option if you insist on using the boto backend.
+
 Settings
 --------
 
@@ -49,7 +55,6 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_HEADERS`` (optional - boto only, for boto3 see ``AWS_S3_OBJECT_PARAMETERS``)
     If you'd like to set headers sent with each file of the storage::
 
-        # see http://developer.yahoo.com/performance/rules.html#expires
         AWS_HEADERS = {
             'Expires': 'Thu, 15 Apr 2010 20:00:00 GMT',
             'Cache-Control': 'max-age=86400',
@@ -63,19 +68,29 @@ Available are numerous settings. It should be especially noted the following:
         }
 
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
-    Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
-    authentication`_ from generated URLs. This can be useful if your S3 buckets are
-    public.
+    Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
+    authentication from generated URLs. This can be useful if your S3 buckets
+    are public.
 
 ``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
-    The number of seconds that a generated URL with `query parameter
-    authentication`_ is valid for.
+    The number of seconds that a generated URL is valid for.
 
 ``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
     Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
 
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
+
+``AWS_S3_HOST`` (optional - boto only, default is ``s3.amazonaws.com``)
+
+  To ensure you use `AWS Signature Version 4`_ it is recommended to set this to the host of your bucket. See the
+  `S3 region list`_ to figure out the appropriate endpoint for your bucket. Also be sure to add
+  ``S3_USE_SIGV4 = True`` to settings.py
+
+  .. note::
+
+    The signature versions are not backwards compatible so be careful about url endpoints if making this change
+    for legacy projects.
 
 ``AWS_LOCATION`` (optional: default is `''`)
     A path prefix that will be prepended to all uploads
@@ -98,7 +113,19 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_CALLING_FORMAT`` (optional: default is ``SubdomainCallingFormat()``)
     Defines the S3 calling format to use to connect to the static bucket.
 
-.. _query parameter authentication: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+``AWS_S3_SIGNATURE_VERSION`` (optional - boto3 only)
+
+  All AWS regions support v4 of the signing protocol. To use it set this to ``'s3v4'``. It is recommended
+  to do this for all new projects and required for all regions launched after January 2014. To see
+  if your region is one of them you can view the `S3 region list`_.
+
+  .. note::
+
+    The signature versions are not backwards compatible so be careful about url endpoints if making this change
+    for legacy projects.
+
+.. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+.. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 
 CloudFront
 ~~~~~~~~~~
@@ -107,6 +134,7 @@ If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
 to serve those files using that::
 
     AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
+
 **NOTE:** Django's `STATIC_URL` `must end in a slash`_ and the `AWS_S3_CUSTOM_DOMAIN` *must not*. It is best to set this variable indepedently of `STATIC_URL`.
 
 .. _must end in a slash: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
@@ -122,6 +150,7 @@ Storage
 
 Standard file access options are available, and work as expected::
 
+    >>> from django.core.files.storage import default_storage
     >>> default_storage.exists('storage_test')
     False
     >>> file = default_storage.open('storage_test', 'w')

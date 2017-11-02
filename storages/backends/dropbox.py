@@ -11,19 +11,19 @@
 from __future__ import absolute_import
 
 from datetime import datetime
-from tempfile import SpooledTemporaryFile
 from shutil import copyfileobj
+from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils.deconstruct import deconstructible
 from django.utils._os import safe_join
+from django.utils.deconstruct import deconstructible
+from dropbox import Dropbox
+from dropbox.exceptions import ApiError
+from dropbox.files import CommitInfo, UploadSessionCursor
 
 from storages.utils import setting
-
-from dropbox.client import DropboxClient
-from dropbox.rest import ErrorResponse
 
 DATE_FORMAT = '%a, %d %b %Y %X +0000'
 
@@ -40,7 +40,7 @@ class DropBoxFile(File):
     @property
     def file(self):
         if not hasattr(self, '_file'):
-            response = self._storage.client.get_file(self.name)
+            response = self._storage.client.files_download(self.name)
             self._file = SpooledTemporaryFile()
             copyfileobj(response, self._file)
             self._file.seek(0)
@@ -51,13 +51,15 @@ class DropBoxFile(File):
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
 
+    CHUNK_SIZE = 4 * 1024 * 1024
+
     def __init__(self, oauth2_access_token=None, root_path=None):
         oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
         self.root_path = root_path or setting('DROPBOX_ROOT_PATH', '/')
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure a token auth at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        self.client = DropboxClient(oauth2_access_token)
+        self.client = Dropbox(oauth2_access_token)
 
     def _full_path(self, name):
         if name == '/':
@@ -65,18 +67,18 @@ class DropBoxStorage(Storage):
         return safe_join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
-        self.client.file_delete(self._full_path(name))
+        self.client.files_delete(self._full_path(name))
 
     def exists(self, name):
         try:
-            return bool(self.client.metadata(self._full_path(name)))
-        except ErrorResponse:
+            return bool(self.client.files_get_metadata(self._full_path(name)))
+        except ApiError:
             return False
 
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
-        metadata = self.client.metadata(full_path)
+        metadata = self.client.files_get_metadata(full_path)
         for entry in metadata['contents']:
             entry['path'] = entry['path'].replace(full_path, '', 1)
             entry['path'] = entry['path'].replace('/', '', 1)
@@ -87,27 +89,53 @@ class DropBoxStorage(Storage):
         return directories, files
 
     def size(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata['bytes']
 
     def modified_time(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         mod_time = datetime.strptime(metadata['modified'], DATE_FORMAT)
         return mod_time
 
     def accessed_time(self, name):
-        metadata = self.client.metadata(self._full_path(name))
+        metadata = self.client.files_get_metadata(self._full_path(name))
         acc_time = datetime.strptime(metadata['client_mtime'], DATE_FORMAT)
         return acc_time
 
     def url(self, name):
-        media = self.client.media(self._full_path(name))
-        return media['url']
+        media = self.client.files_get_temporary_link(self._full_path(name))
+        return media.link
 
     def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
-        self.client.put_file(self._full_path(name), content)
+        content.open()
+        if content.size <= self.CHUNK_SIZE:
+            self.client.files_upload(content.read(), self._full_path(name))
+        else:
+            self._chunked_upload(content, self._full_path(name))
+        content.close()
         return name
+
+    def _chunked_upload(self, content, dest_path):
+        upload_session = self.client.files_upload_session_start(
+            content.read(self.CHUNK_SIZE)
+        )
+        cursor = UploadSessionCursor(
+            session_id=upload_session.session_id,
+            offset=content.tell()
+        )
+        commit = CommitInfo(path=dest_path)
+
+        while content.tell() < content.size:
+            if (content.size - content.tell()) <= self.CHUNK_SIZE:
+                self.client.files_upload_session_finish(
+                    content.read(self.CHUNK_SIZE), cursor, commit
+                )
+            else:
+                self.client.files_upload_session_append_v2(
+                    content.read(self.CHUNK_SIZE), cursor
+                )
+                cursor.offset = content.tell()

@@ -1,4 +1,5 @@
 from setuptools import setup
+
 import storages
 
 
@@ -10,6 +11,7 @@ def read(filename):
 def get_requirements_tests():
     with open('requirements-tests.txt') as f:
         return f.readlines()
+
 
 setup(
     name='django-storages',
@@ -26,7 +28,6 @@ setup(
         'Environment :: Web Environment',
         'Framework :: Django',
         'Framework :: Django :: 1.8',
-        'Framework :: Django :: 1.9',
         'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
         'Intended Audience :: Developers',
