@@ -53,13 +53,17 @@ class DropBoxStorage(Storage):
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=None, root_path=None):
+    def __init__(self, oauth2_access_token=None, root_path=None, timeout=None):
         oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
         self.root_path = root_path or setting('DROPBOX_ROOT_PATH', '/')
+        timeout = timeout or setting('DROPBOX_TIMEOUT')
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure a token auth at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        self.client = Dropbox(oauth2_access_token)
+        if timeout:
+            self.client = Dropbox(oauth2_access_token, timeout)
+        else:
+            self.client = Dropbox(oauth2_access_token)
 
     def _full_path(self, name):
         if name == '/':

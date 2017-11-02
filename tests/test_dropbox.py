@@ -150,6 +150,23 @@ class DropBoxTest(TestCase):
         self.assertEqual(files, self.storage._full_path('..'))
         self.assertEqual(files, self.storage._full_path('../..'))
 
+    @mock.patch('storages.backends.dropbox.Dropbox')
+    def test_timeout_config(self, Dropbox):
+        token = 'abc'
+        timeout = 60
+
+        with self.settings(DROPBOX_OAUTH2_TOKEN=token, DROPBOX_TIMEOUT=timeout):
+            dropbox.DropBoxStorage()
+            Dropbox.assert_called_with(token, timeout)
+
+        with self.settings(DROPBOX_OAUTH2_TOKEN=token):
+            dropbox.DropBoxStorage(timeout=timeout)
+            Dropbox.assert_called_with(token, timeout)
+
+        with self.settings(DROPBOX_OAUTH2_TOKEN=token):
+            dropbox.DropBoxStorage()
+            Dropbox.assert_called_with(token)
+
 
 class DropBoxFileTest(TestCase):
     def setUp(self, *args):
