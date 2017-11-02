@@ -20,8 +20,15 @@ To use DropBoxStorage set::
 ``DROPBOX_OAUTH2_TOKEN``
     Your DropBox token, if you haven't follow this `guide step`_.
 
-``DROPBOX_ROOT_PATH``
+``DROPBOX_ROOT_PATH`` (optional)
     Allow to jail your storage to a defined directory.
+
+    Default: ``/``
+
+``DROPBOX_TIMEOUT`` (optional)
+    Timeout in seconds. After timeout the connection will be closed. If ``None``, client will wait forever. 
+
+    Dropbox default: ``30`` seconds
 
 .. _`guide step`: https://www.dropbox.com/developers/documentation/python#tutorial
 .. _`Dropbox SDK for Python`: https://www.dropbox.com/developers/documentation/python#tutorial
