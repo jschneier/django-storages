@@ -69,9 +69,7 @@ rolled over into a temporary file on disk. Default is 0: Do not roll over.
 ``GS_USE_STATIC_URL_AS_BASE_URL`` (optional: default is ``False``)
 
 If you would like to use Django settings' ``STATIC_URL`` as the base URL, then
-set this option to ``True``, e.g.
-https://storage.googleapis.com/bucket_name/favicon.ico
-becomes https://static_url.set.in.django.settings/favicon.ico.
+set this option to ``True``.
 
 Fields
 ------
