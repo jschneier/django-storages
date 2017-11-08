@@ -1,5 +1,6 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
+import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
@@ -89,6 +90,8 @@ class GoogleCloudStorage(Storage):
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
+    use_static_url_as_base_url = setting('GS_USE_STATIC_URL_AS_BASE_URL', False)
+    static_url = setting('STATIC_URL', None)
 
     def __init__(self, **settings):
         # check if some of the settings we've provided as class attributes
@@ -99,6 +102,11 @@ class GoogleCloudStorage(Storage):
 
         self._bucket = None
         self._client = None
+
+        # Django expects STATIC_URL to end with '/', but let's do a sanity
+        # check.
+        if self.static_url and not self.static_url.endswith('/'):
+            self.static_url += '/'
 
     @property
     def client(self):
@@ -226,8 +234,13 @@ class GoogleCloudStorage(Storage):
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
-        return blob.public_url
+        if self.use_static_url_as_base_url and self.static_url is not None:
+            # Django expects name to contain relative path.
+            url = urlparse.urljoin(self.static_url, './{}'.format(name))
+        else:
+            blob = self._get_blob(self._encode_name(name))
+            url = blob.public_url
+        return url
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:

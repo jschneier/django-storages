@@ -66,6 +66,13 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 The maximum amount of memory a returned file can take up before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
 
+``GS_USE_STATIC_URL_AS_BASE_URL`` (optional: default is ``False``)
+
+If you would like to use Django settings' ``STATIC_URL`` as the base URL, then
+set this option to ``True``, e.g.
+https://storage.googleapis.com/bucket_name/favicon.ico
+becomes https://static_url.set.in.django.settings/favicon.ico.
+
 Fields
 ------
 

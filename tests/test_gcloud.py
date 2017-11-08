@@ -7,6 +7,7 @@ except ImportError:  # Python 3.2 and below
 
 import datetime
 import mimetypes
+import urlparse
 
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -265,6 +266,31 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertEqual(self.storage.url(self.filename), url)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
+
+    def test_url_using_static_url_as_base_url(self):
+        static_url = 'https://storage.cloud.google.com/test_bucket'
+        storage = gcloud.GoogleCloudStorage(
+            static_url=static_url,
+            use_static_url_as_base_url=True,
+        )
+        self.assertEqual(
+            u'https://storage.cloud.google.com/test_bucket/images/favicon.ico',
+            storage.url('images/favicon.ico'))
+
+    def test_url_using_static_url_as_base_url_without_setting_static_url(self):
+        storage = gcloud.GoogleCloudStorage(
+            bucket_name=self.bucket_name,
+            static_url=None,
+            use_static_url_as_base_url=True,
+        )
+        url = u'https://storage.googleapis.com/{}/{}'.format(self.bucket_name,
+                                                             self.filename)
+        storage._bucket = mock.MagicMock()
+        blob = mock.MagicMock()
+        blob.public_url = url
+        storage._bucket.get_blob.return_value = blob
+        self.assertEqual(url, storage.url(self.filename))
+        storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_url_no_file(self):
         self.storage._bucket = mock.MagicMock()
