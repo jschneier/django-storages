@@ -269,7 +269,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertEqual(self.storage.url(self.filename), url)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
-        for unused in xrange(1, 10):
+        for unused in range(0, 10):
             self.assertEqual(self.storage.url(self.filename), url)
             self.assertEqual(1, self.storage._bucket.get_blob.call_count)
 
