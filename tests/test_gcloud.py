@@ -7,7 +7,6 @@ except ImportError:  # Python 3.2 and below
 
 import datetime
 import mimetypes
-import urlparse
 
 from django.core.files.base import ContentFile
 from django.test import TestCase

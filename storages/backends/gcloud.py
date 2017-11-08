@@ -1,6 +1,10 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
-import urlparse
+
+try:
+    from urlparse import urljoin
+except ImportError:
+    from urllib.parse import urljoin
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
@@ -236,7 +240,7 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(clean_name(name))
         if self.use_static_url_as_base_url and self.static_url is not None:
             # Django expects name to contain relative path.
-            url = urlparse.urljoin(self.static_url, './{}'.format(name))
+            url = urljoin(self.static_url, './{}'.format(name))
         else:
             blob = self._get_blob(self._encode_name(name))
             url = blob.public_url
