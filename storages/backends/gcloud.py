@@ -1,6 +1,7 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
 
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -226,8 +227,14 @@ class GoogleCloudStorage(Storage):
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
-        return blob.public_url
+        encoded_name = self._encode_name(name)
+        cache_key = 'django-storages-gcloud-url-{}'.format(encoded_name)
+        url = cache.get(cache_key)
+        if not url:
+            blob = self._get_blob(encoded_name)
+            url = blob.public_url
+            cache.set(cache_key, url)
+        return url
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:
