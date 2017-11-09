@@ -66,6 +66,12 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 The maximum amount of memory a returned file can take up before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
 
+``GS_URL_CACHE_TIMEOUT_SECS`` (optional: default is ``86400``)
+
+The default timeout, in seconds, to use for the URL cache. This argument
+defaults to 86,400 seconds (1 day). Passing in None for timeout will cache the
+value forever.
+
 Fields
 ------
 
