@@ -171,9 +171,11 @@ class GoogleCloudStorage(Storage):
                 return True
             except ImproperlyConfigured:
                 return False
-
         name = self._normalize_name(clean_name(name))
-        return bool(self.bucket.get_blob(self._encode_name(name)))
+        try:
+            return bool(self.bucket.get_blob(self._encode_name(name)))
+        except NotFound:
+            return False
 
     def listdir(self, name):
         name = self._normalize_name(clean_name(name))
