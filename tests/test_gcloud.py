@@ -8,6 +8,7 @@ except ImportError:  # Python 3.2 and below
 import datetime
 import mimetypes
 
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
@@ -18,6 +19,7 @@ from storages.backends import gcloud
 
 
 class GCloudTestCase(TestCase):
+
     def setUp(self):
         self.bucket_name = 'test_bucket'
         self.filename = 'test_file.txt'
@@ -26,6 +28,8 @@ class GCloudTestCase(TestCase):
 
         self.client_patcher = mock.patch('storages.backends.gcloud.Client')
         self.client_patcher.start()
+
+        cache.clear()
 
     def tearDown(self):
         self.client_patcher.stop()
@@ -265,6 +269,9 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertEqual(self.storage.url(self.filename), url)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
+        for unused in range(0, 10):
+            self.assertEqual(self.storage.url(self.filename), url)
+            self.assertEqual(1, self.storage._bucket.get_blob.call_count)
 
     def test_url_no_file(self):
         self.storage._bucket = mock.MagicMock()

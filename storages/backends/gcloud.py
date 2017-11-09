@@ -1,6 +1,8 @@
+import hashlib
 import mimetypes
 from tempfile import SpooledTemporaryFile
 
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -20,6 +22,7 @@ except ImportError:
 
 
 class GoogleCloudFile(File):
+
     def __init__(self, name, mode, storage):
         self.name = name
         self.mime_type = mimetypes.guess_type(name)[0]
@@ -79,6 +82,7 @@ class GoogleCloudFile(File):
 
 @deconstructible
 class GoogleCloudStorage(Storage):
+
     project_id = setting('GS_PROJECT_ID', None)
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
@@ -89,6 +93,7 @@ class GoogleCloudStorage(Storage):
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
+    url_cache_timeout_secs = setting('GS_URL_CACHE_TIMEOUT_SECS', 86400)
 
     def __init__(self, **settings):
         # check if some of the settings we've provided as class attributes
@@ -226,8 +231,16 @@ class GoogleCloudStorage(Storage):
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
-        return blob.public_url
+        encoded_name = self._encode_name(name)
+        name_to_hash = '{}/{}'.format(self.bucket_name, name)
+        cache_key = hashlib.md5(name_to_hash).hexdigest()
+        url = cache.get(cache_key)
+        if not url:
+            blob = self._get_blob(encoded_name)
+            url = blob.public_url
+            cache.set(cache_key, url, timeout=self.url_cache_timeout_secs,
+                      version=1)
+        return url
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:
