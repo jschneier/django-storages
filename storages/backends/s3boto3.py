@@ -194,8 +194,8 @@ class S3Boto3Storage(Storage):
     object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
     bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
     auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
-    default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
-    bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
+    default_acl = setting('AWS_DEFAULT_ACL', None)
+    bucket_acl = setting('AWS_BUCKET_ACL', None)
     querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
     signature_version = setting('AWS_S3_SIGNATURE_VERSION')
@@ -350,7 +350,10 @@ class S3Boto3Storage(Storage):
                     #
                     # Also note that Amazon specifically disallows "us-east-1" when passing bucket
                     # region names; LocationConstraint *must* be blank to create in US Standard.
-                    bucket_params = {'ACL': self.bucket_acl}
+                    if self.bucket_acl:
+                        bucket_params = {'ACL': self.bucket_acl}
+                    else:
+                        bucket_params = {}
                     region_name = self.connection.meta.client.meta.region_name
                     if region_name != 'us-east-1':
                         bucket_params['CreateBucketConfiguration'] = {
