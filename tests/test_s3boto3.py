@@ -85,7 +85,25 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content.file,
             ExtraArgs={
                 'ContentType': 'text/plain',
-                'ACL': self.storage.default_acl,
+            }
+        )
+
+    def test_storage_save_with_acl(self):
+        """
+        Test saving a file with user defined ACL.
+        """
+        name = 'test_storage_save.txt'
+        content = ContentFile('new content')
+        self.storage.default_acl = 'private'
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content.file,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+                'ACL': 'private',
             }
         )
 
@@ -102,7 +120,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
-                'ACL': self.storage.default_acl,
             }
         )
 
@@ -120,7 +137,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
-                'ACL': self.storage.default_acl,
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -148,7 +164,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
-                'ACL': self.storage.default_acl,
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -203,6 +218,23 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_auto_creating_bucket(self):
         self.storage.auto_create_bucket = True
+        Bucket = mock.MagicMock()
+        self.storage._connections.connection.Bucket.return_value = Bucket
+        self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
+
+        Bucket.meta.client.head_bucket.side_effect = ClientError({'Error': {},
+                                                                  'ResponseMetadata': {'HTTPStatusCode': 404}},
+                                                                 'head_bucket')
+        self.storage._get_or_create_bucket('testbucketname')
+        Bucket.create.assert_called_once_with(
+            CreateBucketConfiguration={
+                'LocationConstraint': 'sa-east-1',
+            }
+        )
+
+    def test_auto_creating_bucket_with_acl(self):
+        self.storage.auto_create_bucket = True
+        self.storage.bucket_acl = 'public-read'
         Bucket = mock.MagicMock()
         self.storage._connections.connection.Bucket.return_value = Bucket
         self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
