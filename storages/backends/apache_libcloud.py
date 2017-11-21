@@ -18,6 +18,9 @@ except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
 
 
+_KNOWN_OPTIONS = frozenset({'type', 'user', 'key', 'bucket'})
+
+
 @deconstructible
 class LibCloudStorage(Storage):
     """Django storage derived class using apache libcloud to operate
@@ -30,12 +33,8 @@ class LibCloudStorage(Storage):
         if not self.provider:
             raise ImproperlyConfigured(
                 'LIBCLOUD_PROVIDERS %s not defined or invalid' % provider_name)
-        extra_kwargs = {}
-        if 'region' in self.provider:
-            extra_kwargs['region'] = self.provider['region']
-        # Used by the GoogleStorageDriver
-        if 'project' in self.provider:
-            extra_kwargs['project'] = self.provider['project']
+        extra_kwargs = {k: self.provider[k]
+                        for k in self.provider.keys() - _KNOWN_OPTIONS}
         try:
             provider_type = self.provider['type']
             if isinstance(provider_type, string_types):
