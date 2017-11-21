@@ -89,7 +89,7 @@ class LibCloudStorage(Storage):
         directories, the second item being files.
         """
         container = self._get_bucket()
-        objects = self.driver.list_container_objects(container)
+        objects = self.driver.iterate_container_objects(container)
         path = self._clean_name(path)
         if not path.endswith('/'):
             path = "%s/" % path
