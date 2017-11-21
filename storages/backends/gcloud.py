@@ -84,6 +84,7 @@ class GoogleCloudStorage(Storage):
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
+    always_get_bucket = setting('GS_ALWAYS_GET_BUCKET', True)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
@@ -120,7 +121,7 @@ class GoogleCloudStorage(Storage):
         """
         Retrieves a bucket if it exists, otherwise creates it.
         """
-        if not self.auto_create_bucket:
+        if not self.always_get_bucket:
             # If permissions are limited. Call to get_bucket (below) results in:
             # 403 Caller does not have storage.buckets.get access to bucket.
             # Even if bucket actually exists

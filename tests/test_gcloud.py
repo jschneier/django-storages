@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from django.test.utils import override_settings
-
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
@@ -19,6 +17,7 @@ from storages.backends import gcloud
 
 
 class GCloudTestCase(TestCase):
+
     def setUp(self):
         self.bucket_name = 'test_bucket'
         self.filename = 'test_file.txt'
@@ -34,7 +33,6 @@ class GCloudTestCase(TestCase):
 
 class GCloudStorageTests(GCloudTestCase):
 
-    @override_settings(GS_AUTO_CREATE_BUCKET=True)
     def test_open_read(self):
         """
         Test opening a file and reading from it
@@ -48,7 +46,6 @@ class GCloudStorageTests(GCloudTestCase):
         f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
         self.assertEqual(f.read(), data)
 
-    @override_settings(GS_AUTO_CREATE_BUCKET=True)
     def test_open_read_num_bytes(self):
         data = b'This is some test read data.'
         num_bytes = 10
@@ -97,7 +94,6 @@ class GCloudStorageTests(GCloudTestCase):
         MockBlob().upload_from_file.assert_called_with(
             tmpfile, content_type=mimetypes.guess_type(self.filename)[0])
 
-    @override_settings(GS_AUTO_CREATE_BUCKET=True)
     def test_save(self):
         data = 'This is some test content.'
         content = ContentFile(data)
@@ -108,7 +104,6 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, size=len(data), content_type=mimetypes.guess_type(self.filename)[0])
 
-    @override_settings(GS_AUTO_CREATE_BUCKET=True)
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
         filename = 'ủⓝï℅ⅆℇ.txt'
@@ -120,7 +115,6 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
 
-    @override_settings(GS_AUTO_CREATE_BUCKET=True)
     def test_delete(self):
         self.storage.delete(self.filename)
 
@@ -137,7 +131,6 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertFalse(self.storage.exists(self.filename))
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
-    @override_settings(GS_AUTO_CREATE_BUCKET=True)
     def test_exists_no_bucket(self):
         # exists('') should return False if the bucket doesn't exist
         self.storage._client = mock.MagicMock()
@@ -166,7 +159,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertIsNotNone(self.storage.bucket)
         self.storage._client.create_bucket.assert_called_with(self.bucket_name)
 
-    def test_bucket_auto_create_false(self):
+    def test_bucket_always_get_bucket_false(self):
         """
         If auto_create_bucket is False getting a bucket property should not bother
         with checking for bucket existence.
@@ -179,7 +172,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         This prevents preemptive fails when client user does not have privileges to create buckets.
         """
-        self.storage.auto_create_bucket = False
+        self.storage.always_get_bucket = False
         self.storage._client = mock.MagicMock()
 
         bucket = self.storage.bucket
