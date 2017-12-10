@@ -82,12 +82,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
             }
         )
+        self.assertEqual(content.name, name)
 
     def test_storage_save_gzipped(self):
         """
@@ -98,13 +99,14 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
             }
         )
+        self.assertEqual(content.name, name)
 
     def test_storage_save_gzip(self):
         """
