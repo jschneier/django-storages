@@ -446,8 +446,7 @@ class S3Boto3Storage(Storage):
         # even if wrapped file-like object exists. To avoid Django-specific
         # logic, pass internal file-like object if `content` is `File`
         # class instance.
-        if isinstance(content, File):
-            content = content.file
+        content.name = name
 
         self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
