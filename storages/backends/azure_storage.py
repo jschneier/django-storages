@@ -37,6 +37,7 @@ class AzureStorage(Storage):
     account_key = setting("AZURE_ACCOUNT_KEY")
     azure_container = setting("AZURE_CONTAINER")
     azure_ssl = setting("AZURE_SSL")
+    azure_host_base = setting("AZURE_HOST_BASE", default="blob.core.windows.net")
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
@@ -46,7 +47,8 @@ class AzureStorage(Storage):
     def connection(self):
         if self._connection is None:
             self._connection = BlobService(
-                self.account_name, self.account_key)
+                self.account_name, self.account_key,
+                host_base='.{}'.format(self.azure_host_base))
         return self._connection
 
     @property
