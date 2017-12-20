@@ -1,7 +1,7 @@
 Azure Storage
 =============
 
-A custom storage system for Django using Windows Azure Storage backend.
+A custom storage system for Django using Windows Azure Storage backend (BlockBlobs, there is no support for PageBlobs).
 
 Before you start configuration, you will need to install the Azure SDK for Python.
 
@@ -37,3 +37,8 @@ The following settings are available:
 
     This is where the files uploaded through your Django app will be uploaded.
     The container must be already created as the storage system will not attempt to create it.
+
+
+``AZURE_HOST_BASE``
+
+    This is the optional setting for live host base URL. Defaults to Azure URL. Override this for on-premise.
