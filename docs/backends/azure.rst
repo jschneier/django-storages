@@ -39,6 +39,6 @@ The following settings are available:
     The container must be already created as the storage system will not attempt to create it.
 
 
-``AZURE_HOST_BASE``
+``AZURE_ENDPOINT_SUFFIX``
 
-    This is the optional setting for live host base URL. Defaults to Azure URL. Override this for on-premise.
+   This is the optional setting for overriding live host base URL. Defaults to <pre>blob.core.windows.net</pre>. Use this for on-premise.
