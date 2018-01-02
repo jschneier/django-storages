@@ -1,6 +1,11 @@
 django-storages change log
 ==========================
 
+UNRELEASED
+**********
+
+* Dropped support for Python 3.3.
+
 1.6.5 (2017-08-01)
 ******************
 
