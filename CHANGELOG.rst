@@ -4,6 +4,8 @@ django-storages change log
 UNRELEASED
 **********
 
+* **Breaking:** Remove support for Django < 1.11.
+* **Breaking:** Remove support for Python 3.3.
 * Add testing for Django 2.0 (no code changes were required).
 
 1.6.5 (2017-08-01)
