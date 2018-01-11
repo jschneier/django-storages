@@ -118,6 +118,8 @@ class S3Boto3StorageFile(File):
                                          self._storage.default_content_type)
             if self._storage.reduced_redundancy:
                 parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
+            if self._storage.infrequent_access:
+                parameters['StorageClass'] = 'STANDARD_IA'
             if self._storage.encryption:
                 parameters['ServerSideEncryption'] = 'AES256'
             self._multipart = self.obj.initiate_multipart_upload(**parameters)
@@ -191,6 +193,7 @@ class S3Boto3Storage(Storage):
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
     signature_version = setting('AWS_S3_SIGNATURE_VERSION')
     reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
+    infrequent_access = setting('AWS_INFREQUENT_ACCESS', False)
     location = setting('AWS_LOCATION', '')
     encryption = setting('AWS_S3_ENCRYPTION', False)
     custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
@@ -461,6 +464,8 @@ class S3Boto3Storage(Storage):
             put_parameters['ServerSideEncryption'] = 'AES256'
         if self.reduced_redundancy:
             put_parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
+        if self.infrequent_access:
+            put_parameters['StorageClass'] = 'STANDARD_IA'
         if self.default_acl:
             put_parameters['ACL'] = self.default_acl
         content.seek(0, os.SEEK_SET)
