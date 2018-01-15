@@ -60,6 +60,8 @@ class S3Boto3StorageFile(File):
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
+        if 'r' in mode and 'w' in mode:
+            raise ValueError("Can't combine 'r' and 'w' in mode.")
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
