@@ -91,7 +91,7 @@ class S3Boto3StorageFile(File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self._file.write(self.obj.get()['Body'].read())
+                self.obj.download_fileobj(self._file)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
                 self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
