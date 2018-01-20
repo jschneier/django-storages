@@ -206,6 +206,7 @@ class S3Boto3Storage(Storage):
     secure_urls = setting('AWS_S3_SECURE_URLS', True)
     file_name_charset = setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8')
     gzip = setting('AWS_IS_GZIPPED', False)
+    detect_content_encoding = setting('AWS_DETECT_CONTENT_ENCODING', False)
     preload_metadata = setting('AWS_PRELOAD_METADATA', False)
     gzip_content_types = setting('GZIP_CONTENT_TYPES', (
         'text/css',
@@ -474,7 +475,7 @@ class S3Boto3Storage(Storage):
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             parameters.update({'ContentEncoding': 'gzip'})
-        elif encoding:
+        elif self.detect_content_encoding and encoding:
             # If the content already has a particular encoding, set it
             parameters.update({'ContentEncoding': encoding})
 

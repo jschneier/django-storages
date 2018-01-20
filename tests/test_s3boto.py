@@ -4,6 +4,8 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 import datetime
+import gzip
+import os
 
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
@@ -92,7 +94,29 @@ class S3BotoStorageTests(S3BotoTestCase):
         Test saving a gzipped file
         """
         name = 'test_storage_save.gz'
-        content = ContentFile("I am gzip'd")
+        compressed_data = gzip.compress("I am gzip'd".encode('utf8'))
+        content = ContentFile(compressed_data)
+        self.storage.detect_content_encoding = False
+        self.storage.save(name, content)
+        key = self.storage.bucket.get_key.return_value
+        key.set_metadata.assert_called_with('Content-Type',
+                                            'application/octet-stream')
+        key.set_contents_from_file.assert_called_with(
+            content,
+            headers={'Content-Type': 'application/octet-stream'},
+            policy=self.storage.default_acl,
+            reduced_redundancy=self.storage.reduced_redundancy,
+            rewind=True,
+        )
+
+    def test_storage_save_gzip_encoded(self):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        compressed_data = gzip.compress("I am gzip'd".encode('utf8'))
+        content = ContentFile(compressed_data)
+        self.storage.detect_content_encoding = True
         self.storage.save(name, content)
         key = self.storage.bucket.get_key.return_value
         key.set_metadata.assert_called_with('Content-Type',

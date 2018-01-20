@@ -102,6 +102,9 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_IS_GZIPPED`` (optional: default is ``False``)
     Whether or not to enable gzipping of content types specified by ``GZIP_CONTENT_TYPES``
 
+``AWS_DETECT_CONTENT_ENCODING`` (optional: default is ``False``)
+    Detect content encoding on files and set ContentEncoding headers accordingly when sending to S3.  Files gzipped before being sent to S3 will be stored uncompressed.
+
 ``GZIP_CONTENT_TYPES`` (optional: default is ``text/css``, ``text/javascript``, ``application/javascript``, ``application/x-javascript``, ``image/svg+xml``)
     When ``AWS_IS_GZIPPED`` is set to ``True`` the content types which will be gzipped
 

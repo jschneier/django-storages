@@ -166,7 +166,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         Test saving a gzipped file
         """
         name = 'test_storage_save.gz'
-        content = ContentFile("I am gzip'd")
+        compressed_data = gzip.compress("I am gzip'd".encode('utf8'))
+        content = ContentFile(compressed_data)
+        self.storage.detect_content_encoding = False
+        self.storage.save(name, content)
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content.file,
+            ExtraArgs={
+                'ContentType': 'application/octet-stream',
+                'ACL': self.storage.default_acl,
+            }
+        )
+
+    def test_storage_save_gzip_encoded(self):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        compressed_data = gzip.compress("I am gzip'd".encode('utf8'))
+        content = ContentFile(compressed_data)
+        self.storage.detect_content_encoding = True
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
