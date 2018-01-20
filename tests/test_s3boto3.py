@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import gzip
 import pickle
+import zlib
 import threading
 import warnings
 from datetime import datetime
@@ -166,7 +167,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         Test saving a gzipped file
         """
         name = 'test_storage_save.gz'
-        compressed_data = gzip.compress("I am gzip'd".encode('utf8'))
+        compressed_data = zlib.compress("I am gzip'd".encode('utf8'))
         content = ContentFile(compressed_data)
         self.storage.detect_content_encoding = False
         self.storage.save(name, content)
@@ -184,7 +185,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         Test saving a gzipped file
         """
         name = 'test_storage_save.gz'
-        compressed_data = gzip.compress("I am gzip'd".encode('utf8'))
+        compressed_data = zlib.compress("I am gzip'd".encode('utf8'))
         content = ContentFile(compressed_data)
         self.storage.detect_content_encoding = True
         self.storage.save(name, content)
