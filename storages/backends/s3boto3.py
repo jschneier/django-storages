@@ -119,7 +119,11 @@ class S3Boto3StorageFile(File):
             if self._storage.reduced_redundancy:
                 parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
             if self._storage.encryption:
-                parameters['ServerSideEncryption'] = 'AES256'
+                if self._storage.encryption_type == 'AES256':
+                    parameters['ServerSideEncryption'] = 'AES256'
+                else:
+                    parameters['ServerSideEncryption'] = 'aws:kms'
+                    parameters['SSEKMSKeyId'] = self._storage.encryption_key_id
             self._multipart = self.obj.initiate_multipart_upload(**parameters)
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
@@ -193,6 +197,8 @@ class S3Boto3Storage(Storage):
     reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
     location = setting('AWS_LOCATION', '')
     encryption = setting('AWS_S3_ENCRYPTION', False)
+    encryption_type = setting('AWS_S3_ENCRYPTION_TYPE', 'AES256')
+    encryption_key_id = setting('AWS_S3_ENCRYPTION_KEY_ID', '')
     custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
     addressing_style = setting('AWS_S3_ADDRESSING_STYLE')
     secure_urls = setting('AWS_S3_SECURE_URLS', True)
@@ -458,7 +464,11 @@ class S3Boto3Storage(Storage):
         # only pass backwards incompatible arguments if they vary from the default
         put_parameters = parameters.copy() if parameters else {}
         if self.encryption:
-            put_parameters['ServerSideEncryption'] = 'AES256'
+            if self.encryption_type == 'AES256':
+                put_parameters['ServerSideEncryption'] = 'AES256'
+            else:
+                put_parameters['ServerSideEncryption'] = 'aws:kms'
+                put_parameters['SSEKMSKeyId'] = self.encryption_key_id
         if self.reduced_redundancy:
             put_parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
         if self.default_acl:
