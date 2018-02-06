@@ -259,10 +259,6 @@ class S3Boto3Storage(Storage):
             session = boto3.session.Session()
             self._connections.connection = session.resource(
                 's3',
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                aws_session_token=self.security_token,
-                region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,
                 config=self.config
