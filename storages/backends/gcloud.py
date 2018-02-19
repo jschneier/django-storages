@@ -84,6 +84,8 @@ class GoogleCloudStorage(Storage):
     bucket_name = setting('GS_BUCKET_NAME', None)
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
+    default_acl = setting('GS_DEFAULT_ACL', None)
+
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
     # The max amount of memory a returned file can take up before being
@@ -158,6 +160,8 @@ class GoogleCloudStorage(Storage):
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.upload_from_file(content, size=content.size,
                                    content_type=file.mime_type)
+        if self.default_acl:
+            file.blob.acl.save_predefined(self.default_acl)
         return cleaned_name
 
     def delete(self, name):

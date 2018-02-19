@@ -115,6 +115,22 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
 
+    def test_save_with_default_acl(self):
+        data = 'This is some test ủⓝï℅ⅆℇ content.'
+        filename = 'ủⓝï℅ⅆℇ.txt'
+        content = ContentFile(data)
+
+        #'projectPrivate', 'bucketOwnerRead', 'bucketOwnerFullControl', 'private', 'authenticatedRead', 'publicRead', 'publicReadWrite'
+        self.storage.default_acl = 'publicRead'
+
+        self.storage.save(filename, content)
+
+        self.storage._client.get_bucket.assert_called_with(self.bucket_name)
+        self.storage._bucket.get_blob().upload_from_file.assert_called_with(
+            content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
+        self.storage._buckec.get_blob().acl.save_predefined.assert_called_with('publicRead')
+
+
     def test_delete(self):
         self.storage.delete(self.filename)
 
