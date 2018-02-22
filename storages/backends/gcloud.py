@@ -86,7 +86,7 @@ class GoogleCloudStorage(Storage):
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
-    cache_control = setting('GS_CACHE_CONTROL', 'public, max-age=3600')
+    cache_control = setting('GS_CACHE_CONTROL', None)
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
