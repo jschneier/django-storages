@@ -18,13 +18,18 @@ except ImportError:
         "Could not load Azure bindings. "
         "See https://github.com/WindowsAzure/azure-sdk-for-python")
 
-try:
-    # azure-storage 0.20.0
-    from azure.storage.blob.blobservice import BlobService
-    from azure.common import AzureMissingResourceHttpError
-except ImportError:
-    from azure.storage import BlobService
-    from azure import WindowsAzureMissingResourceError as AzureMissingResourceHttpError
+if (setting("AZURE_2018_SDK")):
+    try:
+        from azure.storage.blob import BlockBlobService, ContentSettings
+        from azure.common import AzureMissingResourceHttpError
+else:
+    try:
+        # azure-storage 0.20.0
+        from azure.storage.blob.blobservice import BlobService
+        from azure.common import AzureMissingResourceHttpError
+    except ImportError:
+        from azure.storage import BlobService
+        from azure import WindowsAzureMissingResourceError as AzureMissingResourceHttpError
 
 
 def clean_name(name):
@@ -45,8 +50,10 @@ class AzureStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = BlobService(
-                self.account_name, self.account_key)
+            if (setting("AZURE_2018_SDK")):
+                self._connection = BlockBlobService(account_name = self.account_name, account_key = self.account_key)
+            else:
+                self._connection = BlobService(self.account_name, self.account_key)
         return self._connection
 
     @property
@@ -93,9 +100,13 @@ class AzureStorage(Storage):
         else:
             content_data = content.read()
 
-        self.connection.put_blob(self.azure_container, name,
-                                 content_data, "BlockBlob",
-                                 x_ms_blob_content_type=content_type)
+        if (setting("AZURE_2018_SDK")):
+            self.connection.create_blob_from_bytes(self.azure_container, name,
+                                 content_data, content_settings=ContentSettings(content_type=content_type))
+        else:
+            self.connection.put_blob(self.azure_container, name,
+                                 content_data, "BlockBlob", x_ms_blob_content_type=content_type)
+
         return name
 
     def url(self, name):
