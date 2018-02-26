@@ -19,9 +19,8 @@ except ImportError:
         "See https://github.com/WindowsAzure/azure-sdk-for-python")
 
 if (setting("AZURE_2018_SDK")):
-    try:
-        from azure.storage.blob import BlockBlobService, ContentSettings
-        from azure.common import AzureMissingResourceHttpError
+    from azure.storage.blob import BlockBlobService, ContentSettings
+    from azure.common import AzureMissingResourceHttpError
 else:
     try:
         # azure-storage 0.20.0
