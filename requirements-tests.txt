@@ -6,4 +6,5 @@ flake8
 google-cloud-storage>=0.22.0
 mock
 paramiko
+azure>=0.20.0
 pytest-cov>=2.2.1

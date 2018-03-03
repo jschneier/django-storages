@@ -3,6 +3,10 @@ import os.path
 import time
 from datetime import datetime
 from time import mktime
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
@@ -66,7 +70,9 @@ class AzureStorage(Storage):
 
     def _open(self, name, mode="rb"):
         contents = self.connection.get_blob(self.azure_container, name)
-        return ContentFile(contents)
+        if 'b' in mode:
+            return ContentFile(contents)
+        return ContentFile(contents.decode())
 
     def exists(self, name):
         return self.__get_blob_properties(name) is not None
@@ -89,7 +95,10 @@ class AzureStorage(Storage):
             content_type = mimetypes.guess_type(name)[0]
 
         if hasattr(content, 'chunks'):
-            content_data = b''.join(chunk for chunk in content.chunks())
+            if isinstance(content.file, StringIO):
+                content_data = b''.join(chunk.encode() for chunk in content.chunks())
+            else:
+                content_data = b''.join(chunk for chunk in content.chunks())
         else:
             content_data = content.read()
 
@@ -97,6 +106,23 @@ class AzureStorage(Storage):
                                  content_data, "BlockBlob",
                                  x_ms_blob_content_type=content_type)
         return name
+
+    def listdir(self, path):
+        if not path:
+            path = None
+
+        blobs = self.connection.list_blobs(
+            container_name=self.azure_container,
+            prefix=path,
+        )
+        results = []
+        for blob in blobs:
+            name = blob.name
+            if path:
+                name = name.replace(path, '')
+            results.append(name)
+
+        return ((), results)
 
     def url(self, name):
         if hasattr(self.connection, 'make_blob_url'):
