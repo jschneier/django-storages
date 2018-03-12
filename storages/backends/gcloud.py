@@ -230,6 +230,16 @@ class GoogleCloudStorage(Storage):
         updated = blob.updated
         return updated if setting('USE_TZ') else timezone.make_naive(updated)
 
+    def get_created_time(self, name):
+        """
+        Return the creation time (as a datetime) of the file specified by name.
+        The datetime will be timezone-aware if USE_TZ=True.
+        """
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        created = blob.time_created
+        return created if setting('USE_TZ') else timezone.make_naive(created)
+
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
