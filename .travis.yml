@@ -1,39 +1,30 @@
+# https://travis-ci.org/jschneier/django-storages/
 sudo: false
 language: python
+
+python: "3.6"
 cache: pip
 
-matrix:
-  include:
-    - env: TOX_ENV=lint
-    - python: 2.7
-      env: TOX_ENV=py27-django18
-    - python: 3.4
-      env: TOX_ENV=py34-django18
-    - python: 3.5
-      env: TOX_ENV=py35-django18
-    - python: 2.7
-      env: TOX_ENV=py27-django110
-    - python: 3.4
-      env: TOX_ENV=py34-django110
-    - python: 3.5
-      env: TOX_ENV=py35-django110
-    - python: 2.7
-      env: TOX_ENV=py27-django111
-    - python: 3.4
-      env: TOX_ENV=py34-django111
-    - python: 3.5
-      env: TOX_ENV=py35-django111
-    - python: 3.6
-      env: TOX_ENV=py36-django111
+env:
+  - TOXENV=py27-django111
+  - TOXENV=py34-django111
+  - TOXENV=py34-django20
+  - TOXENV=py36-django111
+  - TOXENV=py36-django20
+  - TOXENV=py36-djangomaster
+  - TOXENV=flake8
 
-before_install:
-  - pip install codecov
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: TOXENV=py36-djangomaster
 
 install:
-  - pip install tox
+  - pip install --upgrade pip setuptools wheel
+  - pip install tox codecov
+
+script:
+  - tox
 
 after_success:
   - codecov
-
-script:
-  - tox -e $TOX_ENV

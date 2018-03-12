@@ -8,11 +8,6 @@ def read(filename):
         return f.read()
 
 
-def get_requirements_tests():
-    with open('requirements-tests.txt') as f:
-        return f.readlines()
-
-
 setup(
     name='django-storages',
     version=storages.__version__,
@@ -49,7 +44,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    tests_require=get_requirements_tests(),
     test_suite='tests',
     zip_safe=False
 )
