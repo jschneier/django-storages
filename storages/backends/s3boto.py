@@ -430,6 +430,7 @@ class S3BotoStorage(Storage):
             key.last_modified = datetime.utcnow().strftime(ISO8601)
 
         key.set_metadata('Content-Type', content_type)
+        headers = self.update_headers(headers, name, content)
         self._save_content(key, content, headers=headers)
         return cleaned_name
 
@@ -523,3 +524,9 @@ class S3BotoStorage(Storage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super(S3BotoStorage, self).get_available_name(name, max_length)
+
+    def update_headers(self, headers, name=None, content=None):
+        """
+        Method that can be used to adjust file parameters.
+        """
+        return headers

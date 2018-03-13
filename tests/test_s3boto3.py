@@ -601,3 +601,21 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         with warnings.catch_warnings(record=True) as w:
             MyStorage()
         assert len(w) == 0
+
+    def test_update_parameters(self):
+        result = self.storage.update_parameters({})
+        self.assertEqual(result, {})
+
+        class ExampleStorage(s3boto3.S3Boto3Storage):
+            def update_parameters(self, parameters, obj=None, content=None):
+                if content and content.size > 4:
+                    parameters['Cache-Control'] = 'max-age=86400'
+                return parameters
+
+        storage = ExampleStorage()
+        storage._connection = mock.MagicMock()
+
+        updated_parameters = storage.update_parameters({}, content='')
+        self.assertEqual(updated_parameters, {})
+        updated_parameters = storage.update_parameters({}, content=ContentFile('some longer content'))
+        self.assertIn('Cache-Control', updated_parameters)

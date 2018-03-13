@@ -503,6 +503,7 @@ class S3Boto3Storage(Storage):
         if isinstance(content, File):
             content = content.file
 
+        parameters = self.update_parameters(parameters, obj, content)
         self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
         # the next time it is accessed; no need to specifically reload it.
@@ -631,3 +632,9 @@ class S3Boto3Storage(Storage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super(S3Boto3Storage, self).get_available_name(name, max_length)
+
+    def update_parameters(self, parameters, obj=None, content=None):
+        """
+        Method that can be used to adjust file parameters.
+        """
+        return parameters

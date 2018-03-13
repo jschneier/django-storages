@@ -374,3 +374,21 @@ class S3BotoStorageTests(S3BotoTestCase):
         )
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             s3boto.S3BotoStorage(location='/')
+
+    def test_update_headers(self):
+        result = self.storage.update_headers({})
+        self.assertEqual(result, {})
+
+        class ExampleStorage(s3boto.S3BotoStorage):
+            def update_headers(self, headers, name=None, content=None):
+                if '.csv' in name:
+                    headers['Cache-Control'] = 'max-age=86400'
+                return headers
+
+        storage = ExampleStorage()
+        storage._connection = mock.MagicMock()
+
+        updated_headers = storage.update_headers({}, 'some_image.jpg')
+        self.assertEqual(updated_headers, {})
+        updated_headers = storage.update_headers({}, 'some_data.csv')
+        self.assertIn('Cache-Control', updated_headers)
