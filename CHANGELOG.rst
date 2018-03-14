@@ -1,6 +1,13 @@
 django-storages change log
 ==========================
 
+master (unreleased)
+*******************
+
+* Improved Content-Type detection when content_type property is None. (`#407`_)
+
+.. _#407: https://github.com/jschneier/django-storages/pull/407
+
 1.6.5 (2017-08-01)
 ******************
 
