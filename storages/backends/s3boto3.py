@@ -143,7 +143,7 @@ class S3Boto3StorageFile(File):
             self._write_counter += 1
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
-            part.upload(Body=self.file)
+            part.upload(Body=self.file.read())
             self.file.seek(0)
             self.file.truncate()
 
