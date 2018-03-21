@@ -471,20 +471,13 @@ class S3Boto3Storage(Storage):
     def _save(self, name, content):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
-        parameters = self.object_parameters.copy()
         _type, encoding = mimetypes.guess_type(name)
         content_type = getattr(content, 'content_type', None)
         content_type = content_type or _type or self.default_content_type
 
-        # setting the content_type in the key object is not enough.
-        parameters.update({'ContentType': content_type})
-
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
-            parameters.update({'ContentEncoding': 'gzip'})
-        elif encoding:
-            # If the content already has a particular encoding, set it
-            parameters.update({'ContentEncoding': encoding})
+            encoding = 'gzip'
 
         encoded_name = self._encode_name(name)
         obj = self.bucket.Object(encoded_name)
@@ -503,7 +496,7 @@ class S3Boto3Storage(Storage):
         if isinstance(content, File):
             content = content.file
 
-        parameters = self.update_parameters(parameters, obj, content)
+        parameters = self.get_parameters(obj, content, content_type, encoding)
         self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
         # the next time it is accessed; no need to specifically reload it.
@@ -633,8 +626,15 @@ class S3Boto3Storage(Storage):
             return get_available_overwrite_name(name, max_length)
         return super(S3Boto3Storage, self).get_available_name(name, max_length)
 
-    def update_parameters(self, parameters, obj=None, content=None):
+    def get_parameters(self, obj, content, content_type, encoding=None):
         """
         Method that can be used to adjust file parameters.
         """
+        parameters = self.object_parameters.copy()
+
+        # setting the content_type in the key object is not enough.
+        parameters.update({'ContentType': content_type})
+        if encoding:
+            parameters.update({'ContentEncoding': encoding})
+
         return parameters

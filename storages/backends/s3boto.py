@@ -405,20 +405,13 @@ class S3BotoStorage(Storage):
     def _save(self, name, content):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
-        headers = self.headers.copy()
         _type, encoding = mimetypes.guess_type(name)
         content_type = getattr(content, 'content_type', None)
         content_type = content_type or _type or self.key_class.DefaultContentType
 
-        # setting the content_type in the key object is not enough.
-        headers.update({'Content-Type': content_type})
-
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
-            headers.update({'Content-Encoding': 'gzip'})
-        elif encoding:
-            # If the content already has a particular encoding, set it
-            headers.update({'Content-Encoding': encoding})
+            encoding = 'gzip'
 
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
@@ -430,7 +423,7 @@ class S3BotoStorage(Storage):
             key.last_modified = datetime.utcnow().strftime(ISO8601)
 
         key.set_metadata('Content-Type', content_type)
-        headers = self.update_headers(headers, name, content)
+        headers = self.get_headers(name, content, content_type, encoding)
         self._save_content(key, content, headers=headers)
         return cleaned_name
 
@@ -525,8 +518,15 @@ class S3BotoStorage(Storage):
             return get_available_overwrite_name(name, max_length)
         return super(S3BotoStorage, self).get_available_name(name, max_length)
 
-    def update_headers(self, headers, name=None, content=None):
+    def get_headers(self, name, content, content_type, encoding=None):
         """
-        Method that can be used to adjust file parameters.
+        Method that can be used to adjust file headers.
         """
+        headers = self.headers.copy()
+
+        # setting the content_type in the key object is not enough.
+        headers.update({'Content-Type': content_type})
+        if encoding:
+            headers.update({'Content-Encoding': encoding})
+
         return headers

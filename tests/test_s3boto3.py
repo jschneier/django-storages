@@ -602,12 +602,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             MyStorage()
         assert len(w) == 0
 
-    def test_update_parameters(self):
-        result = self.storage.update_parameters({})
-        self.assertEqual(result, {})
+    def test_get_parameters(self):
+        result = self.storage.get_parameters('file.pdf', ContentFile(''), content_type='application/pdf')
+        self.assertEqual(result, {'ContentType': 'application/pdf'})
 
         class ExampleStorage(s3boto3.S3Boto3Storage):
-            def update_parameters(self, parameters, obj=None, content=None):
+            def get_parameters(self, obj, content, content_type, encoding=None):
+                parameters = {}
                 if content and content.size > 4:
                     parameters['Cache-Control'] = 'max-age=86400'
                 return parameters
@@ -615,7 +616,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         storage = ExampleStorage()
         storage._connection = mock.MagicMock()
 
-        updated_parameters = storage.update_parameters({}, content='')
+        updated_parameters = storage.get_parameters(None, ContentFile(''), None)
         self.assertEqual(updated_parameters, {})
-        updated_parameters = storage.update_parameters({}, content=ContentFile('some longer content'))
+        updated_parameters = storage.get_parameters(None, ContentFile('some longer content'), None)
         self.assertIn('Cache-Control', updated_parameters)
