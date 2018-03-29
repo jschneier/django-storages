@@ -119,8 +119,10 @@ class GCloudStorageTests(GCloudTestCase):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
         filename = 'ủⓝï℅ⅆℇ.txt'
         content = ContentFile(data)
-
-        #'projectPrivate', 'bucketOwnerRead', 'bucketOwnerFullControl', 'private', 'authenticatedRead', 'publicRead', 'publicReadWrite'
+        
+        # ACL Options
+        # 'projectPrivate', 'bucketOwnerRead', 'bucketOwnerFullControl',
+        # 'private', 'authenticatedRead', 'publicRead', 'publicReadWrite'
         self.storage.default_acl = 'publicRead'
 
         self.storage.save(filename, content)
