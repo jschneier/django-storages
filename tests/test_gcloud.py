@@ -130,7 +130,6 @@ class GCloudStorageTests(GCloudTestCase):
             content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
         self.storage._bucket.get_blob().acl.save_predefined.assert_called_with('publicRead')
 
-
     def test_delete(self):
         self.storage.delete(self.filename)
 
@@ -290,12 +289,14 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True
-        self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
+        self.assertEqual(self.storage.get_available_name(
+            self.filename), self.filename)
 
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
         self.storage.file_overwrite = False
-        self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
+        self.assertEqual(self.storage.get_available_name(
+            self.filename), self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_get_available_name_unicode(self):
