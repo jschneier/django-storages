@@ -119,7 +119,7 @@ class GCloudStorageTests(GCloudTestCase):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
         filename = 'ủⓝï℅ⅆℇ.txt'
         content = ContentFile(data)
-        
+
         # ACL Options
         # 'projectPrivate', 'bucketOwnerRead', 'bucketOwnerFullControl',
         # 'private', 'authenticatedRead', 'publicRead', 'publicReadWrite'
