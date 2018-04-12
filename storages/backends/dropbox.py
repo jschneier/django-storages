@@ -90,7 +90,7 @@ class DropBoxStorage(Storage):
 
     def size(self, name):
         metadata = self.client.files_get_metadata(self._full_path(name))
-        return metadata['bytes']
+        return metadata['size']
 
     def modified_time(self, name):
         metadata = self.client.files_get_metadata(self._full_path(name))
