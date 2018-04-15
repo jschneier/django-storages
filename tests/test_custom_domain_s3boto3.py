@@ -61,14 +61,25 @@ class CustomDomainSignedS3Boto3StorageTests(CustomDomainSignedS3Boto3TestCase):
         """
         Test URL generation.
         """
-        self.storage.custom_domain = 'example.com'
+        self.storage.custom_domain = 'example.com/'
+
+        self.storage.bucket.meta.client.generate_presigned_url = mock.MagicMock()
 
         # We expect no leading slashes in the path,
         # and trailing slashes should be preserved.
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "")
         self.assertEqual(self.storage.url(''), 'https://example.com/')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path")
         self.assertEqual(self.storage.url('path'), 'https://example.com/path')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/")
         self.assertEqual(self.storage.url('path/'), 'https://example.com/path/')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/1")
         self.assertEqual(self.storage.url('path/1'), 'https://example.com/path/1')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/1/")
         self.assertEqual(self.storage.url('path/1/'), 'https://example.com/path/1/')
 
     def test_storage_save(self):
@@ -377,10 +388,14 @@ class CustomDomainSignedS3Boto3StorageTests(CustomDomainSignedS3Boto3TestCase):
         self.assertTrue(self.storage.bucket.meta.client.generate_presigned_url.called)
 
     def test_special_characters(self):
-        self.storage.custom_domain = "mock.cloudfront.net"
+        self.storage.custom_domain = "mock.cloudfront.net/"
 
         name = "ãlöhâ.jpg"
         content = ContentFile('new content')
+
+        self.storage.bucket.meta.client.generate_presigned_url = mock.MagicMock()
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s?signedParams=123" % ("mock.s3.aws", name)
+
         self.storage.save(name, content)
         self.storage.bucket.Object.assert_called_once_with(name)
 

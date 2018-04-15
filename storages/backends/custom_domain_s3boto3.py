@@ -20,7 +20,9 @@ class CustomDomainSignedS3Boto3Storage(S3Boto3Storage):
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire)
 
-        if self.custom_domain:
+        if name == '':
+            url = "%s//%s" % (self.url_protocol, self.custom_domain)
+        elif self.custom_domain:
             split_url = url.split(name)
             split_url[0] = "%s//%s" % (self.url_protocol, self.custom_domain)
             url = filepath_to_uri(name).join(split_url)
