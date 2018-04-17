@@ -1,6 +1,7 @@
 from django.utils.encoding import filepath_to_uri
 from storages.backends.s3boto3 import S3Boto3Storage
 
+
 class CustomDomainSignedS3Boto3Storage(S3Boto3Storage):
     """
     S3 storage backend with signed support for custom domains

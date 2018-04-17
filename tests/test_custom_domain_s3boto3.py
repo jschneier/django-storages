@@ -380,8 +380,9 @@ class CustomDomainSignedS3Boto3StorageTests(CustomDomainSignedS3Boto3TestCase):
         filename = "whacky & filename.mp4"
 
         self.storage.bucket.meta.client.generate_presigned_url = mock.MagicMock()
-        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s?signedParams=123" % ("mock.s3.aws", filename)
-        
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s?signedParams=123" % (
+            "mock.s3.aws", filename)
+
         url = self.storage.url(filename)
         parsed_url = urlparse.urlparse(url)
         self.assertEqual(parsed_url.path, "/whacky%20%26%20filename.mp4")
@@ -394,7 +395,8 @@ class CustomDomainSignedS3Boto3StorageTests(CustomDomainSignedS3Boto3TestCase):
         content = ContentFile('new content')
 
         self.storage.bucket.meta.client.generate_presigned_url = mock.MagicMock()
-        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s?signedParams=123" % ("mock.s3.aws", name)
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s?signedParams=123" % (
+            "mock.s3.aws", name)
 
         self.storage.save(name, content)
         self.storage.bucket.Object.assert_called_once_with(name)
