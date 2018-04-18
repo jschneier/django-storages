@@ -210,6 +210,7 @@ class S3Boto3Storage(Storage):
     endpoint_url = setting('AWS_S3_ENDPOINT_URL', None)
     region_name = setting('AWS_S3_REGION_NAME', None)
     use_ssl = setting('AWS_S3_USE_SSL', True)
+    verify = setting('AWS_S3_VERIFY', None)
 
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
@@ -265,7 +266,8 @@ class S3Boto3Storage(Storage):
                 region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,
-                config=self.config
+                config=self.config,
+                verify=self.verify,
             )
         return self._connections.connection
 
