@@ -307,3 +307,16 @@ class GCloudStorageTests(GCloudTestCase):
     def test_get_available_name_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
         self.assertEqual(self.storage.get_available_name(filename), filename)
+
+    def test_cache_control(self):
+        data = 'This is some test content.'
+        filename = 'cache_control_file.txt'
+        content = ContentFile(data)
+        cache_control = 'public, max-age=604800'
+
+        self.storage.cache_control = cache_control
+        self.storage.save(filename, content)
+
+        bucket = self.storage.client.get_bucket(self.bucket_name)
+        blob = bucket.get_blob(filename)
+        self.assertEqual(blob.cache_control, cache_control)
