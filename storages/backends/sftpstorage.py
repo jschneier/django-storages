@@ -139,7 +139,8 @@ class SFTPStorage(Storage):
         self._ensure_remote_path_exists(path)
 
         f = self.sftp.open(path, 'wb')
-        f.write(content.file.read())
+        for chunk in content.chunks():
+            f.write(chunk)
         f.close()
 
         # set file permissions if configured
