@@ -19,6 +19,11 @@ from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
 
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 
 @deconstructible
 class SFTPStorage(Storage):
@@ -151,7 +156,10 @@ class SFTPStorage(Storage):
 
     def delete(self, name):
         remote_path = self._remote_path(name)
-        self.sftp.remove(remote_path)
+        try:
+            self.sftp.remove(remote_path)
+        except FileNotFoundError:  # Raised if the path was removed concurrently
+            pass
 
     def exists(self, name):
         # Try to retrieve file info.  Return true on success, false on failure.
@@ -160,7 +168,7 @@ class SFTPStorage(Storage):
         try:
             self.sftp.stat(remote_path)
             return True
-        except IOError:
+        except FileNotFoundError:
             return False
 
     def _isdir_attr(self, item):
