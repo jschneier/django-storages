@@ -15,7 +15,6 @@ import paramiko
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
@@ -206,7 +205,7 @@ class SFTPStorageFile(File):
         self.name = name
         self._storage = storage
         path = self._storage._remote_path(name)
-        self._storage._ensure_remote_path_exists(name)
+        self._storage._ensure_remote_path_exists(path)
         self.file = self._storage.sftp.open(path, mode)
         super(SFTPStorageFile, self).__init__(file=self.file, name=self.name)
         self.mode = mode
