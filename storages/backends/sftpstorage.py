@@ -151,7 +151,12 @@ class SFTPStorage(Storage):
 
     def delete(self, name):
         remote_path = self._remote_path(name)
-        self.sftp.remove(remote_path)
+        try:
+            self.sftp.remove(remote_path)
+        except FileNotFoundError:
+            # FileNotFoundError is raised if the file or directory was removed
+            # concurrently.
+            pass
 
     def exists(self, name):
         # Try to retrieve file info.  Return true on success, false on failure.
