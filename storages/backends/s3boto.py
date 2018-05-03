@@ -378,8 +378,8 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(cleaned_name)
         headers = self.headers.copy()
         _type, encoding = mimetypes.guess_type(name)
-        content_type = getattr(content, 'content_type',
-                               _type or self.key_class.DefaultContentType)
+        content_type = getattr(content, 'content_type', None)
+        content_type = content_type or _type or self.key_class.DefaultContentType
 
         # setting the content_type in the key object is not enough.
         headers.update({'Content-Type': content_type})

@@ -266,6 +266,28 @@ class GCloudStorageTests(GCloudTestCase):
             self.assertEqual(mt, aware_date)
             self.storage._bucket.get_blob.assert_called_with(self.filename)
 
+    def test_get_created_time(self):
+        naive_date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
+        aware_date = timezone.make_aware(naive_date, timezone.utc)
+
+        self.storage._bucket = mock.MagicMock()
+        blob = mock.MagicMock()
+        blob.time_created = aware_date
+        self.storage._bucket.get_blob.return_value = blob
+
+        with self.settings(TIME_ZONE='America/Montreal', USE_TZ=False):
+            mt = self.storage.get_created_time(self.filename)
+            self.assertTrue(timezone.is_naive(mt))
+            naive_date_montreal = timezone.make_naive(aware_date)
+            self.assertEqual(mt, naive_date_montreal)
+            self.storage._bucket.get_blob.assert_called_with(self.filename)
+
+        with self.settings(TIME_ZONE='America/Montreal', USE_TZ=True):
+            mt = self.storage.get_created_time(self.filename)
+            self.assertTrue(timezone.is_aware(mt))
+            self.assertEqual(mt, aware_date)
+            self.storage._bucket.get_blob.assert_called_with(self.filename)
+
     def test_modified_time_no_file(self):
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None

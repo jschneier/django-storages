@@ -66,6 +66,26 @@ class S3BotoStorageTests(S3BotoTestCase):
             rewind=True
         )
 
+    def test_content_type(self):
+        """
+        Test saving a file with a None content type.
+        """
+        name = 'test_image.jpg'
+        content = ContentFile('data')
+        content.content_type = None
+        self.storage.save(name, content)
+        self.storage.bucket.get_key.assert_called_once_with(name)
+
+        key = self.storage.bucket.get_key.return_value
+        key.set_metadata.assert_called_with('Content-Type', 'image/jpeg')
+        key.set_contents_from_file.assert_called_with(
+            content,
+            headers={'Content-Type': 'image/jpeg'},
+            policy=self.storage.default_acl,
+            reduced_redundancy=self.storage.reduced_redundancy,
+            rewind=True
+        )
+
     def test_storage_save_gzipped(self):
         """
         Test saving a gzipped file
