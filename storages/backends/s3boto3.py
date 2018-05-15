@@ -174,7 +174,11 @@ class S3Boto3Storage(Storage):
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
 
+    
     def __init__(self, acl=None, bucket=None, **settings):
+        self.access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
+        self.secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
+        self.security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
         self.access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
         self.secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
         self.file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
