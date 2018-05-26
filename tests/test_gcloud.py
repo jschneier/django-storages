@@ -153,13 +153,23 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_listdir(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
+        subdir = ""
 
         self.storage._bucket = mock.MagicMock()
-        self.storage._bucket.list_blobs.return_value = []
+        blobs, prefixes = [], []
         for name in file_names:
-            blob = mock.MagicMock(spec=Blob)
-            blob.name = name
-            self.storage._bucket.list_blobs.return_value.append(blob)
+            directory = name.rsplit("/", 1)[0]+"/" if "/" in name else ""
+            if directory == subdir:
+                blob = mock.MagicMock(spec=Blob)
+                blob.name = name.split("/")[-1]
+                blobs.append(blob)
+            else:
+                prefixes.append(directory.split("/")[0]+"/")
+
+        return_value = mock.MagicMock()
+        return_value.__iter__ = mock.MagicMock(return_value=iter(blobs))
+        return_value.prefixes = prefixes
+        self.storage._bucket.list_blobs.return_value = return_value
 
         dirs, files = self.storage.listdir('')
 
@@ -177,15 +187,25 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_listdir_subdir(self):
         file_names = ["some/path/1.txt", "some/2.txt"]
+        subdir = "some/"
 
         self.storage._bucket = mock.MagicMock()
-        self.storage._bucket.list_blobs.return_value = []
+        blobs, prefixes = [], []
         for name in file_names:
-            blob = mock.MagicMock(spec=Blob)
-            blob.name = name
-            self.storage._bucket.list_blobs.return_value.append(blob)
+            directory = name.rsplit("/", 1)[0] + "/"
+            if directory == subdir:
+                blob = mock.MagicMock(spec=Blob)
+                blob.name = name.split("/")[-1]
+                blobs.append(blob)
+            else:
+                prefixes.append(directory.split(subdir)[1])
 
-        dirs, files = self.storage.listdir('some/')
+        return_value = mock.MagicMock()
+        return_value.__iter__ = mock.MagicMock(return_value=iter(blobs))
+        return_value.prefixes = prefixes
+        self.storage._bucket.list_blobs.return_value = return_value
+
+        dirs, files = self.storage.listdir(subdir)
 
         self.assertEqual(len(dirs), 1)
         self.assertTrue('path' in dirs,
