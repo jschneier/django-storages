@@ -419,8 +419,8 @@ class S3Boto3Storage(Storage):
         name = self._normalize_name(cleaned_name)
         parameters = self.object_parameters.copy()
         _type, encoding = mimetypes.guess_type(name)
-        content_type = getattr(content, 'content_type',
-                               _type or self.default_content_type)
+        content_type = getattr(content, 'content_type', None)
+        content_type = content_type or _type or self.default_content_type
 
         # setting the content_type in the key object is not enough.
         parameters.update({'ContentType': content_type})

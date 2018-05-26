@@ -1,7 +1,7 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils import timezone
@@ -82,6 +82,7 @@ class GoogleCloudStorage(Storage):
     project_id = setting('GS_PROJECT_ID', None)
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
+    location = setting('GS_LOCATION', '')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
@@ -97,6 +98,7 @@ class GoogleCloudStorage(Storage):
             if hasattr(self, name):
                 setattr(self, name, value)
 
+        self.location = (self.location or '').lstrip('/')
         self._bucket = None
         self._client = None
 
@@ -135,9 +137,14 @@ class GoogleCloudStorage(Storage):
         """
         Normalizes the name so that paths like /path/to/ignored/../something.txt
         and ./file.txt work.  Note that clean_name adds ./ to some paths so
-        they need to be fixed here.
+        they need to be fixed here. We check to make sure that the path pointed
+        to is not outside the directory specified by the LOCATION setting.
         """
-        return safe_join('', name)
+        try:
+            return safe_join(self.location, name)
+        except ValueError:
+            raise SuspiciousOperation("Attempted access to '%s' denied." %
+                                      name)
 
     def _encode_name(self, name):
         return smart_str(name, encoding=self.file_name_charset)
@@ -222,6 +229,16 @@ class GoogleCloudStorage(Storage):
         blob = self._get_blob(self._encode_name(name))
         updated = blob.updated
         return updated if setting('USE_TZ') else timezone.make_naive(updated)
+
+    def get_created_time(self, name):
+        """
+        Return the creation time (as a datetime) of the file specified by name.
+        The datetime will be timezone-aware if USE_TZ=True.
+        """
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        created = blob.time_created
+        return created if setting('USE_TZ') else timezone.make_naive(created)
 
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.

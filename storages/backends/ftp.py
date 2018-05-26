@@ -109,7 +109,7 @@ class FTPStorage(Storage):
         for path_part in path_splitted:
             try:
                 self._connection.cwd(path_part)
-            except:
+            except ftplib.all_errors:
                 try:
                     self._connection.mkd(path_part)
                     self._connection.cwd(path_part)

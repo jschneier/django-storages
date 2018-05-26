@@ -21,6 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
+from dropbox.files import CommitInfo, UploadSessionCursor
 
 from storages.utils import setting
 
@@ -49,6 +50,8 @@ class DropBoxFile(File):
 @deconstructible
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
+
+    CHUNK_SIZE = 4 * 1024 * 1024
 
     def __init__(self, oauth2_access_token=None, root_path=None):
         oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
@@ -108,5 +111,31 @@ class DropBoxStorage(Storage):
         return remote_file
 
     def _save(self, name, content):
-        self.client.files_upload(content, self._full_path(name))
+        content.open()
+        if content.size <= self.CHUNK_SIZE:
+            self.client.files_upload(content.read(), self._full_path(name))
+        else:
+            self._chunked_upload(content, self._full_path(name))
+        content.close()
         return name
+
+    def _chunked_upload(self, content, dest_path):
+        upload_session = self.client.files_upload_session_start(
+            content.read(self.CHUNK_SIZE)
+        )
+        cursor = UploadSessionCursor(
+            session_id=upload_session.session_id,
+            offset=content.tell()
+        )
+        commit = CommitInfo(path=dest_path)
+
+        while content.tell() < content.size:
+            if (content.size - content.tell()) <= self.CHUNK_SIZE:
+                self.client.files_upload_session_finish(
+                    content.read(self.CHUNK_SIZE), cursor, commit
+                )
+            else:
+                self.client.files_upload_session_append_v2(
+                    content.read(self.CHUNK_SIZE), cursor
+                )
+                cursor.offset = content.tell()
