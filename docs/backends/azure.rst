@@ -48,7 +48,7 @@ Available are numerous settings. It should be especially noted the following:
 
 
 ``AZURE_QUERYSTRING_AUTH`` (optional; default is ``True``)
-    Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
+    Setting ``AZURE_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
     authentication`_ from generated URLs. This can be useful if your S3 buckets are
     public.
 
