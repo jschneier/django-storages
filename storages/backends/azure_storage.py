@@ -1,19 +1,19 @@
-from datetime import datetime, timedelta
-from azure.storage.blob import BlobBlock
-import os.path
+import base64
 import mimetypes
-from django.core.files.storage import Storage
-from django.utils.deconstruct import deconstructible
-from azure.storage import CloudStorageAccount
-from storages.utils import setting
+import os.path
+from datetime import datetime, timedelta
 from tempfile import SpooledTemporaryFile
-from django.core.files.base import File
-from django.utils.encoding import force_bytes
 
 from azure.common import AzureMissingResourceHttpError
-from azure.storage.blob import ContentSettings
-import base64
+from azure.storage import CloudStorageAccount
+from azure.storage.blob import BlobBlock, ContentSettings
+from django.core.files.base import File
+from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
+from django.utils.encoding import force_bytes
 from django.utils.six.moves import urllib
+
+from storages.utils import setting
 
 
 def clean_name(name):
