@@ -118,6 +118,8 @@ class AzureStorage(Storage):
     azure_ssl = setting("AZURE_SSL")
     max_memory_size = setting('AZURE_BLOB_MAX_MEMORY_SIZE', 0)
     buffer_size = setting('AZURE_FILE_BUFFER_SIZE', 4194304)
+    querystring_expire = setting('AZURE_QUERYSTRING_EXPIRE', 3600)
+    querystring_auth = setting('AZURE_QUERYSTRING_AUTH', True)
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
@@ -175,6 +177,8 @@ class AzureStorage(Storage):
             return now, now_plus_delta
 
     def url(self, name, expire=None, mode='r'):
+        if self.querystring_auth and expire is None:
+            expire = self.querystring_expire
         if hasattr(self.connection, 'make_blob_url'):
             sas_token = None
             make_blob_url_kwargs = {}
