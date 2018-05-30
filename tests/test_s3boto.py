@@ -1,11 +1,10 @@
-import os
-
 try:
     from unittest import mock
 except ImportError:  # Python 3.2 and below
     import mock
 
 import datetime
+import os
 
 from boto.exception import S3ResponseError
 from boto.s3.key import Key

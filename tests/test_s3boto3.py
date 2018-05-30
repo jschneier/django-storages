@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import gzip, os
+import gzip
 import threading
 from datetime import datetime
 from unittest import skipIf
@@ -420,7 +420,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.reduced_redundancy = True
         self.storage.default_acl = 'public-read'
 
-
         f = self.storage.open(name, 'w')
         self.storage.bucket.Object.assert_called_with(name)
         obj = self.storage.bucket.Object.return_value
@@ -432,7 +431,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         with mock.patch.object(f, '_flush_write_buffer') as method:
             f.write(content)
-            method.assert_not_called() # buffer not flushed on write
+            method.assert_not_called()  # buffer not flushed on write
 
         assert f._file_part_size == len(content)
         obj.initiate_multipart_upload.assert_called_with(
@@ -444,7 +443,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         with mock.patch.object(f, '_flush_write_buffer', wraps=f._flush_write_buffer) as method:
             f.close()
-            method.assert_called_with() # buffer flushed on close
+            method.assert_called_with()  # buffer flushed on close
         multipart.Part.assert_called_with(1)
         part.upload.assert_called_with(Body=content.encode('utf-8'))
         multipart.complete.assert_called_once_with(
@@ -478,16 +477,16 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         with mock.patch.object(f, '_flush_write_buffer', wraps=f._flush_write_buffer) as method:
             f.write(content1)
-            method.assert_not_called() # buffer doesn't get flushed on the first write
-            assert f._file_part_size == len(content1) # file part size is the size of what's written
-            assert f._last_part_pos == 0 # no parts added, so last part stays at 0
+            method.assert_not_called()  # buffer doesn't get flushed on the first write
+            assert f._file_part_size == len(content1)  # file part size is the size of what's written
+            assert f._last_part_pos == 0  # no parts added, so last part stays at 0
             f.write(content2)
-            method.assert_called_with() # second write flushes buffer
-            multipart.Part.assert_called_with(1) # first part created
-            part.upload.assert_called_with(Body=content1.encode('utf-8')) # first part is uploaded
-            assert f._last_part_pos == len(content1) # buffer spools to end of content1
-            assert f._buffer_file_size == len(content1) + len(content2) # _buffer_file_size is total written
-            assert f._file_part_size == len(content2) # new part is size of content2
+            method.assert_called_with()  # second write flushes buffer
+            multipart.Part.assert_called_with(1)  # first part created
+            part.upload.assert_called_with(Body=content1.encode('utf-8'))  # first part is uploaded
+            assert f._last_part_pos == len(content1)  # buffer spools to end of content1
+            assert f._buffer_file_size == len(content1) + len(content2)  # _buffer_file_size is total written
+            assert f._file_part_size == len(content2)  # new part is size of content2
 
         obj.initiate_multipart_upload.assert_called_with(
                 ACL='public-read',
@@ -510,4 +509,3 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                     'PartNumber': 2
                 }
             ]})
-
