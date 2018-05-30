@@ -97,8 +97,12 @@ class AzureStorage(Storage):
             content_data = b''.join(chunk for chunk in content.chunks())
         else:
             content_data = content.read()
-
-        self.connection.put_blob(self.azure_container, name,
+        try:
+            self.connection.put_block(self.azure_container, name,
+                                 content_data, "BlockBlob",
+                                 x_ms_blob_content_type=content_type)
+        except AttributeError as e:
+            self.connection.put_blob(self.azure_container, name,
                                  content_data, "BlockBlob",
                                  x_ms_blob_content_type=content_type)
         return name
