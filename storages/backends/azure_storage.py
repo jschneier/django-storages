@@ -20,7 +20,8 @@ except ImportError:
 
 try:
     # azure-storage 0.30.0
-    blob = azure.storage.blob
+    from azure.storage import blob
+    
     if hasattr(blob, "BlockBlobService"):
         from azure.storage.blob import BlockBlobService as BlobService
     else:
@@ -109,7 +110,7 @@ class AzureStorage(Storage):
 
     def url(self, name):
         if hasattr(self.connection, 'make_blob_url'):
-            return self.connection.make_blob_url(
+            return self.connection.make_blob_url(                                                   
                 container_name=self.azure_container,
                 blob_name=name,
                 protocol=self.azure_protocol,
