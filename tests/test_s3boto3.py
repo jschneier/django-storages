@@ -258,7 +258,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
     def test_storage_exists_doesnt_create_bucket(self):
         with mock.patch.object(self.storage, '_get_or_create_bucket') as method:
             self.storage.exists('file.txt')
-            method.assert_not_called()
+            self.assertFalse(method.called)
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")
@@ -431,7 +431,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         with mock.patch.object(f, '_flush_write_buffer') as method:
             f.write(content)
-            method.assert_not_called()  # buffer not flushed on write
+            self.assertFalse(method.called)  # buffer not flushed on write
 
         assert f._file_part_size == len(content)
         obj.initiate_multipart_upload.assert_called_with(
@@ -477,7 +477,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         with mock.patch.object(f, '_flush_write_buffer', wraps=f._flush_write_buffer) as method:
             f.write(content1)
-            method.assert_not_called()  # buffer doesn't get flushed on the first write
+            self.assertFalse(method.called)  # buffer doesn't get flushed on the first write
             assert f._file_part_size == len(content1)  # file part size is the size of what's written
             assert f._last_part_pos == 0  # no parts added, so last part stays at 0
             f.write(content2)
