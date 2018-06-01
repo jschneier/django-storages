@@ -66,6 +66,10 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 The maximum amount of memory a returned file can take up before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
 
+``GS_CACHE_CONTROL`` (optional: default is ``None``)
+
+Sets Cache-Control HTTP header for the file, more about HTTP caching can be found `here <https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#cache-control>`_
+
 Fields
 ------
 
