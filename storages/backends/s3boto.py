@@ -142,6 +142,8 @@ class S3BotoStorageFile(File):
             headers = self._storage.headers.copy()
             self._multipart.upload_part_from_file(
                 self.file, self._write_counter, headers=headers)
+            self.file.seek(0)
+            self.file.truncate()
 
     def close(self):
         if self._is_dirty:
