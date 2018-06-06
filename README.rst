@@ -13,17 +13,23 @@ django-storages
 
 Installation
 ============
-Installing from PyPI is as easy as doing::
+Installing from PyPI is as easy as doing:
+
+.. code-block:: bash
 
   pip install django-storages
 
 If you'd prefer to install from source (maybe there is a bugfix in master that
-hasn't been released yet) then the magic incantation you are looking for is::
+hasn't been released yet) then the magic incantation you are looking for is:
+
+.. code-block:: bash
 
   pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
 
 Once that is done add ``storages`` to your ``INSTALLED_APPS`` and set ``DEFAULT_FILE_STORAGE`` to the
-backend of your choice. If, for example, you want to use the boto3 backend you would set::
+backend of your choice. If, for example, you want to use the boto3 backend you would set:
+
+.. code-block:: python
 
   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
@@ -54,8 +60,7 @@ Issues are tracked via GitHub issues at the `project issue page
 
 Documentation
 =============
-The original documentation for django-storages is located at https://django-storages.readthedocs.org/.
-Stay tuned for forthcoming documentation updates.
+Documentation for django-storages is located at https://django-storages.readthedocs.org/.
 
 Contributing
 ============
