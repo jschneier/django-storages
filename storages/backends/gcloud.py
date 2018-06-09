@@ -89,6 +89,7 @@ class GoogleCloudStorage(Storage):
 
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
+    cache_control = setting('GS_CACHE_CONTROL', None)
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
@@ -165,6 +166,7 @@ class GoogleCloudStorage(Storage):
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
+        file.blob.cache_control = self.cache_control
         file.blob.upload_from_file(content, size=content.size,
                                    content_type=file.mime_type)
         if self.default_acl:
@@ -188,25 +190,25 @@ class GoogleCloudStorage(Storage):
 
     def listdir(self, name):
         name = self._normalize_name(clean_name(name))
-        # for the bucket.list and logic below name needs to end in /
-        # But for the root path "" we leave it as an empty string
+        # For bucket.list_blobs and logic below name needs to end in /
+        # but for the root path "" we leave it as an empty string
         if name and not name.endswith('/'):
             name += '/'
 
-        files_list = list(self.bucket.list_blobs(prefix=self._encode_name(name)))
-        files = []
-        dirs = set()
+        iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
+        blobs = list(iterator)
+        prefixes = iterator.prefixes
 
-        base_parts = name.split("/")[:-1]
-        for item in files_list:
-            parts = item.name.split("/")
-            parts = parts[len(base_parts):]
-            if len(parts) == 1 and parts[0]:
-                # File
-                files.append(parts[0])
-            elif len(parts) > 1 and parts[0]:
-                # Directory
-                dirs.add(parts[0])
+        files = []
+        dirs = []
+
+        for blob in blobs:
+            parts = blob.name.split("/")
+            files.append(parts[-1])
+        for folder_path in prefixes:
+            parts = folder_path.split("/")
+            dirs.append(parts[-2])
+
         return list(dirs), files
 
     def _get_blob(self, name):
