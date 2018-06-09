@@ -115,6 +115,23 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
 
+    def test_save_with_default_acl(self):
+        data = 'This is some test ủⓝï℅ⅆℇ content.'
+        filename = 'ủⓝï℅ⅆℇ.txt'
+        content = ContentFile(data)
+
+        # ACL Options
+        # 'projectPrivate', 'bucketOwnerRead', 'bucketOwnerFullControl',
+        # 'private', 'authenticatedRead', 'publicRead', 'publicReadWrite'
+        self.storage.default_acl = 'publicRead'
+
+        self.storage.save(filename, content)
+
+        self.storage._client.get_bucket.assert_called_with(self.bucket_name)
+        self.storage._bucket.get_blob().upload_from_file.assert_called_with(
+            content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
+        self.storage._bucket.get_blob().acl.save_predefined.assert_called_with('publicRead')
+
     def test_delete(self):
         self.storage.delete(self.filename)
 
@@ -316,12 +333,14 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True
-        self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
+        self.assertEqual(self.storage.get_available_name(
+            self.filename), self.filename)
 
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
         self.storage.file_overwrite = False
-        self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
+        self.assertEqual(self.storage.get_available_name(
+            self.filename), self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_get_available_name_unicode(self):

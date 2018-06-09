@@ -85,6 +85,8 @@ class GoogleCloudStorage(Storage):
     location = setting('GS_LOCATION', '')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
+    default_acl = setting('GS_DEFAULT_ACL', None)
+
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
     cache_control = setting('GS_CACHE_CONTROL', None)
@@ -167,6 +169,8 @@ class GoogleCloudStorage(Storage):
         file.blob.cache_control = self.cache_control
         file.blob.upload_from_file(content, size=content.size,
                                    content_type=file.mime_type)
+        if self.default_acl:
+            file.blob.acl.save_predefined(self.default_acl)
         return cleaned_name
 
     def delete(self, name):
