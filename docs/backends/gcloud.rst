@@ -81,6 +81,12 @@ rolled over into a temporary file on disk. Default is 0: Do not roll over.
 
 Sets Cache-Control HTTP header for the file, more about HTTP caching can be found `here <https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#cache-control>`_
 
+``GS_LOCATION`` (optional: default is ``''``)
+
+Subdirectory in which the files will be stored. 
+Defaults to the root of the bucket.
+
+
 Fields
 ------
 
