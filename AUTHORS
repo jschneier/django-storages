@@ -34,6 +34,7 @@ By order of apparition, thanks:
     * Max Malysh (Dropbox large file support)
     * Scott White (Google Cloud updates)
     * Alex Watt (Google Cloud Storage patch)
+    * Jumpei Yoshimura (S3 docs)
 
 
 Extra thanks to Marty for adding this in Django,

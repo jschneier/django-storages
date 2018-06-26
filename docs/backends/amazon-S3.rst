@@ -8,8 +8,8 @@ There are two backends for interacting with Amazon's S3, one based
 on boto3 and an older one based on boto. It is highly recommended that all
 new projects (at least) use the boto3 backend since it has many bug fixes
 and performance improvements over boto and is the future; boto is lightly
-maintained if at all. The boto based backend will continue to be maintained
-for the forseeable future.
+maintained if at all. The boto3 based backend will continue to be maintained
+for the foreseeable future.
 
 For historical completeness an extreme legacy backend was removed
 in version 1.2
@@ -47,7 +47,7 @@ Available are numerous settings. It should be especially noted the following:
     Your Amazon Web Services storage bucket name, as a string.
 
 ``AWS_DEFAULT_ACL`` (optional)
-    If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else. 
+    If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else.
 
 ``AWS_AUTO_CREATE_BUCKET`` (optional)
     If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
