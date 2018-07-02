@@ -8,7 +8,7 @@ There are two backends for interacting with Amazon's S3, one based
 on boto3 and an older one based on boto. It is highly recommended that all
 new projects (at least) use the boto3 backend since it has many bug fixes
 and performance improvements over boto and is the future; boto is lightly
-maintained if at all. The boto based backed will continue to be maintained
+maintained if at all. The boto based backend will continue to be maintained
 for the forseeable future.
 
 For historical completeness an extreme legacy backend was removed

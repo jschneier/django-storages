@@ -1,6 +1,27 @@
 django-storages change log
 ==========================
 
+1.6.6 (2018-03-26)
+******************
+
+* You can now specify the backend you are using to install the necessary dependencies using
+  ``extra_requires``. For example ``pip install django-storages[boto3]`` (`#417`_)
+* Add additional content-type detection fallbacks (`#406`_, `#407`_)
+* Add ``GS_LOCATION`` setting to specify subdirectory for ``GoogleCloudStorage`` (`#355`_)
+* Add support for uploading large files to ``DropBoxStorage``, fix saving files (`#379`_, `#378`_, `#301`_)
+* Drop support for Django 1.8 and Django 1.10 (and hence Python 3.3) (`#438`_)
+* Implement ``get_created_time`` for ``GoogleCloudStorage`` (`#464`_)
+
+.. _#417: https://github.com/jschneier/django-storages/pull/417
+.. _#407: https://github.com/jschneier/django-storages/pull/407
+.. _#406: https://github.com/jschneier/django-storages/issues/406
+.. _#355: https://github.com/jschneier/django-storages/pull/355
+.. _#379: https://github.com/jschneier/django-storages/pull/379
+.. _#378: https://github.com/jschneier/django-storages/issues/378
+.. _#301: https://github.com/jschneier/django-storages/issues/301
+.. _#438: https://github.com/jschneier/django-storages/issues/438
+.. _#464: https://github.com/jschneier/django-storages/pull/464
+
 1.6.5 (2017-08-01)
 ******************
 

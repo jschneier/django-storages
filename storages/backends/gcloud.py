@@ -1,7 +1,7 @@
 import mimetypes
 from tempfile import SpooledTemporaryFile
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils import timezone
@@ -83,11 +83,15 @@ class GoogleCloudStorage(Storage):
     project_id = setting('GS_PROJECT_ID', None)
     credentials = setting('GS_CREDENTIALS', None)
     bucket_name = setting('GS_BUCKET_NAME', None)
+    location = setting('GS_LOCATION', '')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     always_get_bucket = setting('GS_ALWAYS_GET_BUCKET', True)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
+    default_acl = setting('GS_DEFAULT_ACL', None)
+
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
+    cache_control = setting('GS_CACHE_CONTROL', None)
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
@@ -99,6 +103,7 @@ class GoogleCloudStorage(Storage):
             if hasattr(self, name):
                 setattr(self, name, value)
 
+        self.location = (self.location or '').lstrip('/')
         self._bucket = None
         self._client = None
 
@@ -144,9 +149,14 @@ class GoogleCloudStorage(Storage):
         """
         Normalizes the name so that paths like /path/to/ignored/../something.txt
         and ./file.txt work.  Note that clean_name adds ./ to some paths so
-        they need to be fixed here.
+        they need to be fixed here. We check to make sure that the path pointed
+        to is not outside the directory specified by the LOCATION setting.
         """
-        return safe_join('', name)
+        try:
+            return safe_join(self.location, name)
+        except ValueError:
+            raise SuspiciousOperation("Attempted access to '%s' denied." %
+                                      name)
 
     def _encode_name(self, name):
         return smart_str(name, encoding=self.file_name_charset)
@@ -165,8 +175,11 @@ class GoogleCloudStorage(Storage):
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
+        file.blob.cache_control = self.cache_control
         file.blob.upload_from_file(content, size=content.size,
                                    content_type=file.mime_type)
+        if self.default_acl:
+            file.blob.acl.save_predefined(self.default_acl)
         return cleaned_name
 
     def delete(self, name):
@@ -186,25 +199,25 @@ class GoogleCloudStorage(Storage):
 
     def listdir(self, name):
         name = self._normalize_name(clean_name(name))
-        # for the bucket.list and logic below name needs to end in /
-        # But for the root path "" we leave it as an empty string
+        # For bucket.list_blobs and logic below name needs to end in /
+        # but for the root path "" we leave it as an empty string
         if name and not name.endswith('/'):
             name += '/'
 
-        files_list = list(self.bucket.list_blobs(prefix=self._encode_name(name)))
-        files = []
-        dirs = set()
+        iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
+        blobs = list(iterator)
+        prefixes = iterator.prefixes
 
-        base_parts = name.split("/")[:-1]
-        for item in files_list:
-            parts = item.name.split("/")
-            parts = parts[len(base_parts):]
-            if len(parts) == 1 and parts[0]:
-                # File
-                files.append(parts[0])
-            elif len(parts) > 1 and parts[0]:
-                # Directory
-                dirs.add(parts[0])
+        files = []
+        dirs = []
+
+        for blob in blobs:
+            parts = blob.name.split("/")
+            files.append(parts[-1])
+        for folder_path in prefixes:
+            parts = folder_path.split("/")
+            dirs.append(parts[-2])
+
         return list(dirs), files
 
     def _get_blob(self, name):
@@ -231,6 +244,16 @@ class GoogleCloudStorage(Storage):
         blob = self._get_blob(self._encode_name(name))
         updated = blob.updated
         return updated if setting('USE_TZ') else timezone.make_naive(updated)
+
+    def get_created_time(self, name):
+        """
+        Return the creation time (as a datetime) of the file specified by name.
+        The datetime will be timezone-aware if USE_TZ=True.
+        """
+        name = self._normalize_name(clean_name(name))
+        blob = self._get_blob(self._encode_name(name))
+        created = blob.time_created
+        return created if setting('USE_TZ') else timezone.make_naive(created)
 
     def url(self, name):
         # Preserve the trailing slash after normalizing the path.
