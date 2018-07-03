@@ -1,19 +1,19 @@
-from datetime import datetime, timedelta
-from azure.storage.blob import BlobBlock
-import os.path
+import base64
 import mimetypes
-from django.core.files.storage import Storage
-from django.utils.deconstruct import deconstructible
-from azure.storage import CloudStorageAccount
-from storages.utils import setting
+import os.path
+from datetime import datetime, timedelta
 from tempfile import SpooledTemporaryFile
-from django.core.files.base import File
-from django.utils.encoding import force_bytes
 
 from azure.common import AzureMissingResourceHttpError
-from azure.storage.blob import ContentSettings
-import base64
+from azure.storage import CloudStorageAccount
+from azure.storage.blob import BlobBlock, ContentSettings
+from django.core.files.base import File
+from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
+from django.utils.encoding import force_bytes
 from django.utils.six.moves import urllib
+
+from storages.utils import setting
 
 
 def clean_name(name):
@@ -118,6 +118,8 @@ class AzureStorage(Storage):
     azure_ssl = setting("AZURE_SSL")
     max_memory_size = setting('AZURE_BLOB_MAX_MEMORY_SIZE', 0)
     buffer_size = setting('AZURE_FILE_BUFFER_SIZE', 4194304)
+    querystring_expire = setting('AZURE_QUERYSTRING_EXPIRE', 3600)
+    querystring_auth = setting('AZURE_QUERYSTRING_AUTH', True)
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
@@ -175,6 +177,8 @@ class AzureStorage(Storage):
             return now, now_plus_delta
 
     def url(self, name, expire=None, mode='r'):
+        if self.querystring_auth and expire is None:
+            expire = self.querystring_expire
         if hasattr(self.connection, 'make_blob_url'):
             sas_token = None
             make_blob_url_kwargs = {}

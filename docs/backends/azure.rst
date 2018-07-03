@@ -37,3 +37,24 @@ The following settings are available:
 
     This is where the files uploaded through your Django app will be uploaded.
     The container must be already created as the storage system will not attempt to create it.
+
+
+To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
+
+    STATICFILES_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+
+
+Available are numerous settings. It should be especially noted the following:
+
+
+``AZURE_QUERYSTRING_AUTH`` (optional; default is ``True``)
+    Setting ``AZURE_QUERYSTRING_AUTH`` to ``False`` removes `query parameter
+    authentication`_ from generated URLs. This can be useful if your S3 buckets are
+    public.
+
+``AZURE_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
+    The number of seconds that a generated URL with `query parameter
+    authentication`_ is valid for.
+
+``AZURE_SSL`` (optional; default is ``True```) 
+    Force to use HTTPS
