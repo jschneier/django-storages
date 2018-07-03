@@ -141,8 +141,8 @@ class AzureStorage(Storage):
     def _open(self, name, mode="rb"):
         return AzureStorageFile(name, mode, self)
 
-    def exists(self, name):
-        return self.connection.exists(name)
+    def exists(self, file_name):
+        return self.connection.exists(self.azure_container, file_name)
 
     def delete(self, name):
         try:
