@@ -1,16 +1,20 @@
-import os
 import mimetypes
+import os
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
-from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_text, smart_str, filepath_to_uri, force_bytes
-from django.utils.six import BytesIO
 from django.utils import timezone as tz
+from django.utils.deconstruct import deconstructible
+from django.utils.encoding import (
+    filepath_to_uri, force_bytes, force_text, smart_str,
+)
+from django.utils.six import BytesIO
+
+from storages.utils import clean_name, safe_join, setting
 
 try:
     from boto import __version__ as boto_version
@@ -22,7 +26,6 @@ except ImportError:
     raise ImproperlyConfigured("Could not load Boto's S3 bindings.\n"
                                "See https://github.com/boto/boto")
 
-from storages.utils import clean_name, safe_join, setting
 
 boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')])
 
@@ -71,6 +74,8 @@ class S3BotoStorageFile(File):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self._write_counter = 0
+        # file position of the latest part file uploaded
+        self._last_part_pos = 0
 
     @property
     def size(self):
@@ -110,7 +115,9 @@ class S3BotoStorageFile(File):
             upload_headers = {
                 provider.acl_header: self._storage.default_acl
             }
-            upload_headers.update({'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType})
+            upload_headers.update({
+                'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType
+            })
             upload_headers.update(self._storage.headers)
             self._multipart = self._storage.bucket.initiate_multipart_upload(
                 self.key.name,
@@ -118,9 +125,13 @@ class S3BotoStorageFile(File):
                 reduced_redundancy=self._storage.reduced_redundancy,
                 encrypt_key=self._storage.encryption,
             )
-        if self.buffer_size <= self._buffer_file_size:
+        if self.buffer_size <= self._file_part_size:
             self._flush_write_buffer()
         return super(S3BotoStorageFile, self).write(force_bytes(content), *args, **kwargs)
+
+    @property
+    def _file_part_size(self):
+        return self._buffer_file_size - self._last_part_pos
 
     @property
     def _buffer_file_size(self):
@@ -131,12 +142,15 @@ class S3BotoStorageFile(File):
         return length
 
     def _flush_write_buffer(self):
-        if self._buffer_file_size:
+        if self._file_part_size:
             self._write_counter += 1
-            self.file.seek(0)
+            pos = self.file.tell()
+            self.file.seek(self._last_part_pos)
             headers = self._storage.headers.copy()
             self._multipart.upload_part_from_file(
                 self.file, self._write_counter, headers=headers)
+            self.file.seek(pos)
+            self._last_part_pos = self._buffer_file_size
 
     def close(self):
         if self._is_dirty:
@@ -231,6 +245,7 @@ class S3BotoStorage(Storage):
         self._entries = {}
         self._bucket = None
         self._connection = None
+        self._loaded_meta = False
 
         self.security_token = None
         if not self.access_key and not self.secret_key:
@@ -240,18 +255,25 @@ class S3BotoStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
+            kwargs = self._get_connection_kwargs()
+
             self._connection = self.connection_class(
                 self.access_key,
                 self.secret_key,
-                security_token=self.security_token,
-                is_secure=self.use_ssl,
-                calling_format=self.calling_format,
-                host=self.host,
-                port=self.port,
-                proxy=self.proxy,
-                proxy_port=self.proxy_port
+                **kwargs
             )
         return self._connection
+
+    def _get_connection_kwargs(self):
+        return dict(
+            security_token=self.security_token,
+            is_secure=self.use_ssl,
+            calling_format=self.calling_format,
+            host=self.host,
+            port=self.port,
+            proxy=self.proxy,
+            proxy_port=self.proxy_port
+        )
 
     @property
     def bucket(self):
@@ -268,9 +290,12 @@ class S3BotoStorage(Storage):
         """
         Get the locally cached files for the bucket.
         """
-        if self.preload_metadata and not self._entries:
-            self._entries = dict((self._decode_name(entry.key), entry)
-                                 for entry in self.bucket.list(prefix=self.location))
+        if self.preload_metadata and not self._loaded_meta:
+            self._entries.update({
+                self._decode_name(entry.key): entry
+                for entry in self.bucket.list(prefix=self.location)
+            })
+            self._loaded_meta = True
         return self._entries
 
     def _lookup_env(self, names):
@@ -362,8 +387,8 @@ class S3BotoStorage(Storage):
         name = self._normalize_name(cleaned_name)
         headers = self.headers.copy()
         _type, encoding = mimetypes.guess_type(name)
-        content_type = getattr(content, 'content_type',
-                               _type or self.key_class.DefaultContentType)
+        content_type = getattr(content, 'content_type', None)
+        content_type = content_type or _type or self.key_class.DefaultContentType
 
         # setting the content_type in the key object is not enough.
         headers.update({'Content-Type': content_type})

@@ -1,5 +1,5 @@
-from django.test import TestCase
 from django.core.files.base import ContentFile
+from django.test import TestCase
 
 from storages.backends import gs, s3boto
 
