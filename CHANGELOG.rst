@@ -1,6 +1,12 @@
 django-storages change log
 ==========================
 
+UNRELEASED
+**********
+
+* The `S3BotoStorage` backend is now deprecated in favor of `S3Boto3Storage`.
+  `S3BotoStorage` will be removed in a future version.
+
 1.6.6 (2018-03-26)
 ******************
 
