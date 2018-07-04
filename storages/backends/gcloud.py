@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, smart_str
 
-from storages.utils import clean_name, safe_join, setting
+from storages.utils import check_location, clean_name, safe_join, setting
 
 try:
     from google.cloud.storage.client import Client
@@ -101,7 +101,8 @@ class GoogleCloudStorage(Storage):
             if hasattr(self, name):
                 setattr(self, name, value)
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         self._bucket = None
         self._client = None
 

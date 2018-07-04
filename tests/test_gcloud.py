@@ -8,6 +8,7 @@ except ImportError:  # Python 3.2 and below
 import datetime
 import mimetypes
 
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
@@ -359,3 +360,11 @@ class GCloudStorageTests(GCloudTestCase):
         bucket = self.storage.client.get_bucket(self.bucket_name)
         blob = bucket.get_blob(filename)
         self.assertEqual(blob.cache_control, cache_control)
+
+    def test_location_leading_slash(self):
+        msg = (
+            "GoogleCloudStorage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            gcloud.GoogleCloudStorage(location='/')

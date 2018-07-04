@@ -8,6 +8,7 @@ from unittest import skipIf
 
 from botocore.exceptions import ClientError
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils.six.moves.urllib import parse as urlparse
@@ -509,3 +510,11 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                     'PartNumber': 2
                 }
             ]})
+
+    def test_location_leading_slash(self):
+        msg = (
+            "S3Boto3Storage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            s3boto3.S3Boto3Storage(location='/')
