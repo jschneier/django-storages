@@ -236,8 +236,21 @@ class S3Boto3Storage(Storage):
 
         # For backward-compatibility of old differing parameter names
         if acl is not None:
+            warnings.warn(
+                "The acl argument of S3Boto3Storage is deprecated. Use "
+                "argument default_acl or setting AWS_DEFAULT_ACL instead. The "
+                "acl argument will be removed in a future version.",
+                DeprecationWarning,
+            )
             self.default_acl = acl
         if bucket is not None:
+            warnings.warn(
+                "The bucket argument of S3Boto3Storage is deprecated. Use "
+                "argument bucket_name or setting AWS_STORAGE_BUCKET_NAME "
+                "instead. The bucket argument will be removed in a future "
+                "version.",
+                DeprecationWarning,
+            )
             self.bucket_name = bucket
 
         check_location(self)

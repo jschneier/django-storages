@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import gzip
 import threading
+import warnings
 from datetime import datetime
 from unittest import skipIf
 
@@ -10,7 +11,7 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_aware, utc
 
@@ -555,3 +556,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             s3boto3.S3Boto3Storage(location='/')
+
+    def test_deprecated_acl(self):
+        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage(acl='private')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        message = (
+            "The acl argument of S3Boto3Storage is deprecated. Use argument "
+            "default_acl or setting AWS_DEFAULT_ACL instead. The acl argument "
+            "will be removed in a future version."
+        )
+        assert str(w[-1].message) == message
+
+    def test_deprecated_bucket(self):
+        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage(bucket='django')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        message = (
+            "The bucket argument of S3Boto3Storage is deprecated. Use argument "
+            "bucket_name or setting AWS_STORAGE_BUCKET_NAME instead. The bucket "
+            "argument will be removed in a future version."
+        )
+        assert str(w[-1].message) == message
