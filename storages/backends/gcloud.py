@@ -40,7 +40,7 @@ class GoogleCloudFile(File):
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix=".GSStorageFile",
-                dir=setting("FILE_UPLOAD_TEMP_DIR", None)
+                dir=setting("FILE_UPLOAD_TEMP_DIR")
             )
             if 'r' in self._mode:
                 self._is_dirty = False
@@ -79,17 +79,17 @@ class GoogleCloudFile(File):
 
 @deconstructible
 class GoogleCloudStorage(Storage):
-    project_id = setting('GS_PROJECT_ID', None)
-    credentials = setting('GS_CREDENTIALS', None)
-    bucket_name = setting('GS_BUCKET_NAME', None)
+    project_id = setting('GS_PROJECT_ID')
+    credentials = setting('GS_CREDENTIALS')
+    bucket_name = setting('GS_BUCKET_NAME')
     location = setting('GS_LOCATION', '')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
-    default_acl = setting('GS_DEFAULT_ACL', None)
+    default_acl = setting('GS_DEFAULT_ACL')
 
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
-    cache_control = setting('GS_CACHE_CONTROL', None)
+    cache_control = setting('GS_CACHE_CONTROL')
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)

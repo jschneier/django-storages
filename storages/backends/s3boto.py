@@ -86,7 +86,7 @@ class S3BotoStorageFile(File):
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix='.S3BotoStorageFile',
-                dir=setting('FILE_UPLOAD_TEMP_DIR', None)
+                dir=setting('FILE_UPLOAD_TEMP_DIR')
             )
             if 'r' in self._mode:
                 self._is_dirty = False
@@ -214,9 +214,9 @@ class S3BotoStorage(Storage):
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
     host = setting('AWS_S3_HOST', S3Connection.DefaultHost)
     use_ssl = setting('AWS_S3_USE_SSL', True)
-    port = setting('AWS_S3_PORT', None)
-    proxy = setting('AWS_S3_PROXY_HOST', None)
-    proxy_port = setting('AWS_S3_PROXY_PORT', None)
+    port = setting('AWS_S3_PORT')
+    proxy = setting('AWS_S3_PROXY_HOST')
+    proxy_port = setting('AWS_S3_PROXY_PORT')
 
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
