@@ -245,7 +245,7 @@ class GoogleCloudStorage(Storage):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
         name = name.lstrip("/")
-        return "{}/{}".format(setting('MEDIA_URL'), name)
+        return "{}{}".format(setting('MEDIA_URL'), name)
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:
