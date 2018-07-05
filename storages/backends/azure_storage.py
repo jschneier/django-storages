@@ -9,11 +9,11 @@ from azure.storage.blob import BlobPermissions, ContentSettings
 from azure.storage.blob.blockblobservice import BlockBlobService
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri, force_bytes
 
+from storages.base import BaseStorage
 from storages.utils import (
     clean_name, get_available_overwrite_name, safe_join, setting,
 )
@@ -121,32 +121,37 @@ _AZURE_NAME_MAX_LEN = 1024
 
 
 @deconstructible
-class AzureStorage(Storage):
-
-    account_name = setting("AZURE_ACCOUNT_NAME")
-    account_key = setting("AZURE_ACCOUNT_KEY")
-    azure_container = setting("AZURE_CONTAINER")
-    azure_ssl = setting("AZURE_SSL", True)
-    upload_max_conn = setting("AZURE_UPLOAD_MAX_CONN", 2)
-    timeout = setting('AZURE_CONNECTION_TIMEOUT_SECS', 20)
-    max_memory_size = setting('AZURE_BLOB_MAX_MEMORY_SIZE', 2*1024*1024)
-    expiration_secs = setting('AZURE_URL_EXPIRATION_SECS')
-    overwrite_files = setting('AZURE_OVERWRITE_FILES', False)
-    location = setting('AZURE_LOCATION', '')
-    default_content_type = 'application/octet-stream'
-    cache_control = setting("AZURE_CACHE_CONTROL")
-    is_emulated = setting('AZURE_EMULATED_MODE', False)
-    endpoint_suffix = setting('AZURE_ENDPOINT_SUFFIX')
-    sas_token = setting('AZURE_SAS_TOKEN')
-    custom_domain = setting('AZURE_CUSTOM_DOMAIN')
-    connection_string = setting('AZURE_CONNECTION_STRING')
-    custom_connection_string = setting(
-        'AZURE_CUSTOM_CONNECTION_STRING', setting('AZURE_CONNECTION_STRING'))
-    token_credential = setting('AZURE_TOKEN_CREDENTIAL')
-
-    def __init__(self):
+class AzureStorage(BaseStorage):
+    def __init__(self, **settings):
+        super(AzureStorage, self).__init__(**settings)
         self._service = None
         self._custom_service = None
+
+    def get_default_settings(self):
+        return {
+            "account_name": setting("AZURE_ACCOUNT_NAME"),
+            "account_key": setting("AZURE_ACCOUNT_KEY"),
+            "azure_container": setting("AZURE_CONTAINER"),
+            "azure_ssl": setting("AZURE_SSL", True),
+            "upload_max_conn": setting("AZURE_UPLOAD_MAX_CONN", 2),
+            "timeout": setting('AZURE_CONNECTION_TIMEOUT_SECS', 20),
+            "max_memory_size": setting('AZURE_BLOB_MAX_MEMORY_SIZE', 2*1024*1024),
+            "expiration_secs": setting('AZURE_URL_EXPIRATION_SECS'),
+            "overwrite_files": setting('AZURE_OVERWRITE_FILES', False),
+            "location": setting('AZURE_LOCATION', ''),
+            "default_content_type": 'application/octet-stream',
+            "cache_control": setting("AZURE_CACHE_CONTROL"),
+            "is_emulated": setting('AZURE_EMULATED_MODE', False),
+            "endpoint_suffix": setting('AZURE_ENDPOINT_SUFFIX'),
+            "sas_token": setting('AZURE_SAS_TOKEN'),
+            "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
+            "connection_string": setting('AZURE_CONNECTION_STRING'),
+            "custom_connection_string": setting(
+                'AZURE_CUSTOM_CONNECTION_STRING',
+                setting('AZURE_CONNECTION_STRING'),
+            ),
+            "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
+        }
 
     def _blob_service(self, custom_domain=None, connection_string=None):
         # This won't open a connection or anything,
