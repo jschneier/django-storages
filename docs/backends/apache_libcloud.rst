@@ -175,4 +175,3 @@ into your settings.py::
     libcloud.security.CA_CERTS_PATH.append("/path/to/your/cacerts.pem")
 
 .. _Download a certificate authority file: http://curl.haxx.se/ca/cacert.pem
-
