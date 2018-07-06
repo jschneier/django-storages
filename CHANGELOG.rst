@@ -425,7 +425,7 @@ since March 2013.
 * Fixed S3BotoStorage performance problem calling modified_time()
 * Added deprecation warning for s3 backend, refs `#40`_
 * Fixed CLOUDFILES_CONNECTION_KWARGS import error, fixes `#78`_
-* Switched to sphinx documentation, set official docs up on http://django-storages.rtfd.org/
+* Switched to sphinx documentation, set official docs up on https://django-storages.readthedocs.io/
 * HashPathStorage uses self.exists now, fixes `#83`_
 
 .. _#13: https://bitbucket.org/david/django-storages/pull-request/13/a-version-of-sftp-storage-that-allows-you
