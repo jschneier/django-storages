@@ -2,6 +2,7 @@ import posixpath
 
 from django.conf import settings
 from django.utils.encoding import force_text
+from django.core.exceptions import ImproperlyConfigured
 
 
 def setting(name, default=None):
