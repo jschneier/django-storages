@@ -58,7 +58,7 @@ class GSBotoStorage(S3BotoStorage):
     secret_key = setting('GS_SECRET_ACCESS_KEY')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
     headers = setting('GS_HEADERS', {})
-    bucket_name = setting('GS_BUCKET_NAME', None)
+    bucket_name = setting('GS_BUCKET_NAME')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     default_acl = setting('GS_DEFAULT_ACL', 'public-read')
     bucket_acl = setting('GS_BUCKET_ACL', default_acl)
