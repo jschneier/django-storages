@@ -14,7 +14,7 @@ from django.utils.encoding import (
 )
 from django.utils.six import BytesIO
 
-from storages.utils import clean_name, safe_join, setting
+from storages.utils import check_location, clean_name, safe_join, setting
 
 try:
     from boto import __version__ as boto_version
@@ -235,7 +235,8 @@ class S3BotoStorage(Storage):
         if bucket is not None:
             self.bucket_name = bucket
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.

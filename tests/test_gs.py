@@ -1,3 +1,4 @@
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 
@@ -30,3 +31,11 @@ class GSStorageTestCase(GSBotoTestCase):
             policy=self.storage.default_acl,
             rewind=True,
         )
+
+    def test_location_leading_slash(self):
+        msg = (
+            "GSBotoStorage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            gs.GSBotoStorage(location='/')

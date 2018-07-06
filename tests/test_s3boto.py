@@ -9,6 +9,7 @@ import os
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
 from boto.utils import ISO8601, parse_ts
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone as tz
@@ -343,3 +344,11 @@ class S3BotoStorageTests(S3BotoTestCase):
         f.close()
 
         assert content.size == sum(file_part_size)
+
+    def test_location_leading_slash(self):
+        msg = (
+            "S3BotoStorage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            s3boto.S3BotoStorage(location='/')

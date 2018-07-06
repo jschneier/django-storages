@@ -16,7 +16,7 @@ from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
 
-from storages.utils import safe_join, setting
+from storages.utils import check_location, safe_join, setting
 
 try:
     import boto3.session
@@ -237,7 +237,8 @@ class S3Boto3Storage(Storage):
         if bucket is not None:
             self.bucket_name = bucket
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.
