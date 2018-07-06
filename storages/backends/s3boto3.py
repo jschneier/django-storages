@@ -183,48 +183,47 @@ class S3Boto3Storage(Storage):
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
 
-    # used for looking up the access and secret key from env vars
-    access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
-    secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
-    security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
-
-    access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
-    secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
-    file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
-    object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
-    bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
-    auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
-    default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
-    bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
-    querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
-    querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
-    signature_version = setting('AWS_S3_SIGNATURE_VERSION')
-    reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
-    location = setting('AWS_LOCATION', '')
-    encryption = setting('AWS_S3_ENCRYPTION', False)
-    custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
-    addressing_style = setting('AWS_S3_ADDRESSING_STYLE')
-    secure_urls = setting('AWS_S3_SECURE_URLS', True)
-    file_name_charset = setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8')
-    gzip = setting('AWS_IS_GZIPPED', False)
-    preload_metadata = setting('AWS_PRELOAD_METADATA', False)
-    gzip_content_types = setting('GZIP_CONTENT_TYPES', (
-        'text/css',
-        'text/javascript',
-        'application/javascript',
-        'application/x-javascript',
-        'image/svg+xml',
-    ))
-    url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
-    endpoint_url = setting('AWS_S3_ENDPOINT_URL', None)
-    region_name = setting('AWS_S3_REGION_NAME', None)
-    use_ssl = setting('AWS_S3_USE_SSL', True)
-
-    # The max amount of memory a returned file can take up before being
-    # rolled over into a temporary file on disk. Default is 0: Do not roll over.
-    max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
-
+    
     def __init__(self, acl=None, bucket=None, **settings):
+        self.access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
+        self.secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
+        self.security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
+        self.access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
+        self.secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
+        self.file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
+        self.object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
+        self.bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
+        self.auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
+        self.default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
+        self.bucket_acl = setting('AWS_BUCKET_ACL', self.default_acl)
+        self.querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
+        self.querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
+        self.signature_version = setting('AWS_S3_SIGNATURE_VERSION')
+        self.reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
+        self.location = setting('AWS_LOCATION', '')
+        self.encryption = setting('AWS_S3_ENCRYPTION', False)
+        self.custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
+        self.addressing_style = setting('AWS_S3_ADDRESSING_STYLE')
+        self.secure_urls = setting('AWS_S3_SECURE_URLS', True)
+        self.file_name_charset = setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8')
+        self.gzip = setting('AWS_IS_GZIPPED', False)
+        self.preload_metadata = setting('AWS_PRELOAD_METADATA', False)
+        self.gzip_content_types = setting('GZIP_CONTENT_TYPES', (
+            'text/css',
+            'text/javascript',
+            'application/javascript',
+            'application/x-javascript',
+            'image/svg+xml',
+        ))
+        self.url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
+        self.endpoint_url = setting('AWS_S3_ENDPOINT_URL', None)
+        self.region_name = setting('AWS_S3_REGION_NAME', None)
+        self.use_ssl = setting('AWS_S3_USE_SSL', True)
+
+        # The max amount of memory a returned file can take up before being
+        # rolled over into a temporary file on disk. Default is 0: Do not roll over.
+        self.max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
+
         # check if some of the settings we've provided as class attributes
         # need to be overwritten with values passed in here
         for name, value in settings.items():
