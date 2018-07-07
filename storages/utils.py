@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import force_text
 
+
 def setting(name, default=None):
     """
     Helper function to get a Django setting by name. If setting doesn't exists
