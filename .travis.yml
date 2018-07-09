@@ -32,10 +32,7 @@ matrix:
 
 install:
   - pip install --upgrade pip setuptools wheel
-  - pip install tox codecov
+  - pip install tox
 
 script:
   - tox
-
-after_success:
-  - codecov
