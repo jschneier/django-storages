@@ -12,6 +12,7 @@ setup(
     name='django-storages',
     version=storages.__version__,
     packages=['storages', 'storages.backends'],
+    install_requires=['Django>=1.11'],
     extras_require={
         'azure': ['azure'],
         'boto': ['boto>=2.32.0'],
