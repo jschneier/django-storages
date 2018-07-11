@@ -16,7 +16,7 @@ from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
 
-from storages.utils import safe_join, setting
+from storages.utils import check_location, safe_join, setting
 
 try:
     import boto3.session
@@ -89,7 +89,7 @@ class S3Boto3StorageFile(File):
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix=".S3Boto3StorageFile",
-                dir=setting("FILE_UPLOAD_TEMP_DIR", None)
+                dir=setting("FILE_UPLOAD_TEMP_DIR")
             )
             if 'r' in self._mode:
                 self._is_dirty = False
@@ -216,8 +216,8 @@ class S3Boto3Storage(Storage):
         'image/svg+xml',
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
-    endpoint_url = setting('AWS_S3_ENDPOINT_URL', None)
-    region_name = setting('AWS_S3_REGION_NAME', None)
+    endpoint_url = setting('AWS_S3_ENDPOINT_URL')
+    region_name = setting('AWS_S3_REGION_NAME')
     use_ssl = setting('AWS_S3_USE_SSL', True)
 
     # The max amount of memory a returned file can take up before being
@@ -237,7 +237,8 @@ class S3Boto3Storage(Storage):
         if bucket is not None:
             self.bucket_name = bucket
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.

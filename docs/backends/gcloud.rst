@@ -61,7 +61,7 @@ ACL used when creating a new blob, from the
 translated.)
 
 For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to viewed.
-If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket. 
+If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket.
 
 
 ``GS_FILE_CHARSET`` (optional)
@@ -80,6 +80,12 @@ rolled over into a temporary file on disk. Default is 0: Do not roll over.
 ``GS_CACHE_CONTROL`` (optional: default is ``None``)
 
 Sets Cache-Control HTTP header for the file, more about HTTP caching can be found `here <https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#cache-control>`_
+
+``GS_LOCATION`` (optional: default is ``''``)
+
+Subdirectory in which the files will be stored.
+Defaults to the root of the bucket.
+
 
 Fields
 ------
