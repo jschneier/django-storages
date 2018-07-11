@@ -146,16 +146,28 @@ class LibCloudStorage(Storage):
 
     def _open(self, name, mode='rb'):
         remote_file = LibCloudFile(name, self, mode=mode)
+
+        # Trigger a download of the file
+        # this will raise an exception of the file doesn't exist
+        remote_file._get_file()
+
         return remote_file
 
     def _read(self, name):
         obj = self._get_object(name)
+        if not obj:
+            return None
+
         # TOFIX : we should be able to read chunk by chunk
         return next(self.driver.download_object_as_stream(obj, obj.size))
 
     def _save(self, name, file):
         self.driver.upload_object_via_stream(iter(file), self._get_bucket(), name)
         return name
+
+
+class LibCloudFileNotFoundError(IOError):
+    pass
 
 
 class LibCloudFile(File):
@@ -170,7 +182,13 @@ class LibCloudFile(File):
     def _get_file(self):
         if self._file is None:
             data = self._storage._read(self.name)
+
+            if data is None:
+                # File not found
+                raise LibCloudFileNotFoundError
+
             self._file = BytesIO(data)
+
         return self._file
 
     def _set_file(self, value):
