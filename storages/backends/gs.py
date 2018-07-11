@@ -1,4 +1,5 @@
 import warnings
+from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.deconstruct import deconstructible
@@ -28,6 +29,24 @@ warnings.warn("DEPRECATION NOTICE: This backend is deprecated in favour of the "
 
 
 class GSBotoStorageFile(S3BotoStorageFile):
+
+    def _get_file(self):
+        if self._file is None:
+            self._file = SpooledTemporaryFile(
+                max_size=self._storage.max_memory_size,
+                suffix='.GSBotoStorageFile',
+                dir=setting('FILE_UPLOAD_TEMP_DIR', None)
+            )
+            if 'r' in self._mode:
+                self._is_dirty = False
+                self.key.get_contents_to_file(self._file)
+                self._file.seek(0)
+        return self._file
+
+    def _set_file(self, value):
+        self._file = value
+
+    file = property(_get_file, _set_file)
 
     def write(self, content):
         if 'w' not in self._mode:
