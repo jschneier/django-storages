@@ -7,10 +7,6 @@ Usage
 This backend provides support for Google Cloud Storage using the
 library provided by Google.
 
-It's possible to access Google Cloud Storage in S3 compatibility mode
-using other libraries in django-storages, but this is the only library
-offering native support.
-
 By default this library will use the credentials associated with the
 current instance for authentication. To override this, see the
 settings below.
