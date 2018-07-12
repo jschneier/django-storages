@@ -15,6 +15,7 @@ setup(
     install_requires=['Django>=1.11'],
     extras_require={
         'azure': ['azure'],
+        'azure1': ['azure-storage-blob>1.0'],
         'boto': ['boto>=2.32.0'],
         'boto3': ['boto3>=1.2.3'],
         'dropbox': ['dropbox>=7.2.1'],
