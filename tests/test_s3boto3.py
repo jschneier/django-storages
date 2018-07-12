@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 
 import gzip
 import pickle
-import zlib
 import threading
 import warnings
+import zlib
 from datetime import datetime
 from unittest import skipIf
 
