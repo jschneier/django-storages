@@ -38,9 +38,14 @@ class AzureStorage(Storage):
     azure_container = setting("AZURE_CONTAINER")
     azure_ssl = setting("AZURE_SSL")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, container=None, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
         self._connection = None
+
+        if container is None:
+            self.azure_container = setting("AZURE_CONTAINER")
+        else:
+            self.azure_container = container
 
     @property
     def connection(self):
