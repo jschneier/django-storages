@@ -50,6 +50,7 @@ matrix:
 before_install:
   # Workaround Travis environment.
   - if [[ $TRAVIS_DIST == xenial ]]; then sudo rm /etc/boto.cfg; fi
+  - if [[ $TRAVIS_DIST == trusty ]]; then sudo rm /etc/boto.cfg; fi
 
 install:
   - pip install --upgrade pip setuptools wheel
