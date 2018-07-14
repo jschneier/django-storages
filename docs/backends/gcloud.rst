@@ -1,16 +1,68 @@
 Google Cloud Storage
 ====================
 
-Usage
-*****
+This backend provides Django File API for `Google Cloud Storage <https://cloud.google.com/storage/>`
+using the python library provided by Google.
 
-This backend provides support for Google Cloud Storage using the
-library provided by Google.
 
-By default this library will use the credentials associated with the
-current instance for authentication. To override this, see the
-settings below.
+Installation
+------------
 
+Use pip to install from PyPI::
+
+    pip install django-storages[google]
+
+Add ``storages`` to your settings.py file::
+
+    INSTALLED_APPS = (
+        ...
+        'storages',
+        ...
+    )
+
+Authentication
+--------------
+By default this library will try to use the credentials associated with the
+current Google Compute Engine (GCE) instance for authentication.
+
+#. Create a service account.
+(`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`)
+#. Create the key and download `your-project-XXXXX.json` file.
+#. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to path of the json file.
+#. Make sure your service account has access to the bucket.
+(`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`)
+
+
+Alternatively, if you do not want to use the env variable GOOGLE_APPLICATION_CREDENTIALS
+use the setting `GS_CREDENTIALS` as described below.
+
+
+
+Getting Started
+---------------
+Set the default storage and bucket name in your settings.py file:
+
+::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    GS_BUCKET_NAME = 'YOUR_BUCKET_NAME_GOES_HERE'
+
+Once you're done, default_storage will be Google Cloud Storage::
+
+    >>> from django.core.files.storage import default_storage
+    >>> print default_storage.__class__
+    <class 'storages.backends.gcloud.GoogleCloudStorage'>
+
+This way, if you define a new FileField, it will use the Google Cloud Storage::
+
+    >>> from django.db import models
+    >>> class Resume(models.Model):
+    ...     pdf = models.FileField(upload_to='pdfs')
+    ...     photos = models.ImageField(upload_to='photos')
+    ...
+    >>> resume = Resume()
+    >>> print resume.pdf.storage
+    <storages.backends.gcloud.GoogleCloudStorage object at ...>
 
 Settings
 --------
@@ -21,7 +73,7 @@ To use gcloud set::
 
 ``GS_BUCKET_NAME``
 
-Your Google Storage bucket name, as a string.
+Your Google Storage bucket name, as a string. Required.
 
 ``GS_PROJECT_ID`` (optional)
 
@@ -31,7 +83,17 @@ inferred from the environment.
 ``GS_CREDENTIALS`` (optional)
 
 The OAuth 2 credentials to use for the connection. If unset, falls
-back to the default inferred from the environment.
+back to the default inferred from the environment
+(i.e. GOOGLE_APPLICATION_CREDENTIALS)
+
+::
+
+    from google.oauth2 import service_account
+
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+        "path/to/credentials.json"
+    )
+
 
 ``GS_AUTO_CREATE_BUCKET`` (optional, default is ``False``)
 
@@ -45,7 +107,7 @@ ACL used when creating a new bucket, from the
 translated.)
 
 Note that the ACL you select must still give the service account
-running the gcloud backend to have OWNER permission on the bucket. If
+running the GCE backend to have OWNER permission on the bucket. If
 you're using the default service account, this means you're restricted
 to the ``projectPrivate`` ACL.
 
@@ -82,9 +144,11 @@ Sets Cache-Control HTTP header for the file, more about HTTP caching can be foun
 Subdirectory in which the files will be stored.
 Defaults to the root of the bucket.
 
+Usage
+-----
 
 Fields
-------
+^^^^^^
 
 Once you're done, default_storage will be Google Cloud Storage::
 
@@ -104,7 +168,7 @@ This way, if you define a new FileField, it will use the Google Cloud Storage::
     <storages.backends.gcloud.GoogleCloudStorage object at ...>
 
 Storage
--------
+^^^^^^^
 
 Standard file access options are available, and work as expected::
 
@@ -126,86 +190,57 @@ Standard file access options are available, and work as expected::
     False
 
 Model
------
+^^^^^
 
 An object without a file has limited functionality::
 
-    >>> obj1 = MyStorage()
-    >>> obj1.normal
+    >>> obj1 = Resume()
+    >>> obj1.pdf
     <FieldFile: None>
-    >>> obj1.normal.size
+    >>> obj1.pdf.size
     Traceback (most recent call last):
     ...
-    ValueError: The 'normal' attribute has no file associated with it.
+    ValueError: The 'pdf' attribute has no file associated with it.
 
 Saving a file enables full functionality::
 
-    >>> obj1.normal.save('django_test.txt', ContentFile('content'))
-    >>> obj1.normal
+    >>> obj1.pdf.save('django_test.txt', ContentFile('content'))
+    >>> obj1.pdf
     <FieldFile: tests/django_test.txt>
-    >>> obj1.normal.size
+    >>> obj1.pdf.size
     7
-    >>> obj1.normal.read()
+    >>> obj1.pdf.read()
     'content'
 
 Files can be read in a little at a time, if necessary::
 
-    >>> obj1.normal.open()
-    >>> obj1.normal.read(3)
+    >>> obj1.pdf.open()
+    >>> obj1.pdf.read(3)
     'con'
-    >>> obj1.normal.read()
+    >>> obj1.pdf.read()
     'tent'
-    >>> '-'.join(obj1.normal.chunks(chunk_size=2))
+    >>> '-'.join(obj1.pdf.chunks(chunk_size=2))
     'co-nt-en-t'
 
 Save another file with the same name::
 
-    >>> obj2 = MyStorage()
-    >>> obj2.normal.save('django_test.txt', ContentFile('more content'))
-    >>> obj2.normal
+    >>> obj2 = Resume()
+    >>> obj2.pdf.save('django_test.txt', ContentFile('more content'))
+    >>> obj2.pdf
     <FieldFile: tests/django_test_.txt>
-    >>> obj2.normal.size
+    >>> obj2.pdf.size
     12
 
 Push the objects into the cache to make sure they pickle properly::
 
     >>> cache.set('obj1', obj1)
     >>> cache.set('obj2', obj2)
-    >>> cache.get('obj2').normal
+    >>> cache.get('obj2').pdf
     <FieldFile: tests/django_test_.txt>
 
 Deleting an object deletes the file it uses, if there are no other objects still using that file::
 
     >>> obj2.delete()
-    >>> obj2.normal.save('django_test.txt', ContentFile('more content'))
-    >>> obj2.normal
+    >>> obj2.pdf.save('django_test.txt', ContentFile('more content'))
+    >>> obj2.pdf
     <FieldFile: tests/django_test_.txt>
-
-Default values allow an object to access a single file::
-
-    >>> obj3 = MyStorage.objects.create()
-    >>> obj3.default
-    <FieldFile: tests/default.txt>
-    >>> obj3.default.read()
-    'default content'
-
-But it shouldn't be deleted, even if there are no more objects using it::
-
-    >>> obj3.delete()
-    >>> obj3 = MyStorage()
-    >>> obj3.default.read()
-    'default content'
-
-Verify the fix for #5655, making sure the directory is only determined once::
-
-    >>> obj4 = MyStorage()
-    >>> obj4.random.save('random_file', ContentFile('random content'))
-    >>> obj4.random
-    <FieldFile: .../random_file>
-
-Clean up the temporary files::
-
-    >>> obj1.normal.delete()
-    >>> obj2.normal.delete()
-    >>> obj3.default.delete()
-    >>> obj4.random.delete()
