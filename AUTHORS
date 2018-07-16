@@ -35,7 +35,8 @@ By order of apparition, thanks:
     * Scott White (Google Cloud updates)
     * Alex Watt (Google Cloud Storage patch)
     * Janusz Skonieczny (Google Cloud Storage limited permission workaround)
-
+    * Jumpei Yoshimura (S3 docs)
+    * Jon Dufresne
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
