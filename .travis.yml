@@ -2,29 +2,59 @@
 sudo: false
 language: python
 
-python: "3.6"
 cache: pip
-
-env:
-  - TOXENV=py27-django111
-  - TOXENV=py34-django111
-  - TOXENV=py34-django20
-  - TOXENV=py36-django111
-  - TOXENV=py36-django20
-  - TOXENV=py36-djangomaster
-  - TOXENV=flake8
 
 matrix:
   fast_finish: true
+  include:
+    - env: TOXENV=flake8
+    - python: 2.7
+      env: TOXENV=py27-django111
+    - python: 3.4
+      env: TOXENV=py34-django111
+    - python: 3.5
+      env: TOXENV=py35-django111
+    - python: 3.6
+      env: TOXENV=py36-django111
+    - python: 3.4
+      env: TOXENV=py34-django20
+    - python: 3.5
+      env: TOXENV=py35-django20
+    - python: 3.6
+      env: TOXENV=py36-django20
+    - python: 3.7
+      env: TOXENV=py37-django20
+      dist: xenial
+      sudo: true
+    - python: 3.5
+      env: TOXENV=py35-django21
+    - python: 3.6
+      env: TOXENV=py36-django21
+    - python: 3.7
+      env: TOXENV=py37-django21
+      dist: xenial
+      sudo: true
+    - python: 3.5
+      env: TOXENV=py35-djangomaster
+    - python: 3.6
+      env: TOXENV=py36-djangomaster
+    - python: 3.7
+      env: TOXENV=py37-djangomaster
+      dist: xenial
+      sudo: true
   allow_failures:
+    - env: TOXENV=py35-djangomaster
     - env: TOXENV=py36-djangomaster
+    - env: TOXENV=py37-djangomaster
+
+before_install:
+  # Workaround Travis environment.
+  - if [[ $TRAVIS_DIST == xenial ]]; then sudo rm /etc/boto.cfg; fi
+  - if [[ $TRAVIS_DIST == trusty ]]; then sudo rm /etc/boto.cfg; fi
 
 install:
   - pip install --upgrade pip setuptools wheel
-  - pip install tox codecov
+  - pip install tox
 
 script:
   - tox
-
-after_success:
-  - codecov

@@ -14,7 +14,7 @@ from django.utils.encoding import (
 )
 from django.utils.six import BytesIO
 
-from storages.utils import clean_name, safe_join, setting
+from storages.utils import check_location, clean_name, safe_join, setting
 
 try:
     from boto import __version__ as boto_version
@@ -74,6 +74,8 @@ class S3BotoStorageFile(File):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self._write_counter = 0
+        # file position of the latest part file uploaded
+        self._last_part_pos = 0
 
     @property
     def size(self):
@@ -84,7 +86,7 @@ class S3BotoStorageFile(File):
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix='.S3BotoStorageFile',
-                dir=setting('FILE_UPLOAD_TEMP_DIR', None)
+                dir=setting('FILE_UPLOAD_TEMP_DIR')
             )
             if 'r' in self._mode:
                 self._is_dirty = False
@@ -123,9 +125,13 @@ class S3BotoStorageFile(File):
                 reduced_redundancy=self._storage.reduced_redundancy,
                 encrypt_key=self._storage.encryption,
             )
-        if self.buffer_size <= self._buffer_file_size:
+        if self.buffer_size <= self._file_part_size:
             self._flush_write_buffer()
         return super(S3BotoStorageFile, self).write(force_bytes(content), *args, **kwargs)
+
+    @property
+    def _file_part_size(self):
+        return self._buffer_file_size - self._last_part_pos
 
     @property
     def _buffer_file_size(self):
@@ -136,12 +142,15 @@ class S3BotoStorageFile(File):
         return length
 
     def _flush_write_buffer(self):
-        if self._buffer_file_size:
+        if self._file_part_size:
             self._write_counter += 1
-            self.file.seek(0)
+            pos = self.file.tell()
+            self.file.seek(self._last_part_pos)
             headers = self._storage.headers.copy()
             self._multipart.upload_part_from_file(
                 self.file, self._write_counter, headers=headers)
+            self.file.seek(pos)
+            self._last_part_pos = self._buffer_file_size
 
     def close(self):
         if self._is_dirty:
@@ -205,9 +214,9 @@ class S3BotoStorage(Storage):
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
     host = setting('AWS_S3_HOST', S3Connection.DefaultHost)
     use_ssl = setting('AWS_S3_USE_SSL', True)
-    port = setting('AWS_S3_PORT', None)
-    proxy = setting('AWS_S3_PROXY_HOST', None)
-    proxy_port = setting('AWS_S3_PROXY_PORT', None)
+    port = setting('AWS_S3_PORT')
+    proxy = setting('AWS_S3_PROXY_HOST')
+    proxy_port = setting('AWS_S3_PROXY_PORT')
 
     # The max amount of memory a returned file can take up before being
     # rolled over into a temporary file on disk. Default is 0: Do not roll over.
@@ -226,7 +235,8 @@ class S3BotoStorage(Storage):
         if bucket is not None:
             self.bucket_name = bucket
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.

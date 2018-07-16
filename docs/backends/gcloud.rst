@@ -7,10 +7,6 @@ Usage
 This backend provides support for Google Cloud Storage using the
 library provided by Google.
 
-It's possible to access Google Cloud Storage in S3 compatibility mode
-using other libraries in django-storages, but this is the only library
-offering native support.
-
 By default this library will use the credentials associated with the
 current instance for authentication. To override this, see the
 settings below.
@@ -53,6 +49,17 @@ running the gcloud backend to have OWNER permission on the bucket. If
 you're using the default service account, this means you're restricted
 to the ``projectPrivate`` ACL.
 
+``GS_DEFAULT_ACL`` (optional, default is None)
+
+ACL used when creating a new blob, from the
+`list of predefined ACLs <https://cloud.google.com/storage/docs/access-control/lists#predefined-acl>`_.
+(A "JSON API" ACL is preferred but an "XML API/gsutil" ACL will be
+translated.)
+
+For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to viewed.
+If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket.
+
+
 ``GS_FILE_CHARSET`` (optional)
 
 Allows overriding the character set used in filenames.
@@ -65,6 +72,16 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 
 The maximum amount of memory a returned file can take up before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
+
+``GS_CACHE_CONTROL`` (optional: default is ``None``)
+
+Sets Cache-Control HTTP header for the file, more about HTTP caching can be found `here <https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#cache-control>`_
+
+``GS_LOCATION`` (optional: default is ``''``)
+
+Subdirectory in which the files will be stored.
+Defaults to the root of the bucket.
+
 
 Fields
 ------

@@ -8,6 +8,7 @@ except ImportError:  # Python 3.2 and below
 import datetime
 import mimetypes
 
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
@@ -115,6 +116,23 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
 
+    def test_save_with_default_acl(self):
+        data = 'This is some test ủⓝï℅ⅆℇ content.'
+        filename = 'ủⓝï℅ⅆℇ.txt'
+        content = ContentFile(data)
+
+        # ACL Options
+        # 'projectPrivate', 'bucketOwnerRead', 'bucketOwnerFullControl',
+        # 'private', 'authenticatedRead', 'publicRead', 'publicReadWrite'
+        self.storage.default_acl = 'publicRead'
+
+        self.storage.save(filename, content)
+
+        self.storage._client.get_bucket.assert_called_with(self.bucket_name)
+        self.storage._bucket.get_blob().upload_from_file.assert_called_with(
+            content, size=len(data), content_type=mimetypes.guess_type(filename)[0])
+        self.storage._bucket.get_blob().acl.save_predefined.assert_called_with('publicRead')
+
     def test_delete(self):
         self.storage.delete(self.filename)
 
@@ -153,13 +171,23 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_listdir(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
+        subdir = ""
 
         self.storage._bucket = mock.MagicMock()
-        self.storage._bucket.list_blobs.return_value = []
+        blobs, prefixes = [], []
         for name in file_names:
-            blob = mock.MagicMock(spec=Blob)
-            blob.name = name
-            self.storage._bucket.list_blobs.return_value.append(blob)
+            directory = name.rsplit("/", 1)[0]+"/" if "/" in name else ""
+            if directory == subdir:
+                blob = mock.MagicMock(spec=Blob)
+                blob.name = name.split("/")[-1]
+                blobs.append(blob)
+            else:
+                prefixes.append(directory.split("/")[0]+"/")
+
+        return_value = mock.MagicMock()
+        return_value.__iter__ = mock.MagicMock(return_value=iter(blobs))
+        return_value.prefixes = prefixes
+        self.storage._bucket.list_blobs.return_value = return_value
 
         dirs, files = self.storage.listdir('')
 
@@ -177,15 +205,25 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_listdir_subdir(self):
         file_names = ["some/path/1.txt", "some/2.txt"]
+        subdir = "some/"
 
         self.storage._bucket = mock.MagicMock()
-        self.storage._bucket.list_blobs.return_value = []
+        blobs, prefixes = [], []
         for name in file_names:
-            blob = mock.MagicMock(spec=Blob)
-            blob.name = name
-            self.storage._bucket.list_blobs.return_value.append(blob)
+            directory = name.rsplit("/", 1)[0] + "/"
+            if directory == subdir:
+                blob = mock.MagicMock(spec=Blob)
+                blob.name = name.split("/")[-1]
+                blobs.append(blob)
+            else:
+                prefixes.append(directory.split(subdir)[1])
 
-        dirs, files = self.storage.listdir('some/')
+        return_value = mock.MagicMock()
+        return_value.__iter__ = mock.MagicMock(return_value=iter(blobs))
+        return_value.prefixes = prefixes
+        self.storage._bucket.list_blobs.return_value = return_value
+
+        dirs, files = self.storage.listdir(subdir)
 
         self.assertEqual(len(dirs), 1)
         self.assertTrue('path' in dirs,
@@ -296,14 +334,37 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True
-        self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
+        self.assertEqual(self.storage.get_available_name(
+            self.filename), self.filename)
 
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
         self.storage.file_overwrite = False
-        self.assertEqual(self.storage.get_available_name(self.filename), self.filename)
+        self.assertEqual(self.storage.get_available_name(
+            self.filename), self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_get_available_name_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
         self.assertEqual(self.storage.get_available_name(filename), filename)
+
+    def test_cache_control(self):
+        data = 'This is some test content.'
+        filename = 'cache_control_file.txt'
+        content = ContentFile(data)
+        cache_control = 'public, max-age=604800'
+
+        self.storage.cache_control = cache_control
+        self.storage.save(filename, content)
+
+        bucket = self.storage.client.get_bucket(self.bucket_name)
+        blob = bucket.get_blob(filename)
+        self.assertEqual(blob.cache_control, cache_control)
+
+    def test_location_leading_slash(self):
+        msg = (
+            "GoogleCloudStorage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            gcloud.GoogleCloudStorage(location='/')

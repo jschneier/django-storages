@@ -4,10 +4,12 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 import datetime
+import os
 
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
 from boto.utils import ISO8601, parse_ts
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone as tz
@@ -306,3 +308,47 @@ class S3BotoStorageTests(S3BotoTestCase):
             self.assertEqual(modtime,
                              tz.make_naive(tz.make_aware(
                                 datetime.datetime.strptime(utcnow, ISO8601), tz.utc)))
+
+    def test_file_greater_than_5MB(self):
+        name = 'test_storage_save.txt'
+        content = ContentFile('0' * 10 * 1024 * 1024)
+
+        # Set the encryption flag used for multipart uploads
+        self.storage.encryption = True
+        # Set the ACL header used when creating/writing data.
+        self.storage.bucket.connection.provider.acl_header = 'x-amz-acl'
+        # Set the mocked key's bucket
+        self.storage.bucket.get_key.return_value.bucket = self.storage.bucket
+        # Set the name of the mock object
+        self.storage.bucket.get_key.return_value.name = name
+
+        def get_upload_file_size(fp):
+            pos = fp.tell()
+            fp.seek(0, os.SEEK_END)
+            length = fp.tell() - pos
+            fp.seek(pos)
+            return length
+
+        def upload_part_from_file(fp, part_num, *args, **kwargs):
+            if len(file_part_size) != part_num:
+                file_part_size.append(get_upload_file_size(fp))
+
+        file_part_size = []
+        f = self.storage.open(name, 'w')
+
+        # initiate the multipart upload
+        f.write('')
+        f._multipart.upload_part_from_file = upload_part_from_file
+        for chunk in content.chunks():
+            f.write(chunk)
+        f.close()
+
+        assert content.size == sum(file_part_size)
+
+    def test_location_leading_slash(self):
+        msg = (
+            "S3BotoStorage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            s3boto.S3BotoStorage(location='/')
