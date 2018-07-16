@@ -167,8 +167,6 @@ class GoogleCloudStorage(Storage):
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
-
-        
         file.blob.cache_control = self.cache_control
         content.seek(0)
         file.blob.upload_from_file(content, size=content.size,
