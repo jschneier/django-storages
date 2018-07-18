@@ -86,6 +86,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content.file,
             ExtraArgs={
                 'ContentType': 'text/plain',
+                'ACL': self.storage.default_acl,
             }
         )
 
@@ -123,6 +124,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content.file,
             ExtraArgs={
                 'ContentType': 'image/jpeg',
+                'ACL': self.storage.default_acl,
             }
         )
 
@@ -139,6 +141,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
             }
         )
 
@@ -156,6 +159,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -183,6 +187,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
+                'ACL': self.storage.default_acl,
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -246,6 +251,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                                                                  'head_bucket')
         self.storage._get_or_create_bucket('testbucketname')
         Bucket.create.assert_called_once_with(
+            ACL='public-read',
             CreateBucketConfiguration={
                 'LocationConstraint': 'sa-east-1',
             }

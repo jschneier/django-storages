@@ -2,9 +2,11 @@ import mimetypes
 import os
 import posixpath
 import threading
+import warnings
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -195,8 +197,8 @@ class S3Boto3Storage(Storage):
     object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
     bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
     auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
-    default_acl = setting('AWS_DEFAULT_ACL', None)
-    bucket_acl = setting('AWS_BUCKET_ACL', None)
+    default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
+    bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
     querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
     querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
     signature_version = setting('AWS_S3_SIGNATURE_VERSION')
@@ -258,6 +260,17 @@ class S3Boto3Storage(Storage):
         if not self.config:
             self.config = Config(s3={'addressing_style': self.addressing_style},
                                  signature_version=self.signature_version)
+
+        # warn about upcoming change in default AWS_DEFAULT_ACL setting
+        if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
+            warnings.warn(
+                "The default behavior of S3Boto3Storage is insecure and will change "
+                "in django-storages 2.0. By default files and new buckets are saved "
+                "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+                "default to using the bucket's ACL. To opt into the new behavior set "
+                "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
+                "set AWS_DEFAULT_ACL."
+            )
 
     @property
     def connection(self):
