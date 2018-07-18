@@ -123,7 +123,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content.file,
             ExtraArgs={
                 'ContentType': 'image/jpeg',
-                'ACL': self.storage.default_acl,
             }
         )
 

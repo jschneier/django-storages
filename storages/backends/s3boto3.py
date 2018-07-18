@@ -115,7 +115,8 @@ class S3Boto3StorageFile(File):
         self._is_dirty = True
         if self._multipart is None:
             parameters = self._storage.object_parameters.copy()
-            parameters['ACL'] = self._storage.default_acl
+            if self._storage.default_acl:
+                parameters['ACL'] = self._storage.default_acl
             parameters['ContentType'] = (mimetypes.guess_type(self.obj.key)[0] or
                                          self._storage.default_content_type)
             if self._storage.reduced_redundancy:
