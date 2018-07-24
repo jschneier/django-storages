@@ -4,7 +4,7 @@ django-storages
 
 
 .. image:: https://img.shields.io/pypi/v/django-storages.svg
-    :target: https://pypi.python.org/pypi/django-storages
+    :target: https://pypi.org/project/django-storages/
     :alt: PyPI Version
 
 .. image:: https://travis-ci.org/jschneier/django-storages.svg?branch=master
