@@ -2,9 +2,11 @@ import mimetypes
 import os
 import posixpath
 import threading
+import warnings
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -115,7 +117,8 @@ class S3Boto3StorageFile(File):
         self._is_dirty = True
         if self._multipart is None:
             parameters = self._storage.object_parameters.copy()
-            parameters['ACL'] = self._storage.default_acl
+            if self._storage.default_acl:
+                parameters['ACL'] = self._storage.default_acl
             parameters['ContentType'] = (mimetypes.guess_type(self.obj.key)[0] or
                                          self._storage.default_content_type)
             if self._storage.reduced_redundancy:
@@ -258,6 +261,17 @@ class S3Boto3Storage(Storage):
             self.config = Config(s3={'addressing_style': self.addressing_style},
                                  signature_version=self.signature_version)
 
+        # warn about upcoming change in default AWS_DEFAULT_ACL setting
+        if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
+            warnings.warn(
+                "The default behavior of S3Boto3Storage is insecure and will change "
+                "in django-storages 2.0. By default files and new buckets are saved "
+                "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+                "default to using the bucket's ACL. To opt into the new behavior set "
+                "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
+                "set AWS_DEFAULT_ACL."
+            )
+
     @property
     def connection(self):
         # TODO: Support host, port like in s3boto
@@ -350,7 +364,10 @@ class S3Boto3Storage(Storage):
                     #
                     # Also note that Amazon specifically disallows "us-east-1" when passing bucket
                     # region names; LocationConstraint *must* be blank to create in US Standard.
-                    bucket_params = {'ACL': self.bucket_acl}
+                    if self.bucket_acl:
+                        bucket_params = {'ACL': self.bucket_acl}
+                    else:
+                        bucket_params = {}
                     region_name = self.connection.meta.client.meta.region_name
                     if region_name != 'us-east-1':
                         bucket_params['CreateBucketConfiguration'] = {
