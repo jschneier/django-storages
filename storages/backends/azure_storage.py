@@ -1,15 +1,16 @@
 import mimetypes
 import os.path
+import posixpath
 import time
 from datetime import datetime
 from time import mktime
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 
-from storages.utils import setting
+from storages.utils import safe_join, setting
 
 try:
     import azure  # noqa
@@ -31,26 +32,24 @@ else:
         from azure import WindowsAzureMissingResourceError as AzureMissingResourceHttpError
 
 
-def clean_name(name):
-    return os.path.normpath(name).replace("\\", "/")
-
-
 @deconstructible
 class AzureStorage(Storage):
     account_name = setting("AZURE_ACCOUNT_NAME")
     account_key = setting("AZURE_ACCOUNT_KEY")
     azure_container = setting("AZURE_CONTAINER")
     azure_ssl = setting("AZURE_SSL")
+    azure_location = setting("AZURE_LOCATION", "")
 
     def __init__(self, *args, **kwargs):
         super(AzureStorage, self).__init__(*args, **kwargs)
         self._connection = None
+        self.azure_location = (self.azure_location or '').lstrip('/')
 
     @property
     def connection(self):
         if self._connection is None:
             if (setting("AZURE_2018_SDK")):
-                self._connection = BlockBlobService(account_name = self.account_name, account_key = self.account_key)
+                self._connection = BlockBlobService(account_name=self.account_name, account_key=self.account_key)
             else:
                 self._connection = BlobService(self.account_name, self.account_key)
         return self._connection
@@ -71,24 +70,29 @@ class AzureStorage(Storage):
             return None
 
     def _open(self, name, mode="rb"):
-        contents = self.connection.get_blob(self.azure_container, name)
+        name = self._normalize_name(self._clean_name(name))
+        contents = self.connection.get_blob_to_bytes(self.azure_container, name).content
         return ContentFile(contents)
 
     def exists(self, name):
-        return self.__get_blob_properties(name) is not None
+        name = self._normalize_name(self._clean_name(name))
+        return self.connection.exists(self.azure_container, name)
 
     def delete(self, name):
+        name = self._normalize_name(self._clean_name(name))
         try:
             self.connection.delete_blob(self.azure_container, name)
         except AzureMissingResourceHttpError:
             pass
 
     def size(self, name):
+        name = self._normalize_name(self._clean_name(name))
         properties = self.connection.get_blob_properties(
             self.azure_container, name)
         return properties["content-length"]
 
     def _save(self, name, content):
+        name = self._normalize_name(self._clean_name(name))
         if hasattr(content.file, 'content_type'):
             content_type = content.file.content_type
         else:
@@ -109,6 +113,7 @@ class AzureStorage(Storage):
         return name
 
     def url(self, name):
+        name = self._normalize_name(self._clean_name(name))
         if hasattr(self.connection, 'make_blob_url'):
             return self.connection.make_blob_url(
                 container_name=self.azure_container,
@@ -119,6 +124,7 @@ class AzureStorage(Storage):
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
 
     def modified_time(self, name):
+        name = self._normalize_name(self._clean_name(name))
         try:
             modified = self.__get_blob_properties(name)['last-modified']
         except (TypeError, KeyError):
@@ -128,3 +134,33 @@ class AzureStorage(Storage):
         modified = datetime.fromtimestamp(mktime(modified))
 
         return modified
+
+    def _clean_name(self, name):
+        """
+        Cleans the name so that Windows style paths work
+
+        (Copied from /storages/backends/s3boto3.py)
+        """
+        # Normalize Windows style paths
+        clean_name = posixpath.normpath(name).replace('\\', '/')
+
+        # os.path.normpath() can strip trailing slashes so we implement
+        # a workaround here.
+        if name.endswith('/') and not clean_name.endswith('/'):
+            # Add a trailing slash as it was stripped.
+            clean_name += '/'
+        return clean_name
+
+    def _normalize_name(self, name):
+        """
+        Normalizes the name so that paths like /path/to/ignored/../something.txt
+        work. We check to make sure that the path pointed to is not outside
+        the directory specified by the LOCATION setting.
+
+        (Copied from /storages/backends/s3boto3.py)
+        """
+        try:
+            return safe_join(self.azure_location, name)
+        except ValueError:
+            raise SuspiciousOperation("Attempted access to '%s' denied." %
+                                      name)
