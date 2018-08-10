@@ -21,6 +21,7 @@ setup(
         'google': ['google-cloud-storage>=0.22.0'],
         'libcloud': ['apache-libcloud'],
         'sftp': ['paramiko'],
+        'qingstor': ['qingstor-sdk'],
     },
     author='Josh Schneier',
     author_email='josh.schneier@gmail.com',
