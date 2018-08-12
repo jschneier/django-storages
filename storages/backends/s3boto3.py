@@ -276,6 +276,17 @@ class S3Boto3Storage(Storage):
                 "set AWS_DEFAULT_ACL."
             )
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop('_connections', None)
+        state.pop('_bucket', None)
+        return state
+
+    def __setstate__(self, state):
+        state['_connections'] = threading.local()
+        state['_bucket'] = None
+        self.__dict__ = state
+
     @property
     def connection(self):
         # TODO: Support host, port like in s3boto
