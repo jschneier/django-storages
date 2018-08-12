@@ -556,7 +556,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         message = (
             "The acl argument of S3Boto3Storage is deprecated. Use argument "
             "default_acl or setting AWS_DEFAULT_ACL instead. The acl argument "
-            "will be removed in a future version."
+            "will be removed in version 2.0."
         )
         assert str(w[-1].message) == message
 
@@ -568,6 +568,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         message = (
             "The bucket argument of S3Boto3Storage is deprecated. Use argument "
             "bucket_name or setting AWS_STORAGE_BUCKET_NAME instead. The bucket "
-            "argument will be removed in a future version."
+            "argument will be removed in version 2.0."
         )
         assert str(w[-1].message) == message
