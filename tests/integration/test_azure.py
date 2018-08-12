@@ -12,13 +12,13 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from tests.integration.models import SimpleFileModel
 
-from storages.backends import azure_storage
+from storages.backends import azure
 
 
 class AzureStorageTest(TestCase):
 
     def setUp(self, *args):
-        self.storage = azure_storage.AzureStorage()
+        self.storage = azure.AzureStorage()
         self.storage.is_emulated = True
         self.storage.account_name = "XXX"
         self.storage.account_key = "KXXX"
@@ -170,7 +170,7 @@ class AzureStorageTest(TestCase):
         self.assertEqual(stream.read(), b'Im a stream foo')
 
 
-class AzureStorageExpiry(azure_storage.AzureStorage):
+class AzureStorageExpiry(azure.AzureStorage):
 
     account_name = 'myaccount'
     account_key = 'mykey'
@@ -190,8 +190,8 @@ class FooFileModelForm(forms.ModelForm):
 
 
 @override_settings(
-    DEFAULT_FILE_STORAGE='storages.backends.azure_storage.AzureStorage',
-    STATICFILES_STORAGE='storages.backends.azure_storage.AzureStorage')
+    DEFAULT_FILE_STORAGE='storages.backends.azure.AzureStorage',
+    STATICFILES_STORAGE='storages.backends.azure.AzureStorage')
 class AzureStorageDjangoTest(TestCase):
 
     def setUp(self, *args):
@@ -201,7 +201,7 @@ class AzureStorageDjangoTest(TestCase):
             default_storage.azure_container, public_access=False, fail_on_exist=False)
 
     def test_is_azure(self):
-        self.assertIsInstance(default_storage, azure_storage.AzureStorage)
+        self.assertIsInstance(default_storage, azure.AzureStorage)
 
     def test_template_static_file(self):
         t = Template(

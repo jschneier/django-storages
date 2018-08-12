@@ -58,7 +58,7 @@ Custom backend::
 
 Then on settings set::
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.azure.AzureStorage'
     STATICFILES_STORAGE = 'custom_storage.custom_azure.PublicAzureStorage'
 
 
@@ -71,8 +71,8 @@ configuration file, usually `settings.py`.
 Set the default storage (i.e: for media files) and the static storage
 (i.e: fo static files) to use the azure backend::
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
-    STATICFILES_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.azure.AzureStorage'
+    STATICFILES_STORAGE = 'storages.backends.azure.AzureStorage'
 
 The following settings are available:
 

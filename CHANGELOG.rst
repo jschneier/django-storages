@@ -1,6 +1,15 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED
+**********
+* The storages.azure_storage module has been renamed to storages.azure. The old
+  name is still available as an alias but will be removed in django-storages
+  2.0.
+* The storages.sftpstorage module has been renamed to storages.sftp. The old
+  name is still available as an alias but will be removed in django-storages
+  2.0.
+
 1.7.1 (2018-09-06)
 ******************
 

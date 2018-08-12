@@ -10,7 +10,7 @@ from azure.storage.blob import Blob, BlobPermissions, BlobProperties
 from django.core.files.base import ContentFile
 from django.test import TestCase
 
-from storages.backends import azure_storage
+from storages.backends import azure
 
 try:
     from unittest import mock
@@ -21,7 +21,7 @@ except ImportError:  # Python 3.2 and below
 class AzureStorageTest(TestCase):
 
     def setUp(self, *args):
-        self.storage = azure_storage.AzureStorage()
+        self.storage = azure.AzureStorage()
         self.storage._service = mock.MagicMock()
         self.storage.overwrite_files = True
         self.container_name = 'test'
@@ -133,7 +133,7 @@ class AzureStorageTest(TestCase):
         fixed_time = utc.localize(datetime.datetime(2016, 11, 6, 4))
         self.storage._service.generate_blob_shared_access_signature.return_value = 'foo_token'
         self.storage._service.make_blob_url.return_value = 'ret_foo'
-        with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
+        with mock.patch('storages.backends.azure.datetime') as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
             self.assertEqual(self.storage.url('some blob', 100), 'ret_foo')
             self.storage._service.generate_blob_shared_access_signature.assert_called_once_with(
@@ -155,7 +155,7 @@ class AzureStorageTest(TestCase):
         """
         name = 'test storage save.txt'
         content = ContentFile('new content')
-        with mock.patch('storages.backends.azure_storage.ContentSettings') as c_mocked:
+        with mock.patch('storages.backends.azure.ContentSettings') as c_mocked:
             c_mocked.return_value = 'content_settings_foo'
             self.assertEqual(self.storage.save(name, content), 'test_storage_save.txt')
             self.storage._service.create_blob_from_stream.assert_called_once_with(
