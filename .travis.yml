@@ -53,7 +53,6 @@ before_install:
   - if [[ $TRAVIS_DIST == trusty ]]; then sudo rm /etc/boto.cfg; fi
 
 install:
-  - pip install --upgrade pip setuptools wheel
   - pip install tox
 
 script:
