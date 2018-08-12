@@ -14,7 +14,9 @@ from django.utils.encoding import (
 )
 from django.utils.six import BytesIO
 
-from storages.utils import check_location, clean_name, lookup_env, safe_join, setting
+from storages.utils import (
+    check_location, clean_name, lookup_env, safe_join, setting,
+)
 
 try:
     from boto import __version__ as boto_version
@@ -74,8 +76,6 @@ class S3BotoStorageFile(File):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self._write_counter = 0
-        # file position of the latest part file uploaded
-        self._last_part_pos = 0
 
     @property
     def size(self):
@@ -125,13 +125,9 @@ class S3BotoStorageFile(File):
                 reduced_redundancy=self._storage.reduced_redundancy,
                 encrypt_key=self._storage.encryption,
             )
-        if self.buffer_size <= self._file_part_size:
+        if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
         return super(S3BotoStorageFile, self).write(force_bytes(content), *args, **kwargs)
-
-    @property
-    def _file_part_size(self):
-        return self._buffer_file_size - self._last_part_pos
 
     @property
     def _buffer_file_size(self):
@@ -142,15 +138,14 @@ class S3BotoStorageFile(File):
         return length
 
     def _flush_write_buffer(self):
-        if self._file_part_size:
+        if self._buffer_file_size:
             self._write_counter += 1
-            pos = self.file.tell()
-            self.file.seek(self._last_part_pos)
+            self.file.seek(0)
             headers = self._storage.headers.copy()
             self._multipart.upload_part_from_file(
                 self.file, self._write_counter, headers=headers)
-            self.file.seek(pos)
-            self._last_part_pos = self._buffer_file_size
+            self.file.seek(0)
+            self.file.truncate()
 
     def close(self):
         if self._is_dirty:

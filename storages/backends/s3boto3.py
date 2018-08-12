@@ -79,8 +79,6 @@ class S3Boto3StorageFile(File):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self._write_counter = 0
-        # file position of the latest part file
-        self._last_part_pos = 0
 
     @property
     def size(self):
@@ -126,13 +124,9 @@ class S3Boto3StorageFile(File):
             if self._storage.encryption:
                 parameters['ServerSideEncryption'] = 'AES256'
             self._multipart = self.obj.initiate_multipart_upload(**parameters)
-        if self.buffer_size <= self._file_part_size:
+        if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
         return super(S3Boto3StorageFile, self).write(force_bytes(content))
-
-    @property
-    def _file_part_size(self):
-        return self._buffer_file_size - self._last_part_pos
 
     @property
     def _buffer_file_size(self):
@@ -148,12 +142,11 @@ class S3Boto3StorageFile(File):
         """
         if self._buffer_file_size:
             self._write_counter += 1
-            pos = self.file.tell()
-            self.file.seek(self._last_part_pos)
+            self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
             part.upload(Body=self.file.read())
-            self.file.seek(pos)
-            self._last_part_pos = self._buffer_file_size
+            self.file.seek(0)
+            self.file.truncate()
 
     def close(self):
         if self._is_dirty:
