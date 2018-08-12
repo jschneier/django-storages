@@ -18,9 +18,6 @@ class SFTPStorageTest(TestCase):
     def setUp(self):
         self.storage = sftpstorage.SFTPStorage('foo')
 
-    def test_init(self):
-        pass
-
     @patch('paramiko.SSHClient')
     def test_no_known_hosts_file(self, mock_ssh):
         self.storage._known_host_file = "not_existed_file"
@@ -144,20 +141,3 @@ class SFTPStorageFileTest(TestCase):
     })
     def test_size(self, mock_sftp):
         self.assertEqual(self.file.size, 42)
-
-    @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'open.return_value.read.return_value': b'foo',
-    })
-    def test_read(self, mock_sftp):
-        self.assertEqual(self.file.read(), b'foo')
-        self.assertTrue(mock_sftp.open.called)
-
-    def test_write(self):
-        self.file.write(b'foo')
-        self.assertEqual(self.file.file.read(), b'foo')
-
-    @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
-    def test_close(self, mock_sftp):
-        self.file.write(b'foo')
-        self.file.close()
-        self.assertTrue(mock_sftp.open.return_value.write.called)
