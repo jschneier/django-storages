@@ -16,14 +16,6 @@ Use pip to install from PyPI::
 
     pip install django-storages
 
-Add ``storages`` to your settings.py file::
-
-    INSTALLED_APPS = (
-        ...
-        'storages',
-        ...
-    )
-
 Each storage backend has its own unique settings you will need to add to your settings.py file. Read the documentation for your storage engine(s) of choice to determine what you need to add.
 
 Contributing

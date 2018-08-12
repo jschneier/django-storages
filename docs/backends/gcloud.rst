@@ -12,14 +12,6 @@ Use pip to install from PyPI::
 
     pip install django-storages[google]
 
-Add ``storages`` to your settings.py file::
-
-    INSTALLED_APPS = (
-        ...
-        'storages',
-        ...
-    )
-
 Authentication
 --------------
 By default this library will try to use the credentials associated with the
