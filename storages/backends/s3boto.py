@@ -1,5 +1,6 @@
 import mimetypes
 import os
+import warnings
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
@@ -34,6 +35,16 @@ boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')
 if boto_version_info[:2] < (2, 32):
     raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
+
+warnings.warn(
+    "DEPRECATION NOTICE: The S3BotoStorage backend is deprecated in favor of "
+    "the S3Boto3Storage backend. This backend uses the Boto library instead of "
+    "the next version of the library, Boto3. Going forward, API updates and all "
+    "new feature work will be focused on the Boto3 library and the "
+    "S3Boto3Storage backend. The S3BotoStorage backend will be removed in a "
+    "future version.",
+    DeprecationWarning,
+)
 
 
 @deconstructible
