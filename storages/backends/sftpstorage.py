@@ -108,10 +108,6 @@ class SFTPStorage(Storage):
     def _open(self, name, mode='rb'):
         return SFTPStorageFile(name, self, mode)
 
-    def _read(self, name):
-        remote_path = self._remote_path(name)
-        return self.sftp.open(remote_path, 'rb')
-
     def _chown(self, path, uid=None, gid=None):
         """Set uid and/or gid for file at path."""
         # Paramiko's chown requires both uid and gid, so look them up first if
@@ -220,5 +216,5 @@ class SFTPStorageFile(File):
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
