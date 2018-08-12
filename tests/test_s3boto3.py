@@ -241,6 +241,68 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
 
+    def test_storage_write_beyond_buffer_size(self):
+        """
+        Test writing content that exceeds the buffer size
+        """
+        name = 'test_open_for_writïng_beyond_buffer_size.txt'
+
+        # Set the encryption flag used for multipart uploads
+        self.storage.encryption = True
+        self.storage.reduced_redundancy = True
+        self.storage.default_acl = 'public-read'
+
+        file = self.storage.open(name, 'w')
+        self.storage.bucket.Object.assert_called_with(name)
+        obj = self.storage.bucket.Object.return_value
+        # Set the name of the mock object
+        obj.key = name
+
+        # Initiate the multipart upload
+        file.write('')
+        obj.initiate_multipart_upload.assert_called_with(
+            ACL='public-read',
+            ContentType='text/plain',
+            ServerSideEncryption='AES256',
+            StorageClass='REDUCED_REDUNDANCY'
+        )
+        multipart = obj.initiate_multipart_upload.return_value
+
+        # Write content at least twice as long as the buffer size
+        written_content = ''
+        counter = 1
+        while len(written_content) < 2 * file.buffer_size:
+            content = 'hello, aws {counter}\n'.format(counter=counter)
+            # Write more than just a few bytes in each iteration to keep the
+            # test reasonably fast
+            content += '*' * int(file.buffer_size / 10)
+            file.write(content)
+            written_content += content
+            counter += 1
+
+        # Save the internal file before closing
+        multipart.parts.all.return_value = [
+            mock.MagicMock(e_tag='123', part_number=1),
+            mock.MagicMock(e_tag='456', part_number=2)
+        ]
+        file.close()
+        self.assertListEqual(
+            multipart.Part.call_args_list,
+            [mock.call(1), mock.call(2)]
+        )
+        part = multipart.Part.return_value
+        uploaded_content = ''.join(
+            (args_list[1]['Body'].decode('utf-8')
+                for args_list in part.upload.call_args_list)
+        )
+        self.assertEqual(uploaded_content, written_content)
+        multipart.complete.assert_called_once_with(
+            MultipartUpload={'Parts': [
+                {'ETag': '123', 'PartNumber': 1},
+                {'ETag': '456', 'PartNumber': 2},
+            ]}
+        )
+
     def test_auto_creating_bucket(self):
         self.storage.auto_create_bucket = True
         Bucket = mock.MagicMock()
@@ -445,109 +507,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         # Connection for each thread needs to be unique
         self.assertIsNot(connections[0], connections[1])
-
-    def test_file_greater_than_5mb(self):
-        """
-        test writing a large file in a single part so that the buffer is flushed
-        only on close
-        """
-        name = 'test_storage_save.txt'
-        content = '0' * 10 * 1024 * 1024
-
-        # set the encryption flag used for multipart uploads
-        self.storage.encryption = True
-        self.storage.reduced_redundancy = True
-        self.storage.default_acl = 'public-read'
-
-        f = self.storage.open(name, 'w')
-        self.storage.bucket.Object.assert_called_with(name)
-        obj = self.storage.bucket.Object.return_value
-        # set the name of the mock object
-        obj.key = name
-        multipart = obj.initiate_multipart_upload.return_value
-        part = multipart.Part.return_value
-        multipart.parts.all.return_value = [mock.MagicMock(e_tag='123', part_number=1)]
-
-        with mock.patch.object(f, '_flush_write_buffer') as method:
-            f.write(content)
-            self.assertFalse(method.called)  # buffer not flushed on write
-
-        assert f._file_part_size == len(content)
-        obj.initiate_multipart_upload.assert_called_with(
-                ACL='public-read',
-                ContentType='text/plain',
-                ServerSideEncryption='AES256',
-                StorageClass='REDUCED_REDUNDANCY'
-        )
-
-        with mock.patch.object(f, '_flush_write_buffer', wraps=f._flush_write_buffer) as method:
-            f.close()
-            method.assert_called_with()  # buffer flushed on close
-        multipart.Part.assert_called_with(1)
-        part.upload.assert_called_with(Body=content.encode('utf-8'))
-        multipart.complete.assert_called_once_with(
-            MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
-
-    def test_file_write_after_exceeding_5mb(self):
-        """
-        test writing a large file in two parts so that the buffer is flushed
-        on write and on close
-        """
-        name = 'test_storage_save.txt'
-        content1 = '0' * 5 * 1024 * 1024
-        content2 = '0'
-
-        # set the encryption flag used for multipart uploads
-        self.storage.encryption = True
-        self.storage.reduced_redundancy = True
-        self.storage.default_acl = 'public-read'
-
-        f = self.storage.open(name, 'w')
-        self.storage.bucket.Object.assert_called_with(name)
-        obj = self.storage.bucket.Object.return_value
-        # set the name of the mock object
-        obj.key = name
-        multipart = obj.initiate_multipart_upload.return_value
-        part = multipart.Part.return_value
-        multipart.parts.all.return_value = [
-            mock.MagicMock(e_tag='123', part_number=1),
-            mock.MagicMock(e_tag='456', part_number=2)
-        ]
-
-        with mock.patch.object(f, '_flush_write_buffer', wraps=f._flush_write_buffer) as method:
-            f.write(content1)
-            self.assertFalse(method.called)  # buffer doesn't get flushed on the first write
-            assert f._file_part_size == len(content1)  # file part size is the size of what's written
-            assert f._last_part_pos == 0  # no parts added, so last part stays at 0
-            f.write(content2)
-            method.assert_called_with()  # second write flushes buffer
-            multipart.Part.assert_called_with(1)  # first part created
-            part.upload.assert_called_with(Body=content1.encode('utf-8'))  # first part is uploaded
-            assert f._last_part_pos == len(content1)  # buffer spools to end of content1
-            assert f._buffer_file_size == len(content1) + len(content2)  # _buffer_file_size is total written
-            assert f._file_part_size == len(content2)  # new part is size of content2
-
-        obj.initiate_multipart_upload.assert_called_with(
-                ACL='public-read',
-                ContentType='text/plain',
-                ServerSideEncryption='AES256',
-                StorageClass='REDUCED_REDUNDANCY'
-        )
-        # save the internal file before closing
-        f.close()
-        multipart.Part.assert_called_with(2)
-        part.upload.assert_called_with(Body=content2.encode('utf-8'))
-        multipart.complete.assert_called_once_with(
-            MultipartUpload={'Parts': [
-                {
-                    'ETag': '123',
-                    'PartNumber': 1
-                },
-                {
-                    'ETag': '456',
-                    'PartNumber': 2
-                }
-            ]})
 
     def test_location_leading_slash(self):
         msg = (
