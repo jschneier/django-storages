@@ -55,20 +55,20 @@ class SFTPStorage(Storage):
         self._pathmod = posixpath
 
     def _connect(self):
-        self._ssh = paramiko.SSHClient()
+        ssh = paramiko.SSHClient()
 
         known_host_file = self._known_host_file or os.path.expanduser(
             os.path.join("~", ".ssh", "known_hosts")
         )
 
         if os.path.exists(known_host_file):
-            self._ssh.load_host_keys(known_host_file)
+            ssh.load_host_keys(known_host_file)
 
         # and automatically add new host keys for hosts we haven't seen before.
-        self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            self._ssh.connect(self._host, **self._params)
+            ssh.connect(self._host, **self._params)
         except paramiko.AuthenticationException as e:
             if self._interactive and 'password' not in self._params:
                 # If authentication has failed, and we haven't already tried
@@ -77,14 +77,14 @@ class SFTPStorage(Storage):
                 if 'username' not in self._params:
                     self._params['username'] = getpass.getuser()
                 self._params['password'] = getpass.getpass()
-                self._connect()
+                ssh.connect(self._host, **self.params)
             else:
                 raise paramiko.AuthenticationException(e)
         except Exception as e:
             print(e)
 
         if not hasattr(self, '_sftp'):
-            self._sftp = self._ssh.open_sftp()
+            self._sftp = ssh.open_sftp()
 
     @property
     def sftp(self):
@@ -175,8 +175,7 @@ class SFTPStorage(Storage):
         # Return whether an item in sftp.listdir_attr results is a directory
         if item.st_mode is not None:
             return stat.S_IFMT(item.st_mode) == stat.S_IFDIR
-        else:
-            return False
+        return False
 
     def listdir(self, path):
         remote_path = self._remote_path(path)
