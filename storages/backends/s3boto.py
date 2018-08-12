@@ -14,7 +14,7 @@ from django.utils.encoding import (
 )
 from django.utils.six import BytesIO
 
-from storages.utils import check_location, clean_name, safe_join, setting
+from storages.utils import check_location, clean_name, lookup_env, safe_join, setting
 
 try:
     from boto import __version__ as boto_version
@@ -183,6 +183,7 @@ class S3BotoStorage(Storage):
     access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
     secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
     security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
+    security_token = None
 
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
@@ -245,10 +246,8 @@ class S3BotoStorage(Storage):
         self._connection = None
         self._loaded_meta = False
 
-        self.security_token = None
-        if not self.access_key and not self.secret_key:
-            self.access_key, self.secret_key = self._get_access_keys()
-            self.security_token = self._get_security_token()
+        self.access_key, self.secret_key = self._get_access_keys()
+        self.security_token = self._get_security_token()
 
     @property
     def connection(self):
@@ -296,24 +295,22 @@ class S3BotoStorage(Storage):
             self._loaded_meta = True
         return self._entries
 
-    def _lookup_env(self, names):
-        for name in names:
-            value = os.environ.get(name)
-            if value:
-                return value
-
     def _get_access_keys(self):
         """
-        Gets the access keys to use when accessing S3. If none
-        are provided to the class in the constructor or in the
-        settings then get them from the environment variables.
+        Gets the access keys to use when accessing S3. If none is
+        provided in the settings then get them from the environment
+        variables.
         """
-        access_key = self.access_key or self._lookup_env(self.access_key_names)
-        secret_key = self.secret_key or self._lookup_env(self.secret_key_names)
+        access_key = self.access_key or lookup_env(S3BotoStorage.access_key_names)
+        secret_key = self.secret_key or lookup_env(S3BotoStorage.secret_key_names)
         return access_key, secret_key
 
     def _get_security_token(self):
-        security_token = self._lookup_env(self.security_token_names)
+        """
+        Gets the security token to use when accessing S3. Get it from
+        the environment variables.
+        """
+        security_token = self.security_token or lookup_env(S3BotoStorage.security_token_names)
         return security_token
 
     def _get_or_create_bucket(self, name):
