@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import gzip
+import pickle
 import threading
 import warnings
 from datetime import datetime
@@ -58,6 +59,37 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         """
         path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
+
+    def test_pickle_with_bucket(self):
+        """
+        Test that the storage can be pickled with a bucket attached
+        """
+        # Ensure the bucket has been used
+        self.storage.bucket
+        self.assertIsNotNone(self.storage._bucket)
+
+        # Can't pickle MagicMock, but you can't pickle a real Bucket object either
+        p = pickle.dumps(self.storage)
+        new_storage = pickle.loads(p)
+
+        self.assertIsInstance(new_storage._connections, threading.local)
+        # Put the mock connection back in
+        new_storage._connections.connection = mock.MagicMock()
+
+        self.assertIsNone(new_storage._bucket)
+        new_storage.bucket
+        self.assertIsNotNone(new_storage._bucket)
+
+    def test_pickle_without_bucket(self):
+        """
+        Test that the storage can be pickled, without a bucket instance
+        """
+
+        # Can't pickle a threadlocal
+        p = pickle.dumps(self.storage)
+        new_storage = pickle.loads(p)
+
+        self.assertIsInstance(new_storage._connections, threading.local)
 
     def test_storage_url_slashes(self):
         """
