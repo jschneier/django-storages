@@ -222,9 +222,6 @@ class S3Boto3Storage(Storage):
     endpoint_url = setting('AWS_S3_ENDPOINT_URL')
     region_name = setting('AWS_S3_REGION_NAME')
     use_ssl = setting('AWS_S3_USE_SSL', True)
-
-    # The max amount of memory a returned file can take up before being
-    # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
 
     def __init__(self, acl=None, bucket=None, **settings):

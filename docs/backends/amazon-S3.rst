@@ -72,6 +72,10 @@ Available are numerous settings. It should be especially noted the following:
     authentication from generated URLs. This can be useful if your S3 buckets
     are public.
 
+``AWS_S3_MAX_MEMORY_SIZE`` (optional; default is ``0`` - do not roll over)
+    The maximum amount of memory a file can take up before being rolled over
+    into a temporary file on disk.
+
 ``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
     The number of seconds that a generated URL is valid for.
 
