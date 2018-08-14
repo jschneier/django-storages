@@ -60,15 +60,6 @@ class AzureStorage(Storage):
             return 'https'
         return 'http' if self.azure_ssl is not None else None
 
-    def __get_blob_properties(self, name):
-        try:
-            return self.connection.get_blob_properties(
-                self.azure_container,
-                name
-            )
-        except AzureMissingResourceHttpError:
-            return None
-
     def _open(self, name, mode="rb"):
         name = self._normalize_name(self._clean_name(name))
         contents = self.connection.get_blob_to_bytes(self.azure_container, name).content
@@ -80,10 +71,8 @@ class AzureStorage(Storage):
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
-        try:
-            self.connection.delete_blob(self.azure_container, name)
-        except AzureMissingResourceHttpError:
-            pass
+        return self.connection.delete_blob(self.azure_container, name)
+
 
     def size(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -123,15 +112,13 @@ class AzureStorage(Storage):
         else:
             return "{}{}/{}".format(setting('MEDIA_URL'), self.azure_container, name)
 
-    def modified_time(self, name):
+    def get_modified_time(self, name):
         name = self._normalize_name(self._clean_name(name))
         try:
-            modified = self.__get_blob_properties(name)['last-modified']
+            prop = self.connection.get_blob_properties(self.azure_container, name)
+            modified = prop.properties.last_modified
         except (TypeError, KeyError):
             return super(AzureStorage, self).modified_time(name)
-
-        modified = time.strptime(modified, '%a, %d %b %Y %H:%M:%S %Z')
-        modified = datetime.fromtimestamp(mktime(modified))
 
         return modified
 
