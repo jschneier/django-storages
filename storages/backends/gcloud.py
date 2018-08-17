@@ -169,7 +169,7 @@ class GoogleCloudStorage(Storage):
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
         content.seek(0)
-        file.blob.upload_from_file(content, size=content.size,
+        file.blob.upload_from_file(content, rewind=True, size=content.size,
                                    content_type=file.mime_type)
         if self.default_acl:
             file.blob.acl.save_predefined(self.default_acl)
