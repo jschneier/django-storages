@@ -244,13 +244,6 @@ class S3Boto3Storage(Storage):
                 DeprecationWarning,
             )
             self.bucket_name = bucket
-        if self.preload_metadata is not False:
-            warnings.warn(
-                "The AWS_PRELOAD_METADATA setting of S3Boto3Storage is deprecated "
-                "due to major performance and questionable usability issues and "
-                "will be removed in version 2.0. Use a cache instead.",
-                DeprecationWarning,
-            )
 
         check_location(self)
 
