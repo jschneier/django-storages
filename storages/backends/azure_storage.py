@@ -88,6 +88,7 @@ class AzureStorage(Storage):
         else:
             content_type = mimetypes.guess_type(name)[0]
 
+        content.seek(0)
         if hasattr(content, 'chunks'):
             content_data = b''.join(chunk for chunk in content.chunks())
         else:
