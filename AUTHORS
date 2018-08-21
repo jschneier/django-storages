@@ -36,7 +36,7 @@ By order of apparition, thanks:
     * Alex Watt (Google Cloud Storage patch)
     * Jumpei Yoshimura (S3 docs)
     * Jon Dufresne
-
+    * Peter Slump (Azure1 implementation)
 
 
 Extra thanks to Marty for adding this in Django,
