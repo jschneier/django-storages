@@ -19,8 +19,14 @@ except ImportError:
         "See https://github.com/WindowsAzure/azure-sdk-for-python")
 
 try:
-    # azure-storage 0.20.0
-    from azure.storage.blob.blobservice import BlobService
+    # azure-storage 0.30.0
+    from azure.storage import blob
+    
+    if hasattr(blob, "BlockBlobService"):
+        from azure.storage.blob import BlockBlobService as BlobService
+    else:
+        from azure.storage.blob.blobservice import BlobService
+
     from azure.common import AzureMissingResourceHttpError
 except ImportError:
     from azure.storage import BlobService
@@ -92,15 +98,19 @@ class AzureStorage(Storage):
             content_data = b''.join(chunk for chunk in content.chunks())
         else:
             content_data = content.read()
-
-        self.connection.put_blob(self.azure_container, name,
+        try:
+            self.connection.put_block(self.azure_container, name,
+                                 content_data, "BlockBlob",
+                                 x_ms_blob_content_type=content_type)
+        except AttributeError as e:
+            self.connection.put_blob(self.azure_container, name,
                                  content_data, "BlockBlob",
                                  x_ms_blob_content_type=content_type)
         return name
 
     def url(self, name):
         if hasattr(self.connection, 'make_blob_url'):
-            return self.connection.make_blob_url(
+            return self.connection.make_blob_url(                                                   
                 container_name=self.azure_container,
                 blob_name=name,
                 protocol=self.azure_protocol,
