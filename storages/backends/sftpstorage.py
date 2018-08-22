@@ -49,6 +49,7 @@ class SFTPStorage(Storage):
         # for now it's all posix paths.  Maybe someday we'll support figuring
         # out if the remote host is windows.
         self._pathmod = posixpath
+        self._sftp = None
 
     def _connect(self):
         self._ssh = paramiko.SSHClient()
@@ -79,13 +80,13 @@ class SFTPStorage(Storage):
         except Exception as e:
             print(e)
 
-        if not hasattr(self, '_sftp'):
+        if self._ssh.get_transport():
             self._sftp = self._ssh.open_sftp()
 
     @property
     def sftp(self):
         """Lazy SFTP connection"""
-        if not hasattr(self, '_sftp'):
+        if not self._sftp or not self._ssh.get_transport().is_active():
             self._connect()
         return self._sftp
 
