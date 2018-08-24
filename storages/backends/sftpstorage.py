@@ -15,10 +15,14 @@ import paramiko
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 @deconstructible
@@ -51,20 +55,20 @@ class SFTPStorage(Storage):
         self._pathmod = posixpath
 
     def _connect(self):
-        self._ssh = paramiko.SSHClient()
+        ssh = paramiko.SSHClient()
 
         known_host_file = self._known_host_file or os.path.expanduser(
             os.path.join("~", ".ssh", "known_hosts")
         )
 
         if os.path.exists(known_host_file):
-            self._ssh.load_host_keys(known_host_file)
+            ssh.load_host_keys(known_host_file)
 
         # and automatically add new host keys for hosts we haven't seen before.
-        self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            self._ssh.connect(self._host, **self._params)
+            ssh.connect(self._host, **self._params)
         except paramiko.AuthenticationException as e:
             if self._interactive and 'password' not in self._params:
                 # If authentication has failed, and we haven't already tried
@@ -73,14 +77,14 @@ class SFTPStorage(Storage):
                 if 'username' not in self._params:
                     self._params['username'] = getpass.getuser()
                 self._params['password'] = getpass.getpass()
-                self._connect()
+                ssh.connect(self._host, **self.params)
             else:
                 raise paramiko.AuthenticationException(e)
         except Exception as e:
             print(e)
 
         if not hasattr(self, '_sftp'):
-            self._sftp = self._ssh.open_sftp()
+            self._sftp = ssh.open_sftp()
 
     @property
     def sftp(self):
@@ -96,12 +100,13 @@ class SFTPStorage(Storage):
     def _remote_path(self, name):
         return self._join(self._root_path, name)
 
+    def _ensure_remote_path_exists(self, path):
+        dirname = self._pathmod.dirname(path)
+        if not self.exists(dirname):
+            self._mkdir(dirname)
+
     def _open(self, name, mode='rb'):
         return SFTPStorageFile(name, self, mode)
-
-    def _read(self, name):
-        remote_path = self._remote_path(name)
-        return self.sftp.open(remote_path, 'rb')
 
     def _chown(self, path, uid=None, gid=None):
         """Set uid and/or gid for file at path."""
@@ -131,12 +136,11 @@ class SFTPStorage(Storage):
         """Save file via SFTP."""
         content.open()
         path = self._remote_path(name)
-        dirname = self._pathmod.dirname(path)
-        if not self.exists(dirname):
-            self._mkdir(dirname)
+        self._ensure_remote_path_exists(path)
 
         f = self.sftp.open(path, 'wb')
-        f.write(content.file.read())
+        for chunk in content.chunks():
+            f.write(chunk)
         f.close()
 
         # set file permissions if configured
@@ -148,7 +152,10 @@ class SFTPStorage(Storage):
 
     def delete(self, name):
         remote_path = self._remote_path(name)
-        self.sftp.remove(remote_path)
+        try:
+            self.sftp.remove(remote_path)
+        except FileNotFoundError:  # Raised if the path was removed concurrently
+            pass
 
     def exists(self, name):
         # Try to retrieve file info.  Return true on success, false on failure.
@@ -157,15 +164,14 @@ class SFTPStorage(Storage):
         try:
             self.sftp.stat(remote_path)
             return True
-        except IOError:
+        except FileNotFoundError:
             return False
 
     def _isdir_attr(self, item):
         # Return whether an item in sftp.listdir_attr results is a directory
         if item.st_mode is not None:
             return stat.S_IFMT(item.st_mode) == stat.S_IFDIR
-        else:
-            return False
+        return False
 
     def listdir(self, path):
         remote_path = self._remote_path(path)
@@ -199,34 +205,16 @@ class SFTPStorage(Storage):
 
 class SFTPStorageFile(File):
     def __init__(self, name, storage, mode):
-        self._name = name
+        self.name = name
         self._storage = storage
-        self._mode = mode
-        self._is_dirty = False
-        self.file = BytesIO()
-        self._is_read = False
+        path = self._storage._remote_path(name)
+        self._storage._ensure_remote_path_exists(path)
+        self.file = self._storage.sftp.open(path, mode)
+        super(SFTPStorageFile, self).__init__(file=self.file, name=self.name)
+        self.mode = mode
 
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
-
-    def read(self, num_bytes=None):
-        if not self._is_read:
-            self.file = self._storage._read(self._name)
-            self._is_read = True
-
-        return self.file.read(num_bytes)
-
-    def write(self, content):
-        if 'w' not in self._mode:
-            raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
-        self._is_dirty = True
-        self._is_read = True
-
-    def close(self):
-        if self._is_dirty:
-            self._storage._save(self._name, self)
-        self.file.close()
