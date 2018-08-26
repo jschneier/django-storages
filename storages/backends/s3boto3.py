@@ -15,12 +15,12 @@ from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
 from django.utils.six import BytesIO
-from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
 
 from storages.utils import check_location, lookup_env, safe_join, setting
 
 try:
+    import botocore
     import boto3.session
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
@@ -261,8 +261,10 @@ class S3Boto3Storage(Storage):
         self.security_token = self._get_security_token()
 
         if not self.config:
-            self.config = Config(s3={'addressing_style': self.addressing_style},
-                                 signature_version=self.signature_version)
+            self.config = Config(
+                s3={'addressing_style': self.addressing_style},
+                signature_version=botocore.UNSIGNED if not self.querystring_auth else self.signature_version,
+            )
 
         # warn about upcoming change in default AWS_DEFAULT_ACL setting
         if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
@@ -573,27 +575,6 @@ class S3Boto3Storage(Storage):
         mtime = self.get_modified_time(name)
         return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
 
-    def _strip_signing_parameters(self, url):
-        # Boto3 does not currently support generating URLs that are unsigned. Instead we
-        # take the signed URLs and strip any querystring params related to signing and expiration.
-        # Note that this may end up with URLs that are still invalid, especially if params are
-        # passed in that only work with signed URLs, e.g. response header params.
-        # The code attempts to strip all query parameters that match names of known parameters
-        # from v2 and v4 signatures, regardless of the actual signature version used.
-        split_url = urlparse.urlsplit(url)
-        qs = urlparse.parse_qsl(split_url.query, keep_blank_values=True)
-        blacklist = {
-            'x-amz-algorithm', 'x-amz-credential', 'x-amz-date',
-            'x-amz-expires', 'x-amz-signedheaders', 'x-amz-signature',
-            'x-amz-security-token', 'awsaccesskeyid', 'expires', 'signature',
-        }
-        filtered_qs = ((key, val) for key, val in qs if key.lower() not in blacklist)
-        # Note: Parameters that did not have a value in the original query string will have
-        # an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=
-        joined_qs = ('='.join(keyval) for keyval in filtered_qs)
-        split_url = split_url._replace(query="&".join(joined_qs))
-        return split_url.geturl()
-
     def url(self, name, parameters=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
         # TODO: Handle force_http=not self.secure_urls like in s3boto
@@ -609,9 +590,7 @@ class S3Boto3Storage(Storage):
         params['Key'] = self._encode_name(name)
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire)
-        if self.querystring_auth:
-            return url
-        return self._strip_signing_parameters(url)
+        return url
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""

@@ -518,13 +518,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         parsed_url = urlparse.urlparse(url)
         self.assertEqual(parsed_url.path, "/%C3%A3l%C3%B6h%C3%A2.jpg")
 
-    def test_strip_signing_parameters(self):
-        expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
-        self.assertEqual(self.storage._strip_signing_parameters(
-            '%s?X-Amz-Date=12345678&X-Amz-Signature=Signature' % expected), expected)
-        self.assertEqual(self.storage._strip_signing_parameters(
-            '%s?expires=12345678&signature=Signature' % expected), expected)
-
     @skipIf(threading is None, 'Test requires threading')
     def test_connection_threading(self):
         connections = []
