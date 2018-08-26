@@ -46,9 +46,6 @@ class SFTPStorage(Storage):
             if root_path is None else root_path
         self._base_url = setting('MEDIA_URL') if base_url is None else base_url
 
-        # for now it's all posix paths.  Maybe someday we'll support figuring
-        # out if the remote host is windows.
-        self._pathmod = posixpath
         self._sftp = None
 
     def _connect(self):
@@ -90,12 +87,8 @@ class SFTPStorage(Storage):
             self._connect()
         return self._sftp
 
-    def _join(self, *args):
-        # Use the path module for the remote host type to join a path together
-        return self._pathmod.join(*args)
-
     def _remote_path(self, name):
-        return self._join(self._root_path, name)
+        return posixpath.join(self._root_path, name)
 
     def _open(self, name, mode='rb'):
         return SFTPStorageFile(name, self, mode)
@@ -117,7 +110,7 @@ class SFTPStorage(Storage):
     def _mkdir(self, path):
         """Create directory, recursing up to create parent dirs if
         necessary."""
-        parent = self._pathmod.dirname(path)
+        parent = posixpath.dirname(path)
         if not self.exists(parent):
             self._mkdir(parent)
         self.sftp.mkdir(path)
@@ -132,7 +125,7 @@ class SFTPStorage(Storage):
         """Save file via SFTP."""
         content.open()
         path = self._remote_path(name)
-        dirname = self._pathmod.dirname(path)
+        dirname = posixpath.dirname(path)
         if not self.exists(dirname):
             self._mkdir(dirname)
 
