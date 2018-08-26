@@ -330,7 +330,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
 
-        self.assertRaises(NotFound, self.storage.url, self.filename)
+        self.assertEqual(self.storage.url(self.filename), self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True
