@@ -169,6 +169,16 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertTrue(self.storage.exists(''))
         self.storage._client.create_bucket.assert_called_with(self.bucket_name)
 
+    def test_not_exists_should_return_false_and_not_throw_exception(self):
+
+        def _raise_not_found(*args, **kwargs):
+            raise NotFound('File does not exist: cache/x/x/xxx.png')
+
+        self.storage._bucket = mock.MagicMock()
+        self.storage._bucket.get_blob.side_effect = _raise_not_found
+        self.assertFalse(self.storage.exists(self.filename))
+        self.storage._bucket.get_blob.assert_called_with(self.filename)
+
     def test_listdir(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
         subdir = ""
