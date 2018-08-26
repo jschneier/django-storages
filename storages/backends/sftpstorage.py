@@ -148,15 +148,14 @@ class SFTPStorage(Storage):
         return name
 
     def delete(self, name):
-        remote_path = self._remote_path(name)
-        self.sftp.remove(remote_path)
+        try:
+            self.sftp.remove(self._remote_path(name))
+        except IOError:
+            pass
 
     def exists(self, name):
-        # Try to retrieve file info.  Return true on success, false on failure.
-        remote_path = self._remote_path(name)
-
         try:
-            self.sftp.stat(remote_path)
+            self.sftp.stat(self._remote_path(name))
             return True
         except IOError:
             return False
