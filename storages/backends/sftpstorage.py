@@ -199,28 +199,28 @@ class SFTPStorage(Storage):
 
 class SFTPStorageFile(File):
     def __init__(self, name, storage, mode):
-        self._name = name
-        self._storage = storage
-        self._mode = mode
-        self._is_dirty = False
+        self.name = name
+        self.mode = mode
         self.file = BytesIO()
+        self._storage = storage
         self._is_read = False
+        self._is_dirty = False
 
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
 
     def read(self, num_bytes=None):
         if not self._is_read:
-            self.file = self._storage._read(self._name)
+            self.file = self._storage._read(self.name)
             self._is_read = True
 
         return self.file.read(num_bytes)
 
     def write(self, content):
-        if 'w' not in self._mode:
+        if 'w' not in self.mode:
             raise AttributeError("File was opened for read-only access.")
         self.file = BytesIO(content)
         self._is_dirty = True
@@ -228,5 +228,5 @@ class SFTPStorageFile(File):
 
     def close(self):
         if self._is_dirty:
-            self._storage._save(self._name, self)
+            self._storage._save(self.name, self)
         self.file.close()
