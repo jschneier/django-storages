@@ -340,7 +340,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         url = self.storage.url(secret_filename)
         self.storage._bucket.blob.assert_called_with(secret_filename)
-        self.assertEqual(url,'http://signed_url')
+        self.assertEqual(url, 'http://signed_url')
         blob.generate_signed_url.assert_called_with(expiration=timedelta(seconds=86400))
 
     def test_url_not_public_file_with_custom_expires(self):
@@ -355,7 +355,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         url = self.storage.url(secret_filename)
         self.storage._bucket.blob.assert_called_with(secret_filename)
-        self.assertEqual(url,'http://signed_url')
+        self.assertEqual(url, 'http://signed_url')
         blob.generate_signed_url.assert_called_with(expiration=timedelta(seconds=3600))
 
     def test_get_available_name(self):
