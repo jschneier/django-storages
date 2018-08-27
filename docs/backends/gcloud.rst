@@ -113,6 +113,8 @@ translated.)
 For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to viewed.
 If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket.
 
+``publicRead`` files will return a public - non-expiring url.
+
 
 ``GS_FILE_CHARSET`` (optional)
 
@@ -135,6 +137,12 @@ Sets Cache-Control HTTP header for the file, more about HTTP caching can be foun
 
 Subdirectory in which the files will be stored.
 Defaults to the root of the bucket.
+
+``GS_EXPIRES_ON`` (optional: default is ``''``)
+
+The time that a generated URL is valid before expiration. The default is 1 day.
+Public files will return a url that does not expire.
+
 
 Usage
 -----

@@ -6,6 +6,7 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 import datetime
+from datetime import timedelta
 import mimetypes
 
 from django.core.exceptions import ImproperlyConfigured
@@ -315,22 +316,47 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertRaises(NotFound, self.storage.modified_time, self.filename)
 
-    def test_url(self):
+    def test_url_public_object(self):
         url = 'https://example.com/mah-bukkit/{}'.format(self.filename)
+        self.storage.default_acl = 'publicRead'
 
         self.storage._bucket = mock.MagicMock()
         blob = mock.MagicMock()
         blob.public_url = url
-        self.storage._bucket.get_blob.return_value = blob
+        blob.generate_signed_url = 'not called'
+        self.storage._bucket.blob.return_value = blob
 
         self.assertEqual(self.storage.url(self.filename), url)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.blob.assert_called_with(self.filename)
 
-    def test_url_no_file(self):
+    def test_url_not_public_file(self):
+        secret_filename = 'secret_file.txt'
         self.storage._bucket = mock.MagicMock()
-        self.storage._bucket.get_blob.return_value = None
+        blob = mock.MagicMock()
+        generate_signed_url = mock.MagicMock(return_value='http://signed_url')
+        blob.public_url = 'http://this_is_public_url'
+        blob.generate_signed_url = generate_signed_url
+        self.storage._bucket.blob.return_value = blob
 
-        self.assertRaises(NotFound, self.storage.url, self.filename)
+        url = self.storage.url(secret_filename)
+        self.storage._bucket.blob.assert_called_with(secret_filename)
+        self.assertEqual(url,'http://signed_url')
+        blob.generate_signed_url.assert_called_with(expiration=timedelta(seconds=86400))
+
+    def test_url_not_public_file_with_custom_expires(self):
+        secret_filename = 'secret_file.txt'
+        self.storage._bucket = mock.MagicMock()
+        blob = mock.MagicMock()
+        generate_signed_url = mock.MagicMock(return_value='http://signed_url')
+        blob.generate_signed_url = generate_signed_url
+        self.storage._bucket.blob.return_value = blob
+
+        self.storage.expires_on = timedelta(seconds=3600)
+
+        url = self.storage.url(secret_filename)
+        self.storage._bucket.blob.assert_called_with(secret_filename)
+        self.assertEqual(url,'http://signed_url')
+        blob.generate_signed_url.assert_called_with(expiration=timedelta(seconds=3600))
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True
