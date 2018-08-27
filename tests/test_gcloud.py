@@ -5,9 +5,8 @@ try:
 except ImportError:  # Python 3.2 and below
     import mock
 
-import datetime
-from datetime import timedelta
 import mimetypes
+from datetime import datetime, timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
@@ -252,7 +251,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertRaises(NotFound, self.storage.size, self.filename)
 
     def test_modified_time(self):
-        naive_date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
+        naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
         aware_date = timezone.make_aware(naive_date, timezone.utc)
 
         self.storage._bucket = mock.MagicMock()
@@ -267,7 +266,7 @@ class GCloudStorageTests(GCloudTestCase):
             self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_get_modified_time(self):
-        naive_date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
+        naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
         aware_date = timezone.make_aware(naive_date, timezone.utc)
 
         self.storage._bucket = mock.MagicMock()
@@ -289,7 +288,7 @@ class GCloudStorageTests(GCloudTestCase):
             self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_get_created_time(self):
-        naive_date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
+        naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
         aware_date = timezone.make_aware(naive_date, timezone.utc)
 
         self.storage._bucket = mock.MagicMock()
