@@ -138,7 +138,7 @@ Sets Cache-Control HTTP header for the file, more about HTTP caching can be foun
 Subdirectory in which the files will be stored.
 Defaults to the root of the bucket.
 
-``GS_EXPIRES_ON`` (optional: default is ``''``)
+``GS_EXPIRES_ON`` (optional: default is ``timedelta(seconds=86400)``)
 
 The time that a generated URL is valid before expiration. The default is 1 day.
 Public files will return a url that does not expire.
