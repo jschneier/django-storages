@@ -15,7 +15,9 @@ from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, force_text
 
-from storages.utils import clean_name, safe_join, setting
+from storages.utils import (
+    clean_name, get_available_overwrite_name, safe_join, setting,
+)
 
 
 @deconstructible
@@ -190,10 +192,10 @@ class AzureStorage(Storage):
         Returns a filename that's free on the target storage system, and
         available for new content to be written to.
         """
+        name = self.get_valid_name(name)
         if self.overwrite_files:
-            return self.get_valid_name(name)
-        return super(AzureStorage, self).get_available_name(
-            self.get_valid_name(name), max_length)
+            return get_available_overwrite_name(name, max_length)
+        return super(AzureStorage, self).get_available_name(name, max_length)
 
     def exists(self, name):
         return self.service.exists(

@@ -18,7 +18,10 @@ from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
 
-from storages.utils import check_location, lookup_env, safe_join, setting
+from storages.utils import (
+    check_location, get_available_overwrite_name, lookup_env, safe_join,
+    setting,
+)
 
 try:
     import boto3.session
@@ -615,7 +618,7 @@ class S3Boto3Storage(Storage):
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
+        name = self._clean_name(name)
         if self.file_overwrite:
-            name = self._clean_name(name)
-            return name
+            return get_available_overwrite_name(name, max_length)
         return super(S3Boto3Storage, self).get_available_name(name, max_length)
