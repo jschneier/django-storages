@@ -147,13 +147,13 @@ Defaults to the root of the bucket.
 
 The time that a generated URL is valid before expiration. The default is 1 day.
 Public files will return a url that does not expire. Files will be signed by
-the default credentials provided to the client.
+the credentials provided to django-storages (See GS_CREDENTIALS).
 
 Note: Default Google Compute Engine (GCE) Service accounts are
 `unable to sign urls <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
 
-The value is handled to the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
-It supports `timedelta`, `datetime`, or `integer` number of seconds.
+The ``GS_EXPIRES_ON`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
+It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
 
 Usage
