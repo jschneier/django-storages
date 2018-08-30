@@ -143,7 +143,7 @@ Sets Cache-Control HTTP header for the file, more about HTTP caching can be foun
 Subdirectory in which the files will be stored.
 Defaults to the root of the bucket.
 
-``GS_EXPIRES_ON`` (optional: default is ``timedelta(seconds=86400)``)
+``GS_EXPIRES_IN`` (optional: default is ``timedelta(seconds=86400)``)
 
 The time that a generated URL is valid before expiration. The default is 1 day.
 Public files will return a url that does not expire. Files will be signed by
@@ -152,7 +152,7 @@ the credentials provided to django-storages (See GS_CREDENTIALS).
 Note: Default Google Compute Engine (GCE) Service accounts are
 `unable to sign urls <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
 
-The ``GS_EXPIRES_ON`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
+The ``GS_EXPIRES_IN`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
 It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
 
