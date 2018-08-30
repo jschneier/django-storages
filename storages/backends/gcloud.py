@@ -88,7 +88,7 @@ class GoogleCloudStorage(Storage):
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
     default_acl = setting('GS_DEFAULT_ACL')
 
-    expires_on = setting('GS_EXPIRES_ON', timedelta(seconds=86400))
+    expires_in = setting('GS_EXPIRES_IN', timedelta(seconds=86400))
 
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
@@ -259,10 +259,10 @@ class GoogleCloudStorage(Storage):
         """
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(self._encode_name(name))
-        if (self.default_acl == 'publicRead'):
+        if self.default_acl == 'publicRead':
             return blob.public_url
 
-        return blob.generate_signed_url(expiration=self.expires_on)
+        return blob.generate_signed_url(self.expires_in)
 
     def get_available_name(self, name, max_length=None):
         if self.file_overwrite:
