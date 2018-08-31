@@ -356,7 +356,7 @@ class S3BotoStorage(Storage):
         #  This means each time a file is compressed it changes even if the other contents don't change
         #  For S3 this defeats detection of changes using MD5 sums on gzipped files
         #  Fixing the mtime at 0.0 at compression time avoids this problem
-        zfile = GzipFile(mode='wb', compresslevel=6, fileobj=zbuf, mtime=0.0)
+        zfile = GzipFile(mode='wb', fileobj=zbuf, mtime=0.0)
         try:
             zfile.write(force_bytes(content.read()))
         finally:
