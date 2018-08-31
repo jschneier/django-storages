@@ -1,7 +1,6 @@
-===============
-django-storages
-===============
-
+.. image:: https://raw.githubusercontent.com/jschneier/django-storages/master/docs/logos/horizontal.png
+    :alt: Django-Storages
+    :width: 100%
 
 .. image:: https://img.shields.io/pypi/v/django-storages.svg
     :target: https://pypi.org/project/django-storages/
