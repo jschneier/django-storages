@@ -14,7 +14,10 @@ from django.utils.encoding import (
 )
 from django.utils.six import BytesIO
 
-from storages.utils import clean_name, safe_join, setting
+from storages.utils import (
+    check_location, clean_name, get_available_overwrite_name, lookup_env,
+    safe_join, setting,
+)
 
 try:
     from boto import __version__ as boto_version
@@ -84,7 +87,7 @@ class S3BotoStorageFile(File):
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix='.S3BotoStorageFile',
-                dir=setting('FILE_UPLOAD_TEMP_DIR', None)
+                dir=setting('FILE_UPLOAD_TEMP_DIR')
             )
             if 'r' in self._mode:
                 self._is_dirty = False
@@ -142,6 +145,8 @@ class S3BotoStorageFile(File):
             headers = self._storage.headers.copy()
             self._multipart.upload_part_from_file(
                 self.file, self._write_counter, headers=headers)
+            self.file.seek(0)
+            self.file.truncate()
 
     def close(self):
         if self._is_dirty:
@@ -174,6 +179,7 @@ class S3BotoStorage(Storage):
     access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
     secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
     security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
+    security_token = None
 
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
@@ -205,12 +211,9 @@ class S3BotoStorage(Storage):
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
     host = setting('AWS_S3_HOST', S3Connection.DefaultHost)
     use_ssl = setting('AWS_S3_USE_SSL', True)
-    port = setting('AWS_S3_PORT', None)
-    proxy = setting('AWS_S3_PROXY_HOST', None)
-    proxy_port = setting('AWS_S3_PROXY_PORT', None)
-
-    # The max amount of memory a returned file can take up before being
-    # rolled over into a temporary file on disk. Default is 0: Do not roll over.
+    port = setting('AWS_S3_PORT')
+    proxy = setting('AWS_S3_PROXY_HOST')
+    proxy_port = setting('AWS_S3_PROXY_PORT')
     max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
 
     def __init__(self, acl=None, bucket=None, **settings):
@@ -226,7 +229,8 @@ class S3BotoStorage(Storage):
         if bucket is not None:
             self.bucket_name = bucket
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.
@@ -238,10 +242,8 @@ class S3BotoStorage(Storage):
         self._connection = None
         self._loaded_meta = False
 
-        self.security_token = None
-        if not self.access_key and not self.secret_key:
-            self.access_key, self.secret_key = self._get_access_keys()
-            self.security_token = self._get_security_token()
+        self.access_key, self.secret_key = self._get_access_keys()
+        self.security_token = self._get_security_token()
 
     @property
     def connection(self):
@@ -289,24 +291,22 @@ class S3BotoStorage(Storage):
             self._loaded_meta = True
         return self._entries
 
-    def _lookup_env(self, names):
-        for name in names:
-            value = os.environ.get(name)
-            if value:
-                return value
-
     def _get_access_keys(self):
         """
-        Gets the access keys to use when accessing S3. If none
-        are provided to the class in the constructor or in the
-        settings then get them from the environment variables.
+        Gets the access keys to use when accessing S3. If none is
+        provided in the settings then get them from the environment
+        variables.
         """
-        access_key = self.access_key or self._lookup_env(self.access_key_names)
-        secret_key = self.secret_key or self._lookup_env(self.secret_key_names)
+        access_key = self.access_key or lookup_env(S3BotoStorage.access_key_names)
+        secret_key = self.secret_key or lookup_env(S3BotoStorage.secret_key_names)
         return access_key, secret_key
 
     def _get_security_token(self):
-        security_token = self._lookup_env(self.security_token_names)
+        """
+        Gets the security token to use when accessing S3. Get it from
+        the environment variables.
+        """
+        security_token = self.security_token or lookup_env(S3BotoStorage.security_token_names)
         return security_token
 
     def _get_or_create_bucket(self, name):
@@ -490,7 +490,7 @@ class S3BotoStorage(Storage):
 
     def get_available_name(self, name, max_length=None):
         """ Overwrite existing file with the same name. """
+        name = self._clean_name(name)
         if self.file_overwrite:
-            name = self._clean_name(name)
-            return name
+            return get_available_overwrite_name(name, max_length)
         return super(S3BotoStorage, self).get_available_name(name, max_length)

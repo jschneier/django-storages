@@ -2,9 +2,11 @@ import mimetypes
 import os
 import posixpath
 import threading
+import warnings
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -16,7 +18,10 @@ from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
 
-from storages.utils import safe_join, setting
+from storages.utils import (
+    check_location, get_available_overwrite_name, lookup_env, safe_join,
+    setting,
+)
 
 try:
     import boto3.session
@@ -60,6 +65,8 @@ class S3Boto3StorageFile(File):
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
+        if 'r' in mode and 'w' in mode:
+            raise ValueError("Can't combine 'r' and 'w' in mode.")
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
@@ -87,11 +94,11 @@ class S3Boto3StorageFile(File):
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix=".S3Boto3StorageFile",
-                dir=setting("FILE_UPLOAD_TEMP_DIR", None)
+                dir=setting("FILE_UPLOAD_TEMP_DIR")
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self._file.write(self.obj.get()['Body'].read())
+                self.obj.download_fileobj(self._file)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
                 self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
@@ -113,7 +120,8 @@ class S3Boto3StorageFile(File):
         self._is_dirty = True
         if self._multipart is None:
             parameters = self._storage.object_parameters.copy()
-            parameters['ACL'] = self._storage.default_acl
+            if self._storage.default_acl:
+                parameters['ACL'] = self._storage.default_acl
             parameters['ContentType'] = (mimetypes.guess_type(self.obj.key)[0] or
                                          self._storage.default_content_type)
             if self._storage.reduced_redundancy:
@@ -142,6 +150,8 @@ class S3Boto3StorageFile(File):
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
             part.upload(Body=self.file.read())
+            self.file.seek(0)
+            self.file.truncate()
 
     def close(self):
         if self._is_dirty:
@@ -178,6 +188,7 @@ class S3Boto3Storage(Storage):
     access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
     secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
     security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
+    security_token = None
 
     access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
     secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
@@ -207,13 +218,11 @@ class S3Boto3Storage(Storage):
         'image/svg+xml',
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
-    endpoint_url = setting('AWS_S3_ENDPOINT_URL', None)
-    region_name = setting('AWS_S3_REGION_NAME', None)
+    endpoint_url = setting('AWS_S3_ENDPOINT_URL')
+    region_name = setting('AWS_S3_REGION_NAME')
     use_ssl = setting('AWS_S3_USE_SSL', True)
     verify = setting('AWS_S3_VERIFY', None)
 
-    # The max amount of memory a returned file can take up before being
-    # rolled over into a temporary file on disk. Default is 0: Do not roll over.
     max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
 
     def __init__(self, acl=None, bucket=None, **settings):
@@ -225,11 +234,24 @@ class S3Boto3Storage(Storage):
 
         # For backward-compatibility of old differing parameter names
         if acl is not None:
+            warnings.warn(
+                "The acl argument of S3Boto3Storage is deprecated. Use "
+                "argument default_acl or setting AWS_DEFAULT_ACL instead. The "
+                "acl argument will be removed in version 2.0.",
+                DeprecationWarning,
+            )
             self.default_acl = acl
         if bucket is not None:
+            warnings.warn(
+                "The bucket argument of S3Boto3Storage is deprecated. Use "
+                "argument bucket_name or setting AWS_STORAGE_BUCKET_NAME "
+                "instead. The bucket argument will be removed in version 2.0.",
+                DeprecationWarning,
+            )
             self.bucket_name = bucket
 
-        self.location = (self.location or '').lstrip('/')
+        check_location(self)
+
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.
@@ -240,14 +262,34 @@ class S3Boto3Storage(Storage):
         self._bucket = None
         self._connections = threading.local()
 
-        self.security_token = None
-        if not self.access_key and not self.secret_key:
-            self.access_key, self.secret_key = self._get_access_keys()
-            self.security_token = self._get_security_token()
+        self.access_key, self.secret_key = self._get_access_keys()
+        self.security_token = self._get_security_token()
 
         if not self.config:
             self.config = Config(s3={'addressing_style': self.addressing_style},
                                  signature_version=self.signature_version)
+
+        # warn about upcoming change in default AWS_DEFAULT_ACL setting
+        if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
+            warnings.warn(
+                "The default behavior of S3Boto3Storage is insecure and will change "
+                "in django-storages 2.0. By default files and new buckets are saved "
+                "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+                "default to using the bucket's ACL. To opt into the new behavior set "
+                "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
+                "set AWS_DEFAULT_ACL."
+            )
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop('_connections', None)
+        state.pop('_bucket', None)
+        return state
+
+    def __setstate__(self, state):
+        state['_connections'] = threading.local()
+        state['_bucket'] = None
+        self.__dict__ = state
 
     @property
     def connection(self):
@@ -293,24 +335,22 @@ class S3Boto3Storage(Storage):
             }
         return self._entries
 
-    def _lookup_env(self, names):
-        for name in names:
-            value = os.environ.get(name)
-            if value:
-                return value
-
     def _get_access_keys(self):
         """
-        Gets the access keys to use when accessing S3. If none
-        are provided to the class in the constructor or in the
-        settings then get them from the environment variables.
+        Gets the access keys to use when accessing S3. If none is
+        provided in the settings then get them from the environment
+        variables.
         """
-        access_key = self.access_key or self._lookup_env(self.access_key_names)
-        secret_key = self.secret_key or self._lookup_env(self.secret_key_names)
+        access_key = self.access_key or lookup_env(S3Boto3Storage.access_key_names)
+        secret_key = self.secret_key or lookup_env(S3Boto3Storage.secret_key_names)
         return access_key, secret_key
 
     def _get_security_token(self):
-        security_token = self._lookup_env(self.security_token_names)
+        """
+        Gets the security token to use when accessing S3. Get it from
+        the environment variables.
+        """
+        security_token = self.security_token or lookup_env(S3Boto3Storage.security_token_names)
         return security_token
 
     def _get_or_create_bucket(self, name):
@@ -342,7 +382,10 @@ class S3Boto3Storage(Storage):
                     #
                     # Also note that Amazon specifically disallows "us-east-1" when passing bucket
                     # region names; LocationConstraint *must* be blank to create in US Standard.
-                    bucket_params = {'ACL': self.bucket_acl}
+                    if self.bucket_acl:
+                        bucket_params = {'ACL': self.bucket_acl}
+                    else:
+                        bucket_params = {}
                     region_name = self.connection.meta.client.meta.region_name
                     if region_name != 'us-east-1':
                         bucket_params['CreateBucketConfiguration'] = {
@@ -578,7 +621,7 @@ class S3Boto3Storage(Storage):
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
+        name = self._clean_name(name)
         if self.file_overwrite:
-            name = self._clean_name(name)
-            return name
+            return get_available_overwrite_name(name, max_length)
         return super(S3Boto3Storage, self).get_available_name(name, max_length)
