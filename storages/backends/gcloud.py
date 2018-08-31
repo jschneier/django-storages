@@ -15,8 +15,7 @@ from storages.utils import (
 )
 
 try:
-    from google.cloud.storage.client import Client
-    from google.cloud.storage.blob import Blob
+    from google.cloud.storage import Blob, Bucket, Client
     from google.cloud.exceptions import NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
@@ -131,17 +130,15 @@ class GoogleCloudStorage(Storage):
         """
         Retrieves a bucket if it exists, otherwise creates it.
         """
+        if not self.auto_create_bucket:
+            return Bucket(client=self.client, name=name)
+
         try:
             return self.client.get_bucket(name)
         except NotFound:
-            if self.auto_create_bucket:
-                bucket = self.client.create_bucket(name)
-                bucket.acl.save_predefined(self.auto_create_acl)
-                return bucket
-            raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
-                                       "can be automatically created by "
-                                       "setting GS_AUTO_CREATE_BUCKET to "
-                                       "``True``." % name)
+            bucket = self.client.create_bucket(name)
+            bucket.acl.save_predefined(self.auto_create_acl)
+            return bucket
 
     def _normalize_name(self, name):
         """
