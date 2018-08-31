@@ -350,7 +350,7 @@ class GCloudStorageTests(GCloudTestCase):
         blob.generate_signed_url = generate_signed_url
         self.storage._bucket.blob.return_value = blob
 
-        self.storage.expires_in = timedelta(seconds=3600)
+        self.storage.expiration = timedelta(seconds=3600)
 
         url = self.storage.url(secret_filename)
         self.storage._bucket.blob.assert_called_with(secret_filename)
