@@ -67,11 +67,6 @@ Available are numerous settings. It should be especially noted the following:
             'CacheControl': 'max-age=86400',
         }
 
-``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
-    Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
-    authentication from generated URLs. This can be useful if your S3 buckets
-    are public.
-
 ``AWS_S3_MAX_MEMORY_SIZE`` (optional; default is ``0`` - do not roll over)
     The maximum amount of memory a file can take up before being rolled over
     into a temporary file on disk.
@@ -116,6 +111,16 @@ Available are numerous settings. It should be especially noted the following:
 
 ``AWS_S3_CALLING_FORMAT`` (optional: default is ``SubdomainCallingFormat()``)
     Defines the S3 calling format to use to connect to the static bucket.
+
+``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
+    If set to ``False`` then on Boto3 this will use an UNSIGNED signature version
+    which speeds up responses times and requires a lower level of access. The setting
+    ``AWS_S3_SIGNATURE_VERSION`` is ignored in this case.
+
+    On boto set ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
+    authentication from generated URLs. This can be useful if your S3 buckets
+    are public.
+
 
 ``AWS_S3_SIGNATURE_VERSION`` (optional - boto3 only)
 
