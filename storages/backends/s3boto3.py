@@ -523,25 +523,22 @@ class S3Boto3Storage(Storage):
             return False
 
     def listdir(self, name):
-        name = self._normalize_name(self._clean_name(name))
-        # for the bucket.objects.filter and logic below name needs to end in /
-        # But for the root path "" we leave it as an empty string
-        if name and not name.endswith('/'):
-            name += '/'
+        path = self._normalize_name(self._clean_name(name))
+        # The path needs to end with a slash, but if the root is empty, leave
+        # it.
+        if path and not path.endswith('/'):
+            path += '/'
 
+        directories = []
         files = []
-        dirs = set()
-        base_parts = name.split("/")[:-1]
-        for item in self.bucket.objects.filter(Prefix=self._encode_name(name)):
-            parts = item.key.split("/")
-            parts = parts[len(base_parts):]
-            if len(parts) == 1:
-                # File
-                files.append(parts[0])
-            elif len(parts) > 1:
-                # Directory
-                dirs.add(parts[0])
-        return list(dirs), files
+        paginator = self.connection.meta.client.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=self.bucket_name, Delimiter='/', Prefix=path)
+        for page in pages:
+            for entry in page.get('CommonPrefixes', ()):
+                directories.append(posixpath.relpath(entry['Prefix'], path))
+            for entry in page.get('Contents', ()):
+                files.append(posixpath.relpath(entry['Key'], path))
+        return directories, files
 
     def size(self, name):
         name = self._normalize_name(self._clean_name(name))
