@@ -232,6 +232,7 @@ class AzureStorage(Storage):
         if isinstance(content, File):
             content = content.file
 
+        content.seek(0)
         self.service.create_blob_from_stream(
             container_name=self.azure_container,
             blob_name=name,
