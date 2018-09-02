@@ -389,10 +389,7 @@ class S3Boto3Storage(Storage):
                             'LocationConstraint': region_name}
                     bucket.create(**bucket_params)
                 else:
-                    raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
-                                               "can be automatically created by "
-                                               "setting AWS_AUTO_CREATE_BUCKET to "
-                                               "``True``." % name)
+                    raise
         return bucket
 
     def _clean_name(self, name):
