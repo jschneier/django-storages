@@ -1,9 +1,11 @@
 import mimetypes
 import os
+import warnings
 from datetime import datetime
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
+from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -35,6 +37,16 @@ boto_version_info = tuple([int(i) for i in boto_version.split('-')[0].split('.')
 if boto_version_info[:2] < (2, 32):
     raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
+
+warnings.warn(
+    "The S3BotoStorage backend is deprecated in favor of the S3Boto3Storage backend "
+    "and will be removed in django-storages 2.0. This backend is mostly in bugfix only "
+    "mode and has been for quite a while (in much the same way as its underlying "
+    "library 'boto'). For performance, security and new feature reasons it is _strongly_ "
+    "recommended that you update to the S3Boto3Storage backend. It should not be very "
+    "difficult to do so.",
+    DeprecationWarning
+)
 
 
 @deconstructible
@@ -78,6 +90,17 @@ class S3BotoStorageFile(File):
             self.buffer_size = buffer_size
         self._write_counter = 0
 
+        # warn about upcoming change in default AWS_DEFAULT_ACL setting
+        if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
+            warnings.warn(
+                "The default behavior of S3BotoStorage is insecure and will change "
+                "in django-storages 1.8. By default files and new buckets are saved "
+                "with an ACL of 'public-read' (globally publicly readable). Version 1.8 will "
+                "default to using the bucket's ACL. To opt into the new behavior set "
+                "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
+                "set AWS_DEFAULT_ACL."
+            )
+
     @property
     def size(self):
         return self.key.size
@@ -113,9 +136,9 @@ class S3BotoStorageFile(File):
         self._is_dirty = True
         if self._multipart is None:
             provider = self.key.bucket.connection.provider
-            upload_headers = {
-                provider.acl_header: self._storage.default_acl
-            }
+            upload_headers = {}
+            if self._storage.default_acl:
+                upload_headers[provider.acl_header] = self._storage.default_acl
             upload_headers.update({
                 'Content-Type': mimetypes.guess_type(self.key.name)[0] or self._storage.key_class.DefaultContentType
             })
@@ -318,7 +341,18 @@ class S3BotoStorage(Storage):
         except self.connection_response_error:
             if self.auto_create_bucket:
                 bucket = self.connection.create_bucket(name, location=self.origin)
-                bucket.set_acl(self.bucket_acl)
+                if not hasattr(django_settings, 'AWS_BUCKET_ACL'):
+                    warnings.warn(
+                        "The default behavior of S3BotoStorage is insecure and will change "
+                        "in django-storages 1.8. By default new buckets are saved with an ACL of "
+                        "'public-read' (globally publicly readable). Version 1.8 will default to "
+                        "Amazon's default of the bucket owner. To opt into this behavior "
+                        "set AWS_BUCKET_ACL = None, otherwise to silence this warning explicitly set "
+                        "AWS_BUCKET_ACL.",
+                        DeprecationWarning,
+                    )
+                if self.bucket_acl:
+                    bucket.set_acl(self.bucket_acl)
                 return bucket
             raise ImproperlyConfigured('Bucket %s does not exist. Buckets '
                                        'can be automatically created by '
