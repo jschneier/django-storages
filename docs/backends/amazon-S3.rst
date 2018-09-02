@@ -111,6 +111,9 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_USE_SSL`` (optional: default is ``True``)
     Whether or not to use SSL when connecting to S3.
 
+``AWS_S3_VERIFY`` (optional: default is ``None`` - boto3 only)
+    Whether or not to verify the connection to S3. Can be set to False to not verify certificates or a path to a CA cert bundle.
+
 ``AWS_S3_ENDPOINT_URL`` (optional: default is ``None``)
     Custom S3 URL to use when connecting to S3, including scheme. Overrides ``AWS_S3_REGION_NAME`` and ``AWS_S3_USE_SSL``.
 

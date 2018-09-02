@@ -221,6 +221,7 @@ class S3Boto3Storage(Storage):
     endpoint_url = setting('AWS_S3_ENDPOINT_URL')
     region_name = setting('AWS_S3_REGION_NAME')
     use_ssl = setting('AWS_S3_USE_SSL', True)
+    verify = setting('AWS_S3_VERIFY', None)
     max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
 
     def __init__(self, acl=None, bucket=None, **settings):
@@ -306,7 +307,8 @@ class S3Boto3Storage(Storage):
                 region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,
-                config=self.config
+                config=self.config,
+                verify=self.verify,
             )
         return self._connections.connection
 
