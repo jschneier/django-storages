@@ -392,8 +392,7 @@ class S3Boto3Storage(Storage):
                             "'public-read' (globally publicly readable). Version 2.0 will default to "
                             "Amazon's default of the bucket owner. To opt into this behavior this warning "
                             "set AWS_BUCKET_ACL = None, otherwise to silence this warning explicitly set "
-                            "AWS_BUCKET_ACL.",
-                            DeprecationWarning,
+                            "AWS_BUCKET_ACL."
                         )
                     if self.bucket_acl:
                         bucket_params = {'ACL': self.bucket_acl}
