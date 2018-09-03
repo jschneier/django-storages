@@ -35,8 +35,6 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
-Available are numerous settings. It should be especially noted the following:
-
 ``AWS_ACCESS_KEY_ID``
     Your Amazon Web Services access key, as a string.
 
@@ -46,8 +44,27 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.
 
-``AWS_DEFAULT_ACL`` (optional)
-    If set to ``private`` changes uploaded file's Access Control List from the default permission ``public-read`` to give owner full control and remove read access from everyone else.
+``AWS_DEFAULT_ACL`` (optional, ``None`` or canned ACL, default ``public-read``)
+    Must be either ``None`` or from the `list of canned ACLs`_. If set to ``None``
+    then all files will inherit the bucket's ACL.
+
+.. warning::
+
+    The default value of ``public-read`` is insecure and will be changing to ``None`` in
+    a future release of django-storages. Please set this explicitly to ``public-read``
+    if that is the desired behavior.
+
+``AWS_BUCKET_ACL`` (optional, default ``public-read``)
+    Only used if ``AWS_AUTO_CREATE_BUCKET=True``. The ACL of the created bucket.
+
+    Must be either ``None`` or from the `list of canned ACLs`_. If set to ``None``
+    then the bucket will use the AWS account's default.
+
+.. warning::
+
+    The default value of ``public-read`` is insecure and will be changing to ``None`` in
+    a future release of django-storages. Please set this explicitly to ``public-read``
+    if that is the desired behavior.
 
 ``AWS_AUTO_CREATE_BUCKET`` (optional)
     If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
@@ -80,7 +97,7 @@ Available are numerous settings. It should be especially noted the following:
     The number of seconds that a generated URL is valid for.
 
 ``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
-    Enable server-side file encryption while at rest, by setting ``encrypt_key`` parameter to True. More info available here: http://boto.cloudhackers.com/en/latest/ref/s3.html
+    Enable server-side file encryption while at rest.
 
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
@@ -91,7 +108,7 @@ Available are numerous settings. It should be especially noted the following:
   `S3 region list`_ to figure out the appropriate endpoint for your bucket. Also be sure to add
   ``S3_USE_SIGV4 = True`` to settings.py
 
-  .. note::
+.. note::
 
     The signature versions are not backwards compatible so be careful about url endpoints if making this change
     for legacy projects.
@@ -124,7 +141,7 @@ Available are numerous settings. It should be especially noted the following:
   A dictionary of proxy servers to use by protocol or endpoint, e.g.:
   {'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}.
 
-  .. note::
+.. note::
 
   The minimum required version of ``boto3`` to use this feature is 1.4.4
 
@@ -139,13 +156,14 @@ Available are numerous settings. It should be especially noted the following:
   support the legacy ``s3`` (also known as ``v2``) version. You can check to see
   if your region is one of them in the `S3 region list`_.
 
-  .. note::
+.. note::
 
-    The signature versions are not backwards compatible so be careful about url endpoints if making this change
-    for legacy projects.
+  The signature versions are not backwards compatible so be careful about url endpoints if making this change
+  for legacy projects.
 
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 .. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+.. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
 .. _migrating-boto-to-boto3:
 
@@ -154,19 +172,19 @@ Migrating from Boto to Boto3
 
 Migration from the boto-based to boto3-based backend should be straightforward and painless.
 
-The following adjustments to settings are required::
+The following adjustments to settings are required:
 
-  * Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
-    names as in the following example: ``cache-control`` becomes ``CacheControl``.
-  * Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
-  * If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE``
-    to ``virtual``
-  * Replace ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL`` (this is not necessary if
-    ``AWS_S3_HOST`` is only set in order to handle signature versions)
-  * Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
-  * If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
-  * If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
-  * Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.boto3.S3Boto3Storage``
+- Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
+  names as in the following example: ``cache-control`` becomes ``CacheControl``.
+- Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
+- If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE``
+  to ``virtual``
+- Replace ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL`` (this is not necessary if
+  ``AWS_S3_HOST`` is only set in order to handle signature versions)
+- Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
+- If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
+- If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
+- Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.boto3.S3Boto3Storage``
 
 Additionally you must install ``boto3`` (``boto`` is no longer required).  In order to use
 all currently supported features ``1.4.4`` is the minimum required version although we
@@ -182,7 +200,9 @@ to serve those files using that::
 
     AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
 
-**NOTE:** Django's `STATIC_URL` `must end in a slash`_ and the `AWS_S3_CUSTOM_DOMAIN` *must not*. It is best to set this variable indepedently of `STATIC_URL`.
+.. warning::
+
+    Django's ``STATIC_URL`` `must end in a slash`_ and the ``AWS_S3_CUSTOM_DOMAIN`` *must not*. It is best to set this variable indepedently of ``STATIC_URL``.
 
 .. _must end in a slash: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
 
