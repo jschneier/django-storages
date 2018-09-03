@@ -38,6 +38,16 @@ if boto_version_info[:2] < (2, 32):
     raise ImproperlyConfigured("The installed Boto library must be 2.32 or "
                                "higher.\nSee https://github.com/boto/boto")
 
+warnings.warn(
+    "The S3BotoStorage backend is deprecated in favor of the S3Boto3Storage backend "
+    "and will be removed in django-storages 2.0. This backend is mostly in bugfix only "
+    "mode and has been for quite a while (in much the same way as its underlying "
+    "library 'boto'). For performance, security and new feature reasons it is _strongly_ "
+    "recommended that you update to the S3Boto3Storage backend. Please see the migration docs "
+    "https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#migrating-boto-to-boto3.",
+    DeprecationWarning
+)
+
 
 @deconstructible
 class S3BotoStorageFile(File):

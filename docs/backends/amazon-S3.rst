@@ -133,9 +133,11 @@ Available are numerous settings. It should be especially noted the following:
 
 ``AWS_S3_SIGNATURE_VERSION`` (optional - boto3 only)
 
-  All AWS regions support v4 of the signing protocol. To use it set this to ``'s3v4'``. It is recommended
-  to do this for all new projects and required for all regions launched after January 2014. To see
-  if your region is one of them you can view the `S3 region list`_.
+  As of ``boto3`` version 1.4.4 the default signature version is ``s3v4``.
+
+  Set this to use an alternate version such as ``s3``. Note that only certain regions
+  support the legacy ``s3`` (also known as ``v2``) version. You can check to see
+  if your region is one of them in the `S3 region list`_.
 
   .. note::
 
@@ -145,8 +147,35 @@ Available are numerous settings. It should be especially noted the following:
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 .. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 
+.. _migrating-boto-to-boto3:
+
+Migrating from Boto to Boto3
+----------------------------
+
+Migration from the boto-based to boto3-based backend should be straightforward and painless.
+
+The following adjustments to settings are required::
+
+  * Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
+    names as in the following example: ``cache-control`` becomes ``CacheControl``.
+  * Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
+  * If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE``
+    to ``virtual``
+  * Replace ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL`` (this is not necessary if
+    ``AWS_S3_HOST`` is only set in order to handle signature versions)
+  * Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
+  * If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
+  * If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
+  * Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.boto3.S3Boto3Storage``
+
+Additionally you must install ``boto3`` (``boto`` is no longer required).  In order to use
+all currently supported features ``1.4.4`` is the minimum required version although we
+always recommend the most recent.
+
+Please open an issue on the GitHub repo if any further issues are encountered or steps were omitted.
+
 CloudFront
-~~~~~~~~~~
+----------
 
 If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
 to serve those files using that::
@@ -249,20 +278,6 @@ Default values allow an object to access a single file::
     <FieldFile: tests/default.txt>
     >>> obj3.default.read()
     'default content'
-
-But it shouldn't be deleted, even if there are no more objects using it::
-
-    >>> obj3.delete()
-    >>> obj3 = MyStorage()
-    >>> obj3.default.read()
-    'default content'
-
-Verify the fix for #5655, making sure the directory is only determined once::
-
-    >>> obj4 = MyStorage()
-    >>> obj4.random.save('random_file', ContentFile('random content'))
-    >>> obj4.random
-    <FieldFile: .../random_file>
 
 Clean up the temporary files::
 
