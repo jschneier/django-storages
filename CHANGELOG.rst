@@ -1,5 +1,119 @@
-django-storages change log
-==========================
+django-storages CHANGELOG
+=========================
+
+1.7 (2018-09-03)
+****************
+
+**Security**
+
+- The ``S3BotoStorage`` and ``S3Boto3Storage`` backends have an insecure
+  default ACL of ``public-read``. It is recommended that all current users audit their bucket
+  permissions.  Support has been added for setting ``AWS_DEFAULT_ACL = None`` and ``AWS_BUCKET_ACL =
+  None``. This causes all created files to inherit the bucket's ACL (and created buckets to inherit the
+  Amazon account's default ACL). This will become the default in version 2.0 (for ``S3Boto3Storage`` only
+  since ``S3BotoStorage`` will be removed in version 1.8, see below). Additionally, a warning is now
+  raised if ``AWS_DEFAULT_ACL`` or ``AWS_BUCKET_ACL`` is not explicitly set. (`#381`_, `#535`_, `#579`_)
+
+**Breaking**
+
+- The ``AzureStorage`` backend and documentation has been completely rewritten. It now
+  depends on ``azure`` and ``azure-storage-blob`` and is *vastly* improved. Big thanks to @nitely and all
+  other contributors along the way (`#565`_)
+- The ``.url()`` method of ``GoogleCloudStorage`` has been completely reworked. Most use
+  cases should require no changes and will experieince a massive speedup. The ``.url()`` method no longer hits
+  the network for public urls and generates signed urls (with a default of 1-day expiration, configurable
+  via ``GS_EXPIRATION``) for non-public buckets.  Check out the docs for more information. (`#570`_)
+- Various backends will now raise ``ImproperlyConfigured`` at runtime if their
+  location (``GS_LOCATION``, ``AWS_LOCATION``) begins with a leading ``/`` rather than silently
+  stripping it.  Verify yours does not. (`#520`_)
+- The long deprecated ``GSBotoStorage`` backend is removed. (`#518`_)
+
+**Deprecation**
+
+- The insecure default of ``public-read`` for ``AWS_DEFAULT_ACL`` and
+  ``AWS_BUCKET_ACL`` in ``S3Boto3Storage`` will change to inherit the bucket's setting in version 2.0 (`#579`_)
+- The legacy ``S3BotoBackend`` is deprecated and will be removed in version 1.8.
+  It is strongly recommended to move to the ``S3Boto3Storage`` backend for performance,
+  stability and bugfix reasons. See the `boto migration docs`_ for step-by-step guidelines. (`#578`_, `#584`_)
+- The long aliased arguments to ``S3Boto3Storage`` of ``acl`` and ``bucket`` are
+  deprecated in favor of ``bucket_name`` and ``default_acl`` (`#516`_)
+- The minimum required version of ``boto3`` will be increasing to ``1.4.4`` in
+  the next major version of ``django-storages``. (`#583`_)
+
+**Features**
+
+- Add support for a file to inherit its bucket's ACL by setting ``AWS_DEFAULT_ACL = None`` (`#535`_)
+- Add ``GS_CACHE_CONTROL`` setting for ``GoogleCloudStorage`` backend (`#411`_, `#505`_)
+- Add documentation around using django-storages with Digital Ocean Spaces (`#521`_)
+- Add support for Django 2.1 and Python 3.7 (`#530`_)
+- Make ``S3Boto3Storage`` pickleable (`#551`_)
+- Add automatic reconnection to ``SFTPStorage`` (`#563`_, `#564`_)
+- Unconditionally set the security token in the boto backends (`b13efd`_)
+- Improve efficiency of ``.listdir`` on ``S3Boto3Storage`` (`#352`_)
+- Add support for using the bucket's ACL in the S3 backends (`#535`_)
+- Add ``AWS_S3_VERIFY`` to support custom certificates and disabling certificate verification
+  to ``S3Boto3Storage`` (`#486`_, `#580`_)
+- Add ``AWS_S3_PROXIES`` setting to ``S3Boto3Storage`` (`#583`_)
+- Add a snazzy new logo. Big thanks to @reallinfo
+
+**Bugfixes**
+
+- Reset file read offset before passing to ``GoogleCloudStorage`` and ``AzureStorage`` (`#481`_, `#581`_, `#582`_)
+- Fix various issues with multipart uploads in the S3 backends
+  (`#169`_, `#160`_, `#364`_, `#449`_, `#504`_, `#506`_, `#546`_)
+- Fix ``S3Boto3Storage`` to stream down large files (also disallow `r+w` mode) (`#383`_, `#548`_)
+- Fix ``SFTPStorageFile`` to align with the core ``File`` abstraction (`#487`_, `#568`_)
+- Catch ``IOError`` in ``SFTPStorage.delete`` (`#568`_)
+- ``AzureStorage``, ``GoogleCloudStorage``, ``S3Boto3Storage`` and ``S3BotoStorage`` now
+  respect ``max_length`` when ``file_overwrite = True`` (`#513`_, `#554`_)
+- The S3 backends now consistently use ``compresslevel=9`` (the Python stdlib default)
+  for gzipped content (`#572`_, `#576`_)
+- Improve error message of ``S3Boto3Storage`` during an unexpected exception when automatically
+  creating a bucket (`#574`_, `#577`_)
+
+.. _#381: https://github.com/jschneier/django-storages/issues/381
+.. _#535: https://github.com/jschneier/django-storages/pull/535
+.. _#579: https://github.com/jschneier/django-storages/pull/579
+.. _#565: https://github.com/jschneier/django-storages/pull/565
+.. _#520: https://github.com/jschneier/django-storages/pull/520
+.. _#518: https://github.com/jschneier/django-storages/pull/518
+.. _#516: https://github.com/jschneier/django-storages/pull/516
+.. _#481: https://github.com/jschneier/django-storages/pull/481
+.. _#581: https://github.com/jschneier/django-storages/pull/581
+.. _#582: https://github.com/jschneier/django-storages/pull/582
+.. _#411: https://github.com/jschneier/django-storages/issues/411
+.. _#505: https://github.com/jschneier/django-storages/pull/505
+.. _#521: https://github.com/jschneier/django-storages/pull/521
+.. _#169: https://github.com/jschneier/django-storages/pull/169
+.. _#160: https://github.com/jschneier/django-storages/issues/160
+.. _#364: https://github.com/jschneier/django-storages/pull/364
+.. _#449: https://github.com/jschneier/django-storages/issues/449
+.. _#504: https://github.com/jschneier/django-storages/pull/504
+.. _#530: https://github.com/jschneier/django-storages/pull/530
+.. _#506: https://github.com/jschneier/django-storages/pull/506
+.. _#546: https://github.com/jschneier/django-storages/pull/546
+.. _#383: https://github.com/jschneier/django-storages/issues/383
+.. _#548: https://github.com/jschneier/django-storages/pull/548
+.. _b13efd: https://github.com/jschneier/django-storages/commit/b13efd92b3bf3e9967b8e7819224bfcf9abb977e
+.. _#551: https://github.com/jschneier/django-storages/pull/551
+.. _#563: https://github.com/jschneier/django-storages/issues/563
+.. _#564: https://github.com/jschneier/django-storages/pull/564
+.. _#487: https://github.com/jschneier/django-storages/issues/487
+.. _#568: https://github.com/jschneier/django-storages/pull/568
+.. _#513: https://github.com/jschneier/django-storages/issues/513
+.. _#554: https://github.com/jschneier/django-storages/pull/554
+.. _#570: https://github.com/jschneier/django-storages/pull/570
+.. _#572: https://github.com/jschneier/django-storages/issues/572
+.. _#576: https://github.com/jschneier/django-storages/pull/576
+.. _#352: https://github.com/jschneier/django-storages/pull/352
+.. _#574: https://github.com/jschneier/django-storages/issues/574
+.. _#577: https://github.com/jschneier/django-storages/pull/577
+.. _#486: https://github.com/jschneier/django-storages/pull/486
+.. _#580: https://github.com/jschneier/django-storages/pull/580
+.. _#583: https://github.com/jschneier/django-storages/pull/583
+.. _boto migration docs:  https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#migrating-boto-to-boto3
+.. _#578: https://github.com/jschneier/django-storages/pull/578
+.. _#584: https://github.com/jschneier/django-storages/pull/584
 
 1.6.6 (2018-03-26)
 ******************
