@@ -17,7 +17,7 @@ setup(
     extras_require={
         'azure': ['azure>=3.0.0', 'azure-storage-blob>=1.3.1'],
         'boto': ['boto>=2.32.0'],
-        'boto3': ['boto3>=1.2.3'],
+        'boto3': ['boto3>=1.4.4'],
         'dropbox': ['dropbox>=7.2.1'],
         'google': ['google-cloud-storage>=0.22.0'],
         'libcloud': ['apache-libcloud'],

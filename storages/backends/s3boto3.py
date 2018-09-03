@@ -35,10 +35,6 @@ except ImportError:
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
 
-if boto3_version_info[:2] < (1, 2):
-    raise ImproperlyConfigured("The installed Boto3 library must be 1.2.0 or "
-                               "higher.\nSee https://github.com/boto/boto3")
-
 
 @deconstructible
 class S3Boto3StorageFile(File):
@@ -219,6 +215,7 @@ class S3Boto3Storage(Storage):
     ))
     url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
     endpoint_url = setting('AWS_S3_ENDPOINT_URL')
+    proxies = setting('AWS_S3_PROXIES')
     region_name = setting('AWS_S3_REGION_NAME')
     use_ssl = setting('AWS_S3_USE_SSL', True)
     verify = setting('AWS_S3_VERIFY', None)
@@ -265,8 +262,19 @@ class S3Boto3Storage(Storage):
         self.security_token = self._get_security_token()
 
         if not self.config:
-            self.config = Config(s3={'addressing_style': self.addressing_style},
-                                 signature_version=self.signature_version)
+            kwargs = dict(
+                s3={'addressing_style': self.addressing_style},
+                signature_version=self.signature_version,
+            )
+
+            if boto3_version_info >= (1, 4, 4):
+                kwargs['proxies'] = self.proxies
+            else:
+                warnings.warn(
+                    "In version 2.0 of django-storages the minimum required version of "
+                    "boto3 will be 1.4.4. You have %s " % boto3_version_info
+                )
+            self.config = Config(**kwargs)
 
         # warn about upcoming change in default AWS_DEFAULT_ACL setting
         if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
@@ -292,10 +300,6 @@ class S3Boto3Storage(Storage):
 
     @property
     def connection(self):
-        # TODO: Support host, port like in s3boto
-        # Note that proxies are handled by environment variables that the underlying
-        # urllib/requests libraries read. See https://github.com/boto/boto3/issues/338
-        # and http://docs.python-requests.org/en/latest/user/advanced/#proxies
         connection = getattr(self._connections, 'connection', None)
         if connection is None:
             session = boto3.session.Session()

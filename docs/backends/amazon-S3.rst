@@ -120,6 +120,14 @@ Available are numerous settings. It should be especially noted the following:
 ``AWS_S3_ADDRESSING_STYLE`` (default is ``None``, boto3 only)
     Possible values ``virtual`` and ``path``.
 
+``AWS_S3_PROXIES`` (boto3 only, default ``None``)
+  A dictionary of proxy servers to use by protocol or endpoint, e.g.:
+  {'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}.
+
+  .. note::
+
+  The minimum required version of ``boto3`` to use this feature is 1.4.4
+
 ``AWS_S3_CALLING_FORMAT`` (optional: default is ``SubdomainCallingFormat()``)
     Defines the S3 calling format to use to connect to the static bucket.
 
