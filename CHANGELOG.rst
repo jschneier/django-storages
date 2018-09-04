@@ -9,7 +9,7 @@ django-storages CHANGELOG
 - The ``S3BotoStorage`` and ``S3Boto3Storage`` backends have an insecure
   default ACL of ``public-read``. It is recommended that all current users audit their bucket
   permissions.  Support has been added for setting ``AWS_DEFAULT_ACL = None`` and ``AWS_BUCKET_ACL =
-  None``. This causes all created files to inherit the bucket's ACL (and created buckets to inherit the
+  None`` which causes all created files to inherit the bucket's ACL (and created buckets to inherit the
   Amazon account's default ACL). This will become the default in version 2.0 (for ``S3Boto3Storage`` only
   since ``S3BotoStorage`` will be removed in version 1.8, see below). Additionally, a warning is now
   raised if ``AWS_DEFAULT_ACL`` or ``AWS_BUCKET_ACL`` is not explicitly set. (`#381`_, `#535`_, `#579`_)
@@ -19,8 +19,8 @@ django-storages CHANGELOG
 - The ``AzureStorage`` backend and documentation has been completely rewritten. It now
   depends on ``azure`` and ``azure-storage-blob`` and is *vastly* improved. Big thanks to @nitely and all
   other contributors along the way (`#565`_)
-- The ``.url()`` method of ``GoogleCloudStorage`` has been completely reworked. Most use
-  cases should require no changes and will experieince a massive speedup. The ``.url()`` method no longer hits
+- The ``.url()`` method of ``GoogleCloudStorage`` has been completely reworked. Many use
+  cases should require no changes and will experience a massive speedup. The ``.url()`` method no longer hits
   the network for public urls and generates signed urls (with a default of 1-day expiration, configurable
   via ``GS_EXPIRATION``) for non-public buckets.  Check out the docs for more information. (`#570`_)
 - Various backends will now raise ``ImproperlyConfigured`` at runtime if their
@@ -50,7 +50,6 @@ django-storages CHANGELOG
 - Add automatic reconnection to ``SFTPStorage`` (`#563`_, `#564`_)
 - Unconditionally set the security token in the boto backends (`b13efd`_)
 - Improve efficiency of ``.listdir`` on ``S3Boto3Storage`` (`#352`_)
-- Add support for using the bucket's ACL in the S3 backends (`#535`_)
 - Add ``AWS_S3_VERIFY`` to support custom certificates and disabling certificate verification
   to ``S3Boto3Storage`` (`#486`_, `#580`_)
 - Add ``AWS_S3_PROXIES`` setting to ``S3Boto3Storage`` (`#583`_)
