@@ -102,7 +102,7 @@ def lookup_env(names):
 
 
 def get_available_overwrite_name(name, max_length):
-    if max_length is None or len(name) < max_length:
+    if max_length is None or len(name) <= max_length:
         return name
 
     # Adapted from Django

@@ -8,9 +8,7 @@ except ImportError:  # Python 3.2 and below
 import mimetypes
 from datetime import datetime, timedelta
 
-from django.core.exceptions import (
-    ImproperlyConfigured, SuspiciousFileOperation,
-)
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
@@ -375,14 +373,6 @@ class GCloudStorageTests(GCloudTestCase):
     def test_get_available_name_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
         self.assertEqual(self.storage.get_available_name(filename), filename)
-
-    def test_get_available_name_overwrite_maxlength(self):
-        self.storage.file_overwrite = True
-
-        self.assertEqual(self.storage.get_available_name('test/foo.txt', 11), 'test/fo.txt')
-        self.assertEqual(self.storage.get_available_name('test_a/foobar.txt', None), 'test_a/foobar.txt')
-        with self.assertRaises(SuspiciousFileOperation):
-            self.storage.get_available_name('test_a/foobar.txt', 10)
 
     def test_cache_control(self):
         data = 'This is some test content.'
