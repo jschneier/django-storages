@@ -543,7 +543,7 @@ class S3Boto3Storage(Storage):
 
         directories = []
         files = []
-        paginator = self.connection.meta.client.get_paginator('list_objects_v2')
+        paginator = self.connection.meta.client.get_paginator('list_objects')
         pages = paginator.paginate(Bucket=self.bucket_name, Delimiter='/', Prefix=path)
         for page in pages:
             for entry in page.get('CommonPrefixes', ()):
