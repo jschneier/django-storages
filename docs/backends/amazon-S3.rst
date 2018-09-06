@@ -273,21 +273,6 @@ Push the objects into the cache to make sure they pickle properly::
     >>> cache.get('obj2').normal
     <FieldFile: tests/django_test_.txt>
 
-Deleting an object deletes the file it uses, if there are no other objects still using that file::
-
-    >>> obj2.delete()
-    >>> obj2.normal.save('django_test.txt', ContentFile('more content'))
-    >>> obj2.normal
-    <FieldFile: tests/django_test_.txt>
-
-Default values allow an object to access a single file::
-
-    >>> obj3 = MyStorage.objects.create()
-    >>> obj3.default
-    <FieldFile: tests/default.txt>
-    >>> obj3.default.read()
-    'default content'
-
 Clean up the temporary files::
 
     >>> obj1.normal.delete()
