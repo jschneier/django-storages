@@ -4,21 +4,15 @@ Amazon S3
 Usage
 *****
 
-There are two backends for interacting with Amazon's S3, one based
-on boto3 and an older one based on boto. It is highly recommended that all
-new projects (at least) use the boto3 backend since it has many bug fixes
-and performance improvements over boto and is the future; boto is lightly
-maintained if at all. The boto3 based backend will continue to be maintained
-for the foreseeable future.
+There is only one supported backend for interacting with Amazon's S3,
+``S3Boto3Storage``, based on the boto3 library. The backend based on the boto
+library has now been officially deprecated and is due to be removed shortly.
+
+All current users of the legacy ``S3BotoStorage`` backend are encouraged to migrate
+to the ``S3Boto3Storage`` backend by following the :ref:`migration instructions <migrating-boto-to-boto3>`.
 
 For historical completeness an extreme legacy backend was removed
 in version 1.2
-
-If using the boto backend on a new project (not recommended) it is recommended
-that you configure it to also use `AWS Signature Version 4`_. This can be done
-by adding ``S3_USE_SIGV4 = True`` to your settings and setting the ``AWS_S3_HOST``
-configuration option. For regions created after January 2014 this is your only
-option if you insist on using the boto backend.
 
 Settings
 --------
@@ -176,10 +170,10 @@ The following adjustments to settings are required:
 
 - Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
   names as in the following example: ``cache-control`` becomes ``CacheControl``.
-- Rename ``AWS_ORIGIN`` and ``AWS_S3_HOST`` to ``AWS_S3_REGION_NAME``
-- If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE``
-  to ``virtual``
+- Raname ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
+- If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE`` to ``virtual``
 - Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
+- Extract the region name from ``AWS_S3_HOST`` and set ``AWS_S3_REGION_NAME``
 - Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
 - If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
