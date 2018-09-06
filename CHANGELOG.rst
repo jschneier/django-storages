@@ -5,9 +5,13 @@ django-storages CHANGELOG
 ******************
 
 - Fix off-by-1 error in ``get_available_name`` whenever ``file_overwrite`` or ``overwrite_files`` is ``True`` (`#588`_, `#589`_)
+- Change ``S3Boto3Storage.listdir()`` to use ``list_objects`` instead of ``list_objects_v2`` to restore
+  compatibility with services implementing the S3 protocol that do not yet support the new method (`#586`_, `#590`_)
 
 .. _#588: https://github.com/jschneier/django-storages/issues/588
 .. _#589: https://github.com/jschneier/django-storages/pull/589
+.. _#586: https://github.com/jschneier/django-storages/issues/586
+.. _#590: https://github.com/jschneier/django-storages/pull/590
 
 1.7 (2018-09-03)
 ****************
