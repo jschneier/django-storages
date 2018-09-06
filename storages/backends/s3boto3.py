@@ -475,6 +475,8 @@ class S3Boto3Storage(Storage):
         _type, encoding = mimetypes.guess_type(name)
         content_type = getattr(content, 'content_type', None)
         content_type = content_type or _type or self.default_content_type
+        if type(content_type) == bytes:
+            content_type = content_type.decode('utf8')
 
         # setting the content_type in the key object is not enough.
         parameters.update({'ContentType': content_type})
