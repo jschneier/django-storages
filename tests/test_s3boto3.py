@@ -579,3 +579,25 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             "argument will be removed in version 2.0."
         )
         assert str(w[-1].message) == message
+
+    def test_deprecated_default_acl(self):
+        with warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage()
+        assert len(w) == 1
+        message = (
+            "The default behavior of S3Boto3Storage is insecure and will change "
+            "in django-storages 2.0. By default files and new buckets are saved "
+            "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+            "default to using the bucket's ACL. To opt into the new behavior set "
+            "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
+            "set AWS_DEFAULT_ACL."
+        )
+        assert str(w[-1].message) == message
+
+    def test_deprecated_default_acl_override_class_variable(self):
+        class MyStorage(s3boto3.S3Boto3Storage):
+            default_acl = "private"
+
+        with warnings.catch_warnings(record=True) as w:
+            MyStorage()
+        assert len(w) == 0

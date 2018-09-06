@@ -277,7 +277,7 @@ class S3Boto3Storage(Storage):
             self.config = Config(**kwargs)
 
         # warn about upcoming change in default AWS_DEFAULT_ACL setting
-        if not hasattr(django_settings, 'AWS_DEFAULT_ACL'):
+        if not hasattr(django_settings, 'AWS_DEFAULT_ACL') and self.default_acl == 'public-read':
             warnings.warn(
                 "The default behavior of S3Boto3Storage is insecure and will change "
                 "in django-storages 2.0. By default files and new buckets are saved "
