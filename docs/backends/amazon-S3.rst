@@ -176,11 +176,10 @@ The following adjustments to settings are required:
 
 - Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
   names as in the following example: ``cache-control`` becomes ``CacheControl``.
-- Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
+- Rename ``AWS_ORIGIN`` and ``AWS_S3_HOST`` to ``AWS_S3_REGION_NAME``
 - If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE``
   to ``virtual``
-- Replace ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL`` (this is not necessary if
-  ``AWS_S3_HOST`` is only set in order to handle signature versions)
+- Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
 - Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
 - If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
