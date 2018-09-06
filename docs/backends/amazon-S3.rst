@@ -17,13 +17,9 @@ in version 1.2
 Settings
 --------
 
-To use boto3 set::
+To upload your media files to S3 set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-To use the boto version of the backend set::
-
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
 To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
