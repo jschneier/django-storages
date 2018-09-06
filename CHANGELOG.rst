@@ -1,6 +1,14 @@
 django-storages CHANGELOG
 =========================
 
+1.7.1 (2018-09-XX)
+******************
+
+- Fix off-by-1 error in ``get_available_name`` whenever ``file_overwrite`` or ``overwrite_files`` is ``True`` (`#588`_, `#589`_)
+
+.. _#588: https://github.com/jschneier/django-storages/issues/588
+.. _#589: https://github.com/jschneier/django-storages/pull/589
+
 1.7 (2018-09-03)
 ****************
 
