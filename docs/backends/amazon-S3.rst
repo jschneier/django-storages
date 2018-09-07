@@ -11,9 +11,6 @@ library has now been officially deprecated and is due to be removed shortly.
 All current users of the legacy ``S3BotoStorage`` backend are encouraged to migrate
 to the ``S3Boto3Storage`` backend by following the :ref:`migration instructions <migrating-boto-to-boto3>`.
 
-For historical completeness an extreme legacy backend was removed
-in version 1.2
-
 Settings
 --------
 
