@@ -4,12 +4,8 @@ Amazon S3
 Usage
 *****
 
-There is only one supported backend for interacting with Amazon's S3,
-``S3Boto3Storage``, based on the boto3 library. The backend based on the boto
-library has now been officially deprecated and is due to be removed shortly.
-
-All current users of the legacy ``S3BotoStorage`` backend are encouraged to migrate
-to the ``S3Boto3Storage`` backend by following the :ref:`migration instructions <migrating-boto-to-boto3>`.
+The backend for interacting with Amazon's S3 is ``S3Boto3Storage``, based on
+the boto3 library.
 
 Settings
 --------
@@ -155,32 +151,6 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 .. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
-
-.. _migrating-boto-to-boto3:
-
-Migrating from Boto to Boto3
-----------------------------
-
-Migration from the boto-based to boto3-based backend should be straightforward and painless.
-
-The following adjustments to settings are required:
-
-- Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
-  names as in the following example: ``cache-control`` becomes ``CacheControl``.
-- Raname ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
-- If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE`` to ``virtual``
-- Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
-- Extract the region name from ``AWS_S3_HOST`` and set ``AWS_S3_REGION_NAME``
-- Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` with ``AWS_S3_PROXIES``
-- If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
-- If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
-- Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
-
-Additionally, you must install ``boto3`` (``boto`` is no longer required).  In order to use
-all currently supported features, ``1.4.4`` is the minimum required version although we
-always recommend the most recent.
-
-Please open an issue on the GitHub repo if any further issues are encountered or steps were omitted.
 
 CloudFront
 ----------

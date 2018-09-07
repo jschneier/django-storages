@@ -1,6 +1,13 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED
+**********
+
+**Breaking**
+
+- Removed deprecated backend ``S3BotoStorage``.
+
 1.8 (2019-11-20)
 ****************
 
