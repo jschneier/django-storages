@@ -225,8 +225,12 @@ Model
 -----
 
 An object without a file has limited functionality::
+    from django.db import models
 
-    >>> obj1 = MyStorage()
+    class MyModel(models.Model):
+      normal = models.FileField()
+
+    >>> obj1 = MyModel()
     >>> obj1.normal
     <FieldFile: None>
     >>> obj1.normal.size
@@ -256,10 +260,10 @@ Files can be read in a little at a time, if necessary::
 
 Save another file with the same name::
 
-    >>> obj2 = MyStorage()
+    >>> obj2 = MyModel()
     >>> obj2.normal.save('django_test.txt', ContentFile('more content'))
     >>> obj2.normal
-    <FieldFile: tests/django_test_.txt>
+    <FieldFile: tests/django_test.txt>
     >>> obj2.normal.size
     12
 
@@ -268,11 +272,9 @@ Push the objects into the cache to make sure they pickle properly::
     >>> cache.set('obj1', obj1)
     >>> cache.set('obj2', obj2)
     >>> cache.get('obj2').normal
-    <FieldFile: tests/django_test_.txt>
+    <FieldFile: tests/django_test.txt>
 
 Clean up the temporary files::
 
     >>> obj1.normal.delete()
     >>> obj2.normal.delete()
-    >>> obj3.default.delete()
-    >>> obj4.random.delete()
