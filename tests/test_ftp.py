@@ -2,12 +2,12 @@ try:
     from unittest.mock import patch
 except ImportError:
     from mock import patch
+import io
 from datetime import datetime
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.test import TestCase
-from django.utils.six import BytesIO
 
 from storages.backends import ftp
 
@@ -109,7 +109,7 @@ class FTPTest(TestCase):
     })
     def test_put_file(self, mock_ftp):
         self.storage._start_connection()
-        self.storage._put_file('foo', File(BytesIO(b'foo'), 'foo'))
+        self.storage._put_file('foo', File(io.BytesIO(b'foo'), 'foo'))
 
     @patch('ftplib.FTP', **{
         'return_value.pwd.return_value': 'foo',
@@ -118,7 +118,7 @@ class FTPTest(TestCase):
     def test_put_file_error(self, mock_ftp):
         self.storage._start_connection()
         with self.assertRaises(ftp.FTPStorageException):
-            self.storage._put_file('foo', File(BytesIO(b'foo'), 'foo'))
+            self.storage._put_file('foo', File(io.BytesIO(b'foo'), 'foo'))
 
     def test_open(self):
         remote_file = self.storage._open('foo')
@@ -140,7 +140,7 @@ class FTPTest(TestCase):
         'return_value.storbinary.return_value': None
     })
     def test_save(self, mock_ftp):
-        self.storage._save('foo', File(BytesIO(b'foo'), 'foo'))
+        self.storage._save('foo', File(io.BytesIO(b'foo'), 'foo'))
 
     @patch('ftplib.FTP', **{'return_value.sendcmd.return_value': '213 20160727094506'})
     def test_modified_time(self, mock_ftp):
@@ -213,13 +213,13 @@ class FTPStorageFileTest(TestCase):
         self.assertEqual(file_.size, 1024)
 
     @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo'})
-    @patch('storages.backends.ftp.FTPStorage._read', return_value=BytesIO(b'foo'))
+    @patch('storages.backends.ftp.FTPStorage._read', return_value=io.BytesIO(b'foo'))
     def test_readlines(self, mock_ftp, mock_storage):
         file_ = ftp.FTPStorageFile('fi', self.storage, 'wb')
         self.assertEqual([b'foo'], file_.readlines())
 
     @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo'})
-    @patch('storages.backends.ftp.FTPStorage._read', return_value=BytesIO(b'foo'))
+    @patch('storages.backends.ftp.FTPStorage._read', return_value=io.BytesIO(b'foo'))
     def test_read(self, mock_ftp, mock_storage):
         file_ = ftp.FTPStorageFile('fi', self.storage, 'wb')
         self.assertEqual(b'foo', file_.read())
@@ -231,7 +231,7 @@ class FTPStorageFileTest(TestCase):
         self.assertEqual(file_.file.read(), b'foo')
 
     @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo'})
-    @patch('storages.backends.ftp.FTPStorage._read', return_value=BytesIO(b'foo'))
+    @patch('storages.backends.ftp.FTPStorage._read', return_value=io.BytesIO(b'foo'))
     def test_close(self, mock_ftp, mock_storage):
         file_ = ftp.FTPStorageFile('fi', self.storage, 'wb')
         file_.is_dirty = True

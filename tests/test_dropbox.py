@@ -1,3 +1,4 @@
+import io
 from datetime import datetime
 
 from django.core.exceptions import (
@@ -5,7 +6,6 @@ from django.core.exceptions import (
 )
 from django.core.files.base import ContentFile, File
 from django.test import TestCase
-from django.utils.six import BytesIO
 
 from storages.backends import dropbox
 
@@ -120,7 +120,7 @@ class DropBoxTest(TestCase):
     @mock.patch('dropbox.Dropbox.files_upload',
                 return_value='foo')
     def test_save(self, files_upload, *args):
-        self.storage._save('foo', File(BytesIO(b'bar'), 'foo'))
+        self.storage._save('foo', File(io.BytesIO(b'bar'), 'foo'))
         self.assertTrue(files_upload.called)
 
     @mock.patch('dropbox.Dropbox.files_upload')
@@ -129,7 +129,7 @@ class DropBoxTest(TestCase):
     @mock.patch('dropbox.Dropbox.files_upload_session_start',
                 return_value=mock.MagicMock(session_id='foo'))
     def test_chunked_upload(self, start, append, finish, upload):
-        large_file = File(BytesIO(b'bar' * self.storage.CHUNK_SIZE), 'foo')
+        large_file = File(io.BytesIO(b'bar' * self.storage.CHUNK_SIZE), 'foo')
         self.storage._save('foo', large_file)
         self.assertTrue(start.called)
         self.assertTrue(append.called)

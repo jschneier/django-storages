@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import getpass
+import io
 import os
 import posixpath
 import stat
@@ -15,7 +16,6 @@ import paramiko
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
@@ -194,7 +194,7 @@ class SFTPStorageFile(File):
     def __init__(self, name, storage, mode):
         self.name = name
         self.mode = mode
-        self.file = BytesIO()
+        self.file = io.BytesIO()
         self._storage = storage
         self._is_read = False
         self._is_dirty = False
@@ -215,7 +215,7 @@ class SFTPStorageFile(File):
     def write(self, content):
         if 'w' not in self.mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        self.file = io.BytesIO(content)
         self._is_dirty = True
         self._is_read = True
 

@@ -1,6 +1,7 @@
 # Django storage using libcloud providers
 # Aymeric Barantal (mric at chamal.fr) 2011
 #
+import io
 import os
 
 from django.conf import settings
@@ -8,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO, string_types
+from django.utils.six import string_types
 from django.utils.six.moves.urllib.parse import urljoin
 
 try:
@@ -170,7 +171,7 @@ class LibCloudFile(File):
     def _get_file(self):
         if self._file is None:
             data = self._storage._read(self.name)
-            self._file = BytesIO(data)
+            self._file = io.BytesIO(data)
         return self._file
 
     def _set_file(self, value):
@@ -190,7 +191,7 @@ class LibCloudFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        self.file = io.BytesIO(content)
         self._is_dirty = True
 
     def close(self):

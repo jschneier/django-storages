@@ -1,3 +1,4 @@
+import io
 import mimetypes
 import os
 import posixpath
@@ -14,7 +15,6 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
-from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
 
@@ -442,7 +442,7 @@ class S3Boto3Storage(Storage):
     def _compress_content(self, content):
         """Gzip a given string content."""
         content.seek(0)
-        zbuf = BytesIO()
+        zbuf = io.BytesIO()
         #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
         #  This means each time a file is compressed it changes even if the other contents don't change
         #  For S3 this defeats detection of changes using MD5 sums on gzipped files
