@@ -21,11 +21,15 @@ to read/write and sign files in GCS.
 
 1. Create a service account.
 (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
+
 2. Create the key and download `your-project-XXXXX.json` file.
+
 3. Make sure your service account has access to the bucket and appropriate permissions.
 (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
+
 4. The key must be mounted/available to your running Django app.
 Note: a json keyfile will work for developer machines (or other instances outside Google infrastructure).
+
 5. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to path of the json file.
 
 Alternatively, you can use the setting `GS_CREDENTIALS` as described below.
