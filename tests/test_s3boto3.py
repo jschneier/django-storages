@@ -605,6 +605,9 @@ class S3Boto3StorageTests(S3Boto3TestCase):
     def test_get_parameters(self):
         result = self.storage.get_parameters('file.pdf', ContentFile(''), content_type='application/pdf')
         self.assertEqual(result, {'ContentType': 'application/pdf'})
+        result = self.storage.get_parameters(
+            'file.pdf', ContentFile(''), content_type='application/pdf', encoding='gzip')
+        self.assertEqual(result, {'ContentType': 'application/pdf', 'ContentEncoding': 'gzip'})
 
         class ExampleStorage(s3boto3.S3Boto3Storage):
             def get_parameters(self, obj, content, content_type, encoding=None):
@@ -615,7 +618,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         storage = ExampleStorage()
         storage._connection = mock.MagicMock()
-
         updated_parameters = storage.get_parameters(None, ContentFile(''), None)
         self.assertEqual(updated_parameters, {})
         updated_parameters = storage.get_parameters(None, ContentFile('some longer content'), None)

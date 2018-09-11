@@ -38,5 +38,7 @@ By order of apparition, thanks:
     * Jon Dufresne
     * Piotr Roksela, Dariusz Rzepka (Boto and Boto3 metadata customization)
 
+
+
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).

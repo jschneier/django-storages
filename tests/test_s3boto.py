@@ -375,9 +375,12 @@ class S3BotoStorageTests(S3BotoTestCase):
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             s3boto.S3BotoStorage(location='/')
 
-    def test_update_headers(self):
-        result = self.storage.update_headers({})
-        self.assertEqual(result, {})
+    def test_get_headers(self):
+        result = self.storage.get_headers(name='file.pdf', content=None, content_type='application/pdf')
+        self.assertEqual(result, {'Content-Type': 'application/pdf'})
+        result = self.storage.get_headers(name='file.pdf', content=None, content_type='application/pdf',
+                                          encoding='gzip')
+        self.assertEqual(result, {'Content-Type': 'application/pdf', 'Content-Encoding': 'gzip'})
 
         class ExampleStorage(s3boto.S3BotoStorage):
             def get_headers(self, name, content, content_type, encoding=None):
@@ -388,7 +391,6 @@ class S3BotoStorageTests(S3BotoTestCase):
 
         storage = ExampleStorage()
         storage._connection = mock.MagicMock()
-
         updated_headers = storage.get_headers('some_image.jpg', None, None)
         self.assertEqual(updated_headers, {})
         updated_headers = storage.get_headers('some_data.csv', None, None)
