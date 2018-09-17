@@ -460,7 +460,7 @@ since March 2013.
 .. _#65: https://bitbucket.org/david/django-storages/pull-request/65/
 
 
-**Everything Below Here Was Previously Released on PyPi under django-storages**
+**Everything Below Here Was Previously Released on PyPI under django-storages**
 
 
 1.1.8 (2013-03-31)
