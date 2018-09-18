@@ -13,7 +13,7 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import (
-    filepath_to_uri, force_bytes, force_text, smart_text,
+    force_bytes, force_text, smart_text,
 )
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, localtime
@@ -612,7 +612,7 @@ class S3Boto3Storage(Storage):
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
-                                  self.custom_domain, filepath_to_uri(name))
+                                  self.custom_domain, urlparse.quote(name))
         if expire is None:
             expire = self.querystring_expire
 
