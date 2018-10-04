@@ -265,3 +265,9 @@ class AzureStorageTest(TestCase):
         self.storage._service.get_blob_properties.return_value = Blob(props=props)
         time = self.storage.modified_time("name")
         self.assertEqual(accepted_time, time)
+
+    @mock.patch('storages.backends.azure_storage.CloudStorageAccount')
+    def test_azure_cdn(self, _):
+        storage = azure_storage.AzureStorage()
+        storage.cdn_hostname = 'foobar.azureedge.net'
+        self.assertEqual(storage.service.primary_endpoint, 'foobar.azureedge.net')

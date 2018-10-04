@@ -147,6 +147,7 @@ class AzureStorage(Storage):
     location = setting('AZURE_LOCATION', '')
     default_content_type = 'application/octet-stream'
     is_emulated = setting('AZURE_EMULATED_MODE', False)
+    cdn_hostname = setting('AZURE_CDN_HOSTNAME')
 
     def __init__(self):
         self._service = None
@@ -161,6 +162,8 @@ class AzureStorage(Storage):
                 self.account_key,
                 is_emulated=self.is_emulated)
             self._service = account.create_block_blob_service()
+            if self.cdn_hostname is not None:
+                self._service.primary_endpoint = self.cdn_hostname
         return self._service
 
     @property

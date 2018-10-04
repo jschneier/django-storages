@@ -125,3 +125,13 @@ The following settings are available:
 ``AZURE_LOCATION``
 
     Default location for the uploaded files. This is a path that gets prepended to every file name.
+
+``AZURE_CDN_HOSTNAME``
+
+    Hostname (without protocol prefix) for Azure CDN endpoint connected to ``AZURE_ACCOUNT_NAME``,
+    e.g.::
+    
+        AZURE_CDN_HOSTNAME = 'foobar.azureedge.net'
+
+    If ``AZURE_CDN_HOSTNAME`` is set, it will be used instead of Azure Blob Storage
+    hostname in static file URLs generated with ``static`` template tag.
