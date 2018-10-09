@@ -30,7 +30,7 @@ Install
 
 Install Azure SDK::
 
-  pip install django-storage[azure]
+  pip install django-storages[azure]
 
 
 Private VS Public Access
