@@ -413,12 +413,10 @@ class S3BotoStorage(Storage):
         # setting the content_type in the key object is not enough.
         headers.update({'Content-Type': content_type})
 
-        if self.gzip and content_type in self.gzip_content_types:
+        if (self.gzip and content_type in self.gzip_content_types and
+            encoding is None):
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
-        elif encoding:
-            # If the content already has a particular encoding, set it
-            headers.update({'Content-Encoding': encoding})
 
         content.name = cleaned_name
         encoded_name = self._encode_name(name)
