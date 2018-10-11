@@ -480,7 +480,7 @@ class S3Boto3Storage(Storage):
         parameters.update({'ContentType': content_type})
 
         if (self.gzip and content_type in self.gzip_content_types and
-            encoding is None):
+                encoding is None):
             content = self._compress_content(content)
             parameters.update({'ContentEncoding': 'gzip'})
 
