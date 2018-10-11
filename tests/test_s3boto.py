@@ -99,8 +99,7 @@ class S3BotoStorageTests(S3BotoTestCase):
                                             'application/octet-stream')
         key.set_contents_from_file.assert_called_with(
             content,
-            headers={'Content-Type': 'application/octet-stream',
-                     'Content-Encoding': 'gzip'},
+            headers={'Content-Type': 'application/octet-stream'},
             policy=self.storage.default_acl,
             reduced_redundancy=self.storage.reduced_redundancy,
             rewind=True,

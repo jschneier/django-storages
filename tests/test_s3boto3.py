@@ -173,7 +173,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content.file,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
-                'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
             }
         )
