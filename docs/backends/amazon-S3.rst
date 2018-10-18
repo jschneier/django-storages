@@ -170,7 +170,7 @@ The following adjustments to settings are required:
 - Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
 - If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
-- Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.boto3.S3Boto3Storage``
+- Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
 
 Additionally you must install ``boto3`` (``boto`` is no longer required).  In order to use
 all currently supported features ``1.4.4`` is the minimum required version although we
