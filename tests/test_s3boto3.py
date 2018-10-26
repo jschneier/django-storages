@@ -487,6 +487,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
     def test_storage_url(self):
         name = 'test_storage_size.txt'
         url = 'http://aws.amazon.com/%s' % name
+        self.assertTrue(self.storage.location == '')
         self.storage.bucket.meta.client.generate_presigned_url.return_value = url
         self.storage.bucket.name = 'bucket'
         self.assertEqual(self.storage.url(name), url)
@@ -496,13 +497,24 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExpiresIn=self.storage.querystring_expire
         )
 
+        # Test custom expiration
         custom_expire = 123
-
         self.assertEqual(self.storage.url(name, expire=custom_expire), url)
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
             ExpiresIn=custom_expire
+        )
+
+        # For items not in root directory
+        self.storage.location = 'foo/bar'
+        expected_key = self.storage.location + '/' + name
+        self.storage.bucket.meta.client.generate_presigned_url.return_value
+        self.storage.url(name)
+        self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
+            'get_object',
+             Params={'Bucket': self.storage.bucket.name, 'Key': expected_key},
+             ExpiresIn=self.storage.querystring_expire
         )
 
     def test_generated_url_is_encoded(self):
