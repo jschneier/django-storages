@@ -618,7 +618,8 @@ class S3Boto3Storage(Storage):
 
         params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
-        params['Key'] = self._encode_name(name)
+        params['Key'] = "%s/%s" % (self.location, self._encode_name(name))
+        params['Key'] = params['Key'].lstrip('/')  # in case self.location == ''
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire)
         if self.querystring_auth:
