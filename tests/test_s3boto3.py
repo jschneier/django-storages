@@ -513,8 +513,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.url(name)
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
-             Params={'Bucket': self.storage.bucket.name, 'Key': expected_key},
-             ExpiresIn=self.storage.querystring_expire
+            Params={'Bucket': self.storage.bucket.name, 'Key': expected_key},
+            ExpiresIn=self.storage.querystring_expire
         )
 
     def test_generated_url_is_encoded(self):
