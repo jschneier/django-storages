@@ -2,14 +2,17 @@
 from __future__ import unicode_literals
 
 import gzip
+import pickle
 import threading
+import warnings
 from datetime import datetime
 from unittest import skipIf
 
 from botocore.exceptions import ClientError
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_aware, utc
 
@@ -57,6 +60,37 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
+    def test_pickle_with_bucket(self):
+        """
+        Test that the storage can be pickled with a bucket attached
+        """
+        # Ensure the bucket has been used
+        self.storage.bucket
+        self.assertIsNotNone(self.storage._bucket)
+
+        # Can't pickle MagicMock, but you can't pickle a real Bucket object either
+        p = pickle.dumps(self.storage)
+        new_storage = pickle.loads(p)
+
+        self.assertIsInstance(new_storage._connections, threading.local)
+        # Put the mock connection back in
+        new_storage._connections.connection = mock.MagicMock()
+
+        self.assertIsNone(new_storage._bucket)
+        new_storage.bucket
+        self.assertIsNotNone(new_storage._bucket)
+
+    def test_pickle_without_bucket(self):
+        """
+        Test that the storage can be pickled, without a bucket instance
+        """
+
+        # Can't pickle a threadlocal
+        p = pickle.dumps(self.storage)
+        new_storage = pickle.loads(p)
+
+        self.assertIsInstance(new_storage._connections, threading.local)
+
     def test_storage_url_slashes(self):
         """
         Test URL generation.
@@ -86,6 +120,25 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
+            }
+        )
+
+    def test_storage_save_with_acl(self):
+        """
+        Test saving a file with user defined ACL.
+        """
+        name = 'test_storage_save.txt'
+        content = ContentFile('new content')
+        self.storage.default_acl = 'private'
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content.file,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+                'ACL': 'private',
             }
         )
 
@@ -220,8 +273,88 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
 
+    def test_storage_write_beyond_buffer_size(self):
+        """
+        Test writing content that exceeds the buffer size
+        """
+        name = 'test_open_for_writïng_beyond_buffer_size.txt'
+
+        # Set the encryption flag used for multipart uploads
+        self.storage.encryption = True
+        self.storage.reduced_redundancy = True
+        self.storage.default_acl = 'public-read'
+
+        file = self.storage.open(name, 'w')
+        self.storage.bucket.Object.assert_called_with(name)
+        obj = self.storage.bucket.Object.return_value
+        # Set the name of the mock object
+        obj.key = name
+
+        # Initiate the multipart upload
+        file.write('')
+        obj.initiate_multipart_upload.assert_called_with(
+            ACL='public-read',
+            ContentType='text/plain',
+            ServerSideEncryption='AES256',
+            StorageClass='REDUCED_REDUNDANCY'
+        )
+        multipart = obj.initiate_multipart_upload.return_value
+
+        # Write content at least twice as long as the buffer size
+        written_content = ''
+        counter = 1
+        while len(written_content) < 2 * file.buffer_size:
+            content = 'hello, aws {counter}\n'.format(counter=counter)
+            # Write more than just a few bytes in each iteration to keep the
+            # test reasonably fast
+            content += '*' * int(file.buffer_size / 10)
+            file.write(content)
+            written_content += content
+            counter += 1
+
+        # Save the internal file before closing
+        multipart.parts.all.return_value = [
+            mock.MagicMock(e_tag='123', part_number=1),
+            mock.MagicMock(e_tag='456', part_number=2)
+        ]
+        file.close()
+        self.assertListEqual(
+            multipart.Part.call_args_list,
+            [mock.call(1), mock.call(2)]
+        )
+        part = multipart.Part.return_value
+        uploaded_content = ''.join(
+            (args_list[1]['Body'].decode('utf-8')
+                for args_list in part.upload.call_args_list)
+        )
+        self.assertEqual(uploaded_content, written_content)
+        multipart.complete.assert_called_once_with(
+            MultipartUpload={'Parts': [
+                {'ETag': '123', 'PartNumber': 1},
+                {'ETag': '456', 'PartNumber': 2},
+            ]}
+        )
+
     def test_auto_creating_bucket(self):
         self.storage.auto_create_bucket = True
+        Bucket = mock.MagicMock()
+        self.storage._connections.connection.Bucket.return_value = Bucket
+        self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
+
+        Bucket.meta.client.head_bucket.side_effect = ClientError({'Error': {},
+                                                                  'ResponseMetadata': {'HTTPStatusCode': 404}},
+                                                                 'head_bucket')
+        self.storage._get_or_create_bucket('testbucketname')
+        Bucket.create.assert_called_once_with(
+            ACL='public-read',
+            CreateBucketConfiguration={
+                'LocationConstraint': 'sa-east-1',
+            }
+        )
+
+    def test_auto_creating_bucket_with_acl(self):
+        self.storage.auto_create_bucket = True
+        self.storage.bucket_acl = 'public-read'
         Bucket = mock.MagicMock()
         self.storage._connections.connection.Bucket.return_value = Bucket
         self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
@@ -258,7 +391,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
     def test_storage_exists_doesnt_create_bucket(self):
         with mock.patch.object(self.storage, '_get_or_create_bucket') as method:
             self.storage.exists('file.txt')
-            method.assert_not_called()
+            self.assertFalse(method.called)
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")
@@ -266,50 +399,58 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.return_value.delete.assert_called_with()
 
     def test_storage_listdir_base(self):
-        file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
+        # Files:
+        #   some/path/1.txt
+        #   2.txt
+        #   other/path/3.txt
+        #   4.txt
+        pages = [
+            {
+                'CommonPrefixes': [
+                    {'Prefix': 'some'},
+                    {'Prefix': 'other'},
+                ],
+                'Contents': [
+                    {'Key': '2.txt'},
+                    {'Key': '4.txt'},
+                ],
+            },
+        ]
 
-        result = []
-        for p in file_names:
-            obj = mock.MagicMock()
-            obj.key = p
-            result.append(obj)
-        self.storage.bucket.objects.filter.return_value = iter(result)
+        paginator = mock.MagicMock()
+        paginator.paginate.return_value = pages
+        self.storage._connections.connection.meta.client.get_paginator.return_value = paginator
 
-        dirs, files = self.storage.listdir("")
-        self.storage.bucket.objects.filter.assert_called_with(Prefix="")
+        dirs, files = self.storage.listdir('')
+        paginator.paginate.assert_called_with(Bucket=None, Delimiter='/', Prefix='')
 
-        self.assertEqual(len(dirs), 2)
-        for directory in ["some", "other"]:
-            self.assertTrue(directory in dirs,
-                            """ "%s" not in directory list "%s".""" % (
-                                directory, dirs))
-
-        self.assertEqual(len(files), 2)
-        for filename in ["2.txt", "4.txt"]:
-            self.assertTrue(filename in files,
-                            """ "%s" not in file list "%s".""" % (
-                                filename, files))
+        self.assertEqual(dirs, ['some', 'other'])
+        self.assertEqual(files, ['2.txt', '4.txt'])
 
     def test_storage_listdir_subdir(self):
-        file_names = ["some/path/1.txt", "some/2.txt"]
+        # Files:
+        #   some/path/1.txt
+        #   some/2.txt
+        pages = [
+            {
+                'CommonPrefixes': [
+                    {'Prefix': 'some/path'},
+                ],
+                'Contents': [
+                    {'Key': 'some/2.txt'},
+                ],
+            },
+        ]
 
-        result = []
-        for p in file_names:
-            obj = mock.MagicMock()
-            obj.key = p
-            result.append(obj)
-        self.storage.bucket.objects.filter.return_value = iter(result)
+        paginator = mock.MagicMock()
+        paginator.paginate.return_value = pages
+        self.storage._connections.connection.meta.client.get_paginator.return_value = paginator
 
-        dirs, files = self.storage.listdir("some/")
-        self.storage.bucket.objects.filter.assert_called_with(Prefix="some/")
+        dirs, files = self.storage.listdir('some/')
+        paginator.paginate.assert_called_with(Bucket=None, Delimiter='/', Prefix='some/')
 
-        self.assertEqual(len(dirs), 1)
-        self.assertTrue('path' in dirs,
-                        """ "path" not in directory list "%s".""" % (dirs,))
-
-        self.assertEqual(len(files), 1)
-        self.assertTrue('2.txt' in files,
-                        """ "2.txt" not in files list "%s".""" % (files,))
+        self.assertEqual(dirs, ['path'])
+        self.assertEqual(files, ['2.txt'])
 
     def test_storage_size(self):
         obj = self.storage.bucket.Object.return_value
@@ -406,3 +547,57 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         # Connection for each thread needs to be unique
         self.assertIsNot(connections[0], connections[1])
+
+    def test_location_leading_slash(self):
+        msg = (
+            "S3Boto3Storage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            s3boto3.S3Boto3Storage(location='/')
+
+    def test_deprecated_acl(self):
+        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage(acl='private')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        message = (
+            "The acl argument of S3Boto3Storage is deprecated. Use argument "
+            "default_acl or setting AWS_DEFAULT_ACL instead. The acl argument "
+            "will be removed in version 2.0."
+        )
+        assert str(w[-1].message) == message
+
+    def test_deprecated_bucket(self):
+        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage(bucket='django')
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        message = (
+            "The bucket argument of S3Boto3Storage is deprecated. Use argument "
+            "bucket_name or setting AWS_STORAGE_BUCKET_NAME instead. The bucket "
+            "argument will be removed in version 2.0."
+        )
+        assert str(w[-1].message) == message
+
+    def test_deprecated_default_acl(self):
+        with warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage()
+        assert len(w) == 1
+        message = (
+            "The default behavior of S3Boto3Storage is insecure and will change "
+            "in django-storages 2.0. By default files and new buckets are saved "
+            "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+            "default to using the bucket's ACL. To opt into the new behavior set "
+            "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
+            "set AWS_DEFAULT_ACL."
+        )
+        assert str(w[-1].message) == message
+
+    def test_deprecated_default_acl_override_class_variable(self):
+        class MyStorage(s3boto3.S3Boto3Storage):
+            default_acl = "private"
+
+        with warnings.catch_warnings(record=True) as w:
+            MyStorage()
+        assert len(w) == 0

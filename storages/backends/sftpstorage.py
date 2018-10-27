@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import getpass
+import io
 import os
 import posixpath
 import stat
@@ -15,7 +16,6 @@ import paramiko
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
@@ -46,9 +46,7 @@ class SFTPStorage(Storage):
             if root_path is None else root_path
         self._base_url = setting('MEDIA_URL') if base_url is None else base_url
 
-        # for now it's all posix paths.  Maybe someday we'll support figuring
-        # out if the remote host is windows.
-        self._pathmod = posixpath
+        self._sftp = None
 
     def _connect(self):
         self._ssh = paramiko.SSHClient()
@@ -79,22 +77,18 @@ class SFTPStorage(Storage):
         except Exception as e:
             print(e)
 
-        if not hasattr(self, '_sftp'):
+        if self._ssh.get_transport():
             self._sftp = self._ssh.open_sftp()
 
     @property
     def sftp(self):
         """Lazy SFTP connection"""
-        if not hasattr(self, '_sftp'):
+        if not self._sftp or not self._ssh.get_transport().is_active():
             self._connect()
         return self._sftp
 
-    def _join(self, *args):
-        # Use the path module for the remote host type to join a path together
-        return self._pathmod.join(*args)
-
     def _remote_path(self, name):
-        return self._join(self._root_path, name)
+        return posixpath.join(self._root_path, name)
 
     def _open(self, name, mode='rb'):
         return SFTPStorageFile(name, self, mode)
@@ -116,7 +110,7 @@ class SFTPStorage(Storage):
     def _mkdir(self, path):
         """Create directory, recursing up to create parent dirs if
         necessary."""
-        parent = self._pathmod.dirname(path)
+        parent = posixpath.dirname(path)
         if not self.exists(parent):
             self._mkdir(parent)
         self.sftp.mkdir(path)
@@ -131,7 +125,7 @@ class SFTPStorage(Storage):
         """Save file via SFTP."""
         content.open()
         path = self._remote_path(name)
-        dirname = self._pathmod.dirname(path)
+        dirname = posixpath.dirname(path)
         if not self.exists(dirname):
             self._mkdir(dirname)
 
@@ -147,15 +141,14 @@ class SFTPStorage(Storage):
         return name
 
     def delete(self, name):
-        remote_path = self._remote_path(name)
-        self.sftp.remove(remote_path)
+        try:
+            self.sftp.remove(self._remote_path(name))
+        except IOError:
+            pass
 
     def exists(self, name):
-        # Try to retrieve file info.  Return true on success, false on failure.
-        remote_path = self._remote_path(name)
-
         try:
-            self.sftp.stat(remote_path)
+            self.sftp.stat(self._remote_path(name))
             return True
         except IOError:
             return False
@@ -199,34 +192,34 @@ class SFTPStorage(Storage):
 
 class SFTPStorageFile(File):
     def __init__(self, name, storage, mode):
-        self._name = name
+        self.name = name
+        self.mode = mode
+        self.file = io.BytesIO()
         self._storage = storage
-        self._mode = mode
-        self._is_dirty = False
-        self.file = BytesIO()
         self._is_read = False
+        self._is_dirty = False
 
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
 
     def read(self, num_bytes=None):
         if not self._is_read:
-            self.file = self._storage._read(self._name)
+            self.file = self._storage._read(self.name)
             self._is_read = True
 
         return self.file.read(num_bytes)
 
     def write(self, content):
-        if 'w' not in self._mode:
+        if 'w' not in self.mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        self.file = io.BytesIO(content)
         self._is_dirty = True
         self._is_read = True
 
     def close(self):
         if self._is_dirty:
-            self._storage._save(self._name, self)
+            self._storage._save(self.name, self)
         self.file.close()

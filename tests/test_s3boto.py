@@ -8,6 +8,7 @@ import datetime
 from boto.exception import S3ResponseError
 from boto.s3.key import Key
 from boto.utils import ISO8601, parse_ts
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone as tz
@@ -169,6 +170,65 @@ class S3BotoStorageTests(S3BotoTestCase):
         )
         file._multipart.complete_upload.assert_called_once_with()
 
+    def test_storage_write_beyond_buffer_size(self):
+        """
+        Test writing content that exceeds the buffer size
+        """
+        name = 'test_open_for_writing_beyond_buffer_size.txt'
+
+        # Set the encryption flag used for multipart uploads
+        self.storage.encryption = True
+        # Set the ACL header used when creating/writing data.
+        self.storage.bucket.connection.provider.acl_header = 'x-amz-acl'
+        # Set the mocked key's bucket
+        self.storage.bucket.get_key.return_value.bucket = self.storage.bucket
+        # Set the name of the mock object
+        self.storage.bucket.get_key.return_value.name = name
+
+        file = self.storage.open(name, 'w')
+        self.storage.bucket.get_key.assert_called_with(name)
+
+        # Initiate the multipart upload
+        file.write('')
+        self.storage.bucket.initiate_multipart_upload.assert_called_with(
+            name,
+            headers={
+                'Content-Type': 'text/plain',
+                'x-amz-acl': 'public-read',
+            },
+            reduced_redundancy=self.storage.reduced_redundancy,
+            encrypt_key=True,
+        )
+
+        # Keep track of the content that would be uploaded to S3
+        def store_uploaded_part(fp, *args, **kwargs):
+            store_uploaded_part.content += fp.read().decode('utf-8')
+        store_uploaded_part.content = ''
+        file._multipart.upload_part_from_file.side_effect = store_uploaded_part
+
+        # Write content at least twice as long as the buffer size
+        written_content = ''
+        counter = 1
+        while len(written_content) < 2 * file.buffer_size:
+            content = 'hello, aws {counter}\n'.format(counter=counter)
+            # Write more than just a few bytes in each iteration to keep the
+            # test reasonably fast
+            content += '*' * int(file.buffer_size / 10)
+            file.write(content)
+            written_content += content
+            counter += 1
+
+        # Save the internal file before closing
+        _file = file.file
+        file.close()
+        file._multipart.upload_part_from_file.assert_has_calls([
+            mock.call(_file, 1, headers=self.storage.headers),
+            mock.call(_file, 2, headers=self.storage.headers),
+        ])
+        file._multipart.complete_upload.assert_called_once_with()
+
+        self.assertEqual(store_uploaded_part.content, written_content)
+
     def test_storage_exists_bucket(self):
         self.storage._connection.get_bucket.side_effect = S3ResponseError(404, 'No bucket')
         self.assertFalse(self.storage.exists(''))
@@ -306,3 +366,11 @@ class S3BotoStorageTests(S3BotoTestCase):
             self.assertEqual(modtime,
                              tz.make_naive(tz.make_aware(
                                 datetime.datetime.strptime(utcnow, ISO8601), tz.utc)))
+
+    def test_location_leading_slash(self):
+        msg = (
+            "S3BotoStorage.location cannot begin with a leading slash. "
+            "Found '/'. Use '' instead."
+        )
+        with self.assertRaises(ImproperlyConfigured, msg=msg):
+            s3boto.S3BotoStorage(location='/')

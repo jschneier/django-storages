@@ -15,6 +15,7 @@
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
 import ftplib
+import io
 import os
 from datetime import datetime
 
@@ -23,7 +24,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO
 from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
@@ -138,7 +138,7 @@ class FTPStorage(Storage):
         return remote_file
 
     def _read(self, name):
-        memory_file = BytesIO()
+        memory_file = io.BytesIO()
         try:
             pwd = self._connection.pwd()
             self._connection.cwd(os.path.dirname(name))
@@ -251,7 +251,7 @@ class FTPStorageFile(File):
         self._storage = storage
         self._mode = mode
         self._is_dirty = False
-        self.file = BytesIO()
+        self.file = io.BytesIO()
         self._is_read = False
 
     @property
@@ -277,7 +277,7 @@ class FTPStorageFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        self.file = io.BytesIO(content)
         self._is_dirty = True
         self._is_read = True
 

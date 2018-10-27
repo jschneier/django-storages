@@ -1,10 +1,11 @@
+import io
 import os
 import stat
 from datetime import datetime
 
+import paramiko
 from django.core.files.base import File
 from django.test import TestCase
-from django.utils.six import BytesIO
 
 from storages.backends import sftpstorage
 
@@ -68,14 +69,14 @@ class SFTPStorageTest(TestCase):
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_save(self, mock_sftp):
-        self.storage._save('foo', File(BytesIO(b'foo'), 'foo'))
+        self.storage._save('foo', File(io.BytesIO(b'foo'), 'foo'))
         self.assertTrue(mock_sftp.open.return_value.write.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
         'stat.side_effect': (IOError(), True)
     })
     def test_save_in_subdir(self, mock_sftp):
-        self.storage._save('bar/foo', File(BytesIO(b'foo'), 'foo'))
+        self.storage._save('bar/foo', File(io.BytesIO(b'foo'), 'foo'))
         self.assertEqual(mock_sftp.mkdir.call_args_list[0][0], ('bar',))
         self.assertTrue(mock_sftp.open.return_value.write.called)
 
@@ -132,6 +133,24 @@ class SFTPStorageTest(TestCase):
         with self.assertRaises(ValueError):
             self.storage._base_url = None
             self.storage.url('foo')
+
+    @patch('paramiko.transport.Transport', **{
+        'is_active.side_effect': (True, False)
+    })
+    @patch('storages.backends.sftpstorage.SFTPStorage._connect')
+    def test_sftp(self, connect, transport):
+        self.assertIsNone(self.storage.sftp)
+        self.assertTrue(connect.called)
+        connect.reset_mock()
+        self.storage._ssh = paramiko.SSHClient()
+        self.storage._ssh._transport = transport
+
+        self.storage._sftp = True
+        self.assertTrue(self.storage.sftp)
+        self.assertFalse(connect.called)
+
+        self.assertTrue(self.storage.sftp)
+        self.assertTrue(connect.called)
 
 
 class SFTPStorageFileTest(TestCase):
