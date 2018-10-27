@@ -26,7 +26,7 @@ class CustomDomainSignedS3Boto3Storage(S3Boto3Storage):
             url = "%s//%s" % (self.url_protocol, self.custom_domain)
         elif self.custom_domain:
             split_url = url.split(name)
-            split_url[0] = "%s//%s" % (self.url_protocol, self.custom_domain)
+            split_url[0] = "%s//%s/" % (self.url_protocol, self.custom_domain.rstrip('/'))
             url = filepath_to_uri(name).join(split_url)
 
         if self.querystring_auth:

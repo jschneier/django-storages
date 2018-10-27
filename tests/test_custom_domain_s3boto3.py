@@ -81,6 +81,29 @@ class CustomDomainSignedS3Boto3StorageTests(CustomDomainSignedS3Boto3TestCase):
 
         self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/1/")
         self.assertEqual(self.storage.url('path/1/'), 'https://example.com/path/1/')
+    
+    def test_storage_url_no_slash(self):
+        """
+        Test URL generation.
+        """
+        self.storage.custom_domain = 'example.com'
+
+        self.storage.bucket.meta.client.generate_presigned_url = mock.MagicMock()
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "")
+        self.assertEqual(self.storage.url(''), 'https://example.com')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path")
+        self.assertEqual(self.storage.url('path'), 'https://example.com/path')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/")
+        self.assertEqual(self.storage.url('path/'), 'https://example.com/path/')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/1")
+        self.assertEqual(self.storage.url('path/1'), 'https://example.com/path/1')
+
+        self.storage.bucket.meta.client.generate_presigned_url.return_value = "%s/%s" % ("mock.s3.aws", "path/1/")
+        self.assertEqual(self.storage.url('path/1/'), 'https://example.com/path/1/')
 
     def test_storage_save(self):
         """
