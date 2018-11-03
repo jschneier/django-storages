@@ -5,5 +5,5 @@ class BaseFile(File):
     pass
 
 class BaseStorage(Storage):
-    def pre_save(name, content):
+    def pre_save(self, name, content):
         return name, content
