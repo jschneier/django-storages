@@ -135,7 +135,7 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 
 ``GS_MAX_MEMORY_SIZE`` (optional)
 
-The maximum amount of memory a returned file can take up before being
+The maximum amount of memory a returned file can take up (in bytes) before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
 
 ``GS_CACHE_CONTROL`` (optional: default is ``None``)

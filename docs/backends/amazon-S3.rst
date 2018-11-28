@@ -77,7 +77,7 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
     are public.
 
 ``AWS_S3_MAX_MEMORY_SIZE`` (optional; default is ``0`` - do not roll over)
-    The maximum amount of memory a file can take up before being rolled over
+    The maximum amount of memory (in bytes) a file can take up before being rolled over
     into a temporary file on disk.
 
 ``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
