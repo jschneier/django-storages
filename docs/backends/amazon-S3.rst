@@ -28,6 +28,8 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 ``AWS_SECRET_ACCESS_KEY``
     Your Amazon Web Services secret access key, as a string.
 
+      Note that if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are not set, boto internally looks up iam credentials.
+
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.
 
