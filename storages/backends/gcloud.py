@@ -78,7 +78,7 @@ class GoogleCloudFile(File):
             if self._is_dirty:
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type)
-                if self._storage.default_acl == 'publicRead':
+                if self._storage.default_acl:
                     self.blob.acl.save_predefined(self._storage.default_acl)
             self._file.close()
             self._file = None
