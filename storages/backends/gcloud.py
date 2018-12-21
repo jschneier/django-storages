@@ -30,9 +30,10 @@ class GoogleCloudFile(File):
         self._mode = mode
         self._storage = storage
         self.blob = storage.bucket.get_blob(name)
+        self._create = False
         if not self.blob and 'w' in mode:
             self.blob = Blob(self.name, storage.bucket)
-            self.blob.acl.save_predefined(storage.default_acl)
+            self._create = True
         self._file = None
         self._is_dirty = False
 
@@ -78,7 +79,7 @@ class GoogleCloudFile(File):
             if self._is_dirty:
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type)
-                if self._storage.default_acl:
+                if self._storage.default_acl and self._create:
                     self.blob.acl.save_predefined(self._storage.default_acl)
             self._file.close()
             self._file = None
