@@ -16,6 +16,7 @@ from storages.utils import (
 
 try:
     from google.cloud.storage import Blob, Client
+    from google.cloud.storage.blob import _quote
     from google.cloud.exceptions import Conflict, NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
@@ -88,6 +89,7 @@ class GoogleCloudStorage(Storage):
     project_id = setting('GS_PROJECT_ID')
     credentials = setting('GS_CREDENTIALS')
     bucket_name = setting('GS_BUCKET_NAME')
+    custom_endpoint = setting('GS_CUSTOM_ENDPOINT', None)
     location = setting('GS_LOCATION', '')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
@@ -263,9 +265,20 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(self._encode_name(name))
 
-        if self.default_acl == 'publicRead':
+        if not self.custom_endpoint and self.default_acl == 'publicRead':
             return blob.public_url
-        return blob.generate_signed_url(self.expiration)
+        elif self.default_acl == 'publicRead':
+            return '{storage_base_url}/{quoted_name}'.format(
+                storage_base_url=self.custom_endpoint,
+                quoted_name=_quote(name, safe=b"/~"),
+            )
+        elif not self.custom_endpoint:
+            return blob.generate_signed_url(self.expiration)
+        else:
+            return blob.generate_signed_url(
+                expiration=self.expiration,
+                api_access_endpoint=self.custom_endpoint,
+            )
 
     def get_available_name(self, name, max_length=None):
         name = clean_name(name)
