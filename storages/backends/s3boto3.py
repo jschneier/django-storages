@@ -67,6 +67,7 @@ class S3Boto3StorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
+        self._force_mode = (lambda b: b) if 'b' in mode else force_text
         self.obj = storage.bucket.Object(storage._encode_name(name))
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
@@ -110,7 +111,12 @@ class S3Boto3StorageFile(File):
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return super(S3Boto3StorageFile, self).read(*args, **kwargs)
+        return self._force_mode(super(S3Boto3StorageFile, self).read(*args, **kwargs))
+
+    def readline(self, *args, **kwargs):
+        if 'r' not in self._mode:
+            raise AttributeError("File was not opened in read mode.")
+        return self._force_mode(super(S3Boto3StorageFile, self).readline(*args, **kwargs))
 
     def write(self, content):
         if 'w' not in self._mode:
