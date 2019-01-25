@@ -64,6 +64,12 @@ class AzureStorageTest(TestCase):
         # has some query-string
         self.assertTrue("/test/my_file.txt?" in self.storage.url("my_file.txt"))
 
+    def test_url_custom_endpoint(self):
+        storage = azure_storage.AzureStorage()
+        storage.is_emulated = True
+        storage.custom_domain = 'foobar:123456'
+        self.assertTrue(storage.url("my_file.txt").startswith('https://foobar:123456/'))
+
     @override_settings(USE_TZ=True)
     def test_get_modified_time_tz(self):
         stream = io.BytesIO(b'Im a stream')
