@@ -7,7 +7,7 @@ from tempfile import SpooledTemporaryFile
 
 from azure.common import AzureMissingResourceHttpError
 from azure.storage.blob import BlobPermissions, ContentSettings
-from azure.storage.common import CloudStorageAccount
+from azure.storage.blob.blockblobservice import BlockBlobService
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
@@ -66,8 +66,6 @@ class AzureStorageFile(File):
         return super(AzureStorageFile, self).read(*args, **kwargs)
 
     def write(self, content):
-        if len(content) > 100*1024*1024:
-            raise ValueError("Max chunk size is 100MB")
         if ('w' not in self._mode and
                 '+' not in self._mode and
                 'a' not in self._mode):
@@ -147,21 +145,51 @@ class AzureStorage(Storage):
     location = setting('AZURE_LOCATION', '')
     default_content_type = 'application/octet-stream'
     is_emulated = setting('AZURE_EMULATED_MODE', False)
+    endpoint_suffix = setting('AZURE_ENDPOINT_SUFFIX')
+    sas_token = setting('AZURE_SAS_TOKEN')
+    custom_domain = setting('AZURE_CUSTOM_DOMAIN')
+    connection_string = setting('AZURE_CONNECTION_STRING')
+    custom_connection_string = setting(
+        'AZURE_CUSTOM_CONNECTION_STRING', setting('AZURE_CONNECTION_STRING'))
+    token_credential = setting('AZURE_TOKEN_CREDENTIAL')
 
     def __init__(self):
         self._service = None
+        self._custom_service = None
+
+    def _blob_service(self, custom_domain=None, connection_string=None):
+        # This won't open a connection or anything,
+        # it's akin to a client
+        return BlockBlobService(
+            account_name=self.account_name,
+            account_key=self.account_key,
+            sas_token=self.sas_token,
+            is_emulated=self.is_emulated,
+            protocol=self.azure_protocol,
+            custom_domain=custom_domain,
+            connection_string=connection_string,
+            token_credential=self.token_credential,
+            endpoint_suffix=self.endpoint_suffix)
 
     @property
     def service(self):
-        # This won't open a connection or anything,
-        # it's akin to a client
         if self._service is None:
-            account = CloudStorageAccount(
-                self.account_name,
-                self.account_key,
-                is_emulated=self.is_emulated)
-            self._service = account.create_block_blob_service()
+            custom_domain = None
+            if self.is_emulated:
+                custom_domain = self.custom_domain
+            self._service = self._blob_service(
+                custom_domain=custom_domain,
+                connection_string=self.connection_string)
         return self._service
+
+    @property
+    def custom_service(self):
+        """This is used to generate the URL"""
+        if self._custom_service is None:
+            self._custom_service = self._blob_service(
+                custom_domain=self.custom_domain,
+                connection_string=self.custom_connection_string)
+        return self._custom_service
 
     @property
     def azure_protocol(self):
@@ -256,13 +284,13 @@ class AzureStorage(Storage):
 
         make_blob_url_kwargs = {}
         if expire:
-            sas_token = self.service.generate_blob_shared_access_signature(
+            sas_token = self.custom_service.generate_blob_shared_access_signature(
                 self.azure_container, name, permission=BlobPermissions.READ, expiry=self._expire_at(expire))
             make_blob_url_kwargs['sas_token'] = sas_token
 
         if self.azure_protocol:
             make_blob_url_kwargs['protocol'] = self.azure_protocol
-        return self.service.make_blob_url(
+        return self.custom_service.make_blob_url(
             container_name=self.azure_container,
             blob_name=name,
             **make_blob_url_kwargs)
