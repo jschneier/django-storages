@@ -274,7 +274,7 @@ class S3BotoStorage(Storage):
             # use self._get_access_keys()
             # as it can be customized in different subclasses
             kwargs = self._get_connection_kwargs()
-            self.access_key, self.secret_key = self._get_access_keys()
+            access_key, secret_key = self._get_access_keys()
 
             self._connection = self.connection_class(
                 access_key, secret_key,
