@@ -302,12 +302,18 @@ class S3Boto3Storage(Storage):
     def connection(self):
         connection = getattr(self._connections, 'connection', None)
         if connection is None:
+            # don't use directly self.access_key, self.secret_key 
+            # as we might need to refresh their values. Instead
+            # use self._get_access_keys() and self._get_security_token()
+            # as it can be customized in different subclasses
+            access_key, secret_key = self._get_access_keys()
+            security_token = self._get_security_token()
             session = boto3.session.Session()
             self._connections.connection = session.resource(
                 's3',
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                aws_session_token=self.security_token,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                aws_session_token=security_token,
                 region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,

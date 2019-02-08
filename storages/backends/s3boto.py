@@ -269,18 +269,28 @@ class S3BotoStorage(Storage):
     @property
     def connection(self):
         if self._connection is None:
+            # don't use directly self.access_key, self.secret_key 
+            # as we might need to refresh their values. Instead
+            # use self._get_access_keys()
+            # as it can be customized in different subclasses
             kwargs = self._get_connection_kwargs()
+            self.access_key, self.secret_key = self._get_access_keys()
 
             self._connection = self.connection_class(
-                self.access_key,
-                self.secret_key,
+                access_key, secret_key,
                 **kwargs
             )
         return self._connection
 
     def _get_connection_kwargs(self):
+        # don't use directly self.security_token 
+        # as we might need to refresh their values. Instead
+        # use self._get_security_token()
+        # as it can be customized in different subclasses
+        security_token = self._get_security_token()
+
         return dict(
-            security_token=self.security_token,
+            security_token=security_token,
             is_secure=self.use_ssl,
             calling_format=self.calling_format,
             host=self.host,
