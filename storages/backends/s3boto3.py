@@ -302,7 +302,7 @@ class S3Boto3Storage(Storage):
     def connection(self):
         connection = getattr(self._connections, 'connection', None)
         if connection is None:
-            # don't use directly self.access_key, self.secret_key 
+            # don't use directly self.access_key, self.secret_key
             # as we might need to refresh their values. Instead
             # use self._get_access_keys() and self._get_security_token()
             # as it can be customized in different subclasses
