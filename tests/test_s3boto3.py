@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import base64
 import gzip
+import hashlib
 import pickle
 import threading
 import warnings
@@ -269,7 +271,9 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         file.close()
         multipart.Part.assert_called_with(1)
         part = multipart.Part.return_value
-        part.upload.assert_called_with(Body=content.encode('utf-8'))
+        content_bytes = content.encode('utf-8')
+        content_md5 = base64.b64encode(hashlib.md5(content_bytes).digest()).decode('utf-8')
+        part.upload.assert_called_with(Body=content_bytes, ContentMD5=content_md5)
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
 
@@ -328,6 +332,15 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                 for args_list in part.upload.call_args_list)
         )
         self.assertEqual(uploaded_content, written_content)
+        uploaded_md5s = [
+            args_list[1]['ContentMD5']
+            for args_list in part.upload.call_args_list
+        ]
+        correct_md5s = [
+            base64.b64encode(hashlib.md5(args_list[1]['Body']).digest()).decode('utf-8')
+            for args_list in part.upload.call_args_list
+        ]
+        self.assertListEqual(uploaded_md5s, correct_md5s)
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [
                 {'ETag': '123', 'PartNumber': 1},

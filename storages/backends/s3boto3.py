@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import io
 import mimetypes
 import os
@@ -72,6 +74,7 @@ class S3Boto3StorageFile(File):
             self.obj.load()
         self._is_dirty = False
         self._file = None
+        self._file_md5 = hashlib.md5()
         self._multipart = None
         # 5 MB is the minimum part size (if there is more than one part).
         # Amazon allows up to 10,000 parts.  The default supports uploads
@@ -127,7 +130,9 @@ class S3Boto3StorageFile(File):
             self._multipart = self.obj.initiate_multipart_upload(**parameters)
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
-        return super(S3Boto3StorageFile, self).write(force_bytes(content))
+        content_bytes = force_bytes(content)
+        self._file_md5.update(content_bytes)
+        return super(S3Boto3StorageFile, self).write(content_bytes)
 
     @property
     def _buffer_file_size(self):
@@ -145,9 +150,13 @@ class S3Boto3StorageFile(File):
             self._write_counter += 1
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
-            part.upload(Body=self.file.read())
+            part.upload(
+                Body=self.file.read(),
+                ContentMD5=base64.b64encode(self._file_md5.digest()).decode('utf-8')
+            )
             self.file.seek(0)
             self.file.truncate()
+            self._file_md5 = hashlib.md5()
 
     def close(self):
         if self._is_dirty:
