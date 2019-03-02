@@ -143,6 +143,12 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
   support the legacy ``s3`` (also known as ``v2``) version. You can check to see
   if your region is one of them in the `S3 region list`_.
 
+``AWS_S3_TRANSFER_CONFIG`` (optional - boto3 only)
+
+  An instance of `boto3.s3.transfer.TransferConfig`_ used for uploads and downloads. Use this to control concurrency-related aspects of uploads and downloads, such as number of threads.
+
+.. _boto3.s3.transfer.TransferConfig: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
+
 .. note::
 
   The signature versions are not backwards compatible so be careful about url endpoints if making this change

@@ -59,6 +59,7 @@ class S3Boto3StorageFile(File):
     # TODO: When Django drops support for Python 2.5, rewrite to use the
     #       BufferedIO streams in the Python 2.6 io module.
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
+    transfer_config = setting('AWS_S3_TRANSFER_CONFIG', None)
 
     def __init__(self, name, mode, storage, buffer_size=None):
         if 'r' in mode and 'w' in mode:
@@ -94,7 +95,7 @@ class S3Boto3StorageFile(File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.obj.download_fileobj(self._file)
+                self.obj.download_fileobj(self._file, Config=self.transfer_config)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
                 self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
@@ -220,6 +221,7 @@ class S3Boto3Storage(Storage):
     use_ssl = setting('AWS_S3_USE_SSL', True)
     verify = setting('AWS_S3_VERIFY', None)
     max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
+    transfer_config = setting('AWS_S3_TRANSFER_CONFIG', None)
 
     def __init__(self, acl=None, bucket=None, **settings):
         # check if some of the settings we've provided as class attributes
@@ -518,7 +520,7 @@ class S3Boto3Storage(Storage):
         if self.default_acl:
             put_parameters['ACL'] = self.default_acl
         content.seek(0, os.SEEK_SET)
-        obj.upload_fileobj(content, ExtraArgs=put_parameters)
+        obj.upload_fileobj(content, ExtraArgs=put_parameters, Config=self.transfer_config)
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))

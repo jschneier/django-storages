@@ -120,7 +120,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
-            }
+            },
+            Config=None,
         )
 
     def test_storage_save_with_acl(self):
@@ -139,7 +140,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
-            }
+            },
+            Config=None,
         )
 
     def test_content_type(self):
@@ -158,7 +160,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'image/jpeg',
                 'ACL': self.storage.default_acl,
-            }
+            },
+            Config=None,
         )
 
     def test_storage_save_gzipped(self):
@@ -175,7 +178,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
-            }
+            },
+            Config=None,
         )
 
     def test_storage_save_gzip(self):
@@ -193,7 +197,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
-            }
+            },
+            Config=None,
         )
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
@@ -221,12 +226,33 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
-            }
+            },
+            Config=None,
         )
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
         zfile = gzip.GzipFile(mode='rb', fileobj=content)
         self.assertEqual(zfile.read(), b"I should be gzip'd")
+
+    def test_transfer_config(self):
+        """
+        Test saving a file with custom transfer config
+        """
+        with override_settings(AWS_S3_TRANSFER_CONFIG='Custom config'):
+            storage = s3boto3.S3Boto3Storage()
+            storage._connections.connection = mock.MagicMock()
+            name = 'test_storage_save_custom.txt'
+            content = ContentFile('new content')
+
+            storage.save(name, content)
+            obj = storage.bucket.Object.return_value
+            obj.upload_fileobj.assert_called_with(
+                content.file,
+                ExtraArgs={
+                    'ContentType': 'text/plain',
+                },
+                Config='Custom config'
+            )
 
     def test_compress_content_len(self):
         """
