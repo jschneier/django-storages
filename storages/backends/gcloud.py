@@ -174,8 +174,12 @@ class GoogleCloudStorage(Storage):
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
-        file.blob.upload_from_file(content, rewind=True, size=content.size,
+        if self.default_acl:
+          file.blob.upload_from_file(content, rewind=True, size=content.size,
                                    content_type=file.mime_type, predefined_acl=self.default_acl)
+        else:
+          file.blob.upload_from_file(content, rewind=True, size=content.size,
+                                   content_type=file.mime_type)
         return cleaned_name
 
     def delete(self, name):
