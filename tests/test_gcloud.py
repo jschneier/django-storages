@@ -131,7 +131,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.get_bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0], predefined_acl='publicRead')
+            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
+            predefined_acl='publicRead')
 
     def test_delete(self):
         self.storage.delete(self.filename)
