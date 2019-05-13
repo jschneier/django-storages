@@ -18,6 +18,20 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
 
+_SUPPORTED_EXTRA_PROVIDER_PARAMS = (
+    'region',
+    'host',
+    'port',
+    'secure',
+    'url',
+    'timeout',
+    'proxy_url',
+    'token',
+    'retry_delay',
+    'backoff',
+    'project',  # Used by the GoogleStorageDriver
+)
+
 
 @deconstructible
 class LibCloudStorage(Storage):
@@ -31,12 +45,14 @@ class LibCloudStorage(Storage):
         if not self.provider:
             raise ImproperlyConfigured(
                 'LIBCLOUD_PROVIDERS %s not defined or invalid' % provider_name)
+
         extra_kwargs = {}
-        if 'region' in self.provider:
-            extra_kwargs['region'] = self.provider['region']
-        # Used by the GoogleStorageDriver
-        if 'project' in self.provider:
-            extra_kwargs['project'] = self.provider['project']
+        for param in _SUPPORTED_EXTRA_PROVIDER_PARAMS:
+            try:
+                extra_kwargs[param] = self.provider[param]
+            except KeyError:
+                pass
+
         try:
             provider_type = self.provider['type']
             if isinstance(provider_type, string_types):
