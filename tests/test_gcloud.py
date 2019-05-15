@@ -12,7 +12,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
-from google.cloud.exceptions import NotFound
+from google.cloud.exceptions import NotFound, ServiceUnavailable
 from google.cloud.storage.blob import Blob
 
 from storages.backends import gcloud
@@ -116,6 +116,19 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.get_bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0])
+
+    def test_save_retries_on_503(self):
+        data = 'This is some test ủⓝï℅ⅆℇ content.'
+        filename = 'ủⓝï℅ⅆℇ.txt'
+        content = ContentFile(data)
+
+        self.storage._bucket = mock.MagicMock()
+        self.storage._bucket.get_blob.return_value.upload_from_file.side_effect = [
+            ServiceUnavailable("BackendError"), mock.MagicMock()
+        ]
+
+        self.storage.save(filename, content)
+        self.assertEqual(self.storage._bucket.get_blob().upload_from_file.call_count, 2)
 
     def test_save_with_default_acl(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'

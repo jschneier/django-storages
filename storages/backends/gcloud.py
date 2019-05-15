@@ -1,4 +1,5 @@
 import mimetypes
+import time
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -17,10 +18,12 @@ from storages.utils import (
 try:
     from google.cloud.storage.client import Client
     from google.cloud.storage.blob import Blob
-    from google.cloud.exceptions import NotFound
+    from google.cloud.exceptions import NotFound, ServiceUnavailable
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
+
+MAX_RETRIES = 3
 
 
 class GoogleCloudFile(File):
@@ -75,8 +78,14 @@ class GoogleCloudFile(File):
     def close(self):
         if self._file is not None:
             if self._is_dirty:
-                self.blob.upload_from_file(self.file, rewind=True,
-                                           content_type=self.mime_type)
+                for retry in range(MAX_RETRIES):  # Retry 3 times
+                    try:
+                        self.blob.upload_from_file(self.file, rewind=True,
+                                                   content_type=self.mime_type)
+                        break
+                    except ServiceUnavailable:
+                        # In case of 503 retry
+                        time.sleep(.5 * retry)
             self._file.close()
             self._file = None
 
@@ -174,14 +183,20 @@ class GoogleCloudStorage(Storage):
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
-        if self.default_acl:
-            file.blob.upload_from_file(
-                content, rewind=True, size=content.size,
-                content_type=file.mime_type, predefined_acl=self.default_acl)
-        else:
-            file.blob.upload_from_file(
-                content, rewind=True, size=content.size,
-                content_type=file.mime_type)
+        for retry in range(MAX_RETRIES):  # Retry 3 times
+            try:
+                if self.default_acl:
+                    file.blob.upload_from_file(
+                        content, rewind=True, size=content.size,
+                        content_type=file.mime_type, predefined_acl=self.default_acl)
+                else:
+                    file.blob.upload_from_file(
+                        content, rewind=True, size=content.size,
+                        content_type=file.mime_type)
+                break
+            except ServiceUnavailable:
+                # In case of 503 retry
+                time.sleep(.5 * retry)
         return cleaned_name
 
     def delete(self, name):
