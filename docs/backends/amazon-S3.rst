@@ -202,6 +202,35 @@ origin manually for this to work.
 If you need to use multiple storages that are served via CloudFront, pass the
 `custom_domain` parameter to their constructors.
 
+IAM Policy
+----------
+
+The IAM policy permissions needed for most common use cases are:
+
+.. code-block:: json
+
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "VisualEditor0",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:GetObjectAcl",
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                    "s3:DeleteObject",
+                    "s3:PutObjectAcl"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::example-bucket-name/*",
+                    "arn:aws:s3:::example-bucket-name"
+                ]
+            }
+        ]
+    }
+
 Storage
 -------
 
