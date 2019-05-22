@@ -273,7 +273,7 @@ An object without a file has limited functionality::
 
 Saving a file enables full functionality::
 
-    >>> obj1.normal.save('django_test.txt', ContentFile('content'))
+    >>> obj1.normal.save('django_test.txt', ContentFile(b'content'))
     >>> obj1.normal
     <FieldFile: tests/django_test.txt>
     >>> obj1.normal.size
@@ -294,7 +294,7 @@ Files can be read in a little at a time, if necessary::
 Save another file with the same name::
 
     >>> obj2 = MyModel()
-    >>> obj2.normal.save('django_test.txt', ContentFile('more content'))
+    >>> obj2.normal.save('django_test.txt', ContentFile(b'more content'))
     >>> obj2.normal
     <FieldFile: tests/django_test.txt>
     >>> obj2.normal.size
