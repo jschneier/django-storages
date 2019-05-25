@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import gzip
 import pickle
 import threading
 import warnings
 from datetime import datetime
 from textwrap import dedent
-from unittest import skipIf
+from unittest import mock, skipIf
+from urllib.parse import urlparse
 
 from botocore.exceptions import ClientError
 from django.conf import settings
@@ -17,17 +15,6 @@ from django.test import TestCase, override_settings
 from django.utils.timezone import is_aware, utc
 
 from storages.backends import s3boto3
-
-try:
-    from django.utils.six.moves.urllib import parse as urlparse
-except ImportError:
-    from urllib import parse as urlparse
-
-
-try:
-    from unittest import mock
-except ImportError:  # Python 3.2 and below
-    import mock
 
 
 class S3Boto3TestCase(TestCase):
@@ -621,7 +608,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.custom_domain = "mock.cloudfront.net"
         filename = "whacky & filename.mp4"
         url = self.storage.url(filename)
-        parsed_url = urlparse.urlparse(url)
+        parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path,
                          "/whacky%20%26%20filename.mp4")
         self.assertFalse(self.storage.bucket.meta.client.generate_presigned_url.called)
@@ -635,7 +622,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         url = self.storage.url(name)
-        parsed_url = urlparse.urlparse(url)
+        parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path, "/%C3%A3l%C3%B6h%C3%A2.jpg")
 
     def test_strip_signing_parameters(self):

@@ -67,13 +67,13 @@ class GoogleCloudFile(File):
         if num_bytes is None:
             num_bytes = -1
 
-        return super(GoogleCloudFile, self).read(num_bytes)
+        return super().read(num_bytes)
 
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super(GoogleCloudFile, self).write(force_bytes(content))
+        return super().write(force_bytes(content))
 
     def close(self):
         if self._file is not None:
@@ -88,7 +88,7 @@ class GoogleCloudFile(File):
 @deconstructible
 class GoogleCloudStorage(BaseStorage):
     def __init__(self, **settings):
-        super(GoogleCloudStorage, self).__init__(**settings)
+        super().__init__(**settings)
 
         check_location(self)
 
@@ -176,7 +176,7 @@ class GoogleCloudStorage(BaseStorage):
         name = self._normalize_name(clean_name(name))
         file_object = GoogleCloudFile(name, mode, self)
         if not file_object.blob:
-            raise IOError(u'File does not exist: %s' % name)
+            raise OSError('File does not exist: %s' % name)
         return file_object
 
     def _save(self, name, content):
@@ -235,7 +235,7 @@ class GoogleCloudStorage(BaseStorage):
         blob = self.bucket.get_blob(name)
 
         if blob is None:
-            raise NotFound(u'File does not exist: {}'.format(name))
+            raise NotFound('File does not exist: {}'.format(name))
 
         return blob
 
@@ -293,4 +293,4 @@ class GoogleCloudStorage(BaseStorage):
         name = clean_name(name)
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
-        return super(GoogleCloudStorage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)

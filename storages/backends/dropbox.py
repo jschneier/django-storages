@@ -8,8 +8,6 @@
 # DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
 # DROPBOX_ROOT_PATH = '/dir/'
 
-from __future__ import absolute_import
-
 from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile

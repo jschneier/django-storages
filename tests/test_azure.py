@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 import datetime
 from datetime import timedelta
+from unittest import mock
 
 import pytz
 from azure.storage.blob import Blob, BlobPermissions, BlobProperties
@@ -11,11 +8,6 @@ from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 
 from storages.backends import azure_storage
-
-try:
-    from unittest import mock
-except ImportError:  # Python 3.2 and below
-    import mock
 
 
 class AzureStorageTest(TestCase):

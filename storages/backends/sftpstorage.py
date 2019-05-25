@@ -3,7 +3,6 @@
 # License: MIT
 #
 # Modeled on the FTP storage by Rafal Jonca <jonca.rafal@gmail.com>
-from __future__ import print_function
 
 import getpass
 import io
@@ -11,6 +10,7 @@ import os
 import posixpath
 import stat
 from datetime import datetime
+from urllib.parse import urljoin
 
 import paramiko
 from django.core.files.base import File
@@ -18,11 +18,6 @@ from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
 from storages.utils import setting
-
-try:
-    from django.utils.six.moves.urllib import parse as urlparse
-except ImportError:
-    from urllib import parse as urlparse
 
 
 @deconstructible
@@ -148,14 +143,14 @@ class SFTPStorage(BaseStorage):
     def delete(self, name):
         try:
             self.sftp.remove(self._remote_path(name))
-        except IOError:
+        except OSError:
             pass
 
     def exists(self, name):
         try:
             self.sftp.stat(self._remote_path(name))
             return True
-        except IOError:
+        except OSError:
             return False
 
     def _isdir_attr(self, item):
@@ -192,7 +187,7 @@ class SFTPStorage(BaseStorage):
     def url(self, name):
         if self._base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urlparse.urljoin(self._base_url, name).replace('\\', '/')
+        return urljoin(self._base_url, name).replace('\\', '/')
 
 
 class SFTPStorageFile(File):

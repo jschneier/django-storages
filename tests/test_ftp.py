@@ -1,9 +1,6 @@
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
 import io
 from datetime import datetime
+from unittest.mock import patch
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File

@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
-
-try:
-    from unittest import mock
-except ImportError:  # Python 3.2 and below
-    import mock
-
 import mimetypes
 import warnings
 from datetime import datetime, timedelta
+from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
