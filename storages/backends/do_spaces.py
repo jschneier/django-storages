@@ -20,13 +20,13 @@ class DigitalOceanSpacesStorage(S3Boto3Storage):
 
 class DigitalOceanSpacesStaticStorage(DigitalOceanSpacesStorage):
     location = settings.DO_SPACES_STATIC_LOCATION
-    default_acl = 'public'
+    default_acl = 'public-read'
 
 
 class DigitalOceanSpacesPublicMediaStorage(DigitalOceanSpacesStorage):
     location = settings.DO_SPACES_PUBLIC_MEDIA_LOCATION
     file_overwrite = False
-    default_acl = 'public'
+    default_acl = 'public-read'
 
 
 class DigitalOceanSpacesPrivateMediaStorage(DigitalOceanSpacesStorage):
