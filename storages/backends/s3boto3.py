@@ -509,6 +509,19 @@ class S3Boto3Storage(Storage):
         return cleaned_name
 
     def _save_content(self, obj, content, parameters):
+        """
+        We create a clone of the content file as when this is passed to boto3 it wrongly closes
+        the file upon upload where as the storage backend expects it to still be open
+        """
+        # Seek our content back to the start
+        content.seek(0, os.SEEK_SET)
+
+        # Create a temporary file that will write to disk after a specified size
+        content_autoclose = SpooledTemporaryFile()
+
+        # Write our original content into our copy that will be closed by boto3
+        content_autoclose.write(content.read())
+
         # only pass backwards incompatible arguments if they vary from the default
         put_parameters = parameters.copy() if parameters else {}
         if self.encryption:
@@ -518,7 +531,12 @@ class S3Boto3Storage(Storage):
         if self.default_acl:
             put_parameters['ACL'] = self.default_acl
         content.seek(0, os.SEEK_SET)
+        # Upload the object which will auto close the content_autoclose instance
         obj.upload_fileobj(content, ExtraArgs=put_parameters)
+
+        # Cleanup if this is fixed upstream our duplicate should always close
+        if not content_autoclose.closed:
+            content_autoclose.close()
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
