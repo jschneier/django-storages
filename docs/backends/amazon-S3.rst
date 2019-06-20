@@ -171,7 +171,7 @@ The following adjustments to settings are required:
 - If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE`` to ``virtual``
 - Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
 - Extract the region name from ``AWS_S3_HOST`` and set ``AWS_S3_REGION_NAME``
-- Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORTY`` with ``AWS_S3_PROXIES``
+- Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` with ``AWS_S3_PROXIES``
 - If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
 - Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
