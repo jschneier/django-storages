@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from storages.backends import dropbox
 from dropbox.files import (
-    FolderMetadata, FileMetadata, GetTemporaryLinkResult,
+    FileMetadata, FolderMetadata, GetTemporaryLinkResult,
 )
 from requests.models import Response
 
