@@ -4,8 +4,10 @@ from datetime import datetime
 from django.core.exceptions import (
     ImproperlyConfigured, SuspiciousFileOperation,
 )
-from django.core.files.base import ContentFile, File
+from django.core.files.base import File
 from django.test import TestCase
+from dropbox.files import FileMetadata, FolderMetadata, GetTemporaryLinkResult
+from requests.models import Response
 
 from storages.backends import dropbox
 
@@ -15,50 +17,38 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 
-class F(object):
-    pass
-
-
 FILE_DATE = datetime(2015, 8, 24, 15, 6, 41)
-FILE_FIXTURE = {
-    'bytes': 4,
-    'client_mtime': 'Mon, 24 Aug 2015 15:06:41 +0000',
-    'icon': 'page_white_text',
-    'is_dir': False,
-    'mime_type': 'text/plain',
-    'modified': 'Mon, 24 Aug 2015 15:06:41 +0000',
-    'path': '/foo.txt',
-    'rev': '23b7cdd80',
-    'revision': 2,
-    'root': 'app_folder',
-    'size': '4 bytes',
-    'thumb_exists': False
-}
-FILES_FIXTURE = {
-    'bytes': 0,
-    'contents': [
-        FILE_FIXTURE,
-        {'bytes': 0,
-         'icon': 'folder',
-         'is_dir': True,
-         'modified': 'Mon, 6 Feb 2015 15:06:40 +0000',
-         'path': '/bar',
-         'rev': '33b7cdd80',
-         'revision': 3,
-         'root': 'app_folder',
-         'size': '0 bytes',
-         'thumb_exists': False}
-    ],
-    'hash': 'aeaa0ed65aa4f88b96dfe3d553280efc',
-    'icon': 'folder',
-    'is_dir': True,
-    'path': '/',
-    'root': 'app_folder',
-    'size': '0 bytes',
-    'thumb_exists': False
-}
-FILE_MEDIA_FIXTURE = F()
-FILE_MEDIA_FIXTURE.link = 'https://dl.dropboxusercontent.com/1/view/foo'
+FILE_METADATA_MOCK = mock.MagicMock(spec=FileMetadata)
+FILE_METADATA_MOCK.size = 4
+FILE_METADATA_MOCK.client_modified = FILE_DATE
+FILE_METADATA_MOCK.server_modified = FILE_DATE
+FILE_METADATA_MOCK.path_lower = '/foo.txt'
+FILE_METADATA_MOCK.path_display = '/foo.txt'
+FILE_METADATA_MOCK.name = 'foo.txt'
+FILE_METADATA_MOCK.rev = '012c0000000150c838f0'
+FILE_METADATA_MOCK.content_hash = \
+    '3865695d47c02576e8578df30d56bb3faf737c11044d804f09ffb6484453020f'
+
+FOLDER_METADATA_MOCK = mock.MagicMock(spec=FolderMetadata)
+FOLDER_METADATA_MOCK.name = 'bar'
+
+FILES_MOCK = mock.MagicMock(spec=FolderMetadata)
+FILES_MOCK.entries = [
+    FILE_METADATA_MOCK, FOLDER_METADATA_MOCK
+]
+
+FILE_MEDIA_MOCK = mock.MagicMock(spec=GetTemporaryLinkResult)
+FILE_MEDIA_MOCK.link = 'https://dl.dropboxusercontent.com/1/view/foo'
+
+FILES_EMPTY_MOCK = mock.MagicMock(spec=FolderMetadata)
+FILES_EMPTY_MOCK.entries = []
+
+RESPONSE_200_MOCK = mock.MagicMock(spec=Response)
+RESPONSE_200_MOCK.status_code = 200
+RESPONSE_200_MOCK.content = b'bar'
+
+RESPONSE_500_MOCK = mock.MagicMock(spec=Response)
+RESPONSE_500_MOCK.status_code = 500
 
 
 class DropBoxTest(TestCase):
@@ -70,12 +60,12 @@ class DropBoxTest(TestCase):
             dropbox.DropBoxStorage(None)
 
     @mock.patch('dropbox.Dropbox.files_delete',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA_MOCK)
     def test_delete(self, *args):
         self.storage.delete('foo')
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=[FILE_FIXTURE])
+                return_value=[FILE_METADATA_MOCK])
     def test_exists(self, *args):
         exists = self.storage.exists('foo')
         self.assertTrue(exists)
@@ -86,8 +76,8 @@ class DropBoxTest(TestCase):
         exists = self.storage.exists('bar')
         self.assertFalse(exists)
 
-    @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILES_FIXTURE)
+    @mock.patch('dropbox.Dropbox.files_list_folder',
+                return_value=FILES_MOCK)
     def test_listdir(self, *args):
         dirs, files = self.storage.listdir('/')
         self.assertGreater(len(dirs), 0)
@@ -96,19 +86,19 @@ class DropBoxTest(TestCase):
         self.assertEqual(files[0], 'foo.txt')
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA_MOCK)
     def test_size(self, *args):
         size = self.storage.size('foo')
-        self.assertEqual(size, FILE_FIXTURE['bytes'])
+        self.assertEqual(size, FILE_METADATA_MOCK.size)
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA_MOCK)
     def test_modified_time(self, *args):
         mtime = self.storage.modified_time('foo')
         self.assertEqual(mtime, FILE_DATE)
 
     @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_FIXTURE)
+                return_value=FILE_METADATA_MOCK)
     def test_accessed_time(self, *args):
         mtime = self.storage.accessed_time('foo')
         self.assertEqual(mtime, FILE_DATE)
@@ -137,10 +127,10 @@ class DropBoxTest(TestCase):
         self.assertFalse(upload.called)
 
     @mock.patch('dropbox.Dropbox.files_get_temporary_link',
-                return_value=FILE_MEDIA_FIXTURE)
+                return_value=FILE_MEDIA_MOCK)
     def test_url(self, *args):
         url = self.storage.url('foo')
-        self.assertEqual(url, FILE_MEDIA_FIXTURE.link)
+        self.assertEqual(url, FILE_MEDIA_MOCK.link)
 
     def test_formats(self, *args):
         self.storage = dropbox.DropBoxStorage('foo')
@@ -157,14 +147,21 @@ class DropBoxFileTest(TestCase):
         self.file = dropbox.DropBoxFile('/foo.txt', self.storage)
 
     @mock.patch('dropbox.Dropbox.files_download',
-                return_value=ContentFile(b'bar'))
+                return_value=(FILE_METADATA_MOCK, RESPONSE_200_MOCK))
     def test_read(self, *args):
-        file = self.storage._open(b'foo')
+        file = self.storage._open('foo.txt')
         self.assertEqual(file.read(), b'bar')
 
+    @mock.patch('dropbox.Dropbox.files_download',
+                return_value=(FILE_METADATA_MOCK, RESPONSE_500_MOCK))
+    def test_server_bad_response(self, *args):
+        with self.assertRaises(dropbox.DropBoxStorageException):
+            file = self.storage._open('foo.txt')
+            file.read()
 
-@mock.patch('dropbox.Dropbox.files_get_metadata',
-            return_value={'contents': []})
+
+@mock.patch('dropbox.Dropbox.files_list_folder',
+            return_value=FILES_EMPTY_MOCK)
 class DropBoxRootPathTest(TestCase):
     def test_jailed(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', '/bar')
