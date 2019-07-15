@@ -10,9 +10,9 @@
 
 from __future__ import absolute_import
 
+from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
-from io import BytesIO
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
@@ -21,9 +21,7 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import (
-    CommitInfo, FolderMetadata, UploadSessionCursor,
-)
+from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor
 
 from storages.utils import setting
 

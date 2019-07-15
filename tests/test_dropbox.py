@@ -6,12 +6,10 @@ from django.core.exceptions import (
 )
 from django.core.files.base import File
 from django.test import TestCase
+from dropbox.files import FileMetadata, FolderMetadata, GetTemporaryLinkResult
+from requests.models import Response
 
 from storages.backends import dropbox
-from dropbox.files import (
-    FileMetadata, FolderMetadata, GetTemporaryLinkResult,
-)
-from requests.models import Response
 
 try:
     from unittest import mock
