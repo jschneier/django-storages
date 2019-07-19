@@ -48,7 +48,7 @@ class AzureStorageFile(File):
                 blob_name=self._path,
                 stream=file,
                 max_connections=1,
-                timeout=10)
+                timeout=self._storage.timeout)
         if 'r' in self._mode:
             file.seek(0)
 
