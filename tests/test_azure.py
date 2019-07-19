@@ -139,7 +139,7 @@ class AzureStorageTest(TestCase):
             self.storage._service.generate_blob_shared_access_signature.assert_called_once_with(
                 self.container_name,
                 'some_blob',
-                BlobPermissions.READ,
+                permission=BlobPermissions.READ,
                 expiry=fixed_time + timedelta(seconds=100))
             self.storage._service.make_blob_url.assert_called_once_with(
                 container_name=self.container_name,

@@ -257,7 +257,7 @@ class AzureStorage(Storage):
         make_blob_url_kwargs = {}
         if expire:
             sas_token = self.service.generate_blob_shared_access_signature(
-                self.azure_container, name, BlobPermissions.READ, expiry=self._expire_at(expire))
+                self.azure_container, name, permission=BlobPermissions.READ, expiry=self._expire_at(expire))
             make_blob_url_kwargs['sas_token'] = sas_token
 
         if self.azure_protocol:
