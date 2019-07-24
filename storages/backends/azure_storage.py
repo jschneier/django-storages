@@ -13,7 +13,7 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes, force_text, filepath_to_uri
 
 from storages.utils import (
     clean_name, get_available_overwrite_name, safe_join, setting,
@@ -147,6 +147,8 @@ class AzureStorage(Storage):
     location = setting('AZURE_LOCATION', '')
     default_content_type = 'application/octet-stream'
     is_emulated = setting('AZURE_EMULATED_MODE', False)
+    cdn_domain = setting('AZURE_CDN_DOMAIN', None)
+    cdn_protocol = setting('AZURE_CDN_PROTOCOL', 'https')
 
     def __init__(self):
         self._service = None
@@ -252,6 +254,10 @@ class AzureStorage(Storage):
         name = self._get_valid_path(name)
 
         if expire is None:
+            if self.cdn_domain:
+                return "%s://%s/%s" % (self.cdn_protocol,
+                                       self.cdn_domain, filepath_to_uri(name))
+
             expire = self.expiration_secs
 
         make_blob_url_kwargs = {}
