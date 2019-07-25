@@ -256,7 +256,7 @@ class AzureStorage(Storage):
         if expire is None:
             if self.cdn_domain:
                 return "%s://%s/%s/%s" % (self.cdn_protocol, self.cdn_domain,
-                 self.azure_container, filepath_to_uri(name))
+                                          self.azure_container, filepath_to_uri(name))
 
             expire = self.expiration_secs
 
