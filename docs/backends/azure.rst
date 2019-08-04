@@ -9,7 +9,7 @@ Notes
 
 Be aware Azure file names have some extra restrictions. They can't:
 
-  - end with dot (``.``) or slash (``/``)
+  - end with a dot (``.``) or slash (``/``)
   - contain more than 256 slashes (``/``)
   - be longer than 1024 characters
 
@@ -97,7 +97,7 @@ The following settings are available:
 
 ``AZURE_SSL``
 
-    Set a secure connection (HTTPS), otherwise it's makes an insecure connection (HTTP). Default is ``True``
+    Set a secure connection (HTTPS), otherwise it makes an insecure connection (HTTP). Default is ``True``
 
 ``AZURE_UPLOAD_MAX_CONN``
 
