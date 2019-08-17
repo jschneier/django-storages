@@ -45,10 +45,6 @@ matrix:
     - env: TOXENV=py36-djangomaster
     - env: TOXENV=py37-djangomaster
 
-before_install:
-  # Workaround Travis environment.
-  - sudo rm /etc/boto.cfg
-
 install:
   - pip install tox
 
