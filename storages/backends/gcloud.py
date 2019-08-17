@@ -7,7 +7,7 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, smart_str
+from django.utils.encoding import force_bytes
 
 from storages.base import BaseStorage
 from storages.utils import (
@@ -115,7 +115,6 @@ class GoogleCloudStorage(BaseStorage):
             "auto_create_acl": setting('GS_AUTO_CREATE_ACL', 'projectPrivate'),
             "default_acl": setting('GS_DEFAULT_ACL'),
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
-            "file_name_charset": setting('GS_FILE_NAME_CHARSET', 'utf-8'),
             "file_overwrite": setting('GS_FILE_OVERWRITE', True),
             "cache_control": setting('GS_CACHE_CONTROL'),
             # The max amount of memory a returned file can take up before being
@@ -169,9 +168,6 @@ class GoogleCloudStorage(BaseStorage):
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
 
-    def _encode_name(self, name):
-        return smart_str(name, encoding=self.file_name_charset)
-
     def _open(self, name, mode='rb'):
         name = self._normalize_name(clean_name(name))
         file_object = GoogleCloudFile(name, mode, self)
@@ -184,8 +180,7 @@ class GoogleCloudStorage(BaseStorage):
         name = self._normalize_name(cleaned_name)
 
         content.name = cleaned_name
-        encoded_name = self._encode_name(name)
-        file = GoogleCloudFile(encoded_name, 'rw', self)
+        file = GoogleCloudFile(name, 'rw', self)
         file.blob.cache_control = self.cache_control
         file.blob.upload_from_file(
             content, rewind=True, size=content.size,
@@ -194,7 +189,7 @@ class GoogleCloudStorage(BaseStorage):
 
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
-        self.bucket.delete_blob(self._encode_name(name))
+        self.bucket.delete_blob(name)
 
     def exists(self, name):
         if not name:  # root element aka the bucket
@@ -205,7 +200,7 @@ class GoogleCloudStorage(BaseStorage):
                 return False
 
         name = self._normalize_name(clean_name(name))
-        return bool(self.bucket.get_blob(self._encode_name(name)))
+        return bool(self.bucket.get_blob(name))
 
     def listdir(self, name):
         name = self._normalize_name(clean_name(name))
@@ -214,7 +209,7 @@ class GoogleCloudStorage(BaseStorage):
         if name and not name.endswith('/'):
             name += '/'
 
-        iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
+        iterator = self.bucket.list_blobs(prefix=name, delimiter='/')
         blobs = list(iterator)
         prefixes = iterator.prefixes
 
@@ -241,17 +236,17 @@ class GoogleCloudStorage(BaseStorage):
 
     def size(self, name):
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         return blob.size
 
     def modified_time(self, name):
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         return timezone.make_naive(blob.updated)
 
     def get_modified_time(self, name):
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         updated = blob.updated
         return updated if setting('USE_TZ') else timezone.make_naive(updated)
 
@@ -261,7 +256,7 @@ class GoogleCloudStorage(BaseStorage):
         The datetime will be timezone-aware if USE_TZ=True.
         """
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         created = blob.time_created
         return created if setting('USE_TZ') else timezone.make_naive(created)
 
@@ -272,7 +267,7 @@ class GoogleCloudStorage(BaseStorage):
         for many use cases.
         """
         name = self._normalize_name(clean_name(name))
-        blob = self.bucket.blob(self._encode_name(name))
+        blob = self.bucket.blob(name)
 
         if not self.custom_endpoint and self.default_acl == 'publicRead':
             return blob.public_url

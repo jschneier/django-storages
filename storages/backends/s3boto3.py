@@ -13,9 +13,7 @@ from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import (
-    filepath_to_uri, force_bytes, force_str, smart_str,
-)
+from django.utils.encoding import filepath_to_uri, force_bytes
 from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
@@ -108,8 +106,8 @@ class S3Boto3StorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
-        self._force_mode = (lambda b: b) if 'b' in mode else force_str
-        self.obj = storage.bucket.Object(storage._encode_name(name))
+        self._force_mode = lambda b: b if 'b' in mode else lambda b: b.decode()
+        self.obj = storage.bucket.Object(name)
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
             self.obj.load()
@@ -449,7 +447,7 @@ class S3Boto3Storage(BaseStorage):
         """
         if self.preload_metadata and not self._entries:
             self._entries = {
-                self._decode_name(entry.key): entry
+                entry.key: entry
                 for entry in self.bucket.objects.filter(Prefix=self.location)
             }
         return self._entries
@@ -549,12 +547,6 @@ class S3Boto3Storage(BaseStorage):
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
 
-    def _encode_name(self, name):
-        return smart_str(name, encoding=self.file_name_charset)
-
-    def _decode_name(self, name):
-        return force_str(name, encoding=self.file_name_charset)
-
     def _compress_content(self, content):
         """Gzip a given string content."""
         content.seek(0)
@@ -595,10 +587,9 @@ class S3Boto3Storage(BaseStorage):
             content = self._compress_content(content)
             params['ContentEncoding'] = 'gzip'
 
-        encoded_name = self._encode_name(name)
-        obj = self.bucket.Object(encoded_name)
+        obj = self.bucket.Object(name)
         if self.preload_metadata:
-            self._entries[encoded_name] = obj
+            self._entries[name] = obj
 
         content.seek(0, os.SEEK_SET)
         obj.upload_fileobj(content, ExtraArgs=params)
@@ -606,7 +597,7 @@ class S3Boto3Storage(BaseStorage):
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
-        self.bucket.Object(self._encode_name(name)).delete()
+        self.bucket.Object(name).delete()
 
         if name in self._entries:
             del self._entries[name]
@@ -646,7 +637,7 @@ class S3Boto3Storage(BaseStorage):
             if entry:
                 return entry.size if hasattr(entry, 'size') else entry.content_length
             return 0
-        return self.bucket.Object(self._encode_name(name)).content_length
+        return self.bucket.Object(name).content_length
 
     def _get_write_parameters(self, name, content=None):
         params = {}
@@ -690,7 +681,7 @@ class S3Boto3Storage(BaseStorage):
         # only call self.bucket.Object() if the key is not found
         # in the preloaded metadata.
         if entry is None:
-            entry = self.bucket.Object(self._encode_name(name))
+            entry = self.bucket.Object(name)
         if setting('USE_TZ'):
             # boto3 returns TZ aware timestamps
             return entry.last_modified
@@ -744,7 +735,7 @@ class S3Boto3Storage(BaseStorage):
 
         params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
-        params['Key'] = self._encode_name(name)
+        params['Key'] = name
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire, HttpMethod=http_method)
         if self.querystring_auth:
