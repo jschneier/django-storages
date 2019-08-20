@@ -1,6 +1,5 @@
 # https://travis-ci.org/jschneier/django-storages/
 dist: xenial
-sudo: false
 language: python
 
 cache: pip
@@ -44,10 +43,6 @@ matrix:
   allow_failures:
     - env: TOXENV=py36-djangomaster
     - env: TOXENV=py37-djangomaster
-
-before_install:
-  # Workaround Travis environment.
-  - sudo rm /etc/boto.cfg
 
 install:
   - pip install tox
