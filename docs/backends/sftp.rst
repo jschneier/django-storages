@@ -43,7 +43,7 @@ Settings
       just like you would when doing "chmod 775 myfile" from bash.
 
 ``SFTP_STORAGE_UID`` (optional)
-    UID of the account that should be set as owner of the files on the remote
+    UID of the account that should be set as the owner of the files on the remote
     host. You may have to be root to set this.
 
 ``SFTP_STORAGE_GID`` (optional)

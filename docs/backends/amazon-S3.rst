@@ -176,8 +176,8 @@ The following adjustments to settings are required:
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
 - Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
 
-Additionally you must install ``boto3`` (``boto`` is no longer required).  In order to use
-all currently supported features ``1.4.4`` is the minimum required version although we
+Additionally, you must install ``boto3`` (``boto`` is no longer required).  In order to use
+all currently supported features, ``1.4.4`` is the minimum required version although we
 always recommend the most recent.
 
 Please open an issue on the GitHub repo if any further issues are encountered or steps were omitted.
@@ -192,7 +192,7 @@ to serve those files using that::
 
 .. warning::
 
-    Django's ``STATIC_URL`` `must end in a slash`_ and the ``AWS_S3_CUSTOM_DOMAIN`` *must not*. It is best to set this variable indepedently of ``STATIC_URL``.
+    Django's ``STATIC_URL`` `must end in a slash`_ and the ``AWS_S3_CUSTOM_DOMAIN`` *must not*. It is best to set this variable independently of ``STATIC_URL``.
 
 .. _must end in a slash: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
 

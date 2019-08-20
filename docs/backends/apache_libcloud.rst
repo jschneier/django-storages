@@ -153,7 +153,7 @@ set::
 
 Your default Libcloud provider will be used as the file store.
 
-Certifcate authorities
+Certificate authorities
 ----------------------
 
 Libcloud uses HTTPS connections, and in order to validate that these HTTPS connections are
