@@ -16,7 +16,7 @@ from django.test import TestCase, override_settings
 from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_aware, utc
 
-
+from storages.backends import s3boto3
 from storages.backends import do_spaces
 
 try:
