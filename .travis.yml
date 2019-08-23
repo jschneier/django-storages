@@ -8,8 +8,7 @@ matrix:
   fast_finish: true
   include:
 
-    - python: 3.5
-      env: TOXENV=flake8
+    - env: TOXENV=flake8
     - python: 2.7
       env: TOXENV=integration
     - python: 3.5
