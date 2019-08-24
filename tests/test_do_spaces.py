@@ -120,7 +120,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
-                'CacheControl':'max-age=86400',
+                'CacheControl': 'max-age=86400',
             }
         )
 
@@ -140,7 +140,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
-                'CacheControl':'max-age=86400',
+                'CacheControl': 'max-age=86400',
             }
         )
 
@@ -160,7 +160,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ExtraArgs={
                 'ContentType': 'image/jpeg',
                 'ACL': self.storage.default_acl,
-                'CacheControl':'max-age=86400',
+                'CacheControl': 'max-age=86400',
 
             }
         )
@@ -179,7 +179,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
-                'CacheControl':'max-age=86400',
+                'CacheControl': 'max-age=86400',
             }
         )
 
@@ -198,7 +198,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
-                'CacheControl':'max-age=86400',
+                'CacheControl': 'max-age=86400',
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -227,7 +227,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
-                'CacheControl':'max-age=86400',
+                'CacheControl': 'max-age=86400',
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
