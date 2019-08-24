@@ -16,7 +16,7 @@ from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
 from django.utils.six.moves.urllib import parse as urlparse
-from django.utils.timezone import is_naive, localtime
+from django.utils.timezone import is_naive, make_naive
 
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
@@ -576,14 +576,14 @@ class S3Boto3Storage(Storage):
             # boto3 returns TZ aware timestamps
             return entry.last_modified
         else:
-            return localtime(entry.last_modified).replace(tzinfo=None)
+            return make_naive(entry.last_modified)
 
     def modified_time(self, name):
         """Returns a naive datetime object containing the last modified time."""
         # If USE_TZ=False then get_modified_time will return a naive datetime
         # so we just return that, else we have to localize and strip the tz
         mtime = self.get_modified_time(name)
-        return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
+        return mtime if is_naive(mtime) else make_naive(mtime)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
