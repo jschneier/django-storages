@@ -120,6 +120,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
+                'CacheControl':'max-age=86400',
             }
         )
 
@@ -139,6 +140,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
+                'CacheControl':'max-age=86400',
             }
         )
 
@@ -158,6 +160,8 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ExtraArgs={
                 'ContentType': 'image/jpeg',
                 'ACL': self.storage.default_acl,
+                'CacheControl':'max-age=86400',
+
             }
         )
 
@@ -175,6 +179,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
+                'CacheControl':'max-age=86400',
             }
         )
 
@@ -193,6 +198,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
+                'CacheControl':'max-age=86400',
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -221,6 +227,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
                 'ACL': self.storage.default_acl,
+                'CacheControl':'max-age=86400',
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -260,7 +267,8 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ACL='public-read',
             ContentType='text/plain',
             ServerSideEncryption='AES256',
-            StorageClass='REDUCED_REDUNDANCY'
+            StorageClass='REDUCED_REDUNDANCY',
+            CacheControl='max-age=86400'
         )
 
         # Save the internal file before closing
@@ -296,7 +304,8 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
             ACL='public-read',
             ContentType='text/plain',
             ServerSideEncryption='AES256',
-            StorageClass='REDUCED_REDUNDANCY'
+            StorageClass='REDUCED_REDUNDANCY',
+            CacheControl='max-age=86400',
         )
         multipart = obj.initiate_multipart_upload.return_value
 
