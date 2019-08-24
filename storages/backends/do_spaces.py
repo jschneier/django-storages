@@ -1,24 +1,19 @@
-
-from django.conf import settings
+from storages.utils import setting
 
 from .s3boto3 import S3Boto3Storage
-from storages.utils import (
-    check_location, get_available_overwrite_name, lookup_env, safe_join,
-    setting,
-)
 
 
 class DigitalOceanSpacesStorage(S3Boto3Storage):
     access_key = setting('DO_SPACES_ACCESS_KEY_ID')
     secret_key = setting('DO_SPACES_SECRET_ACCESS_KEY')
-    location = setting('DO_SPACES_SPACE_FOLDER','')
+    location = setting('DO_SPACES_SPACE_FOLDER', '')
     bucket_name = setting('DO_SPACES_SPACE_NAME')
     endpoint_url = setting('DO_SPACES_ENDPOINT_URL')
-    default_acl = setting('DO_SPACES_DEFAULT_ACL','public-read')
+    default_acl = setting('DO_SPACES_DEFAULT_ACL', 'public-read')
 
     object_parameters = {
         'CacheControl': 'max-age={CACHE_MAX_AGE}'.format(
-            CACHE_MAX_AGE=setting('DO_SPACES_CACHE_MAX_AGE',86400)
+            CACHE_MAX_AGE=setting('DO_SPACES_CACHE_MAX_AGE', 86400)
         )
     }
     signature_version = 's3'
