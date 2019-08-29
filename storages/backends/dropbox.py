@@ -64,10 +64,12 @@ class DropBoxFile(File):
 @deconstructible
 class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
+    location = setting('DROPBOX_ROOT_PATH', '/')
+    oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=None, root_path=None):
+    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location):
         oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
         self.root_path = root_path or setting('DROPBOX_ROOT_PATH', '/')
         if oauth2_access_token is None:
