@@ -219,6 +219,14 @@ class SFTPStorageFile(File):
         self._is_dirty = True
         self._is_read = True
 
+    def open(self, mode=None):
+        if not self.closed:
+            self.seek(0)
+        elif self.name and self._storage.exists(self.name):
+            self.file = self._storage._open(self.name, mode or self.mode)
+        else:
+            raise ValueError("The file cannot be reopened.")
+
     def close(self):
         if self._is_dirty:
             self._storage._save(self.name, self)
