@@ -15,9 +15,8 @@ from storages.utils import (
 )
 
 try:
-    from google.cloud.storage.client import Client
-    from google.cloud.storage.blob import Blob
-    from google.cloud.exceptions import NotFound
+    from google.cloud.storage import Blob, Client
+    from google.cloud.exceptions import Conflict, NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
@@ -129,19 +128,19 @@ class GoogleCloudStorage(Storage):
 
     def _get_or_create_bucket(self, name):
         """
-        Retrieves a bucket if it exists, otherwise creates it.
+        Returns bucket. If auto_create_bucket is True, creates bucket if it
+        doesn't exist.
         """
-        try:
-            return self.client.get_bucket(name)
-        except NotFound:
-            if self.auto_create_bucket:
-                bucket = self.client.create_bucket(name)
-                bucket.acl.save_predefined(self.auto_create_acl)
-                return bucket
-            raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
-                                       "can be automatically created by "
-                                       "setting GS_AUTO_CREATE_BUCKET to "
-                                       "``True``." % name)
+        bucket = self.client.bucket(name)
+        if self.auto_create_bucket:
+            try:
+                new_bucket = self.client.create_bucket(name)
+                new_bucket.acl.save_predefined(self.auto_create_acl)
+                return new_bucket
+            except Conflict:
+                # Bucket already exists
+                pass
+        return bucket
 
     def _normalize_name(self, name):
         """
@@ -191,9 +190,9 @@ class GoogleCloudStorage(Storage):
     def exists(self, name):
         if not name:  # root element aka the bucket
             try:
-                self.bucket
+                self.client.get_bucket(self.bucket)
                 return True
-            except ImproperlyConfigured:
+            except NotFound:
                 return False
 
         name = self._normalize_name(clean_name(name))
