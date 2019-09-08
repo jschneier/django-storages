@@ -55,9 +55,6 @@ class S3Boto3StorageFile(File):
     order to properly write the file to S3. Be sure to close the file
     in your application.
     """
-    # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
-    # TODO: When Django drops support for Python 2.5, rewrite to use the
-    #       BufferedIO streams in the Python 2.6 io module.
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
@@ -608,7 +605,6 @@ class S3Boto3Storage(Storage):
 
     def url(self, name, parameters=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
-        # TODO: Handle force_http=not self.secure_urls like in s3boto
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
