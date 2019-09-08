@@ -25,7 +25,6 @@ from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor
 
 from storages.utils import setting
 
-
 _DEFAULT_TIMEOUT = 100
 
 
