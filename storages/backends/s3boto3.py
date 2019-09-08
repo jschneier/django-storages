@@ -521,6 +521,9 @@ class S3Boto3Storage(Storage):
         name = self._normalize_name(self._clean_name(name))
         self.bucket.Object(self._encode_name(name)).delete()
 
+        if name in self._entries:
+            del self._entries[name]
+
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
