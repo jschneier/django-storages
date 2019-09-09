@@ -23,6 +23,7 @@ class AzureStorageTest(TestCase):
     def setUp(self, *args):
         self.storage = azure_storage.AzureStorage()
         self.storage._service = mock.MagicMock()
+        self.storage._custom_service = mock.MagicMock()
         self.storage.overwrite_files = True
         self.container_name = 'test'
         self.storage.azure_container = self.container_name
@@ -121,9 +122,9 @@ class AzureStorageTest(TestCase):
         self.assertRaises(ValueError, self.storage.get_available_name, "$$")
 
     def test_url(self):
-        self.storage._service.make_blob_url.return_value = 'ret_foo'
+        self.storage._custom_service.make_blob_url.return_value = 'ret_foo'
         self.assertEqual(self.storage.url('some blob'), 'ret_foo')
-        self.storage._service.make_blob_url.assert_called_once_with(
+        self.storage._custom_service.make_blob_url.assert_called_once_with(
             container_name=self.container_name,
             blob_name='some_blob',
             protocol='https')
@@ -131,21 +132,147 @@ class AzureStorageTest(TestCase):
     def test_url_expire(self):
         utc = pytz.timezone('UTC')
         fixed_time = utc.localize(datetime.datetime(2016, 11, 6, 4))
-        self.storage._service.generate_blob_shared_access_signature.return_value = 'foo_token'
-        self.storage._service.make_blob_url.return_value = 'ret_foo'
+        self.storage._custom_service.generate_blob_shared_access_signature.return_value = 'foo_token'
+        self.storage._custom_service.make_blob_url.return_value = 'ret_foo'
         with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
             self.assertEqual(self.storage.url('some blob', 100), 'ret_foo')
-            self.storage._service.generate_blob_shared_access_signature.assert_called_once_with(
+            self.storage._custom_service.generate_blob_shared_access_signature.assert_called_once_with(
                 self.container_name,
                 'some_blob',
                 permission=BlobPermissions.READ,
                 expiry=fixed_time + timedelta(seconds=100))
-            self.storage._service.make_blob_url.assert_called_once_with(
+            self.storage._custom_service.make_blob_url.assert_called_once_with(
                 container_name=self.container_name,
                 blob_name='some_blob',
                 sas_token='foo_token',
                 protocol='https')
+
+    def test_blob_service_default_params(self):
+        storage = azure_storage.AzureStorage()
+        with mock.patch(
+                'storages.backends.azure_storage.BlockBlobService',
+                autospec=True) as c_mocked:
+            self.assertIsNotNone(storage.service)
+            c_mocked.assert_called_once_with(
+                account_name=None,
+                account_key=None,
+                sas_token=None,
+                is_emulated=False,
+                protocol='https',
+                custom_domain=None,
+                connection_string=None,
+                token_credential=None,
+                endpoint_suffix=None)
+
+    def test_blob_service_params_no_emulator(self):
+        """Should ignore custom domain when emulator is not used"""
+        storage = azure_storage.AzureStorage()
+        storage.is_emulated = False
+        storage.custom_domain = 'foo_domain'
+        with mock.patch(
+                'storages.backends.azure_storage.BlockBlobService',
+                autospec=True) as c_mocked:
+            self.assertIsNotNone(storage.service)
+            c_mocked.assert_called_once_with(
+                account_name=None,
+                account_key=None,
+                sas_token=None,
+                is_emulated=False,
+                protocol='https',
+                custom_domain=None,
+                connection_string=None,
+                token_credential=None,
+                endpoint_suffix=None)
+
+    def test_blob_service_params(self):
+        storage = azure_storage.AzureStorage()
+        storage.is_emulated = True
+        storage.endpoint_suffix = 'foo_suffix'
+        storage.account_name = 'foo_name'
+        storage.account_key = 'foo_key'
+        storage.sas_token = 'foo_token'
+        storage.azure_ssl = True
+        storage.custom_domain = 'foo_domain'
+        storage.connection_string = 'foo_conn'
+        storage.token_credential = 'foo_cred'
+        with mock.patch(
+                'storages.backends.azure_storage.BlockBlobService',
+                autospec=True) as c_mocked:
+            self.assertIsNotNone(storage.service)
+            c_mocked.assert_called_once_with(
+                account_name='foo_name',
+                account_key='foo_key',
+                sas_token='foo_token',
+                is_emulated=True,
+                protocol='https',
+                custom_domain='foo_domain',
+                connection_string='foo_conn',
+                token_credential='foo_cred',
+                endpoint_suffix='foo_suffix')
+
+    def test_blob_custom_service_default_params(self):
+        storage = azure_storage.AzureStorage()
+        with mock.patch(
+                'storages.backends.azure_storage.BlockBlobService',
+                autospec=True) as c_mocked:
+            self.assertIsNotNone(storage.custom_service)
+            c_mocked.assert_called_once_with(
+                account_name=None,
+                account_key=None,
+                sas_token=None,
+                is_emulated=False,
+                protocol='https',
+                custom_domain=None,
+                connection_string=None,
+                token_credential=None,
+                endpoint_suffix=None)
+
+    def test_blob_custom_service_params_no_emulator(self):
+        """Should pass custom domain when emulator is not used"""
+        storage = azure_storage.AzureStorage()
+        storage.is_emulated = False
+        storage.custom_domain = 'foo_domain'
+        with mock.patch(
+                'storages.backends.azure_storage.BlockBlobService',
+                autospec=True) as c_mocked:
+            self.assertIsNotNone(storage.custom_service)
+            c_mocked.assert_called_once_with(
+                account_name=None,
+                account_key=None,
+                sas_token=None,
+                is_emulated=False,
+                protocol='https',
+                custom_domain='foo_domain',
+                connection_string=None,
+                token_credential=None,
+                endpoint_suffix=None)
+
+    def test_blob_custom_service_params(self):
+        storage = azure_storage.AzureStorage()
+        storage.is_emulated = True
+        storage.endpoint_suffix = 'foo_suffix'
+        storage.account_name = 'foo_name'
+        storage.account_key = 'foo_key'
+        storage.sas_token = 'foo_token'
+        storage.azure_ssl = True
+        storage.custom_domain = 'foo_domain'
+        storage.custom_connection_string = 'foo_conn'
+        storage.token_credential = 'foo_cred'
+        with mock.patch(
+                'storages.backends.azure_storage.BlockBlobService',
+                autospec=True) as c_mocked:
+            self.assertIsNotNone(storage.custom_service)
+            c_mocked.assert_called_once_with(
+                account_name='foo_name',
+                account_key='foo_key',
+                sas_token='foo_token',
+                is_emulated=True,
+                protocol='https',
+                custom_domain='foo_domain',
+                connection_string='foo_conn',
+                token_credential='foo_cred',
+                endpoint_suffix='foo_suffix')
 
     # From boto3
 
