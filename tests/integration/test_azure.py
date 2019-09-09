@@ -29,19 +29,19 @@ class AzureStorageTest(TestCase):
             self.storage.azure_container, public_access=False, fail_on_exist=False)
 
     def test_save(self):
-        expected_name = "some_blob_Ϊ.txt"
+        expected_name = "some blob Ϊ.txt"
         self.assertFalse(self.storage.exists(expected_name))
         stream = io.BytesIO(b'Im a stream')
-        name = self.storage.save('some blob Ϊ.txt', stream)
+        name = self.storage.save(expected_name, stream)
         self.assertEqual(name, expected_name)
         self.assertTrue(self.storage.exists(expected_name))
 
     def test_delete(self):
         self.storage.location = 'path'
-        expected_name = "some_blob_Ϊ.txt"
+        expected_name = "some blob Ϊ.txt"
         self.assertFalse(self.storage.exists(expected_name))
         stream = io.BytesIO(b'Im a stream')
-        name = self.storage.save('some blob Ϊ.txt', stream)
+        name = self.storage.save(expected_name, stream)
         self.assertEqual(name, expected_name)
         self.assertTrue(self.storage.exists(expected_name))
         self.storage.delete(expected_name)
@@ -49,10 +49,10 @@ class AzureStorageTest(TestCase):
 
     def test_size(self):
         self.storage.location = 'path'
-        expected_name = "some_path/some_blob_Ϊ.txt"
+        expected_name = "some path/some blob Ϊ.txt"
         self.assertFalse(self.storage.exists(expected_name))
         stream = io.BytesIO(b'Im a stream')
-        name = self.storage.save('some path/some blob Ϊ.txt', stream)
+        name = self.storage.save(expected_name, stream)
         self.assertEqual(name, expected_name)
         self.assertTrue(self.storage.exists(expected_name))
         self.assertEqual(self.storage.size(expected_name), len(b'Im a stream'))
@@ -63,6 +63,15 @@ class AzureStorageTest(TestCase):
         self.storage.expiration_secs = 360
         # has some query-string
         self.assertTrue("/test/my_file.txt?" in self.storage.url("my_file.txt"))
+
+    def test_url_unsafe_chars(self):
+        name = "my?file <foo>.txt"
+        expected = "/test/my%3Ffile%20%3Cfoo%3E.txt"
+        self.assertTrue(
+            self.storage.url(name).endswith(expected))
+        # has some query-string
+        self.storage.expiration_secs = 360
+        self.assertTrue("{}?".format(expected) in self.storage.url(name))
 
     def test_url_custom_endpoint(self):
         storage = azure_storage.AzureStorage()
@@ -107,7 +116,7 @@ class AzureStorageTest(TestCase):
         stream = io.BytesIO()
         self.storage.service.get_blob_to_stream(
             container_name=self.storage.azure_container,
-            blob_name='root/path/some_file.txt',
+            blob_name='root/path/some file.txt',
             stream=stream,
             max_connections=1,
             timeout=10)
@@ -182,6 +191,11 @@ class AzureStorageExpiry(azure_storage.AzureStorage):
     account_key = 'mykey'
     azure_container = 'test_private'
     expiration_secs = 360
+
+
+class AzureStorageSpecialChars(azure_storage.AzureStorage):
+    def get_valid_name(self, name):
+        return name
 
 
 class FooFileForm(forms.Form):
@@ -265,3 +279,32 @@ class AzureStorageDjangoTest(TestCase):
             self.assertEqual(fh.read(), b'foo content')
         finally:
             fh.close()
+
+    def test_name_clean_issue_609(self):
+        """
+        Should strip special characters when using the default storage
+        """
+        simple_file = SimpleFileModel()
+        simple_file.foo_file = SimpleUploadedFile(
+            name='foo%?:;~bar.txt',
+            content=b'foo content')
+        simple_file.save()
+        self.assertEqual(simple_file.foo_file.name, 'foo_uploads/foobar.txt')
+        self.assertTrue('foobar.txt' in simple_file.foo_file.url)
+
+    @override_settings(
+        DEFAULT_FILE_STORAGE='tests.integration.test_azure.AzureStorageSpecialChars')
+    def test_name_clean_issue_609_with_special_chars(self):
+        """
+        Should not strip special chars
+        """
+        name = 'foo%?:;~bar.txt'
+        simple_file = SimpleFileModel()
+        simple_file.foo_file = SimpleUploadedFile(
+            name=name,
+            content=b'foo content')
+        simple_file.save()
+        self.assertEqual(
+            simple_file.foo_file.name, 'foo_uploads/{}'.format(name))
+        self.assertTrue(
+            'foo_uploads/foo%25%3F%3A%3B~bar.txt' in simple_file.foo_file.url)

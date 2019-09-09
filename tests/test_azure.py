@@ -45,13 +45,13 @@ class AzureStorageTest(TestCase):
             self.storage._get_valid_path("path\\to\\somewhere"),
             "path/to/somewhere")
         self.assertEqual(
-            self.storage._get_valid_path("some/$/path"), "some/path")
+            self.storage._get_valid_path("some/$/path"), "some/$/path")
         self.assertEqual(
-            self.storage._get_valid_path("/$/path"), "path")
+            self.storage._get_valid_path("/$/path"), "$/path")
         self.assertEqual(
-            self.storage._get_valid_path("path/$/"), "path")
+            self.storage._get_valid_path("path/$/"), "path/$")
         self.assertEqual(
-            self.storage._get_valid_path("path/$/$/$/path"), "path/path")
+            self.storage._get_valid_path("path/$/$/$/path"), "path/$/$/$/path")
         self.assertEqual(
             self.storage._get_valid_path("some///path"), "some/path")
         self.assertEqual(
@@ -67,24 +67,23 @@ class AzureStorageTest(TestCase):
         self.assertRaises(ValueError, self.storage._get_valid_path, "/../")
         self.assertRaises(ValueError, self.storage._get_valid_path, "..")
         self.assertRaises(ValueError, self.storage._get_valid_path, "///")
-        self.assertRaises(ValueError, self.storage._get_valid_path, "!!!")
         self.assertRaises(ValueError, self.storage._get_valid_path, "a" * 1025)
         self.assertRaises(ValueError, self.storage._get_valid_path, "a/a" * 257)
 
     def test_get_valid_path_idempotency(self):
         self.assertEqual(
-            self.storage._get_valid_path("//$//a//$//"), "a")
+            self.storage._get_valid_path("//$//a//$//"), "$/a/$")
         self.assertEqual(
             self.storage._get_valid_path(
                 self.storage._get_valid_path("//$//a//$//")),
             self.storage._get_valid_path("//$//a//$//"))
+        some_path = "some path/some long name & then some.txt"
         self.assertEqual(
-            self.storage._get_valid_path("some path/some long name & then some.txt"),
-            "some_path/some_long_name__then_some.txt")
+            self.storage._get_valid_path(some_path), some_path)
         self.assertEqual(
             self.storage._get_valid_path(
-                self.storage._get_valid_path("some path/some long name & then some.txt")),
-            self.storage._get_valid_path("some path/some long name & then some.txt"))
+                self.storage._get_valid_path(some_path)),
+            self.storage._get_valid_path(some_path))
 
     def test_get_available_name(self):
         self.storage.overwrite_files = False
@@ -100,7 +99,7 @@ class AzureStorageTest(TestCase):
         self.storage._service.exists.return_value = False
         self.assertEqual(
             self.storage.get_available_name('foo bar baz.txt'),
-            'foo_bar_baz.txt')
+            'foo bar baz.txt')
         self.assertEqual(self.storage._service.exists.call_count, 1)
 
     def test_get_available_name_max_len(self):
@@ -119,14 +118,25 @@ class AzureStorageTest(TestCase):
         self.storage.overwrite_files = False
         self.storage._service.exists.return_value = False
         self.assertRaises(ValueError, self.storage.get_available_name, "")
-        self.assertRaises(ValueError, self.storage.get_available_name, "$$")
+        self.assertRaises(ValueError, self.storage.get_available_name, "/")
+        self.assertRaises(ValueError, self.storage.get_available_name, ".")
+        self.assertRaises(ValueError, self.storage.get_available_name, "///")
+        self.assertRaises(ValueError, self.storage.get_available_name, "...")
 
     def test_url(self):
         self.storage._custom_service.make_blob_url.return_value = 'ret_foo'
         self.assertEqual(self.storage.url('some blob'), 'ret_foo')
         self.storage._custom_service.make_blob_url.assert_called_once_with(
             container_name=self.container_name,
-            blob_name='some_blob',
+            blob_name='some%20blob',
+            protocol='https')
+
+    def test_url_unsafe_chars(self):
+        self.storage.custom_service.make_blob_url.return_value = 'ret_foo'
+        self.assertEqual(self.storage.url('foo;?:@=&"<>#%{}|^~[]`bar/~!*()\''), 'ret_foo')
+        self.storage.custom_service.make_blob_url.assert_called_once_with(
+            container_name=self.container_name,
+            blob_name='foo%3B%3F%3A%40%3D%26%22%3C%3E%23%25%7B%7D%7C%5E~%5B%5D%60bar/~!*()\'',
             protocol='https')
 
     def test_url_expire(self):
@@ -139,12 +149,12 @@ class AzureStorageTest(TestCase):
             self.assertEqual(self.storage.url('some blob', 100), 'ret_foo')
             self.storage._custom_service.generate_blob_shared_access_signature.assert_called_once_with(
                 self.container_name,
-                'some_blob',
+                'some blob',
                 permission=BlobPermissions.READ,
                 expiry=fixed_time + timedelta(seconds=100))
             self.storage._custom_service.make_blob_url.assert_called_once_with(
                 container_name=self.container_name,
-                blob_name='some_blob',
+                blob_name='some%20blob',
                 sas_token='foo_token',
                 protocol='https')
 
@@ -284,10 +294,10 @@ class AzureStorageTest(TestCase):
         content = ContentFile('new content')
         with mock.patch('storages.backends.azure_storage.ContentSettings') as c_mocked:
             c_mocked.return_value = 'content_settings_foo'
-            self.assertEqual(self.storage.save(name, content), 'test_storage_save.txt')
+            self.assertEqual(self.storage.save(name, content), name)
             self.storage._service.create_blob_from_stream.assert_called_once_with(
                 container_name=self.container_name,
-                blob_name='test_storage_save.txt',
+                blob_name=name,
                 stream=content.file,
                 content_settings='content_settings_foo',
                 max_connections=2,
