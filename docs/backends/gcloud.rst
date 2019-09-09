@@ -14,7 +14,7 @@ Use pip to install from PyPI::
 
 Authentication
 --------------
-By default this library will try to use the credentials associated with the
+By default, this library will try to use the credentials associated with the
 current Google Compute Engine (GCE) or Google Kubernetes Engine (GKE) instance
 for authentication. In most cases, the default service accounts are not sufficient
 to read/write and sign files in GCS.
@@ -115,7 +115,7 @@ ACL used when creating a new blob, from the
 (A "JSON API" ACL is preferred but an "XML API/gsutil" ACL will be
 translated.)
 
-For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to viewed.
+For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to be viewed.
 If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket.
 
 ``publicRead`` files will return a public - non-expiring url. All other files return

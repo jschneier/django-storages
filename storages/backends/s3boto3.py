@@ -16,7 +16,7 @@ from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
 from django.utils.six.moves.urllib import parse as urlparse
-from django.utils.timezone import is_naive, localtime
+from django.utils.timezone import is_naive, make_naive
 
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
@@ -55,9 +55,6 @@ class S3Boto3StorageFile(File):
     order to properly write the file to S3. Be sure to close the file
     in your application.
     """
-    # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
-    # TODO: When Django drops support for Python 2.5, rewrite to use the
-    #       BufferedIO streams in the Python 2.6 io module.
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
@@ -524,6 +521,9 @@ class S3Boto3Storage(Storage):
         name = self._normalize_name(self._clean_name(name))
         self.bucket.Object(self._encode_name(name)).delete()
 
+        if name in self._entries:
+            del self._entries[name]
+
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
         if self.entries:
@@ -576,14 +576,14 @@ class S3Boto3Storage(Storage):
             # boto3 returns TZ aware timestamps
             return entry.last_modified
         else:
-            return localtime(entry.last_modified).replace(tzinfo=None)
+            return make_naive(entry.last_modified)
 
     def modified_time(self, name):
         """Returns a naive datetime object containing the last modified time."""
         # If USE_TZ=False then get_modified_time will return a naive datetime
         # so we just return that, else we have to localize and strip the tz
         mtime = self.get_modified_time(name)
-        return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
+        return mtime if is_naive(mtime) else make_naive(mtime)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
@@ -608,7 +608,6 @@ class S3Boto3Storage(Storage):
 
     def url(self, name, parameters=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
-        # TODO: Handle force_http=not self.secure_urls like in s3boto
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,

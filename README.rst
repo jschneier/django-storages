@@ -32,6 +32,26 @@ If, for example, you want to use the boto3 backend you would set:
 
   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
+
+If you are using the ``FileSystemStorage`` as your storage management class in your models ``FileField`` fields, remove them
+and don't specify any storage parameter. That way, the ``DEFAULT_FILE_STORAGE`` class will be used by default in your field.
+For example, if you have a `photo` field defined as:
+
+.. code-block:: python
+
+    photo = models.FileField(
+        storage=FileSystemStorage(location=settings.MEDIA_ROOT),
+        upload_to='photos',
+    )
+
+Set it to just:
+
+.. code-block:: python
+
+    photo = models.FileField(
+        upload_to='photos',
+    )
+
 There are also a number of settings available to control how each storage backend functions,
 please consult the documentation for a comprehensive list.
 
