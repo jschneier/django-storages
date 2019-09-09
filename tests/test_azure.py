@@ -67,7 +67,6 @@ class AzureStorageTest(TestCase):
         self.assertRaises(ValueError, self.storage._get_valid_path, "/../")
         self.assertRaises(ValueError, self.storage._get_valid_path, "..")
         self.assertRaises(ValueError, self.storage._get_valid_path, "///")
-        self.assertRaises(ValueError, self.storage._get_valid_path, "!!!")
         self.assertRaises(ValueError, self.storage._get_valid_path, "a" * 1025)
         self.assertRaises(ValueError, self.storage._get_valid_path, "a/a" * 257)
 
@@ -133,9 +132,9 @@ class AzureStorageTest(TestCase):
             protocol='https')
 
     def test_url_unsafe_chars(self):
-        self.storage._service.make_blob_url.return_value = 'ret_foo'
+        self.storage.custom_service.make_blob_url.return_value = 'ret_foo'
         self.assertEqual(self.storage.url('foo;?:@=&"<>#%{}|^~[]`bar/~!*()\''), 'ret_foo')
-        self.storage._service.make_blob_url.assert_called_once_with(
+        self.storage.custom_service.make_blob_url.assert_called_once_with(
             container_name=self.container_name,
             blob_name='foo%3B%3F%3A%40%3D%26%22%3C%3E%23%25%7B%7D%7C%5E~%5B%5D%60bar/~!*()\'',
             protocol='https')
