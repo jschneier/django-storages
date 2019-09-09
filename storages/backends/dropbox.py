@@ -25,6 +25,8 @@ from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor
 
 from storages.utils import setting
 
+_DEFAULT_TIMEOUT = 100
+
 
 class DropBoxStorageException(Exception):
     pass
@@ -66,16 +68,17 @@ class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
+    timeout = setting('DROPBOX_TIMEOUT' _DEFAULT_TIMEOUT)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location):
-        oauth2_access_token = oauth2_access_token or setting('DROPBOX_OAUTH2_TOKEN')
-        self.root_path = root_path or setting('DROPBOX_ROOT_PATH', '/')
+    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout):
         if oauth2_access_token is None:
-            raise ImproperlyConfigured("You must configure a token auth at"
+            raise ImproperlyConfigured("You must configure an auth token at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        self.client = Dropbox(oauth2_access_token)
+
+        self.root_path = root_path
+        self.client = Dropbox(oauth2_access_token, timeout=timeout)
 
     def _full_path(self, name):
         if name == '/':
