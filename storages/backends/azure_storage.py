@@ -276,11 +276,10 @@ class AzureStorage(Storage):
                 self.azure_container, name, permission=BlobPermissions.READ, expiry=self._expire_at(expire))
             make_blob_url_kwargs['sas_token'] = sas_token
 
-        if self.azure_protocol:
-            make_blob_url_kwargs['protocol'] = self.azure_protocol
         return self.custom_service.make_blob_url(
             container_name=self.azure_container,
             blob_name=filepath_to_uri(name),
+            protocol=self.azure_protocol,
             **make_blob_url_kwargs)
 
     def get_modified_time(self, name):
