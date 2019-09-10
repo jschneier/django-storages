@@ -257,9 +257,7 @@ Standard file access options are available, and work as expected::
 Overriding the default Storage class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section assumes you have your AWS credentials setup, e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
-
-You can override the default Storage class to use as your custom storage backend. Below provides some examples and common use cases to help you get started.
+You can override the default Storage class and create your custom storage backend. Below provides some examples and common use cases to help you get started. This section assumes you have your AWS credentials configured, e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
 
 To create a storage class using a specific bucket::
 
@@ -268,7 +266,7 @@ To create a storage class using a specific bucket::
     class MediaStorage(S3Boto3Storage):
         bucket_name = 'my-media-bucket'
 
-By default, this will not automatically create the bucket for you, if you don't create the bucket beforehand. You can change this to have it auto create for you as below:
+By default, this will not automatically create the bucket for you, and you will have to make sure the bucket exists beforehand. You can change this and have the storage class auto-create for you as below::
 
     class MediaStorage(S3Boto3Storage):
         bucket_name = 'my-media-bucket'
@@ -277,7 +275,7 @@ By default, this will not automatically create the bucket for you, if you don't 
 
 Assume that you store the above class ``MediaStorage`` in a file called ``custom_storage.py`` in the project directory tree like below::
 
-    | django project root directory
+    | (your django project root directory)
     | ├── manage.py
     | ├── my_django_app          
     | │   ├── custom_storage.py
@@ -304,9 +302,9 @@ Or you may want to upload files to the bucket in some view that accepts file upl
             # do your validation here e.g. file size/type check
 
             # organize a path for the file in bucket
-            file_directory_within_bucket = 'user_uplaod_files/{username}'.format(username=request.user)
+            file_directory_within_bucket = 'user_uplaod_files/{username}'.format(username=requests.user)
             
-            # synthesize a full file path which includes the filename
+            # synthesize a full file path; note that we included the filename
             file_path_within_bucket = os.path.join(
                 file_directory_within_bucket,
                 file_obj.name
@@ -324,12 +322,16 @@ Or you may want to upload files to the bucket in some view that accepts file upl
                 })
             else:
                 return JsonResponse({
-                    'message': 'Error: file {filename} already exists at {file_directory} in bucket {bucket_name}'.format(filename=file_obj.name, file_directory=file_directory_within_bucket, bucket_name=media_storage.bucket_name),
+                    'message': 'Error: file {filename} already exists at {file_directory} in bucket {bucket_name}'.format(
+                        filename=file_obj.name, 
+                        file_directory=file_directory_within_bucket, 
+                        bucket_name=media_storage.bucket_name
+                    ),
                 }, status=400)
 
-A side note is that in order for `media_storage.url()` to work with the bucket name you specified in your custom storage class, make sure you don't have `AWS_S3_CUSTOM_DOMAIN` setup in your `settings.py`, otherwise the `.url()` function will always use `AWS_S3_CUSTOM_DOMAIN` to generate file url. If your `AWS_S3_CUSTOM_DOMAIN` and your custom storage class are using different bucket, this will generate the wrong url. 
+A side note is that if you have ``AWS_S3_CUSTOM_DOMAIN`` setup in your `settings.py`, by default the storage class will always use ``AWS_S3_CUSTOM_DOMAIN`` to generate url. 
 
-In case you need `AWS_S3_CUSTOM_DOMAIN` for CDN and it's using a different bucket from your custom storage, you will need to explicitly specifiy `custom_domain` like below::
+If your ``AWS_S3_CUSTOM_DOMAIN`` is pointing to a different bucket than your custom storage class, the ``.url()`` function will give you the wrong url. In such case, you will have to configure your storage class and explicitly specifiy `custom_domain` as below::
 
     class MediaStorage(S3Boto3Storage):
         bucket_name = 'my-media-bucket'
