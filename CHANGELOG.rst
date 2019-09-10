@@ -1,12 +1,84 @@
 django-storages CHANGELOG
 =========================
 
+1.7.2 (2019-09-XX)
+******************
+
+S3
+--
+
+- Avoid misleading ``AWS_DEFAULT_ACL`` warning for insecure ``default_acl`` when
+  overridden as a class variable (`#591_`)
+- Propagate file deletion to cache when ``preload_metadata`` is ``True``,
+  (not the default) (`#743`_, `#749`_)
+- Fix exception raised on closed file (common if using ``ManifestFilesMixin`` or
+  ``collectstatic``. (`#382`_, `#754`_)
+
+Azure
+-----
+
+- Pare down the required packages in ``extra_requires`` when installing the ``azure`` extra to only
+  ``azure-storage-blob`` (`#680`_, `#684`_)
+- Fix compatability with ``generate_blob_shared_access_signature`` updated signature (`#705`_, `#723`_)
+- Fetching a file now uses the configured timeout rather than hardcoding one (`#727`_)
+- Add support for configuring all blobservice options: ``AZURE_EMULATED_MODE``, ``AZURE_ENDPOINT_SUFFIX``,
+  ``AZURE_CUSTOM_DOMAIN``, ``AZURE_CONNECTION_STRING``, ``AZURE_CUSTOM_CONNECTION_STRING``,
+  ``AZURE_TOKEN_CREDENTIAL``. See the docs for more info. Huge thanks once again to @nitely. (`#750`_)
+- Fix filename handling to not strip special characters (`#609`_, `#752`_)
+
+
+Google Cloud
+------------
+
+- Set the file acl in the same call that uploads it (`#698`_)
+- Reduce the number of queries and required permissions when ``GS_AUTO_CREATE_BUCKET`` is
+  ``False`` (the default) (`#412`_, `#718`_)
+- Set the ``predefined_acl`` when creating a ``GoogleCloudFile`` using ``.write``
+  (`#640`_, `#756`_)
+- Add ``GS_BLOB_CHUNK_SIZE`` setting to enable efficient uploading of large files (`#757`_)
+
+Dropbox
+-------
+
+- Complete migration to v2 api with file fetching and metadata fixes (`#724`_)
+- Add ``DROPBOX_TIMEOUT`` to configure client timeout defaulting to 100 seconds
+  to match the underlying sdk. (`#419`_, `#747`_)
+
+SFTP
+----
+
+- Fix reopening a file (`#746`_)
+
+.. _#591: https://github.com/jschneier/django-storages/pull/591
+.. _#680: https://github.com/jschneier/django-storages/issues/680
+.. _#684: https://github.com/jschneier/django-storages/pull/684
+.. _#698: https://github.com/jschneier/django-storages/pull/698
+.. _#705: https://github.com/jschneier/django-storages/issues/705
+.. _#723: https://github.com/jschneier/django-storages/pull/723
+.. _#727: https://github.com/jschneier/django-storages/pull/727
+.. _#746: https://github.com/jschneier/django-storages/pull/746
+.. _#724: https://github.com/jschneier/django-storages/pull/724
+.. _#412: https://github.com/jschneier/django-storages/pull/412
+.. _#718: https://github.com/jschneier/django-storages/pull/718
+.. _#743: https://github.com/jschneier/django-storages/issues/743
+.. _#749: https://github.com/jschneier/django-storages/pull/749
+.. _#750: https://github.com/jschneier/django-storages/pull/750
+.. _#609: https://github.com/jschneier/django-storages/issues/609
+.. _#752: https://github.com/jschneier/django-storages/pull/752
+.. _#382: https://github.com/jschneier/django-storages/issues/382
+.. _#754: https://github.com/jschneier/django-storages/pull/754
+.. _#419: https://github.com/jschneier/django-storages/issues/419
+.. _#747: https://github.com/jschneier/django-storages/pull/747
+.. _#640: https://github.com/jschneier/django-storages/issues/640
+.. _#756: https://github.com/jschneier/django-storages/pull/756
+.. _#757: https://github.com/jschneier/django-storages/pull/757
+
 1.7.1 (2018-09-06)
 ******************
 
 - Fix off-by-1 error in ``get_available_name`` whenever ``file_overwrite`` or ``overwrite_files`` is ``True`` (`#588`_, `#589`_)
 - Change ``S3Boto3Storage.listdir()`` to use ``list_objects`` instead of ``list_objects_v2`` to restore
-  compatibility with services implementing the S3 protocol that do not yet support the new method (`#586`_, `#590`_)
+  compatability with services implementing the S3 protocol that do not yet support the new method (`#586`_, `#590`_)
 
 .. _#588: https://github.com/jschneier/django-storages/issues/588
 .. _#589: https://github.com/jschneier/django-storages/pull/589
