@@ -15,13 +15,18 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
-from django.utils.six.moves.urllib import parse as urlparse
 from django.utils.timezone import is_naive, make_naive
 
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
     setting,
 )
+
+try:
+    from django.utils.six.moves.urllib import parse as urlparse
+except ImportError:
+    from urllib import parse as urlparse
+
 
 try:
     import boto3.session
