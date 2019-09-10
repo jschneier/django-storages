@@ -104,7 +104,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0])
+            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0],
+            predefined_acl=None)
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -115,7 +116,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0])
+            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
+            predefined_acl=None)
 
     def test_save_with_default_acl(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
