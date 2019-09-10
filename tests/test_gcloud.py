@@ -83,6 +83,7 @@ class GCloudStorageTests(GCloudTestCase):
         # Simulate the file not existing before the write
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
+        self.storage.default_acl = 'projectPrivate'
 
         f = self.storage.open(self.filename, 'wb')
         MockBlob.assert_called_with(self.filename, self.storage._bucket)
@@ -94,7 +95,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         MockBlob().upload_from_file.assert_called_with(
             tmpfile, rewind=True,
-            content_type=mimetypes.guess_type(self.filename)[0])
+            content_type=mimetypes.guess_type(self.filename)[0],
+            predefined_acl='projectPrivate')
 
     def test_save(self):
         data = 'This is some test content.'

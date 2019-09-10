@@ -74,8 +74,9 @@ class GoogleCloudFile(File):
     def close(self):
         if self._file is not None:
             if self._is_dirty:
-                self.blob.upload_from_file(self.file, rewind=True,
-                                           content_type=self.mime_type)
+                self.blob.upload_from_file(
+                    self.file, rewind=True, content_type=self.mime_type,
+                    predefined_acl=self._storage.default_acl)
             self._file.close()
             self._file = None
 
