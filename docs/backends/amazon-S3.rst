@@ -254,15 +254,18 @@ Standard file access options are available, and work as expected::
     >>> default_storage.exists('storage_test')
     False
 
-Overriding the Storage class
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Overriding the default Storage class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Test heading format.
+Here we demonstrate how to override the default Storage class to get you started.
+
+
 
 Model
 -----
 
 An object without a file has limited functionality::
+
     from django.db import models
 
     class MyModel(models.Model):
