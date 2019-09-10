@@ -8,7 +8,7 @@ S3
 --
 
 - Avoid misleading ``AWS_DEFAULT_ACL`` warning for insecure ``default_acl`` when
-  overridden as a class variable (`#591_`)
+  overridden as a class variable (`#591`_)
 - Propagate file deletion to cache when ``preload_metadata`` is ``True``,
   (not the default) (`#743`_, `#749`_)
 - Fix exception raised on closed file (common if using ``ManifestFilesMixin`` or
