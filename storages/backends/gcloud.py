@@ -74,8 +74,9 @@ class GoogleCloudFile(File):
     def close(self):
         if self._file is not None:
             if self._is_dirty:
-                self.blob.upload_from_file(self.file, rewind=True,
-                                           content_type=self.mime_type)
+                self.blob.upload_from_file(
+                    self.file, rewind=True, content_type=self.mime_type,
+                    predefined_acl=self._storage.default_acl)
             self._file.close()
             self._file = None
 
@@ -173,14 +174,9 @@ class GoogleCloudStorage(Storage):
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
-        if self.default_acl:
-            file.blob.upload_from_file(
-                content, rewind=True, size=content.size,
-                content_type=file.mime_type, predefined_acl=self.default_acl)
-        else:
-            file.blob.upload_from_file(
-                content, rewind=True, size=content.size,
-                content_type=file.mime_type)
+        file.blob.upload_from_file(
+            content, rewind=True, size=content.size,
+            content_type=file.mime_type, predefined_acl=self.default_acl)
         return cleaned_name
 
     def delete(self, name):
