@@ -254,6 +254,11 @@ Standard file access options are available, and work as expected::
     >>> default_storage.exists('storage_test')
     False
 
+Overriding the Storage class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Test heading format.
+
 Model
 -----
 
