@@ -10,7 +10,7 @@ Installation
 
 Use pip to install from PyPI::
 
-    pip install django-storages[google]
+    pip install django-storages google-cloud-storage
 
 Authentication
 --------------
