@@ -25,7 +25,7 @@ setup(
     },
     author='Josh Schneier',
     author_email='josh.schneier@gmail.com',
-    license='BSD',
+    license='BSD-3-Clause',
     description='Support for many storage backends in Django',
     long_description=read('README.rst') + '\n\n' + read('CHANGELOG.rst'),
     url='https://github.com/jschneier/django-storages',
