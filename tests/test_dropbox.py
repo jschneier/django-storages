@@ -140,6 +140,9 @@ class DropBoxTest(TestCase):
         self.assertEqual(files, self.storage._full_path('..'))
         self.assertEqual(files, self.storage._full_path('../..'))
 
+        # DropBox API requires empty strings for root path see #762
+        self.assertEqual(self.storage._full_path('/'), '')
+
 
 class DropBoxFileTest(TestCase):
     def setUp(self, *args):
