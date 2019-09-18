@@ -82,10 +82,7 @@ class DropBoxStorage(Storage):
     def _full_path(self, name):
         if name == '/':
             name = ''
-
-        _path = safe_join(self.root_path, name).replace('\\', '/')
-        if _path == '/':
-            return ''
+        return safe_join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
         self.client.files_delete(self._full_path(name))
@@ -99,6 +96,10 @@ class DropBoxStorage(Storage):
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
+
+        if full_path == '/':
+            full_path = ''
+
         metadata = self.client.files_list_folder(full_path)
         for entry in metadata.entries:
             if isinstance(entry, FolderMetadata):
