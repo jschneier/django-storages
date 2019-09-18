@@ -80,8 +80,11 @@ class DropBoxStorage(Storage):
         self.client = Dropbox(oauth2_access_token, timeout=timeout)
 
     def _full_path(self, name):
-        if name == '/':
+        if not name or name == '/':
             name = ''
+            if self.root_path == '/':
+                return ''
+
         return safe_join(self.root_path, name).replace('\\', '/')
 
     def delete(self, name):
