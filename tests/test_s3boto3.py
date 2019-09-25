@@ -329,8 +329,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
         part = multipart.Part.return_value
         uploaded_content = ''.join(
-            (args_list[1]['Body'].decode('utf-8')
-                for args_list in part.upload.call_args_list)
+            args_list[1]['Body'].decode('utf-8')
+            for args_list in part.upload.call_args_list
         )
         self.assertEqual(uploaded_content, written_content)
         multipart.complete.assert_called_once_with(
@@ -483,7 +483,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertIs(
             settings.USE_TZ,
             is_aware(self.storage.get_modified_time(name)),
-            '%s datetime object expected from get_modified_time() when USE_TZ=%s' % (
+            '{} datetime object expected from get_modified_time() when USE_TZ={}'.format(
                 ('Naive', 'Aware')[settings.USE_TZ],
                 settings.USE_TZ
             )

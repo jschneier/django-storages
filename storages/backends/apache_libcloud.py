@@ -136,7 +136,7 @@ class LibCloudStorage(Storage):
         try:
             url = self.driver.get_object_cdn_url(obj)
         except NotImplementedError as e:
-            object_path = '%s/%s' % (self.bucket, obj.name)
+            object_path = '{}/{}'.format(self.bucket, obj.name)
             if 's3' in provider_type:
                 base_url = 'https://%s' % self.driver.connection.host
                 url = urljoin(base_url, object_path)
