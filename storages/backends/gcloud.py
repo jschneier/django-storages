@@ -180,6 +180,9 @@ class GoogleCloudStorage(Storage):
         finally:
             zfile.close()
         zbuf.seek(0)
+        # We set the file size
+        zbuf.size = len(zbuf.getvalue())
+        zbuf.seek(0)
         return zbuf
 
     def _open(self, name, mode='rb'):
@@ -201,7 +204,7 @@ class GoogleCloudStorage(Storage):
             content = self._compress_content(content)
             file.blob.content_encoding = 'gzip'
         file.blob.upload_from_file(
-            content, rewind=True, size=content.size,
+            content, rewind=True, size=getattr(content, 'size', None),
             content_type=file.mime_type, predefined_acl=self.default_acl)
         return cleaned_name
 
