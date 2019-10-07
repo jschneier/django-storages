@@ -1,6 +1,7 @@
 import mimetypes
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
+from gzip import GzipFile
 
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
@@ -51,6 +52,8 @@ class GoogleCloudFile(File):
                 self._is_dirty = False
                 self.blob.download_to_file(self._file)
                 self._file.seek(0)
+            if self._storage.gzip and self.blob.content_encoding == 'gzip':
+                self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
         return self._file
 
     def _set_file(self, value):
@@ -94,6 +97,7 @@ class GoogleCloudStorage(Storage):
     default_acl = setting('GS_DEFAULT_ACL')
 
     expiration = setting('GS_EXPIRATION', timedelta(seconds=86400))
+    gzip = setting('GS_IS_GZIPPED', False)
 
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
@@ -161,6 +165,22 @@ class GoogleCloudStorage(Storage):
     def _encode_name(self, name):
         return smart_str(name, encoding=self.file_name_charset)
 
+    def _compress_content(self, content):
+        """Gzip a given string content."""
+        content.seek(0)
+        zbuf = io.BytesIO()
+        #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
+        #  This means each time a file is compressed it changes even if the other contents don't change
+        #  For Google Storage this defeats detection of changes using MD5 sums on gzipped files
+        #  Fixing the mtime at 0.0 at compression time avoids this problem
+        zfile = GzipFile(mode='wb', fileobj=zbuf, mtime=0.0)
+        try:
+            zfile.write(force_bytes(content.read()))
+        finally:
+            zfile.close()
+        zbuf.seek(0)
+        return zbuf
+
     def _open(self, name, mode='rb'):
         name = self._normalize_name(clean_name(name))
         file_object = GoogleCloudFile(name, mode, self)
@@ -176,6 +196,9 @@ class GoogleCloudStorage(Storage):
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
+        if self.gzip:
+            content = self._compress_content(content)
+            file.blob.content_encoding = 'gzip'
         file.blob.upload_from_file(
             content, rewind=True, size=content.size,
             content_type=file.mime_type, predefined_acl=self.default_acl)
