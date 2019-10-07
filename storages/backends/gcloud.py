@@ -99,6 +99,14 @@ class GoogleCloudStorage(Storage):
 
     expiration = setting('GS_EXPIRATION', timedelta(seconds=86400))
     gzip = setting('GS_IS_GZIPPED', False)
+    gzip_content_types = setting('GZIP_CONTENT_TYPES', (
+        'text/css',
+        'text/javascript',
+        'application/javascript',
+        'application/x-javascript',
+        'image/svg+xml',
+        'application/wasm',
+    ))
 
     file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
     file_overwrite = setting('GS_FILE_OVERWRITE', True)
@@ -200,12 +208,13 @@ class GoogleCloudStorage(Storage):
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
-        if self.gzip:
+        content_type = file.mime_type
+        if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             file.blob.content_encoding = 'gzip'
         file.blob.upload_from_file(
             content, rewind=True, size=getattr(content, 'size', None),
-            content_type=file.mime_type, predefined_acl=self.default_acl)
+            content_type=content_type, predefined_acl=self.default_acl)
         return cleaned_name
 
     def delete(self, name):
