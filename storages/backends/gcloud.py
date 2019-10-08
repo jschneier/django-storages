@@ -1,8 +1,8 @@
 import io
 import mimetypes
 from datetime import timedelta
-from tempfile import SpooledTemporaryFile
 from gzip import GzipFile
+from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
