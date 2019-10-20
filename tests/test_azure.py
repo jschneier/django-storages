@@ -304,7 +304,8 @@ class AzureStorageTest(TestCase):
                 timeout=20)
             c_mocked.assert_called_once_with(
                 content_type='text/plain',
-                content_encoding=None)
+                content_encoding=None,
+                cache_control=None)
 
     def test_storage_open_write(self):
         """
