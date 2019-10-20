@@ -134,6 +134,7 @@ class AzureStorage(Storage):
     overwrite_files = setting('AZURE_OVERWRITE_FILES', False)
     location = setting('AZURE_LOCATION', '')
     default_content_type = 'application/octet-stream'
+    cache_control = setting("AZURE_CACHE_CONTROL")
     is_emulated = setting('AZURE_EMULATED_MODE', False)
     endpoint_suffix = setting('AZURE_ENDPOINT_SUFFIX')
     sas_token = setting('AZURE_SAS_TOKEN')
@@ -255,7 +256,8 @@ class AzureStorage(Storage):
             stream=content,
             content_settings=ContentSettings(
                 content_type=content_type,
-                content_encoding=content_encoding),
+                content_encoding=content_encoding,
+                cache_control=self.cache_control),
             max_connections=self.upload_max_conn,
             timeout=self.timeout)
         return cleaned_name
