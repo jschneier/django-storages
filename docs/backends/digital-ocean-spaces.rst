@@ -3,6 +3,7 @@ Digital Ocean Spaces
 
 Digital Ocean Spaces implements the S3 protocol so it's mostly compatible with `S3Boto3Storage`.
 
+
 Usage
 *****
 
@@ -126,3 +127,4 @@ STATICFILES_STORAGE = 'storages.backends.do_spaces.DigitalOceanSpacesStaticStora
 DEFAULT_FILE_STORAGE = 'storages.backends.do_spaces.DigitalOceanSpacesPublicMediaStorage'
 PRIVATE_FILE_STORAGE = 'storages.backends.do_spaces.DigitalOceanSpacesPrivateMediaStorage'
 ```
+

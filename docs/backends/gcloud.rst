@@ -19,18 +19,15 @@ current Google Compute Engine (GCE) or Google Kubernetes Engine (GKE) instance
 for authentication. In most cases, the default service accounts are not sufficient
 to read/write and sign files in GCS.
 
-1. Create a service account.
-(`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
+1. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 
 2. Create the key and download `your-project-XXXXX.json` file.
 
-3. Make sure your service account has access to the bucket and appropriate permissions.
-(`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
+3. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
 
-4. The key must be mounted/available to your running Django app.
-Note: a json keyfile will work for developer machines (or other instances outside Google infrastructure).
+4. The key must be mounted/available to your running Django app. Note: a json keyfile will work for developer machines (or other instances outside Google infrastructure).
 
-5. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to path of the json file.
+5. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
 
 Alternatively, you can use the setting `GS_CREDENTIALS` as described below.
 
@@ -118,11 +115,12 @@ translated.)
 For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to be viewed.
 If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket.
 
-``publicRead`` files will return a public - non-expiring url. All other files return
+``publicRead`` files will return a public, non-expiring url. All other files return
 a signed (expiring) url.
 
-**GS_DEFAULT_ACL must be set to ``publicRead`` to return a public url.** Even if you set
-the bucket to public or set the file permissions directly in GCS to public.
+.. note::
+   GS_DEFAULT_ACL must be set to 'publicRead' to return a public url. Even if you set
+   the bucket to public or set the file permissions directly in GCS to public.
 
 
 ``GS_FILE_CHARSET`` (optional)
@@ -137,6 +135,15 @@ By default files with the same name will overwrite each other. Set this to ``Fal
 
 The maximum amount of memory a returned file can take up (in bytes) before being
 rolled over into a temporary file on disk. Default is 0: Do not roll over.
+
+``GS_BLOB_CHUNK_SIZE`` (optional: default is ``None``)
+
+The size of blob chunks that are sent via resumable upload. If this is not set then the generated request
+must fit in memory. Recommended if you are going to be uploading large files.
+
+.. note::
+
+   This must be a multiple of 256K (1024 * 256)
 
 ``GS_CACHE_CONTROL`` (optional: default is ``None``)
 

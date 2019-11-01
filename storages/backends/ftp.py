@@ -24,9 +24,13 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
+
+try:
+    from django.utils.six.moves.urllib import parse as urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
 
 class FTPStorageException(Exception):
