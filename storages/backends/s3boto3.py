@@ -33,9 +33,8 @@ try:
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
-except ImportError:
-    raise ImproperlyConfigured("Could not load Boto3's S3 bindings.\n"
-                               "See https://github.com/boto/boto3")
+except ImportError as e:
+    raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
 
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
