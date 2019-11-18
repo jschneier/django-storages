@@ -159,3 +159,9 @@ The following settings are available:
 
     A token credential used to authenticate HTTPS requests. The token value
     should be updated before its expiration.
+
+
+``AZURE_CACHE_CONTROL``
+
+    A variable to set the Cache-Control HTTP response header. E.g. 
+    ``AZURE_CACHE_CONTROL = "public,max-age=31536000,immutable"``
