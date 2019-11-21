@@ -149,6 +149,11 @@ must fit in memory. Recommended if you are going to be uploading large files.
 
 Sets Cache-Control HTTP header for the file, more about HTTP caching can be found `here <https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#cache-control>`_
 
+``GS_CUSTOM_ENDPOINT`` (optional: default is ``None``)
+
+Sets a `custom endpoint <https://cloud.google.com/storage/docs/request-endpoints>`_,
+that will be used instead of ``https://storage.googleapis.com`` when generating URLs for files.
+
 ``GS_LOCATION`` (optional: default is ``''``)
 
 Subdirectory in which the files will be stored.

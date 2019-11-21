@@ -19,7 +19,7 @@ setup(
         'boto': ['boto>=2.32.0'],
         'boto3': ['boto3>=1.4.4'],
         'dropbox': ['dropbox>=7.2.1'],
-        'google': ['google-cloud-storage>=0.22.0'],
+        'google': ['google-cloud-storage>=1.15.0'],
         'libcloud': ['apache-libcloud'],
         'sftp': ['paramiko'],
     },

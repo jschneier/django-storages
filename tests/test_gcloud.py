@@ -372,6 +372,22 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(url, 'http://signed_url')
         blob.generate_signed_url.assert_called_with(timedelta(seconds=3600))
 
+    def test_custom_endpoint(self):
+        self.storage.custom_endpoint = "https://example.com"
+
+        self.storage.default_acl = 'publicRead'
+        url = "{}/{}".format(self.storage.custom_endpoint, self.filename)
+        self.assertEqual(self.storage.url(self.filename), url)
+
+        signed_url = 'https://signed_url'
+        self.storage.default_acl = 'projectPrivate'
+        self.storage._bucket = mock.MagicMock()
+        blob = mock.MagicMock()
+        generate_signed_url = mock.MagicMock(return_value=signed_url)
+        blob.generate_signed_url = generate_signed_url
+        self.storage._bucket.blob.return_value = blob
+        self.assertEqual(self.storage.url(self.filename), signed_url)
+
     def test_get_available_name(self):
         self.storage.file_overwrite = True
         self.assertEqual(self.storage.get_available_name(
