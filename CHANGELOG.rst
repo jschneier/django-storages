@@ -1,6 +1,39 @@
 django-storages CHANGELOG
 =========================
 
+1.8 (2019-11-20)
+****************
+
+- Add support for Django 3.0 (`#759`_)
+- Update license identifier to unambiguous ``BSD-3-Clause``
+
+S3
+--
+
+- Include error message raised when missing library is imported (`#776`_, `#793`_)
+
+Google
+------
+
+- **Breaking** The minimum supported version of ``google-cloud-storage`` is now ``1.15.0`` which enables...
+- Add setting ``GS_CUSTOM_ENDPOINT`` to allow usage of custom domains (`#775`_, `#648`_)
+
+Azure
+-----
+
+- Fix extra installation by pinning version to < 12 (`#785`_)
+- Add support for setting ``AZURE_CACHE_CONTROL`` header (`#780`_, `#674`_)
+
+.. _#759: https://github.com/jschneier/django-storages/pull/759
+.. _#776: https://github.com/jschneier/django-storages/issues/776
+.. _#793: https://github.com/jschneier/django-storages/pull/793
+.. _#775: https://github.com/jschneier/django-storages/issues/775
+.. _#648: https://github.com/jschneier/django-storages/pull/648
+.. _#785: https://github.com/jschneier/django-storages/pull/785
+.. _#780: https://github.com/jschneier/django-storages/pull/780
+.. _#674: https://github.com/jschneier/django-storages/issues/674
+
+
 1.7.2 (2019-09-10)
 ******************
 
