@@ -4,6 +4,8 @@ django-storages CHANGELOG
 1.8 (2019-11-20)
 ****************
 
+General
+-------
 - Add support for Django 3.0 (`#759`_)
 - Update license identifier to unambiguous ``BSD-3-Clause``
 
