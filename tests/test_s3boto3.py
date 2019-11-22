@@ -512,11 +512,11 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_generated_url_is_encoded(self):
         self.storage.custom_domain = "mock.cloudfront.net"
-        filename = "whacky & filename.mp4"
+        filename = "whacky & filename'.mp4"
         url = self.storage.url(filename)
         parsed_url = urlparse.urlparse(url)
         self.assertEqual(parsed_url.path,
-                         "/whacky%20%26%20filename.mp4")
+                         "/whacky%20%26%20filename%27.mp4")
         self.assertFalse(self.storage.bucket.meta.client.generate_presigned_url.called)
 
     def test_special_characters(self):
