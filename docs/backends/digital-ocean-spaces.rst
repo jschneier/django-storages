@@ -3,7 +3,6 @@ Digital Ocean Spaces
 
 Digital Ocean Spaces implements the S3 protocol so it's mostly compatible with `S3Boto3Storage`.
 
-<<<<<<< HEAD
 Usage
 *****
 
