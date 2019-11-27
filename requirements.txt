@@ -1,0 +1,11 @@
+pytest
+pytest-cov
+apache-libcloud
+boto
+boto3
+dropbox
+google-cloud-storage
+paramiko
+azure>=3.0.0
+#
+azure-storage-blob
