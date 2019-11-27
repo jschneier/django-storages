@@ -12,9 +12,13 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone as tz
-from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.backends import s3boto
+
+try:
+    from django.utils.six.moves.urllib import parse as urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
 
 class S3BotoTestCase(TestCase):
