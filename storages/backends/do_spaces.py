@@ -2,6 +2,11 @@ from storages.utils import setting
 
 from .s3boto3 import S3Boto3Storage
 
+from storages.utils import (
+    check_location, get_available_overwrite_name, lookup_env, safe_join,
+    setting,
+)
+
 
 class DigitalOceanSpacesStorage(S3Boto3Storage):
     access_key = setting('DO_SPACES_ACCESS_KEY_ID')

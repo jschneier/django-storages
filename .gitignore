@@ -12,4 +12,9 @@ __pycache__
 
 .idea/
 .pytest_cache/
+
 venv/
+
+pip.ini
+settings.json
+.vscode/settings.json
