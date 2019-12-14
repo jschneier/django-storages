@@ -116,7 +116,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': self.storage.default_acl,
@@ -136,7 +136,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
@@ -156,7 +156,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content,
             ExtraArgs={
                 'ContentType': 'image/jpeg',
                 'ACL': self.storage.default_acl,
@@ -174,7 +174,7 @@ class DigitalOceanSpacesStorageTests(DigitalOceanSpacesTestCase):
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content.file,
+            content,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
