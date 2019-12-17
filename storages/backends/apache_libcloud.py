@@ -9,8 +9,13 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import string_types
-from django.utils.six.moves.urllib.parse import urljoin
+
+try:
+    from django.utils.six import string_types
+    from django.utils.six.moves.urllib.parse import urljoin
+except ImportError:
+    string_types = str
+    from urllib.parse import urljoin
 
 try:
     from libcloud.storage.providers import get_driver

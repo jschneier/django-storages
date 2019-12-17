@@ -1,19 +1,18 @@
 from __future__ import unicode_literals
 
 import mimetypes
-import re
 from datetime import datetime, timedelta
 from tempfile import SpooledTemporaryFile
 
 from azure.common import AzureMissingResourceHttpError
 from azure.storage.blob import BlobPermissions, ContentSettings
-from azure.storage.common import CloudStorageAccount
+from azure.storage.blob.blockblobservice import BlockBlobService
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import filepath_to_uri, force_bytes
 
 from storages.utils import (
     clean_name, get_available_overwrite_name, safe_join, setting,
@@ -48,7 +47,7 @@ class AzureStorageFile(File):
                 blob_name=self._path,
                 stream=file,
                 max_connections=1,
-                timeout=10)
+                timeout=self._storage.timeout)
         if 'r' in self._mode:
             file.seek(0)
 
@@ -66,8 +65,6 @@ class AzureStorageFile(File):
         return super(AzureStorageFile, self).read(*args, **kwargs)
 
     def write(self, content):
-        if len(content) > 100*1024*1024:
-            raise ValueError("Max chunk size is 100MB")
         if ('w' not in self._mode and
                 '+' not in self._mode and
                 'a' not in self._mode):
@@ -103,10 +100,7 @@ def _get_valid_path(s):
     #   * must not end with dot or slash
     #   * can contain any character
     #   * must escape URL reserved characters
-    # We allow a subset of this to avoid
-    # illegal file names. We must ensure it is idempotent.
-    s = force_text(s).strip().replace(' ', '_')
-    s = re.sub(r'(?u)[^-\w./]', '', s)
+    #     (not needed here since the azure client will do that)
     s = s.strip('./')
     if len(s) > _AZURE_NAME_MAX_LEN:
         raise ValueError(
@@ -120,12 +114,6 @@ def _get_valid_path(s):
             "File name must not contain "
             "more than 256 slashes")
     return s
-
-
-def _clean_name_dance(name):
-    # `get_valid_path` may return `foo/../bar`
-    name = name.replace('\\', '/')
-    return clean_name(_get_valid_path(clean_name(name)))
 
 
 # Max len according to azure's docs
@@ -146,22 +134,53 @@ class AzureStorage(Storage):
     overwrite_files = setting('AZURE_OVERWRITE_FILES', False)
     location = setting('AZURE_LOCATION', '')
     default_content_type = 'application/octet-stream'
+    cache_control = setting("AZURE_CACHE_CONTROL")
     is_emulated = setting('AZURE_EMULATED_MODE', False)
+    endpoint_suffix = setting('AZURE_ENDPOINT_SUFFIX')
+    sas_token = setting('AZURE_SAS_TOKEN')
+    custom_domain = setting('AZURE_CUSTOM_DOMAIN')
+    connection_string = setting('AZURE_CONNECTION_STRING')
+    custom_connection_string = setting(
+        'AZURE_CUSTOM_CONNECTION_STRING', setting('AZURE_CONNECTION_STRING'))
+    token_credential = setting('AZURE_TOKEN_CREDENTIAL')
 
     def __init__(self):
         self._service = None
+        self._custom_service = None
+
+    def _blob_service(self, custom_domain=None, connection_string=None):
+        # This won't open a connection or anything,
+        # it's akin to a client
+        return BlockBlobService(
+            account_name=self.account_name,
+            account_key=self.account_key,
+            sas_token=self.sas_token,
+            is_emulated=self.is_emulated,
+            protocol=self.azure_protocol,
+            custom_domain=custom_domain,
+            connection_string=connection_string,
+            token_credential=self.token_credential,
+            endpoint_suffix=self.endpoint_suffix)
 
     @property
     def service(self):
-        # This won't open a connection or anything,
-        # it's akin to a client
         if self._service is None:
-            account = CloudStorageAccount(
-                self.account_name,
-                self.account_key,
-                is_emulated=self.is_emulated)
-            self._service = account.create_block_blob_service()
+            custom_domain = None
+            if self.is_emulated:
+                custom_domain = self.custom_domain
+            self._service = self._blob_service(
+                custom_domain=custom_domain,
+                connection_string=self.connection_string)
         return self._service
+
+    @property
+    def custom_service(self):
+        """This is used to generate the URL"""
+        if self._custom_service is None:
+            self._custom_service = self._blob_service(
+                custom_domain=self.custom_domain,
+                connection_string=self.custom_connection_string)
+        return self._custom_service
 
     @property
     def azure_protocol(self):
@@ -170,8 +189,7 @@ class AzureStorage(Storage):
         else:
             return 'http'
 
-    def _path(self, name):
-        name = _clean_name_dance(name)
+    def _normalize_name(self, name):
         try:
             return safe_join(self.location, name)
         except ValueError:
@@ -179,20 +197,19 @@ class AzureStorage(Storage):
 
     def _get_valid_path(self, name):
         # Must be idempotent
-        return _get_valid_path(self._path(name))
+        return _get_valid_path(
+            self._normalize_name(
+                clean_name(name)))
 
     def _open(self, name, mode="rb"):
         return AzureStorageFile(name, mode, self)
-
-    def get_valid_name(self, name):
-        return _clean_name_dance(name)
 
     def get_available_name(self, name, max_length=_AZURE_NAME_MAX_LEN):
         """
         Returns a filename that's free on the target storage system, and
         available for new content to be written to.
         """
-        name = self.get_valid_name(name)
+        name = clean_name(name)
         if self.overwrite_files:
             return get_available_overwrite_name(name, max_length)
         return super(AzureStorage, self).get_available_name(name, max_length)
@@ -220,7 +237,7 @@ class AzureStorage(Storage):
         return properties.content_length
 
     def _save(self, name, content):
-        name_only = self.get_valid_name(name)
+        cleaned_name = clean_name(name)
         name = self._get_valid_path(name)
         guessed_type, content_encoding = mimetypes.guess_type(name)
         content_type = (
@@ -239,10 +256,11 @@ class AzureStorage(Storage):
             stream=content,
             content_settings=ContentSettings(
                 content_type=content_type,
-                content_encoding=content_encoding),
+                content_encoding=content_encoding,
+                cache_control=self.cache_control),
             max_connections=self.upload_max_conn,
             timeout=self.timeout)
-        return name_only
+        return cleaned_name
 
     def _expire_at(self, expire):
         # azure expects time in UTC
@@ -256,15 +274,14 @@ class AzureStorage(Storage):
 
         make_blob_url_kwargs = {}
         if expire:
-            sas_token = self.service.generate_blob_shared_access_signature(
-                self.azure_container, name, BlobPermissions.READ, expiry=self._expire_at(expire))
+            sas_token = self.custom_service.generate_blob_shared_access_signature(
+                self.azure_container, name, permission=BlobPermissions.READ, expiry=self._expire_at(expire))
             make_blob_url_kwargs['sas_token'] = sas_token
 
-        if self.azure_protocol:
-            make_blob_url_kwargs['protocol'] = self.azure_protocol
-        return self.service.make_blob_url(
+        return self.custom_service.make_blob_url(
             container_name=self.azure_container,
-            blob_name=name,
+            blob_name=filepath_to_uri(name),
+            protocol=self.azure_protocol,
             **make_blob_url_kwargs)
 
     def get_modified_time(self, name):

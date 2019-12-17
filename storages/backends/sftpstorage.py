@@ -16,9 +16,13 @@ import paramiko
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six.moves.urllib import parse as urlparse
 
 from storages.utils import setting
+
+try:
+    from django.utils.six.moves.urllib import parse as urlparse
+except ImportError:
+    from urllib import parse as urlparse
 
 
 @deconstructible
@@ -218,6 +222,14 @@ class SFTPStorageFile(File):
         self.file = io.BytesIO(content)
         self._is_dirty = True
         self._is_read = True
+
+    def open(self, mode=None):
+        if not self.closed:
+            self.seek(0)
+        elif self.name and self._storage.exists(self.name):
+            self.file = self._storage._open(self.name, mode or self.mode)
+        else:
+            raise ValueError("The file cannot be reopened.")
 
     def close(self):
         if self._is_dirty:

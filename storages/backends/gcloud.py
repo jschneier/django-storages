@@ -15,9 +15,9 @@ from storages.utils import (
 )
 
 try:
-    from google.cloud.storage.client import Client
-    from google.cloud.storage.blob import Blob
-    from google.cloud.exceptions import NotFound
+    from google.cloud.storage import Blob, Client
+    from google.cloud.storage.blob import _quote
+    from google.cloud.exceptions import Conflict, NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
@@ -31,7 +31,9 @@ class GoogleCloudFile(File):
         self._storage = storage
         self.blob = storage.bucket.get_blob(name)
         if not self.blob and 'w' in mode:
-            self.blob = Blob(self.name, storage.bucket)
+            self.blob = Blob(
+                self.name, storage.bucket,
+                chunk_size=setting('GS_BLOB_CHUNK_SIZE'))
         self._file = None
         self._is_dirty = False
 
@@ -75,8 +77,9 @@ class GoogleCloudFile(File):
     def close(self):
         if self._file is not None:
             if self._is_dirty:
-                self.blob.upload_from_file(self.file, rewind=True,
-                                           content_type=self.mime_type)
+                self.blob.upload_from_file(
+                    self.file, rewind=True, content_type=self.mime_type,
+                    predefined_acl=self._storage.default_acl)
             self._file.close()
             self._file = None
 
@@ -86,6 +89,7 @@ class GoogleCloudStorage(Storage):
     project_id = setting('GS_PROJECT_ID')
     credentials = setting('GS_CREDENTIALS')
     bucket_name = setting('GS_BUCKET_NAME')
+    custom_endpoint = setting('GS_CUSTOM_ENDPOINT', None)
     location = setting('GS_LOCATION', '')
     auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
     auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
@@ -129,19 +133,19 @@ class GoogleCloudStorage(Storage):
 
     def _get_or_create_bucket(self, name):
         """
-        Retrieves a bucket if it exists, otherwise creates it.
+        Returns bucket. If auto_create_bucket is True, creates bucket if it
+        doesn't exist.
         """
-        try:
-            return self.client.get_bucket(name)
-        except NotFound:
-            if self.auto_create_bucket:
-                bucket = self.client.create_bucket(name)
-                bucket.acl.save_predefined(self.auto_create_acl)
-                return bucket
-            raise ImproperlyConfigured("Bucket %s does not exist. Buckets "
-                                       "can be automatically created by "
-                                       "setting GS_AUTO_CREATE_BUCKET to "
-                                       "``True``." % name)
+        bucket = self.client.bucket(name)
+        if self.auto_create_bucket:
+            try:
+                new_bucket = self.client.create_bucket(name)
+                new_bucket.acl.save_predefined(self.auto_create_acl)
+                return new_bucket
+            except Conflict:
+                # Bucket already exists
+                pass
+        return bucket
 
     def _normalize_name(self, name):
         """
@@ -174,10 +178,9 @@ class GoogleCloudStorage(Storage):
         encoded_name = self._encode_name(name)
         file = GoogleCloudFile(encoded_name, 'rw', self)
         file.blob.cache_control = self.cache_control
-        file.blob.upload_from_file(content, rewind=True, size=content.size,
-                                   content_type=file.mime_type)
-        if self.default_acl:
-            file.blob.acl.save_predefined(self.default_acl)
+        file.blob.upload_from_file(
+            content, rewind=True, size=content.size,
+            content_type=file.mime_type, predefined_acl=self.default_acl)
         return cleaned_name
 
     def delete(self, name):
@@ -187,9 +190,9 @@ class GoogleCloudStorage(Storage):
     def exists(self, name):
         if not name:  # root element aka the bucket
             try:
-                self.bucket
+                self.client.get_bucket(self.bucket)
                 return True
-            except ImproperlyConfigured:
+            except NotFound:
                 return False
 
         name = self._normalize_name(clean_name(name))
@@ -262,9 +265,20 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(self._encode_name(name))
 
-        if self.default_acl == 'publicRead':
+        if not self.custom_endpoint and self.default_acl == 'publicRead':
             return blob.public_url
-        return blob.generate_signed_url(self.expiration)
+        elif self.default_acl == 'publicRead':
+            return '{storage_base_url}/{quoted_name}'.format(
+                storage_base_url=self.custom_endpoint,
+                quoted_name=_quote(name, safe=b"/~"),
+            )
+        elif not self.custom_endpoint:
+            return blob.generate_signed_url(self.expiration)
+        else:
+            return blob.generate_signed_url(
+                expiration=self.expiration,
+                api_access_endpoint=self.custom_endpoint,
+            )
 
     def get_available_name(self, name, max_length=None):
         name = clean_name(name)

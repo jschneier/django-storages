@@ -9,7 +9,7 @@ Notes
 
 Be aware Azure file names have some extra restrictions. They can't:
 
-  - end with dot (``.``) or slash (``/``)
+  - end with a dot (``.``) or slash (``/``)
   - contain more than 256 slashes (``/``)
   - be longer than 1024 characters
 
@@ -76,8 +76,6 @@ Set the default storage (i.e: for media files) and the static storage
 
 The following settings are available:
 
-    is_emulated = setting('AZURE_EMULATED_MODE', False)
-
 ``AZURE_ACCOUNT_NAME``
 
     This setting is the Windows Azure Storage Account name, which in many cases
@@ -97,7 +95,7 @@ The following settings are available:
 
 ``AZURE_SSL``
 
-    Set a secure connection (HTTPS), otherwise it's makes an insecure connection (HTTP). Default is ``True``
+    Set a secure connection (HTTPS), otherwise it makes an insecure connection (HTTP). Default is ``True``
 
 ``AZURE_UPLOAD_MAX_CONN``
 
@@ -125,3 +123,45 @@ The following settings are available:
 ``AZURE_LOCATION``
 
     Default location for the uploaded files. This is a path that gets prepended to every file name.
+
+``AZURE_EMULATED_MODE``
+
+    Whether to use the emulator (i.e Azurite). Defaults to False.
+
+``AZURE_ENDPOINT_SUFFIX``
+
+    The host base component of the url, minus the account name. Defaults
+    to Azure (``core.windows.net``). Override this to use the China cloud
+    (``core.chinacloudapi.cn``).
+
+``AZURE_CUSTOM_DOMAIN``
+
+    The custom domain to use. This can be set in the Azure Portal. For
+    example, ``www.mydomain.com`` or ``mycdn.azureedge.net``.
+
+    It may contain a ``host:port`` when using the emulator
+    (``AZURE_EMULATED_MODE = True``).
+
+``AZURE_CONNECTION_STRING``
+
+    If specified, this will override all other parameters.
+    See http://azure.microsoft.com/en-us/documentation/articles/storage-configure-connection-string/
+    for the connection string format.
+
+``AZURE_CUSTOM_CONNECTION_STRING``
+
+    This is similar to ``AZURE_CONNECTION_STRING``, but it's used
+    when generating the file's URL. A custom domain or CDN may be
+    specified here instead of within ``AZURE_CONNECTION_STRING``.
+    Defaults to ``AZURE_CONNECTION_STRING``'s value.
+
+``AZURE_TOKEN_CREDENTIAL``
+
+    A token credential used to authenticate HTTPS requests. The token value
+    should be updated before its expiration.
+
+
+``AZURE_CACHE_CONTROL``
+
+    A variable to set the Cache-Control HTTP response header. E.g. 
+    ``AZURE_CACHE_CONTROL = "public,max-age=31536000,immutable"``

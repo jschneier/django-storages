@@ -15,8 +15,7 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
-from django.utils.six.moves.urllib import parse as urlparse
-from django.utils.timezone import is_naive, localtime
+from django.utils.timezone import is_naive, make_naive
 
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
@@ -24,13 +23,18 @@ from storages.utils import (
 )
 
 try:
+    from django.utils.six.moves.urllib import parse as urlparse
+except ImportError:
+    from urllib import parse as urlparse
+
+
+try:
     import boto3.session
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
-except ImportError:
-    raise ImproperlyConfigured("Could not load Boto3's S3 bindings.\n"
-                               "See https://github.com/boto/boto3")
+except ImportError as e:
+    raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
 
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
@@ -55,9 +59,6 @@ class S3Boto3StorageFile(File):
     order to properly write the file to S3. Be sure to close the file
     in your application.
     """
-    # TODO: Read/Write (rw) mode may be a bit undefined at the moment. Needs testing.
-    # TODO: When Django drops support for Python 2.5, rewrite to use the
-    #       BufferedIO streams in the Python 2.6 io module.
     buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
@@ -491,18 +492,6 @@ class S3Boto3Storage(Storage):
         if self.preload_metadata:
             self._entries[encoded_name] = obj
 
-        # If both `name` and `content.name` are empty or None, your request
-        # can be rejected with `XAmzContentSHA256Mismatch` error, because in
-        # `django.core.files.storage.Storage.save` method your file-like object
-        # will be wrapped in `django.core.files.File` if no `chunks` method
-        # provided. `File.__bool__`  method is Django-specific and depends on
-        # file name, for this reason`botocore.handlers.calculate_md5` can fail
-        # even if wrapped file-like object exists. To avoid Django-specific
-        # logic, pass internal file-like object if `content` is `File`
-        # class instance.
-        if isinstance(content, File):
-            content = content.file
-
         self._save_content(obj, content, parameters=parameters)
         # Note: In boto3, after a put, last_modified is automatically reloaded
         # the next time it is accessed; no need to specifically reload it.
@@ -523,6 +512,9 @@ class S3Boto3Storage(Storage):
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
         self.bucket.Object(self._encode_name(name)).delete()
+
+        if name in self._entries:
+            del self._entries[name]
 
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -576,14 +568,14 @@ class S3Boto3Storage(Storage):
             # boto3 returns TZ aware timestamps
             return entry.last_modified
         else:
-            return localtime(entry.last_modified).replace(tzinfo=None)
+            return make_naive(entry.last_modified)
 
     def modified_time(self, name):
         """Returns a naive datetime object containing the last modified time."""
         # If USE_TZ=False then get_modified_time will return a naive datetime
         # so we just return that, else we have to localize and strip the tz
         mtime = self.get_modified_time(name)
-        return mtime if is_naive(mtime) else localtime(mtime).replace(tzinfo=None)
+        return mtime if is_naive(mtime) else make_naive(mtime)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we
@@ -608,7 +600,6 @@ class S3Boto3Storage(Storage):
 
     def url(self, name, parameters=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
-        # TODO: Handle force_http=not self.secure_urls like in s3boto
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
             return "%s//%s/%s" % (self.url_protocol,
