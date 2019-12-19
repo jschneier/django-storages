@@ -88,6 +88,7 @@ class FTPStorage(Storage):
         # Real reconnect
         if self._connection is None:
             ftp = ftplib.FTP()
+            ftp.encoding = 'utf-8'
             try:
                 ftp.connect(self._config['host'], self._config['port'])
                 ftp.login(self._config['user'], self._config['passwd'])
