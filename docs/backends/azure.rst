@@ -124,16 +124,6 @@ The following settings are available:
 
     Default location for the uploaded files. This is a path that gets prepended to every file name.
 
-``AZURE_EMULATED_MODE``
-
-    Whether to use the emulator (i.e Azurite). Defaults to False.
-
-``AZURE_ENDPOINT_SUFFIX``
-
-    The host base component of the url, minus the account name. Defaults
-    to Azure (``core.windows.net``). Override this to use the China cloud
-    (``core.chinacloudapi.cn``).
-
 ``AZURE_CUSTOM_DOMAIN``
 
     The custom domain to use. This can be set in the Azure Portal. For
@@ -147,13 +137,6 @@ The following settings are available:
     If specified, this will override all other parameters.
     See http://azure.microsoft.com/en-us/documentation/articles/storage-configure-connection-string/
     for the connection string format.
-
-``AZURE_CUSTOM_CONNECTION_STRING``
-
-    This is similar to ``AZURE_CONNECTION_STRING``, but it's used
-    when generating the file's URL. A custom domain or CDN may be
-    specified here instead of within ``AZURE_CONNECTION_STRING``.
-    Defaults to ``AZURE_CONNECTION_STRING``'s value.
 
 ``AZURE_TOKEN_CREDENTIAL``
 
