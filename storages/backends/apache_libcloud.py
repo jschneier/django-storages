@@ -146,6 +146,8 @@ class LibCloudStorage(Storage):
                 base_url = ('https://%s.blob.core.windows.net' %
                             self.provider['user'])
                 url = urljoin(base_url, object_path)
+            elif 'backblaze' in provider_type:
+                url = urljoin('api.backblaze.com/b2api/v1/', object_path)
             else:
                 raise e
         return url
