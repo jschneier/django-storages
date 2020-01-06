@@ -209,13 +209,13 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(len(dirs), 2)
         for directory in ["some", "other"]:
             self.assertTrue(directory in dirs,
-                            """ "%s" not in directory list "%s".""" % (
+                            """ "{}" not in directory list "{}".""".format(
                                 directory, dirs))
 
         self.assertEqual(len(files), 2)
         for filename in ["2.txt", "4.txt"]:
             self.assertTrue(filename in files,
-                            """ "%s" not in file list "%s".""" % (
+                            """ "{}" not in file list "{}".""".format(
                                 filename, files))
 
     def test_listdir_subdir(self):
@@ -242,11 +242,11 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertEqual(len(dirs), 1)
         self.assertTrue('path' in dirs,
-                        """ "path" not in directory list "%s".""" % (dirs,))
+                        """ "path" not in directory list "{}".""".format(dirs))
 
         self.assertEqual(len(files), 1)
         self.assertTrue('2.txt' in files,
-                        """ "2.txt" not in files list "%s".""" % (files,))
+                        """ "2.txt" not in files list "{}".""".format(files))
 
     def test_size(self):
         size = 1234

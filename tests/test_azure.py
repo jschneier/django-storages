@@ -358,13 +358,13 @@ class AzureStorageTest(TestCase):
         for directory in ["some", "other"]:
             self.assertTrue(
                 directory in dirs,
-                """ "%s" not in directory list "%s".""" % (directory, dirs))
+                """ "{}" not in directory list "{}".""".format(directory, dirs))
 
         self.assertEqual(len(files), 2)
         for filename in ["2.txt", "4.txt"]:
             self.assertTrue(
                 filename in files,
-                """ "%s" not in file list "%s".""" % (filename, files))
+                """ "{}" not in file list "{}".""".format(filename, files))
 
     def test_storage_listdir_subdir(self):
         file_names = ["some/path/1.txt", "some/2.txt"]
@@ -383,12 +383,12 @@ class AzureStorageTest(TestCase):
         self.assertEqual(len(dirs), 1)
         self.assertTrue(
             'path' in dirs,
-            """ "path" not in directory list "%s".""" % (dirs,))
+            """ "path" not in directory list "{}".""".format(dirs))
 
         self.assertEqual(len(files), 1)
         self.assertTrue(
             '2.txt' in files,
-            """ "2.txt" not in files list "%s".""" % (files,))
+            """ "2.txt" not in files list "{}".""".format(files))
 
     def test_size_of_file(self):
         props = BlobProperties()

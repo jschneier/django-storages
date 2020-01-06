@@ -82,7 +82,7 @@ def check_location(storage):
     if storage.location.startswith('/'):
         correct = storage.location.lstrip('/')
         raise ImproperlyConfigured(
-            "%s.location cannot begin with a leading slash. Found '%s'. Use '%s' instead." % (
+            "{}.location cannot begin with a leading slash. Found '{}'. Use '{}' instead.".format(
                 storage.__class__.__name__,
                 storage.location,
                 correct,
@@ -117,4 +117,4 @@ def get_available_overwrite_name(name, max_length):
             'Please make sure that the corresponding file field '
             'allows sufficient "max_length".' % name
         )
-    return os.path.join(dir_name, "%s%s" % (file_root, file_ext))
+    return os.path.join(dir_name, "{}{}".format(file_root, file_ext))
