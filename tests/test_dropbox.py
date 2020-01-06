@@ -80,6 +80,10 @@ class DropBoxTest(TestCase):
                 return_value=FILES_MOCK)
     def test_listdir(self, *args):
         dirs, files = self.storage.listdir('/')
+        dirs2, files2 = self.storage.listdir('')
+        self.assertEqual(dirs, dirs2)
+        self.assertEqual(files2, files2)
+
         self.assertGreater(len(dirs), 0)
         self.assertGreater(len(files), 0)
         self.assertEqual(dirs[0], 'bar')

@@ -96,6 +96,10 @@ class DropBoxStorage(Storage):
     def listdir(self, path):
         directories, files = [], []
         full_path = self._full_path(path)
+
+        if full_path == '/':
+            full_path = ''
+
         metadata = self.client.files_list_folder(full_path)
         for entry in metadata.entries:
             if isinstance(entry, FolderMetadata):
