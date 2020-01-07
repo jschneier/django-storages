@@ -1,5 +1,4 @@
 # https://travis-ci.org/jschneier/django-storages/
-dist: xenial
 language: python
 
 cache: pip
