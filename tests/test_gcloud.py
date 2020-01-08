@@ -57,7 +57,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
 
-        self.assertRaises(IOError, self.storage.open, self.filename)
+        self.assertRaises(FileNotFoundError, self.storage.open, self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_open_read_nonexistent_unicode(self):
@@ -66,7 +66,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
 
-        self.assertRaises(IOError, self.storage.open, filename)
+        self.assertRaises(FileNotFoundError, self.storage.open, filename)
 
     @mock.patch('storages.backends.gcloud.Blob')
     def test_open_write(self, MockBlob):

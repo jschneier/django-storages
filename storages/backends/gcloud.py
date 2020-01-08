@@ -176,7 +176,7 @@ class GoogleCloudStorage(BaseStorage):
         name = self._normalize_name(clean_name(name))
         file_object = GoogleCloudFile(name, mode, self)
         if not file_object.blob:
-            raise OSError('File does not exist: %s' % name)
+            raise FileNotFoundError('File does not exist: %s' % name)
         return file_object
 
     def _save(self, name, content):

@@ -580,7 +580,7 @@ class S3Boto3Storage(BaseStorage):
             f = S3Boto3StorageFile(name, mode, self)
         except ClientError as err:
             if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
-                raise OSError('File does not exist: %s' % name)
+                raise FileNotFoundError('File does not exist: %s' % name)
             raise  # Let it bubble up if it was some other error
         return f
 
