@@ -262,7 +262,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         file.close()
         multipart.Part.assert_called_with(1)
         part = multipart.Part.return_value
-        part.upload.assert_called_with(Body=content.encode('utf-8'))
+        part.upload.assert_called_with(Body=content.encode())
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
 
@@ -376,7 +376,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
         part = multipart.Part.return_value
         uploaded_content = ''.join(
-            args_list[1]['Body'].decode('utf-8')
+            args_list[1]['Body'].decode()
             for args_list in part.upload.call_args_list
         )
         self.assertEqual(uploaded_content, written_content)
