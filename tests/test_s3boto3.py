@@ -280,9 +280,45 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_storage_open_no_write(self):
         """
-        Test opening a file in write mode
+        Test opening file in write mode and closing without writing.
+
+        A file should be created as by obj.put(...).
         """
         name = 'test_open_no_write.txt'
+
+        # Set the encryption flag used for puts
+        self.storage.create_empty_files = True
+        self.storage.encryption = True
+        self.storage.reduced_redundancy = True
+        self.storage.default_acl = 'public-read'
+
+        file = self.storage.open(name, 'w')
+        self.storage.bucket.Object.assert_called_with(name)
+        obj = self.storage.bucket.Object.return_value
+        obj.load.side_effect = ClientError({'Error': {},
+                                            'ResponseMetadata': {'HTTPStatusCode': 404}},
+                                           'head_bucket')
+
+        # Set the name of the mock object
+        obj.key = name
+
+        # Save the internal file before closing
+        file.close()
+
+        obj.load.assert_called_once_with()
+        obj.put.assert_called_once_with(
+            ACL='public-read',
+            Body=b"",
+            ContentType='text/plain',
+            ServerSideEncryption='AES256',
+            StorageClass='REDUCED_REDUNDANCY'
+        )
+
+    def test_storage_open_no_overwrite_existing(self):
+        """
+        Test opening an existing file in write mode and closing without writing.
+        """
+        name = 'test_open_no_overwrite_existing.txt'
 
         # Set the encryption flag used for puts
         self.storage.create_empty_files = True
@@ -301,13 +337,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         file.close()
 
         obj.load.assert_called_once_with()
-        obj.put.assert_called_once_with(
-            ACL='public-read',
-            Body=b"",
-            ContentType='text/plain',
-            ServerSideEncryption='AES256',
-            StorageClass='REDUCED_REDUNDANCY'
-        )
+        obj.put.assert_not_called()
 
     def test_storage_write_beyond_buffer_size(self):
         """
