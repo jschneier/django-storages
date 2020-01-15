@@ -178,7 +178,7 @@ class S3Boto3StorageFile(File):
         except ClientError as err:
             if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
                 self.obj.put(
-                    Body=b"", **self._get_write_parameters(),
+                    Body=b"", **self._get_write_parameters()
                 )
             else:
                 raise
