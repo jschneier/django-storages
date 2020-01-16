@@ -391,9 +391,8 @@ class S3BotoStorage(Storage):
         finally:
             zfile.close()
         zbuf.seek(0)
-        content.file = zbuf
         content.seek(0)
-        return content
+        return zbuf
 
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
