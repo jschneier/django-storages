@@ -171,7 +171,6 @@ class S3Boto3StorageFile(File):
         """
         assert "w" in self._mode
         assert self._raw_bytes_written == 0
-        assert self._storage.create_empty_files
 
         try:
             # Check if the object exists on the server; if so, don't do anything
@@ -197,7 +196,7 @@ class S3Boto3StorageFile(File):
         else:
             if self._multipart is not None:
                 self._multipart.abort()
-            if self._storage.create_empty_files and self._raw_bytes_written == 0:
+            if self._raw_bytes_written == 0:
                 self._create_empty_on_close()
         if self._file is not None:
             self._file.close()
@@ -257,7 +256,6 @@ class S3Boto3Storage(Storage):
     use_ssl = setting('AWS_S3_USE_SSL', True)
     verify = setting('AWS_S3_VERIFY', None)
     max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
-    create_empty_files = setting('AWS_S3_CREATE_EMPTY_FILE', False)
 
     def __init__(self, acl=None, bucket=None, **settings):
         # check if some of the settings we've provided as class attributes

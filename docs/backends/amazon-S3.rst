@@ -93,9 +93,6 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
 
-``AWS_S3_CREATE_EMPTY_FILE`` (optional: default is ``False``)
-    By default, if you open a file as by ``S3Boto3Storage.open`` in write mode and then close it before writing anything out, the file will not be created. This differs from Django's ``FileSystemStorage``. Set this to ``True`` to force creation of an empty file if no bytes are written (and if the file does not already exist).
-
 ``AWS_S3_HOST`` (optional - boto only, default is ``s3.amazonaws.com``)
 
   To ensure you use `AWS Signature Version 4`_ it is recommended to set this to the host of your bucket. See the

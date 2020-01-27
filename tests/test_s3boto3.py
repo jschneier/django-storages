@@ -287,7 +287,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_open_no_write.txt'
 
         # Set the encryption flag used for puts
-        self.storage.create_empty_files = True
         self.storage.encryption = True
         self.storage.reduced_redundancy = True
         self.storage.default_acl = 'public-read'
@@ -321,7 +320,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_open_no_overwrite_existing.txt'
 
         # Set the encryption flag used for puts
-        self.storage.create_empty_files = True
         self.storage.encryption = True
         self.storage.reduced_redundancy = True
         self.storage.default_acl = 'public-read'
