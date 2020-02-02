@@ -68,7 +68,7 @@ class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
-    timeout = setting('DROPBOX_TIMEOUT' _DEFAULT_TIMEOUT)
+    timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
