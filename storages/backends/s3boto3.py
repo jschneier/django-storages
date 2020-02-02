@@ -72,6 +72,7 @@ class S3Boto3StorageFile(File):
             # Force early RAII-style exception if object does not exist
             self.obj.load()
         self._is_dirty = False
+        self._raw_bytes_written = 0
         self._file = None
         self._multipart = None
         # 5 MB is the minimum part size (if there is more than one part).
@@ -116,19 +117,26 @@ class S3Boto3StorageFile(File):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
         if self._multipart is None:
-            parameters = self._storage.object_parameters.copy()
-            if self._storage.default_acl:
-                parameters['ACL'] = self._storage.default_acl
-            parameters['ContentType'] = (mimetypes.guess_type(self.obj.key)[0] or
-                                         self._storage.default_content_type)
-            if self._storage.reduced_redundancy:
-                parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
-            if self._storage.encryption:
-                parameters['ServerSideEncryption'] = 'AES256'
-            self._multipart = self.obj.initiate_multipart_upload(**parameters)
+            self._multipart = self.obj.initiate_multipart_upload(
+                **self._get_write_parameters()
+            )
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
-        return super(S3Boto3StorageFile, self).write(force_bytes(content))
+        bstr = force_bytes(content)
+        self._raw_bytes_written += len(bstr)
+        return super(S3Boto3StorageFile, self).write(bstr)
+
+    def _get_write_parameters(self):
+        parameters = self._storage.object_parameters.copy()
+        if self._storage.default_acl:
+            parameters['ACL'] = self._storage.default_acl
+        parameters['ContentType'] = (mimetypes.guess_type(self.obj.key)[0] or
+                                     self._storage.default_content_type)
+        if self._storage.reduced_redundancy:
+            parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
+        if self._storage.encryption:
+            parameters['ServerSideEncryption'] = 'AES256'
+        return parameters
 
     @property
     def _buffer_file_size(self):
@@ -150,6 +158,31 @@ class S3Boto3StorageFile(File):
             self.file.seek(0)
             self.file.truncate()
 
+    def _create_empty_on_close(self):
+        """
+        Attempt to create an empty file for this key when this File is closed if no bytes
+        have been written and no object already exists on S3 for this key.
+
+        This behavior is meant to mimic the behavior of Django's builtin FileSystemStorage,
+        where files are always created after they are opened in write mode:
+
+            f = storage.open("file.txt", mode="w")
+            f.close()
+        """
+        assert "w" in self._mode
+        assert self._raw_bytes_written == 0
+
+        try:
+            # Check if the object exists on the server; if so, don't do anything
+            self.obj.load()
+        except ClientError as err:
+            if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
+                self.obj.put(
+                    Body=b"", **self._get_write_parameters()
+                )
+            else:
+                raise
+
     def close(self):
         if self._is_dirty:
             self._flush_write_buffer()
@@ -163,6 +196,8 @@ class S3Boto3StorageFile(File):
         else:
             if self._multipart is not None:
                 self._multipart.abort()
+            if self._raw_bytes_written == 0:
+                self._create_empty_on_close()
         if self._file is not None:
             self._file.close()
             self._file = None
