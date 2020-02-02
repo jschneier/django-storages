@@ -109,7 +109,7 @@ class FTPStorage(Storage):
 
     def _mkremdirs(self, path):
         pwd = self._connection.pwd()
-        path_splitted = path.split('/')
+        path_splitted = os.path.split(path)
         for path_part in path_splitted:
             try:
                 self._connection.cwd(path_part)
