@@ -59,6 +59,12 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 ``AWS_AUTO_CREATE_BUCKET`` (optional)
     If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
 
+.. deprecated:: 1.9
+
+   The ability to automatically create a bucket will be removed in version 2.0. The permissions needed
+   to do so are incongruent with the requirements of the rest of this library. Either create it yourself
+   or use one of the popular configuration management tools.
+
 ``AWS_S3_OBJECT_PARAMETERS`` (optional)
   Use this to set object parameters on your object (such as CacheControl)::
 

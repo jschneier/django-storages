@@ -658,6 +658,19 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
         assert str(w[-1].message) == message
 
+    def test_deprecated_autocreate_bucket(self):
+        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
+            s3boto3.S3Boto3Storage(auto_create_bucket=True)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        message = (
+            "Automatic bucket creation will be removed in version 2.0. It encourages "
+            "using overly broad credentials with this library. Either create it before "
+            "manually or use one of a myriad of automatic configuration management tools. "
+            "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."
+        )
+        assert str(w[-1].message) == message
+
     def test_deprecated_default_acl_override_class_variable(self):
         class MyStorage(s3boto3.S3Boto3Storage):
             default_acl = "private"

@@ -97,6 +97,13 @@ back to the default inferred from the environment
 
 If True, attempt to create the bucket if it does not exist.
 
+.. deprecated:: 1.9
+
+   The ability to automatically create a bucket will be removed in version 2.0. The permissions needed
+   to do so are incongruent with the requirements of the rest of this library. Either create it yourself
+   or use one of the popular configuration management tools.
+
+
 ``GS_AUTO_CREATE_ACL`` (optional, default is ``projectPrivate``)
 
 ACL used when creating a new bucket, from the

@@ -1,4 +1,5 @@
 import mimetypes
+import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -112,6 +113,15 @@ class GoogleCloudStorage(Storage):
                 setattr(self, name, value)
 
         check_location(self)
+
+        if self.auto_create_bucket:
+            warnings.warn(
+                "Automatic bucket creation will be removed in version 2.0. It encourages "
+                "using overly broad credentials with this library. Either create it before "
+                "manually or use one of a myriad of automatic configuration management tools. "
+                "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
+                DeprecationWarning,
+            )
 
         self._bucket = None
         self._client = None
