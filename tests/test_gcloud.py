@@ -6,6 +6,7 @@ except ImportError:  # Python 3.2 and below
     import mock
 
 import mimetypes
+import warnings
 from datetime import datetime, timedelta
 
 from django.core.exceptions import ImproperlyConfigured
@@ -424,3 +425,16 @@ class GCloudStorageTests(GCloudTestCase):
         )
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             gcloud.GoogleCloudStorage(location='/')
+
+    def test_deprecated_autocreate_bucket(self):
+        with warnings.catch_warnings(record=True) as w:
+            gcloud.GoogleCloudStorage(auto_create_bucket=True)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        message = (
+            "Automatic bucket creation will be removed in version 2.0. It encourages "
+            "using overly broad credentials with this library. Either create it before "
+            "manually or use one of a myriad of automatic configuration management tools. "
+            "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."
+        )
+        assert str(w[-1].message) == message

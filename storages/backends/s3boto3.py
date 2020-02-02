@@ -281,6 +281,14 @@ class S3Boto3Storage(Storage):
                 DeprecationWarning,
             )
             self.bucket_name = bucket
+        if self.auto_create_bucket:
+            warnings.warn(
+                "Automatic bucket creation will be removed in version 2.0. It encourages "
+                "using overly broad credentials with this library. Either create it before "
+                "manually or use one of a myriad of automatic configuration management tools. "
+                "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
+                DeprecationWarning,
+            )
 
         check_location(self)
 
