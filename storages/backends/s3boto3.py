@@ -511,7 +511,9 @@ class S3Boto3Storage(Storage):
         name = self._normalize_name(cleaned_name)
         params = self._get_write_parameters(name, content)
 
-        if self.gzip and params['ContentType'] in self.gzip_content_types:
+        if (self.gzip and
+                params['ContentType'] in self.gzip_content_types and
+                'ContentEncoding' not in params):
             content = self._compress_content(content)
             params['ContentEncoding'] = 'gzip'
 
@@ -569,7 +571,7 @@ class S3Boto3Storage(Storage):
         return self.bucket.Object(self._encode_name(name)).content_length
 
     def _get_write_parameters(self, name, content=None):
-        params = self.get_object_parameters(name)
+        params = {}
 
         if self.encryption:
             params['ServerSideEncryption'] = 'AES256'
@@ -586,6 +588,7 @@ class S3Boto3Storage(Storage):
         if encoding:
             params['ContentEncoding'] = encoding
 
+        params.update(self.get_object_parameters(name))
         return params
 
     def get_object_parameters(self, name):
@@ -595,12 +598,7 @@ class S3Boto3Storage(Storage):
 
         By default, returns the value of AWS_S3_OBJECT_PARAMETERS.
 
-        If the keys of ServerSideEncryption, StorageClass or ACL are returned by
-        this method and set via the AWS_* settings, the setting wins. Unset it to
-        customize using this method.
-
-        ContentType & ContentEncoding are determined automatically and cannot be
-        adjusted with this method.
+        Setting ContentEncoding will prevent objects from being automatically gzipped.
         """
         return self.object_parameters.copy()
 
