@@ -65,12 +65,15 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
    to do so are incongruent with the requirements of the rest of this library. Either create it yourself
    or use one of the popular configuration management tools.
 
-``AWS_S3_OBJECT_PARAMETERS`` (optional)
+``AWS_S3_OBJECT_PARAMETERS`` (optional, default ``{}``)
   Use this to set object parameters on your object (such as CacheControl)::
 
         AWS_S3_OBJECT_PARAMETERS = {
             'CacheControl': 'max-age=86400',
         }
+
+   To control these on a per-object basis, subclass the backend and override
+   ``S3Boto3Storage.get_object_parameters``.
 
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
     Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
