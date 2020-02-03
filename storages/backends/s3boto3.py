@@ -283,6 +283,27 @@ class S3Boto3Storage(Storage):
                 "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
                 DeprecationWarning,
             )
+        if self.reduced_redundancy:
+            warnings.warn(
+                "Support for AWS_REDUCED_REDUNDANCY will be removed in version 2.0. "
+                "Update now by adding StorageClass=REDUCED_REDUNDANCY to "
+                "AWS_S3_OBJECT_PARAMETERS. There are also several other possible values "
+                "for StorageClass available. Check the AWS & boto3 docs for more info.",
+                DeprecationWarning,
+            )
+        if self.encryption:
+            warnings.warn(
+                "Support for AWS_S3_ENCRYPTION will be removed in version 2.0. "
+                "Update now by adding ServerSideEncryption=AES256 to "
+                "AWS_S3_OBJECT_PARAMETERS. Doing so also easily allows using 'aws:kms' "
+                "for encryption. Check the AWS & boto3 docs for more info.",
+                DeprecationWarning,
+            )
+        if self.preload_metadata:
+            warnings.warn(
+                "Support for AWS_PRELOAD_METADATA will be removed in version 2.0. ",
+                DeprecationWarning,
+            )
 
         check_location(self)
 

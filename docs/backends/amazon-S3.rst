@@ -87,6 +87,11 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 ``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
     Enable server-side file encryption while at rest.
 
+.. deprecated:: 1.9
+
+   Support for this top level setting is deprecated. The functionality is still available by setting
+   ServerSideEncryption=AES256 in AWS_S3_OBJECT_PARAMETERS.
+
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
 
