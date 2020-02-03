@@ -124,25 +124,13 @@ class S3Boto3StorageFile(File):
         self._is_dirty = True
         if self._multipart is None:
             self._multipart = self.obj.initiate_multipart_upload(
-                **self._get_write_parameters()
+                **self._storage._get_write_parameters(self.obj.key)
             )
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
         bstr = force_bytes(content)
         self._raw_bytes_written += len(bstr)
         return super(S3Boto3StorageFile, self).write(bstr)
-
-    def _get_write_parameters(self):
-        parameters = self._storage.object_parameters.copy()
-        if self._storage.default_acl:
-            parameters['ACL'] = self._storage.default_acl
-        parameters['ContentType'] = (mimetypes.guess_type(self.obj.key)[0] or
-                                     self._storage.default_content_type)
-        if self._storage.reduced_redundancy:
-            parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
-        if self._storage.encryption:
-            parameters['ServerSideEncryption'] = 'AES256'
-        return parameters
 
     @property
     def _buffer_file_size(self):
@@ -184,7 +172,7 @@ class S3Boto3StorageFile(File):
         except ClientError as err:
             if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
                 self.obj.put(
-                    Body=b"", **self._get_write_parameters()
+                    Body=b"", **self._storage._get_write_parameters(self.obj.key)
                 )
             else:
                 raise
@@ -521,42 +509,22 @@ class S3Boto3Storage(Storage):
     def _save(self, name, content):
         cleaned_name = self._clean_name(name)
         name = self._normalize_name(cleaned_name)
-        parameters = self.object_parameters.copy()
-        _type, encoding = mimetypes.guess_type(name)
-        content_type = getattr(content, 'content_type', None)
-        content_type = content_type or _type or self.default_content_type
+        params = self._get_write_parameters(name, content)
 
-        # setting the content_type in the key object is not enough.
-        parameters.update({'ContentType': content_type})
-
-        if self.gzip and content_type in self.gzip_content_types:
+        if (self.gzip and
+                params['ContentType'] in self.gzip_content_types and
+                'ContentEncoding' not in params):
             content = self._compress_content(content)
-            parameters.update({'ContentEncoding': 'gzip'})
-        elif encoding:
-            # If the content already has a particular encoding, set it
-            parameters.update({'ContentEncoding': encoding})
+            params['ContentEncoding'] = 'gzip'
 
         encoded_name = self._encode_name(name)
         obj = self.bucket.Object(encoded_name)
         if self.preload_metadata:
             self._entries[encoded_name] = obj
 
-        self._save_content(obj, content, parameters=parameters)
-        # Note: In boto3, after a put, last_modified is automatically reloaded
-        # the next time it is accessed; no need to specifically reload it.
-        return cleaned_name
-
-    def _save_content(self, obj, content, parameters):
-        # only pass backwards incompatible arguments if they vary from the default
-        put_parameters = parameters.copy() if parameters else {}
-        if self.encryption:
-            put_parameters['ServerSideEncryption'] = 'AES256'
-        if self.reduced_redundancy:
-            put_parameters['StorageClass'] = 'REDUCED_REDUNDANCY'
-        if self.default_acl:
-            put_parameters['ACL'] = self.default_acl
         content.seek(0, os.SEEK_SET)
-        obj.upload_fileobj(content, ExtraArgs=put_parameters)
+        obj.upload_fileobj(content, ExtraArgs=params)
+        return cleaned_name
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
@@ -601,6 +569,38 @@ class S3Boto3Storage(Storage):
                 return entry.size if hasattr(entry, 'size') else entry.content_length
             return 0
         return self.bucket.Object(self._encode_name(name)).content_length
+
+    def _get_write_parameters(self, name, content=None):
+        params = {}
+
+        if self.encryption:
+            params['ServerSideEncryption'] = 'AES256'
+        if self.reduced_redundancy:
+            params['StorageClass'] = 'REDUCED_REDUNDANCY'
+        if self.default_acl:
+            params['ACL'] = self.default_acl
+
+        _type, encoding = mimetypes.guess_type(name)
+        content_type = getattr(content, 'content_type', None)
+        content_type = content_type or _type or self.default_content_type
+
+        params['ContentType'] = content_type
+        if encoding:
+            params['ContentEncoding'] = encoding
+
+        params.update(self.get_object_parameters(name))
+        return params
+
+    def get_object_parameters(self, name):
+        """
+        Returns a dictionary that is passed to file upload. Override this
+        method to adjust this on a per-object basis to set e.g ContentDisposition.
+
+        By default, returns the value of AWS_S3_OBJECT_PARAMETERS.
+
+        Setting ContentEncoding will prevent objects from being automatically gzipped.
+        """
+        return self.object_parameters.copy()
 
     def get_modified_time(self, name):
         """

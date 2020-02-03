@@ -65,12 +65,12 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
    to do so are incongruent with the requirements of the rest of this library. Either create it yourself
    or use one of the popular configuration management tools.
 
-``AWS_S3_OBJECT_PARAMETERS`` (optional)
-  Use this to set object parameters on your object (such as CacheControl)::
+``AWS_S3_OBJECT_PARAMETERS`` (optional, default ``{}``)
+  Use this to set parameters on all objects. To set these on a per-object
+  basis, subclass the backend and override ``S3Boto3Storage.get_object_parameters``.
 
-        AWS_S3_OBJECT_PARAMETERS = {
-            'CacheControl': 'max-age=86400',
-        }
+  To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_.
+  Some of the included ones are ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
     Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
@@ -143,6 +143,7 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 .. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+.. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
 
 .. _migrating-boto-to-boto3:
 
