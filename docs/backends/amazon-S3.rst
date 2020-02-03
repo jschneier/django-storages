@@ -248,6 +248,113 @@ Standard file access options are available, and work as expected::
     >>> default_storage.exists('storage_test')
     False
 
+
+Overriding the default Storage class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can override the default Storage class and create your custom storage backend. Below provides some examples and common use cases to help you get started. This section assumes you have your AWS credentials configured, e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
+
+To create a storage class using a specific bucket::
+
+    from storages.backends.s3boto3 import S3Boto3Storage
+
+    class MediaStorage(S3Boto3Storage):
+        bucket_name = 'my-media-bucket'
+
+
+Assume that you store the above class ``MediaStorage`` in a file called ``custom_storage.py`` in the project directory tree like below::
+
+    | (your django project root directory)
+    | ├── manage.py
+    | ├── my_django_app
+    | │   ├── custom_storage.py
+    | │   └── ...
+    | ├── ...
+
+You can now use your custom storage class for default file storage in Django settings like below::
+
+    DEFAULT_FILE_STORAGE = 'my_django_app.custom_storage.MediaStorage'
+
+Or you may want to upload files to the bucket in some view that accepts file upload request::
+
+    import os
+
+    from django.views import View
+    from django.http import JsonResponse
+
+    from django_backend.custom_storages import MediaStorage
+
+    class FileUploadView(View):
+        def post(self, requests, **kwargs):
+            file_obj = requests.FILES.get('file', '')
+
+            # do your validation here e.g. file size/type check
+
+            # organize a path for the file in bucket
+            file_directory_within_bucket = 'user_uplaod_files/{username}'.format(username=requests.user)
+
+            # synthesize a full file path; note that we included the filename
+            file_path_within_bucket = os.path.join(
+                file_directory_within_bucket,
+                file_obj.name
+            )
+
+            media_storage = MediaStorage()
+
+            if not media_storage.exists(file_path_within_bucket): # avoid overwriting existing file
+                media_storage.save(file_path_within_bucket, file_obj)
+                file_url = media_storage.url(file_path_within_bucket)
+
+                return JsonResponse({
+                    'message': 'OK',
+                    'fileUrl': file_url,
+                })
+            else:
+                return JsonResponse({
+                    'message': 'Error: file {filename} already exists at {file_directory} in bucket {bucket_name}'.format(
+                        filename=file_obj.name,
+                        file_directory=file_directory_within_bucket,
+                        bucket_name=media_storage.bucket_name
+                    ),
+                }, status=400)
+
+A side note is that if you have ``AWS_S3_CUSTOM_DOMAIN`` setup in your ``settings.py``, by default the storage class will always use ``AWS_S3_CUSTOM_DOMAIN`` to generate url.
+
+If your ``AWS_S3_CUSTOM_DOMAIN`` is pointing to a different bucket than your custom storage class, the ``.url()`` function will give you the wrong url. In such case, you will have to configure your storage class and explicitly specifiy ``custom_domain`` as below::
+
+    class MediaStorage(S3Boto3Storage):
+        bucket_name = 'my-media-bucket'
+        custom_domain = '{}.s3.amazonaws.com'.format(bucket_name)
+
+You can also decide to config your custom storage class to store files under a specific directory within the bucket::
+
+    class MediaStorage(S3Boto3Storage):
+        bucket_name = 'my-app-bucket'
+        location = 'media' # store files under directory `media/` in bucket `my-app-bucket`
+
+This is especially useful when you want to have multiple storage classes share the same bucket::
+
+    class MediaStorage(S3Boto3Storage):
+        bucket_name = 'my-app-bucket'
+        location = 'media'
+
+    class StaticStorage(S3Boto3Storage):
+        bucket_name = 'my-app-bucket'
+        location = 'static'
+
+So your bucket file can be organized like as below::
+
+    | my-app-bucket
+    | ├── media
+    | │   ├── user_video.mp4
+    | │   ├── user_file.pdf
+    | │   └── ...
+    | ├── static
+    | │   ├── app.js
+    | │   ├── app.css
+    | │   └── ...
+
+
 Model
 -----
 
