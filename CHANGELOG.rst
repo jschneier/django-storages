@@ -1,6 +1,72 @@
 django-storages CHANGELOG
 =========================
 
+1.9 (2020-02-02)
+***********************
+
+General
+-------
+
+- **Breaking**: The long deprecated S3 backend based on ``boto`` has been removed. (`#825`_)
+- Test against and support Python 3.8 (`#810`_)
+
+S3
+--
+
+- **Deprecated**: Automatic bucket creation will be removed in version 1.10 (`#826`_)
+- **Deprecated**: The undocumented ``AWS_PRELOAD_METADATA`` and associated functionality will
+  be removed in version 1.10 (`#829`_)
+- **Deprecated**: Support for ``AWS_REDUCED_REDUNDANCY`` will be removed in version 1.10
+  Replace with ``StorageClass=REDUCED_REDUNDANCY`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#829`_)
+- **Deprecated**: Support for ``AWS_S3_ENCRYPTION`` will be removed in version 1.10 (`#829`_)
+  Replace with ``ServerSideEncryption=AES256`` in ``AWS_S3_OBJECT_PARAMETERS``
+- A custom ``ContentEncoding`` is no longer overwritten automatically (note that specifying
+  one will disable automatic ``gzip``) (`#391`_, `#828`_).
+- Add ``S3Boto3Storage.get_object_parameters``, an overridable method for customizing
+  upload parameters on a per-object basis (`#819`_, `#828`_)
+- Opening and closing a file in `w` mode without writing anything will now create an empty file
+  in S3, this mimics the builtin ``open`` and Django's own ``FileSystemStorage`` (`#435`_, `#816`_)
+- Fix reading a file in text mode (`#404`_, `#827`_)
+
+Google Cloud
+------------
+
+- **Deprecated**: Automatic bucket creation will be removed in version 1.10 (`#826`_)
+
+Dropbox
+-------
+
+- Fix crash on ``DropBoxStorage.listdir`` (`#762`_)
+- Settings can now additionally be specified at the class level to ease subclassing (`#745`_)
+
+Libcloud
+--------
+
+- Add support for Backblaze B2 to ``LibCloudStorage.url`` (`#807`_)
+
+FTP
+---
+
+- Fix creating multiple intermediary directories on Windows (`#823`_, `#824`_)
+
+.. _#825: https://github.com/jschneier/django-storages/pull/825
+.. _#826: https://github.com/jschneier/django-storages/pull/826
+.. _#829: https://github.com/jschneier/django-storages/pull/829
+.. _#391: https://github.com/jschneier/django-storages/issues/391
+.. _#828: https://github.com/jschneier/django-storages/pull/828
+.. _#819: https://github.com/jschneier/django-storages/issues/819
+.. _#810: https://github.com/jschneier/django-storages/pull/810
+.. _#435: https://github.com/jschneier/django-storages/issues/435
+.. _#816: https://github.com/jschneier/django-storages/pull/816
+.. _#404: https://github.com/jschneier/django-storages/issues/404
+.. _#827: https://github.com/jschneier/django-storages/pull/827
+.. _#762: https://github.com/jschneier/django-storages/pull/762
+.. _#745: https://github.com/jschneier/django-storages/pull/745
+.. _#807: https://github.com/jschneier/django-storages/pull/807
+.. _#823: https://github.com/jschneier/django-storages/issues/823
+.. _#824: https://github.com/jschneier/django-storages/pull/824
+
+
 1.8 (2019-11-20)
 ****************
 
@@ -129,8 +195,8 @@ SFTP
   default ACL of ``public-read``. It is recommended that all current users audit their bucket
   permissions.  Support has been added for setting ``AWS_DEFAULT_ACL = None`` and ``AWS_BUCKET_ACL =
   None`` which causes all created files to inherit the bucket's ACL (and created buckets to inherit the
-  Amazon account's default ACL). This will become the default in version 2.0 (for ``S3Boto3Storage`` only
-  since ``S3BotoStorage`` will be removed in version 1.8, see below). Additionally, a warning is now
+  Amazon account's default ACL). This will become the default in version 1.10 (for ``S3Boto3Storage`` only
+  since ``S3BotoStorage`` will be removed in version 1.9, see below). Additionally, a warning is now
   raised if ``AWS_DEFAULT_ACL`` or ``AWS_BUCKET_ACL`` is not explicitly set. (`#381`_, `#535`_, `#579`_)
 
 **Breaking**
@@ -150,8 +216,8 @@ SFTP
 **Deprecation**
 
 - The insecure default of ``public-read`` for ``AWS_DEFAULT_ACL`` and
-  ``AWS_BUCKET_ACL`` in ``S3Boto3Storage`` will change to inherit the bucket's setting in version 2.0 (`#579`_)
-- The legacy ``S3BotoBackend`` is deprecated and will be removed in version 1.8.
+  ``AWS_BUCKET_ACL`` in ``S3Boto3Storage`` will change to inherit the bucket's setting in version 1.10 (`#579`_)
+- The legacy ``S3BotoBackend`` is deprecated and will be removed in version 1.9.
   It is strongly recommended to move to the ``S3Boto3Storage`` backend for performance,
   stability and bugfix reasons. See the `boto migration docs`_ for step-by-step guidelines. (`#578`_, `#584`_)
 - The long aliased arguments to ``S3Boto3Storage`` of ``acl`` and ``bucket`` are
