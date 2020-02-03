@@ -628,7 +628,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         message = (
             "The acl argument of S3Boto3Storage is deprecated. Use argument "
             "default_acl or setting AWS_DEFAULT_ACL instead. The acl argument "
-            "will be removed in version 2.0."
+            "will be removed in version 1.10."
         )
         assert str(w[-1].message) == message
 
@@ -640,7 +640,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         message = (
             "The bucket argument of S3Boto3Storage is deprecated. Use argument "
             "bucket_name or setting AWS_STORAGE_BUCKET_NAME instead. The bucket "
-            "argument will be removed in version 2.0."
+            "argument will be removed in version 1.10."
         )
         assert str(w[-1].message) == message
 
@@ -650,8 +650,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         assert len(w) == 1
         message = (
             "The default behavior of S3Boto3Storage is insecure and will change "
-            "in django-storages 2.0. By default files and new buckets are saved "
-            "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+            "in django-storages 1.10. By default files and new buckets are saved "
+            "with an ACL of 'public-read' (globally publicly readable). Version 1.10 will "
             "default to using the bucket's ACL. To opt into the new behavior set "
             "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
             "set AWS_DEFAULT_ACL."
@@ -664,7 +664,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         message = (
-            "Automatic bucket creation will be removed in version 2.0. It encourages "
+            "Automatic bucket creation will be removed in version 1.10. It encourages "
             "using overly broad credentials with this library. Either create it before "
             "manually or use one of a myriad of automatic configuration management tools. "
             "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."

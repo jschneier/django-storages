@@ -432,7 +432,7 @@ class GCloudStorageTests(GCloudTestCase):
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         message = (
-            "Automatic bucket creation will be removed in version 2.0. It encourages "
+            "Automatic bucket creation will be removed in version 1.10. It encourages "
             "using overly broad credentials with this library. Either create it before "
             "manually or use one of a myriad of automatic configuration management tools. "
             "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."

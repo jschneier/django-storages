@@ -263,7 +263,7 @@ class S3Boto3Storage(Storage):
             warnings.warn(
                 "The acl argument of S3Boto3Storage is deprecated. Use "
                 "argument default_acl or setting AWS_DEFAULT_ACL instead. The "
-                "acl argument will be removed in version 2.0.",
+                "acl argument will be removed in version 1.10.",
                 DeprecationWarning,
             )
             self.default_acl = acl
@@ -271,13 +271,13 @@ class S3Boto3Storage(Storage):
             warnings.warn(
                 "The bucket argument of S3Boto3Storage is deprecated. Use "
                 "argument bucket_name or setting AWS_STORAGE_BUCKET_NAME "
-                "instead. The bucket argument will be removed in version 2.0.",
+                "instead. The bucket argument will be removed in version 1.10.",
                 DeprecationWarning,
             )
             self.bucket_name = bucket
         if self.auto_create_bucket:
             warnings.warn(
-                "Automatic bucket creation will be removed in version 2.0. It encourages "
+                "Automatic bucket creation will be removed in version 1.10. It encourages "
                 "using overly broad credentials with this library. Either create it before "
                 "manually or use one of a myriad of automatic configuration management tools. "
                 "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
@@ -285,7 +285,7 @@ class S3Boto3Storage(Storage):
             )
         if self.reduced_redundancy:
             warnings.warn(
-                "Support for AWS_REDUCED_REDUNDANCY will be removed in version 2.0. "
+                "Support for AWS_REDUCED_REDUNDANCY will be removed in version 1.10. "
                 "Update now by adding StorageClass=REDUCED_REDUNDANCY to "
                 "AWS_S3_OBJECT_PARAMETERS. There are also several other possible values "
                 "for StorageClass available. Check the AWS & boto3 docs for more info.",
@@ -293,7 +293,7 @@ class S3Boto3Storage(Storage):
             )
         if self.encryption:
             warnings.warn(
-                "Support for AWS_S3_ENCRYPTION will be removed in version 2.0. "
+                "Support for AWS_S3_ENCRYPTION will be removed in version 1.10. "
                 "Update now by adding ServerSideEncryption=AES256 to "
                 "AWS_S3_OBJECT_PARAMETERS. Doing so also easily allows using 'aws:kms' "
                 "for encryption. Check the AWS & boto3 docs for more info.",
@@ -301,7 +301,7 @@ class S3Boto3Storage(Storage):
             )
         if self.preload_metadata:
             warnings.warn(
-                "Support for AWS_PRELOAD_METADATA will be removed in version 2.0. ",
+                "Support for AWS_PRELOAD_METADATA will be removed in version 1.10. ",
                 DeprecationWarning,
             )
 
@@ -330,7 +330,7 @@ class S3Boto3Storage(Storage):
                 kwargs['proxies'] = self.proxies
             else:
                 warnings.warn(
-                    "In version 2.0 of django-storages the minimum required version of "
+                    "In version 1.10 of django-storages the minimum required version of "
                     "boto3 will be 1.4.4. You have %s " % boto3_version_info
                 )
             self.config = Config(**kwargs)
@@ -339,8 +339,8 @@ class S3Boto3Storage(Storage):
         if not hasattr(django_settings, 'AWS_DEFAULT_ACL') and self.default_acl == 'public-read':
             warnings.warn(
                 "The default behavior of S3Boto3Storage is insecure and will change "
-                "in django-storages 2.0. By default files and new buckets are saved "
-                "with an ACL of 'public-read' (globally publicly readable). Version 2.0 will "
+                "in django-storages 1.10. By default files and new buckets are saved "
+                "with an ACL of 'public-read' (globally publicly readable). Version 1.10 will "
                 "default to using the bucket's ACL. To opt into the new behavior set "
                 "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
                 "set AWS_DEFAULT_ACL."
@@ -447,8 +447,8 @@ class S3Boto3Storage(Storage):
                     if not hasattr(django_settings, 'AWS_BUCKET_ACL'):
                         warnings.warn(
                             "The default behavior of S3Boto3Storage is insecure and will change "
-                            "in django-storages 2.0. By default new buckets are saved with an ACL of "
-                            "'public-read' (globally publicly readable). Version 2.0 will default to "
+                            "in django-storages 1.10. By default new buckets are saved with an ACL of "
+                            "'public-read' (globally publicly readable). Version 1.10 will default to "
                             "Amazon's default of the bucket owner. To opt into this behavior this warning "
                             "set AWS_BUCKET_ACL = None, otherwise to silence this warning explicitly set "
                             "AWS_BUCKET_ACL."
