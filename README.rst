@@ -62,6 +62,19 @@ django-storages is a project to provide a variety of storage backends in a singl
 This library is usually compatible with the currently supported versions of
 Django. Check the Trove classifiers in setup.py to be sure.
 
+django-storages is backed in part by `Tidelift`_. Check them out for all of your enterprise open source
+software commerical support needs.
+
+.. _Tidelift: https://tidelift.com/subscription/pkg/pypi-django-storages?utm_source=pypi-django-storages&utm_medium=referral&utm_campaign=enterprise&utm_term=repo
+
+Security
+========
+
+To report a security vulnerability, please use the `Tidelift security contact`_. Tidelift will coordinate the
+fix and disclosure. Please **do not** post a public issue on the tracker.
+
+.. _Tidelift security contact: https://tidelift.com/security
+
 History
 =======
 This repo began as a fork of the original library under the package name of django-storages-redux and
