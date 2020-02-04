@@ -190,7 +190,7 @@ class S3Boto3StorageFile(File):
         else:
             if self._multipart is not None:
                 self._multipart.abort()
-            if self._raw_bytes_written == 0:
+            if 'w' in self._mode and self._raw_bytes_written == 0:
                 self._create_empty_on_close()
         if self._file is not None:
             self._file.close()
