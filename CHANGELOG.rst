@@ -1,6 +1,17 @@
 django-storages CHANGELOG
 =========================
 
+1.9.1 (2020-02-03)
+******************
+
+S3
+--
+
+- Fix reading files with ``S3Boto3StorageFile`` (`#831`_, `#833`_)
+
+.. _#831: https://github.com/jschneier/django-storages/issues/831
+.. _#833: https://github.com/jschneier/django-storages/pull/833
+
 1.9 (2020-02-02)
 ****************
 
