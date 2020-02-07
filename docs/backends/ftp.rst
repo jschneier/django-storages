@@ -13,3 +13,9 @@ Settings
 
 ``BASE_URL``
     URL that serves the files stored at this location. Defaults to the value of your ``MEDIA_URL`` setting.
+
+Optional parameters
+~~~~~~~~~~~~~~~~~~~
+
+``ENCODING``
+    File encoding. Example ``'utf-8'``. Default value ``'latin-1'``

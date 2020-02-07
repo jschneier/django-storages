@@ -41,13 +41,14 @@ class FTPStorageException(Exception):
 class FTPStorage(Storage):
     """FTP Storage class for Django pluggable storage system."""
 
-    def __init__(self, location=None, base_url=None):
+    def __init__(self, location=None, base_url=None, encoding=None):
         location = location or setting('FTP_STORAGE_LOCATION')
         if location is None:
             raise ImproperlyConfigured("You must set a location at "
                                        "instanciation or at "
                                        " settings.FTP_STORAGE_LOCATION'.")
         self.location = location
+        self.encoding = encoding or setting('FTP_STORAGE_ENCODING') or 'latin-1'
         base_url = base_url or settings.MEDIA_URL
         self._config = self._decode_location(location)
         self._base_url = base_url
@@ -88,6 +89,7 @@ class FTPStorage(Storage):
         # Real reconnect
         if self._connection is None:
             ftp = ftplib.FTP()
+            ftp.encoding = self.encoding
             try:
                 ftp.connect(self._config['host'], self._config['port'])
                 ftp.login(self._config['user'], self._config['passwd'])
