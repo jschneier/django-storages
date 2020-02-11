@@ -14,7 +14,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.utils import timezone
 from google.cloud.exceptions import Conflict, NotFound
-from google.cloud.storage.blob import Blob
+from google.cloud.storage.blob import _API_ACCESS_ENDPOINT, Blob
 
 from storages.backends import gcloud
 
@@ -380,14 +380,23 @@ class GCloudStorageTests(GCloudTestCase):
         url = "{}/{}".format(self.storage.custom_endpoint, self.filename)
         self.assertEqual(self.storage.url(self.filename), url)
 
-        signed_url = 'https://signed_url'
+        bucket_name = "hyacinth"
+        signed_url = "{}/{}/{}".format(
+            _API_ACCESS_ENDPOINT, bucket_name, self.filename
+        )
+        custom_signed_url = "{}/{}".format(
+            self.storage.custom_endpoint, self.filename
+        )
         self.storage.default_acl = 'projectPrivate'
         self.storage._bucket = mock.MagicMock()
         blob = mock.MagicMock()
         generate_signed_url = mock.MagicMock(return_value=signed_url)
         blob.generate_signed_url = generate_signed_url
+        blob.bucket = mock.MagicMock()
+        type(blob.bucket).name = mock.PropertyMock(return_value=bucket_name)
         self.storage._bucket.blob.return_value = blob
-        self.assertEqual(self.storage.url(self.filename), signed_url)
+        self.assertNotEqual(self.storage.url(self.filename), signed_url)
+        self.assertEqual(self.storage.url(self.filename), custom_signed_url)
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True

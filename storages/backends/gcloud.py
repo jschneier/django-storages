@@ -17,7 +17,7 @@ from storages.utils import (
 
 try:
     from google.cloud.storage import Blob, Client
-    from google.cloud.storage.blob import _quote
+    from google.cloud.storage.blob import _API_ACCESS_ENDPOINT, _quote
     from google.cloud.exceptions import Conflict, NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
@@ -285,10 +285,17 @@ class GoogleCloudStorage(Storage):
         elif not self.custom_endpoint:
             return blob.generate_signed_url(self.expiration)
         else:
-            return blob.generate_signed_url(
-                expiration=self.expiration,
-                api_access_endpoint=self.custom_endpoint,
+            # generate_signed_url does not support custom endpoints.
+            # As a workaround, we generate a signed URL and then
+            # replace the standard endpoint + bucket name.
+            signed_url = blob.generate_signed_url(self.expiration)
+            standard_endpoint_and_bucket = "{}/{}".format(
+                _API_ACCESS_ENDPOINT, blob.bucket.name
             )
+            custom_signed_url = signed_url.replace(
+                standard_endpoint_and_bucket, self.custom_endpoint, 1
+            )
+            return custom_signed_url
 
     def get_available_name(self, name, max_length=None):
         name = clean_name(name)
