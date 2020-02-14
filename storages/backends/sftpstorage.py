@@ -78,8 +78,6 @@ class SFTPStorage(Storage):
                 self._connect()
             else:
                 raise paramiko.AuthenticationException(e)
-        except Exception as e:
-            print(e)
 
         if self._ssh.get_transport():
             self._sftp = self._ssh.open_sftp()
