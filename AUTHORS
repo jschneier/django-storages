@@ -40,6 +40,7 @@ By order of apparition, thanks:
     * Martey Dodoo
     * Chris Rink
     * Shaung Cheng (S3 docs)
+    * Andrew Perry (Bug fixes in SFTPStorage)
 
 
 Extra thanks to Marty for adding this in Django,
