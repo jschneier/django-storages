@@ -100,7 +100,6 @@ class DropBoxStorage(Storage):
                     'The joined path ({}) is located outside of the base path '
                     'component ({})'.format(final_path, base_path))
             
-            print('Full file path in storage.dropbox._full_path : ', final_path)
             return final_path
         
         else:
