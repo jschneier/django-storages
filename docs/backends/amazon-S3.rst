@@ -320,7 +320,7 @@ Or you may want to upload files to the bucket in some view that accepts file upl
 
 A side note is that if you have ``AWS_S3_CUSTOM_DOMAIN`` setup in your ``settings.py``, by default the storage class will always use ``AWS_S3_CUSTOM_DOMAIN`` to generate url.
 
-If your ``AWS_S3_CUSTOM_DOMAIN`` is pointing to a different bucket than your custom storage class, the ``.url()`` function will give you the wrong url. In such case, you will have to configure your storage class and explicitly specifiy ``custom_domain`` as below::
+If your ``AWS_S3_CUSTOM_DOMAIN`` is pointing to a different bucket than your custom storage class, the ``.url()`` function will give you the wrong url. In such case, you will have to configure your storage class and explicitly specify ``custom_domain`` as below::
 
     class MediaStorage(S3Boto3Storage):
         bucket_name = 'my-media-bucket'
