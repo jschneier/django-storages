@@ -133,6 +133,9 @@ a signed (expiring) url.
    GS_DEFAULT_ACL must be set to 'publicRead' to return a public url. Even if you set
    the bucket to public or set the file permissions directly in GCS to public.
 
+.. note::
+    When using this setting, make sure you have ``fine-grained`` access control enabled on your bucket, 
+    as opposed to ``Uniform`` access control, or else, file  uploads will return with HTTP 400.
 
 ``GS_FILE_CHARSET`` (optional)
 
