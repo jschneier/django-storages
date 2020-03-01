@@ -82,9 +82,7 @@ class DropBoxStorage(Storage):
 
     def _full_path(self, name):
         if name == '/':
-            name = ''
-        print('Root path in dropbox.storage : ', self.root_path)
-        
+            name = ''        
         # If the machine is windows do not append the drive letter to file path
         if os.name == 'nt':
             final_path = os.path.join(self.root_path, name).replace('\\', '/')
