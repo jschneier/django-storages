@@ -668,7 +668,7 @@ class S3Boto3Storage(Storage):
         split_url = split_url._replace(query="&".join(joined_qs))
         return split_url.geturl()
 
-    def url(self, name, parameters=None, expire=None):
+    def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:
@@ -681,7 +681,7 @@ class S3Boto3Storage(Storage):
         params['Bucket'] = self.bucket.name
         params['Key'] = self._encode_name(name)
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
-                                                             ExpiresIn=expire)
+                                                             ExpiresIn=expire, HttpMethod=http_method)
         if self.querystring_auth:
             return url
         return self._strip_signing_parameters(url)

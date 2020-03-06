@@ -557,7 +557,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
-            ExpiresIn=self.storage.querystring_expire
+            ExpiresIn=self.storage.querystring_expire,
+            HttpMethod=None,
         )
 
         custom_expire = 123
@@ -566,7 +567,18 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
-            ExpiresIn=custom_expire
+            ExpiresIn=custom_expire,
+            HttpMethod=None,
+        )
+
+        custom_method = 'HEAD'
+
+        self.assertEqual(self.storage.url(name, http_method=custom_method), url)
+        self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
+            'get_object',
+            Params={'Bucket': self.storage.bucket.name, 'Key': name},
+            ExpiresIn=self.storage.querystring_expire,
+            HttpMethod=custom_method,
         )
 
     def test_generated_url_is_encoded(self):

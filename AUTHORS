@@ -41,6 +41,7 @@ By order of apparition, thanks:
     * Chris Rink
     * Shaung Cheng (S3 docs)
     * Andrew Perry (Bug fixes in SFTPStorage)
+    * Manuel Kaufmann (humitos)
 
 
 Extra thanks to Marty for adding this in Django,
