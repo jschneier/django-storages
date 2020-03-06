@@ -668,7 +668,7 @@ class S3Boto3Storage(Storage):
         split_url = split_url._replace(query="&".join(joined_qs))
         return split_url.geturl()
 
-    def url(self, name, parameters=None, expire=None, http_method='GET'):
+    def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
         if self.custom_domain:

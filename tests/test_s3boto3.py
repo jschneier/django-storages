@@ -558,7 +558,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
             ExpiresIn=self.storage.querystring_expire,
-            HttpMethod='GET',
+            HttpMethod=None,
         )
 
         custom_expire = 123
@@ -568,7 +568,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             'get_object',
             Params={'Bucket': self.storage.bucket.name, 'Key': name},
             ExpiresIn=custom_expire,
-            HttpMethod='GET',
+            HttpMethod=None,
         )
 
         custom_method = 'HEAD'
