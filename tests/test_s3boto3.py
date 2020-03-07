@@ -1,7 +1,6 @@
 import gzip
 import pickle
 import threading
-import warnings
 from datetime import datetime
 from textwrap import dedent
 from unittest import mock, skipIf
@@ -112,7 +111,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content,
             ExtraArgs={
                 'ContentType': 'text/plain',
-                'ACL': self.storage.default_acl,
             }
         )
 
@@ -122,7 +120,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         """
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
-        self.storage.default_acl = 'private'
+        self.storage.object_parameters = {'ACL': 'private'}
         self.storage.save(name, content)
         self.storage.bucket.Object.assert_called_once_with(name)
 
@@ -150,7 +148,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content,
             ExtraArgs={
                 'ContentType': 'image/jpeg',
-                'ACL': self.storage.default_acl,
             }
         )
 
@@ -167,7 +164,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
-                'ACL': self.storage.default_acl,
             }
         )
 
@@ -185,7 +181,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
-                'ACL': self.storage.default_acl,
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -213,7 +208,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
-                'ACL': self.storage.default_acl,
             }
         )
         args, kwargs = obj.upload_fileobj.call_args
@@ -238,9 +232,11 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         content = 'new content'
 
         # Set the encryption flag used for multipart uploads
-        self.storage.encryption = True
-        self.storage.reduced_redundancy = True
-        self.storage.default_acl = 'public-read'
+        self.storage.object_parameters = {
+            'ServerSideEncryption': 'AES256',
+            'StorageClass': 'REDUCED_REDUNDANCY',
+            'ACL': 'public-read',
+        }
 
         file = self.storage.open(name, 'w')
         self.storage.bucket.Object.assert_called_with(name)
@@ -275,9 +271,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_open_no_write.txt'
 
         # Set the encryption flag used for puts
-        self.storage.encryption = True
-        self.storage.reduced_redundancy = True
-        self.storage.default_acl = 'public-read'
+        self.storage.object_parameters = {
+            'ServerSideEncryption': 'AES256',
+            'StorageClass': 'REDUCED_REDUNDANCY',
+        }
 
         file = self.storage.open(name, 'w')
         self.storage.bucket.Object.assert_called_with(name)
@@ -294,7 +291,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         obj.load.assert_called_once_with()
         obj.put.assert_called_once_with(
-            ACL='public-read',
             Body=b"",
             ContentType='text/plain',
             ServerSideEncryption='AES256',
@@ -308,9 +304,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_open_no_overwrite_existing.txt'
 
         # Set the encryption flag used for puts
-        self.storage.encryption = True
-        self.storage.reduced_redundancy = True
-        self.storage.default_acl = 'public-read'
+        self.storage.object_parameters = {
+            'ServerSideEncryption': 'AES256',
+            'StorageClass': 'REDUCED_REDUNDANCY',
+        }
 
         file = self.storage.open(name, 'w')
         self.storage.bucket.Object.assert_called_with(name)
@@ -332,9 +329,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         name = 'test_open_for_writïng_beyond_buffer_size.txt'
 
         # Set the encryption flag used for multipart uploads
-        self.storage.encryption = True
-        self.storage.reduced_redundancy = True
-        self.storage.default_acl = 'public-read'
+        self.storage.object_parameters = {
+            'ServerSideEncryption': 'AES256',
+            'StorageClass': 'REDUCED_REDUNDANCY',
+        }
 
         file = self.storage.open(name, 'w')
         self.storage.bucket.Object.assert_called_with(name)
@@ -345,7 +343,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         # Initiate the multipart upload
         file.write('')
         obj.initiate_multipart_upload.assert_called_with(
-            ACL='public-read',
             ContentType='text/plain',
             ServerSideEncryption='AES256',
             StorageClass='REDUCED_REDUNDANCY'
@@ -387,41 +384,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ]}
         )
 
-    def test_auto_creating_bucket(self):
-        self.storage.auto_create_bucket = True
-        Bucket = mock.MagicMock()
-        self.storage._connections.connection.Bucket.return_value = Bucket
-        self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
-
-        Bucket.meta.client.head_bucket.side_effect = ClientError({'Error': {},
-                                                                  'ResponseMetadata': {'HTTPStatusCode': 404}},
-                                                                 'head_bucket')
-        self.storage._get_or_create_bucket('testbucketname')
-        Bucket.create.assert_called_once_with(
-            ACL='public-read',
-            CreateBucketConfiguration={
-                'LocationConstraint': 'sa-east-1',
-            }
-        )
-
-    def test_auto_creating_bucket_with_acl(self):
-        self.storage.auto_create_bucket = True
-        self.storage.bucket_acl = 'public-read'
-        Bucket = mock.MagicMock()
-        self.storage._connections.connection.Bucket.return_value = Bucket
-        self.storage._connections.connection.meta.client.meta.region_name = 'sa-east-1'
-
-        Bucket.meta.client.head_bucket.side_effect = ClientError({'Error': {},
-                                                                  'ResponseMetadata': {'HTTPStatusCode': 404}},
-                                                                 'head_bucket')
-        self.storage._get_or_create_bucket('testbucketname')
-        Bucket.create.assert_called_once_with(
-            ACL='public-read',
-            CreateBucketConfiguration={
-                'LocationConstraint': 'sa-east-1',
-            }
-        )
-
     def test_storage_exists(self):
         self.assertTrue(self.storage.exists("file.txt"))
         self.storage.connection.meta.client.head_object.assert_called_with(
@@ -439,11 +401,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             Bucket=self.storage.bucket_name,
             Key='file.txt',
         )
-
-    def test_storage_exists_doesnt_create_bucket(self):
-        with mock.patch.object(self.storage, '_get_or_create_bucket') as method:
-            self.storage.exists('file.txt')
-            self.assertFalse(method.called)
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")
@@ -658,65 +615,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             s3boto3.S3Boto3Storage(location='/')
-
-    def test_deprecated_acl(self):
-        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
-            s3boto3.S3Boto3Storage(acl='private')
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        message = (
-            "The acl argument of S3Boto3Storage is deprecated. Use argument "
-            "default_acl or setting AWS_DEFAULT_ACL instead. The acl argument "
-            "will be removed in version 1.10."
-        )
-        assert str(w[-1].message) == message
-
-    def test_deprecated_bucket(self):
-        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
-            s3boto3.S3Boto3Storage(bucket='django')
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        message = (
-            "The bucket argument of S3Boto3Storage is deprecated. Use argument "
-            "bucket_name or setting AWS_STORAGE_BUCKET_NAME instead. The bucket "
-            "argument will be removed in version 1.10."
-        )
-        assert str(w[-1].message) == message
-
-    def test_deprecated_default_acl(self):
-        with warnings.catch_warnings(record=True) as w:
-            s3boto3.S3Boto3Storage()
-        assert len(w) == 1
-        message = (
-            "The default behavior of S3Boto3Storage is insecure and will change "
-            "in django-storages 1.10. By default files and new buckets are saved "
-            "with an ACL of 'public-read' (globally publicly readable). Version 1.10 will "
-            "default to using the bucket's ACL. To opt into the new behavior set "
-            "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
-            "set AWS_DEFAULT_ACL."
-        )
-        assert str(w[-1].message) == message
-
-    def test_deprecated_autocreate_bucket(self):
-        with override_settings(AWS_DEFAULT_ACL=None), warnings.catch_warnings(record=True) as w:
-            s3boto3.S3Boto3Storage(auto_create_bucket=True)
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        message = (
-            "Automatic bucket creation will be removed in version 1.10. It encourages "
-            "using overly broad credentials with this library. Either create it before "
-            "manually or use one of a myriad of automatic configuration management tools. "
-            "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."
-        )
-        assert str(w[-1].message) == message
-
-    def test_deprecated_default_acl_override_class_variable(self):
-        class MyStorage(s3boto3.S3Boto3Storage):
-            default_acl = "private"
-
-        with warnings.catch_warnings(record=True) as w:
-            MyStorage()
-        assert len(w) == 0
 
     def test_override_settings(self):
         with override_settings(AWS_LOCATION='foo1'):

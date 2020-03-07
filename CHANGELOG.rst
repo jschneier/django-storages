@@ -4,7 +4,30 @@ django-storages CHANGELOG
 UNRELEASED
 **********
 
+**Breaking**
+
 - Removed support for end-of-life Python 2.7 and 3.4.
+
+- The minimum supported version of boto3 is now 1.4.4.
+
+- The ``S3Boto3Storage`` backend no longer accepts the argument ``acl``. Use
+  the ``ACL`` key in ``AWS_S3_OBJECT_PARAMETERS`` instead.
+
+- The ``S3Boto3Storage`` backend no longer accepts the argument ``bucket``. Use
+  ``bucket_name`` or the setting ``AWS_STORAGE_BUCKET_NAME`` instead.
+
+- The ``S3Boto3Storage`` backend no longer automatically creates the bucket.
+  Doing so had encouraged using overly broad credentials. As a result, the
+  ``AWS_BUCKET_ACL`` setting has been removed.
+
+- The ``S3Boto3Storage`` backend no longer not longer supports the settings
+  ``AWS_DEFAULT_ACL``, ``AWS_REDUCED_REDUNDANCY`` and ``AWS_S3_ENCRYPTION``.
+  They have been removed in favor of the ``AWS_S3_OBJECT_PARAMETERS`` setting.
+  Using ``AWS_S3_OBJECT_PARAMETERS`` allows for full control over these S3
+  parameters.
+
+- The ``S3Boto3Storage`` backend no longer supports the undocumented
+  ``AWS_PRELOAD_METADATA`` setting.
 
 1.9.1 (2020-02-03)
 ******************
