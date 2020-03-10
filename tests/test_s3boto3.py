@@ -690,3 +690,30 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         with warnings.catch_warnings(record=True) as w:
             MyStorage()
         assert len(w) == 0
+
+    def test_override_settings(self):
+        with override_settings(AWS_LOCATION='foo1'):
+            storage = s3boto3.S3Boto3Storage()
+            self.assertEqual(storage.location, 'foo1')
+        with override_settings(AWS_LOCATION='foo2'):
+            storage = s3boto3.S3Boto3Storage()
+            self.assertEqual(storage.location, 'foo2')
+
+    def test_override_class_variable(self):
+        class MyStorage1(s3boto3.S3Boto3Storage):
+            location = 'foo1'
+
+        storage = MyStorage1()
+        self.assertEqual(storage.location, 'foo1')
+
+        class MyStorage2(s3boto3.S3Boto3Storage):
+            location = 'foo2'
+
+        storage = MyStorage2()
+        self.assertEqual(storage.location, 'foo2')
+
+    def test_override_init_argument(self):
+        storage = s3boto3.S3Boto3Storage(location='foo1')
+        self.assertEqual(storage.location, 'foo1')
+        storage = s3boto3.S3Boto3Storage(location='foo2')
+        self.assertEqual(storage.location, 'foo2')

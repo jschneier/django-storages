@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from google.cloud.exceptions import Conflict, NotFound
 from google.cloud.storage.blob import Blob
@@ -438,3 +438,30 @@ class GCloudStorageTests(GCloudTestCase):
             "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."
         )
         assert str(w[-1].message) == message
+
+    def test_override_settings(self):
+        with override_settings(GS_LOCATION='foo1'):
+            storage = gcloud.GoogleCloudStorage()
+            self.assertEqual(storage.location, 'foo1')
+        with override_settings(GS_LOCATION='foo2'):
+            storage = gcloud.GoogleCloudStorage()
+            self.assertEqual(storage.location, 'foo2')
+
+    def test_override_class_variable(self):
+        class MyStorage1(gcloud.GoogleCloudStorage):
+            location = 'foo1'
+
+        storage = MyStorage1()
+        self.assertEqual(storage.location, 'foo1')
+
+        class MyStorage2(gcloud.GoogleCloudStorage):
+            location = 'foo2'
+
+        storage = MyStorage2()
+        self.assertEqual(storage.location, 'foo2')
+
+    def test_override_init_argument(self):
+        storage = gcloud.GoogleCloudStorage(location='foo1')
+        self.assertEqual(storage.location, 'foo1')
+        storage = gcloud.GoogleCloudStorage(location='foo2')
+        self.assertEqual(storage.location, 'foo2')

@@ -10,13 +10,13 @@ from tempfile import SpooledTemporaryFile
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import (
     filepath_to_uri, force_bytes, force_text, smart_text,
 )
 from django.utils.timezone import is_naive, make_naive
 
+from storages.base import BaseStorage
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
     setting,
@@ -198,7 +198,7 @@ class S3Boto3StorageFile(File):
 
 
 @deconstructible
-class S3Boto3Storage(Storage):
+class S3Boto3Storage(BaseStorage):
     """
     Amazon Simple Storage Service using Boto3
 
@@ -216,47 +216,8 @@ class S3Boto3Storage(Storage):
     security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
     security_token = None
 
-    access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
-    secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
-    file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
-    object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
-    bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
-    auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
-    default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
-    bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
-    querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
-    querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
-    signature_version = setting('AWS_S3_SIGNATURE_VERSION')
-    reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
-    location = setting('AWS_LOCATION', '')
-    encryption = setting('AWS_S3_ENCRYPTION', False)
-    custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
-    addressing_style = setting('AWS_S3_ADDRESSING_STYLE')
-    secure_urls = setting('AWS_S3_SECURE_URLS', True)
-    file_name_charset = setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8')
-    gzip = setting('AWS_IS_GZIPPED', False)
-    preload_metadata = setting('AWS_PRELOAD_METADATA', False)
-    gzip_content_types = setting('GZIP_CONTENT_TYPES', (
-        'text/css',
-        'text/javascript',
-        'application/javascript',
-        'application/x-javascript',
-        'image/svg+xml',
-    ))
-    url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
-    endpoint_url = setting('AWS_S3_ENDPOINT_URL')
-    proxies = setting('AWS_S3_PROXIES')
-    region_name = setting('AWS_S3_REGION_NAME')
-    use_ssl = setting('AWS_S3_USE_SSL', True)
-    verify = setting('AWS_S3_VERIFY', None)
-    max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
-
     def __init__(self, acl=None, bucket=None, **settings):
-        # check if some of the settings we've provided as class attributes
-        # need to be overwritten with values passed in here
-        for name, value in settings.items():
-            if hasattr(self, name):
-                setattr(self, name, value)
+        super(S3Boto3Storage, self).__init__(**settings)
 
         # For backward-compatibility of old differing parameter names
         if acl is not None:
@@ -345,6 +306,44 @@ class S3Boto3Storage(Storage):
                 "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
                 "set AWS_DEFAULT_ACL."
             )
+
+    def get_default_settings(self):
+        return {
+            "access_key": setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
+            "secret_key": setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
+            "file_overwrite": setting('AWS_S3_FILE_OVERWRITE', True),
+            "object_parameters": setting('AWS_S3_OBJECT_PARAMETERS', {}),
+            "bucket_name": setting('AWS_STORAGE_BUCKET_NAME'),
+            "auto_create_bucket": setting('AWS_AUTO_CREATE_BUCKET', False),
+            "default_acl": setting('AWS_DEFAULT_ACL', 'public-read'),
+            "bucket_acl": setting('AWS_BUCKET_ACL', 'public-read'),
+            "querystring_auth": setting('AWS_QUERYSTRING_AUTH', True),
+            "querystring_expire": setting('AWS_QUERYSTRING_EXPIRE', 3600),
+            "signature_version": setting('AWS_S3_SIGNATURE_VERSION'),
+            "reduced_redundancy": setting('AWS_REDUCED_REDUNDANCY', False),
+            "location": setting('AWS_LOCATION', ''),
+            "encryption": setting('AWS_S3_ENCRYPTION', False),
+            "custom_domain": setting('AWS_S3_CUSTOM_DOMAIN'),
+            "addressing_style": setting('AWS_S3_ADDRESSING_STYLE'),
+            "secure_urls": setting('AWS_S3_SECURE_URLS', True),
+            "file_name_charset": setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
+            "gzip": setting('AWS_IS_GZIPPED', False),
+            "preload_metadata": setting('AWS_PRELOAD_METADATA', False),
+            "gzip_content_types": setting('GZIP_CONTENT_TYPES', (
+                'text/css',
+                'text/javascript',
+                'application/javascript',
+                'application/x-javascript',
+                'image/svg+xml',
+            )),
+            "url_protocol": setting('AWS_S3_URL_PROTOCOL', 'http:'),
+            "endpoint_url": setting('AWS_S3_ENDPOINT_URL'),
+            "proxies": setting('AWS_S3_PROXIES'),
+            "region_name": setting('AWS_S3_REGION_NAME'),
+            "use_ssl": setting('AWS_S3_USE_SSL', True),
+            "verify": setting('AWS_S3_VERIFY', None),
+            "max_memory_size": setting('AWS_S3_MAX_MEMORY_SIZE', 0),
+        }
 
     def __getstate__(self):
         state = self.__dict__.copy()

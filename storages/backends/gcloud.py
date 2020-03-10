@@ -5,11 +5,11 @@ from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_bytes, smart_str
 
+from storages.base import BaseStorage
 from storages.utils import (
     check_location, clean_name, get_available_overwrite_name, safe_join,
     setting,
@@ -86,26 +86,9 @@ class GoogleCloudFile(File):
 
 
 @deconstructible
-class GoogleCloudStorage(Storage):
-    project_id = setting('GS_PROJECT_ID')
-    credentials = setting('GS_CREDENTIALS')
-    bucket_name = setting('GS_BUCKET_NAME')
-    custom_endpoint = setting('GS_CUSTOM_ENDPOINT', None)
-    location = setting('GS_LOCATION', '')
-    auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
-    auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
-    default_acl = setting('GS_DEFAULT_ACL')
-
-    expiration = setting('GS_EXPIRATION', timedelta(seconds=86400))
-
-    file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
-    file_overwrite = setting('GS_FILE_OVERWRITE', True)
-    cache_control = setting('GS_CACHE_CONTROL')
-    # The max amount of memory a returned file can take up before being
-    # rolled over into a temporary file on disk. Default is 0: Do not roll over.
-    max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
-
+class GoogleCloudStorage(BaseStorage):
     def __init__(self, **settings):
+        super(GoogleCloudStorage, self).__init__(**settings)
         # check if some of the settings we've provided as class attributes
         # need to be overwritten with values passed in here
         for name, value in settings.items():
@@ -125,6 +108,26 @@ class GoogleCloudStorage(Storage):
 
         self._bucket = None
         self._client = None
+
+    def get_default_settings(self):
+        return {
+            "project_id": setting('GS_PROJECT_ID'),
+            "credentials": setting('GS_CREDENTIALS'),
+            "bucket_name": setting('GS_BUCKET_NAME'),
+            "custom_endpoint": setting('GS_CUSTOM_ENDPOINT', None),
+            "location": setting('GS_LOCATION', ''),
+            "auto_create_bucket": setting('GS_AUTO_CREATE_BUCKET', False),
+            "auto_create_acl": setting('GS_AUTO_CREATE_ACL', 'projectPrivate'),
+            "default_acl": setting('GS_DEFAULT_ACL'),
+            "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
+            "file_name_charset": setting('GS_FILE_NAME_CHARSET', 'utf-8'),
+            "file_overwrite": setting('GS_FILE_OVERWRITE', True),
+            "cache_control": setting('GS_CACHE_CONTROL'),
+            # The max amount of memory a returned file can take up before being
+            # rolled over into a temporary file on disk. Default is 0: Do not
+            # roll over.
+            "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
+        }
 
     @property
     def client(self):

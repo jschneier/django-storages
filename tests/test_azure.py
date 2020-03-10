@@ -8,7 +8,7 @@ from datetime import timedelta
 import pytz
 from azure.storage.blob import Blob, BlobPermissions, BlobProperties
 from django.core.files.base import ContentFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from storages.backends import azure_storage
 
@@ -403,3 +403,30 @@ class AzureStorageTest(TestCase):
         self.storage._service.get_blob_properties.return_value = Blob(props=props)
         time = self.storage.modified_time("name")
         self.assertEqual(accepted_time, time)
+
+    def test_override_settings(self):
+        with override_settings(AZURE_CONTAINER='foo1'):
+            storage = azure_storage.AzureStorage()
+            self.assertEqual(storage.azure_container, 'foo1')
+        with override_settings(AZURE_CONTAINER='foo2'):
+            storage = azure_storage.AzureStorage()
+            self.assertEqual(storage.azure_container, 'foo2')
+
+    def test_override_class_variable(self):
+        class MyStorage1(azure_storage.AzureStorage):
+            azure_container = 'foo1'
+
+        storage = MyStorage1()
+        self.assertEqual(storage.azure_container, 'foo1')
+
+        class MyStorage2(azure_storage.AzureStorage):
+            azure_container = 'foo2'
+
+        storage = MyStorage2()
+        self.assertEqual(storage.azure_container, 'foo2')
+
+    def test_override_init_argument(self):
+        storage = azure_storage.AzureStorage(azure_container='foo1')
+        self.assertEqual(storage.azure_container, 'foo1')
+        storage = azure_storage.AzureStorage(azure_container='foo2')
+        self.assertEqual(storage.azure_container, 'foo2')
