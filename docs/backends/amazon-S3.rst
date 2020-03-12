@@ -291,7 +291,7 @@ Or you may want to upload files to the bucket in some view that accepts file upl
             # do your validation here e.g. file size/type check
 
             # organize a path for the file in bucket
-            file_directory_within_bucket = 'user_uplaod_files/{username}'.format(username=requests.user)
+            file_directory_within_bucket = 'user_upload_files/{username}'.format(username=requests.user)
 
             # synthesize a full file path; note that we included the filename
             file_path_within_bucket = os.path.join(
