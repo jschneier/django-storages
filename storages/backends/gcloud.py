@@ -31,14 +31,14 @@ class GoogleCloudFile(File):
         self.mime_type = mimetypes.guess_type(name)[0]
         self._mode = mode
         self._storage = storage
-        ensure_get_blob = storage.retry_handler(storage.bucket.get_blob)
-        self.blob = ensure_get_blob(name)
+        self.blob = storage.bucket.get_blob(name)
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
                 chunk_size=setting('GS_BLOB_CHUNK_SIZE'))
         if self.blob:
             self.blob.upload_from_file = storage.retry_handler(self.blob.upload_from_file)
+            self.blob.download_to_file = storage.retry_handler(self.blob.download_to_file)
         self._file = None
         self._is_dirty = False
 
@@ -108,7 +108,6 @@ class GoogleCloudStorage(BaseStorage):
         self._bucket = None
         self._client = None
 
-        # Wrap functions to provide an exponential backoff request logic
         if self.retry:
             # Some functions aren't available at this point
             # so we'll keep the wrapper to wrap them later
@@ -117,10 +116,18 @@ class GoogleCloudStorage(BaseStorage):
                 maximum=self.max_delay,
                 deadline=self.deadline
             )
-            self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
-            self._get_blob = self.retry_handler(self._get_blob)
         else:
             self.retry_handler = lambda func, on_error=None: func
+
+        # Wrap functions to provide an exponential backoff request logic
+        self._apply_backoff()
+
+    def _apply_backoff(self):
+        self.client.create_bucket = self.retry_handler(self.client.create_bucket)
+        self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
+        self.client.get_bucket = self.retry_handler(self.client.get_bucket)
+        self.bucket.get_blob = self.retry_handler(self.bucket.get_blob)
+        self.bucket.list_blobs = self.retry_handler(self.bucket.list_blobs)
 
     def get_default_settings(self):
         return {
@@ -170,7 +177,8 @@ class GoogleCloudStorage(BaseStorage):
         if self.auto_create_bucket:
             try:
                 new_bucket = self.client.create_bucket(name)
-                new_bucket.acl.save_predefined(self.auto_create_acl)
+                ensure_save_predefined = self.retry_handler(new_bucket.acl.save_predefined)
+                ensure_save_predefined(self.auto_create_acl)
                 return new_bucket
             except Conflict:
                 # Bucket already exists
@@ -236,7 +244,9 @@ class GoogleCloudStorage(BaseStorage):
             name += '/'
 
         iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
-        blobs = list(iterator)
+        actual_iterator = iter(iterator)
+        actual_iterator.__next__ = self.retry_handler(actual_iterator.__next__)
+        blobs = list(actual_iterator)
         prefixes = iterator.prefixes
 
         files = []
