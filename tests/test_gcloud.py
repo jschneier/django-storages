@@ -480,9 +480,11 @@ class GCloudStorageTests(GCloudTestCase):
                     self.storage.save(self.filename, content)
 
     def test_complete_failed_request(self):
-        # This test might be a little time-consuming as it
-        # uses delay between failed requests
-        storage = gcloud.GoogleCloudStorage(retry=True, max_delay=2.0)
+        # This test covers implemented methods
+        # that make API requests
+        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
+        data = "Some test data"
+        content = ContentFile(data)
 
         side_effects = [
             exceptions.TooManyRequests('possible error'),
@@ -490,9 +492,25 @@ class GCloudStorageTests(GCloudTestCase):
             exceptions.ServiceUnavailable('and another'),
             None,
         ]
+        side_effects *= 50
 
         storage._bucket = mock.MagicMock()
         storage._bucket.get_blob.side_effect = side_effects
 
         with self.assertRaises(NotFound):
+            # Test storage methods
+            storage.open(self.filename)
+            storage.save(self.filename, content)
+            storage.delete(self.filename)
+            storage.exists(self.filename)
+            storage.listdir(self.filename)
+            storage.size(self.filename)
             storage.get_created_time(self.filename)
+            storage.get_modified_time(self.filename)
+            storage.modified_time(self.filename)
+
+            # Test file methods
+            gfile = gcloud.GoogleCloudFile(self.filename, 'rw', storage)
+            gfile.read()
+            gfile.write(content)
+            gfile.close()
