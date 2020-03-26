@@ -476,7 +476,7 @@ class GCloudStorageTests(GCloudTestCase):
             file_mock.return_value.blob.upload_from_file.side_effect = side_effects
 
             with self.assertRaises(exceptions.TooManyRequests):
-                for state in side_effects:
+                for _ in side_effects:
                     self.storage.save(self.filename, content)
 
     def test_complete_failed_request(self):
@@ -495,5 +495,4 @@ class GCloudStorageTests(GCloudTestCase):
         storage._bucket.get_blob.side_effect = side_effects
 
         with self.assertRaises(NotFound):
-            for effect in side_effects:
-                storage.get_created_time(self.filename)
+            storage.get_created_time(self.filename)
