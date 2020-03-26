@@ -15,6 +15,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from google.cloud.exceptions import Conflict, NotFound
 from google.cloud.storage.blob import Blob
+from google.api_core import exceptions
 
 from storages.backends import gcloud
 
@@ -465,3 +466,34 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(storage.location, 'foo1')
         storage = gcloud.GoogleCloudStorage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
+
+    def test_server_error_fails_request(self):
+        data = "Some test data"
+        content = ContentFile(data)
+        side_effects = [None, None, exceptions.TooManyRequests('In reality it comes from Google')]
+
+        with mock.patch("storages.backends.gcloud.GoogleCloudFile", mock.MagicMock()) as file_mock:
+            file_mock.return_value.blob.upload_from_file.side_effect = side_effects
+
+            with self.assertRaises(exceptions.TooManyRequests):
+                for state in side_effects:
+                    self.storage.save(self.filename, content)
+
+    def test_complete_failed_request(self):
+        # This test might be a little time-consuming as it
+        # uses delay between failed requests
+        storage = gcloud.GoogleCloudStorage(retry=True, max_delay=2.0)
+
+        side_effects = [
+            exceptions.TooManyRequests('possible error'),
+            exceptions.InternalServerError('another one'),
+            exceptions.ServiceUnavailable('and another'),
+            None,
+        ]
+
+        storage._bucket = mock.MagicMock()
+        storage._bucket.get_blob.side_effect = side_effects
+
+        with self.assertRaises(NotFound):
+            for effect in side_effects:
+                storage.get_created_time(self.filename)
