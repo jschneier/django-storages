@@ -243,9 +243,18 @@ class GoogleCloudStorage(BaseStorage):
         if name and not name.endswith('/'):
             name += '/'
 
+        # Iterating manually to use a retry handled version of function
         iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
-        blobs = list(iterator)
+        actual_iterator = iter(iterator)
+        ensure_next = self.retry_handler(next)
+
+        blobs = []
         prefixes = iterator.prefixes
+        while True:
+            try:
+                blobs.append(ensure_next(actual_iterator))
+            except StopIteration:
+                break
 
         files = []
         dirs = []

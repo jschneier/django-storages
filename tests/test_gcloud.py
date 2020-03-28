@@ -553,27 +553,31 @@ class GCloudStorageTests(GCloudTestCase):
 
     @mock.patch("storages.backends.gcloud.Client.return_value")
     def test_complete_failed_request_dirs(self, client_mock):
-        actual_iterator_mock = mock.MagicMock()
-        iterator_mock = mock.MagicMock()
-        iterator_mock.__iter__.return_value = actual_iterator_mock
-
         bucket_mock = client_mock.bucket.return_value
+
+        file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
+        subdir = ""
+
+        blobs, prefixes = [], []
+        for name in file_names:
+            directory = name.rsplit("/", 1)[0] + "/" if "/" in name else ""
+            if directory == subdir:
+                blob = mock.MagicMock(spec=Blob)
+                blob.name = name.split("/")[-1]
+                blobs.append(blob)
+            else:
+                prefixes.append(directory.split("/")[0] + "/")
+
+        blobs = (blobs + self.retry_side_effects[:3]) * 2
+
+        actual_iterator = mock.MagicMock(return_value=iter(blobs))
+        iterator_mock = mock.MagicMock()
+        iterator_mock.__iter__ = actual_iterator
+        iterator_mock.prefixes = prefixes
+
         bucket_mock.list_blobs.return_value = iterator_mock
 
-        blob_mock = mock.MagicMock()
-        blob_mock.name = "test/name"
-
-        # Blob and StopIteration are required here
-        # side_effects = self.retry_side_effects[:3]
-        side_effects = []
-        side_effects.append(blob_mock)
-        side_effects *= 2
-
-        actual_iterator_mock.__next__.side_effect = side_effects
-
         storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
+        dirs, files = self.storage.listdir(subdir)
 
-        blobs = storage.listdir(self.filename)
-
-        self.assertEqual(actual_iterator_mock.__next__.call_count, 3)
-        self.assertEqual(len(blobs), 2)
+        self.assertEqual(len(files), 2)
