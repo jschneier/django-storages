@@ -116,11 +116,11 @@ class GoogleCloudStorage(BaseStorage):
                 maximum=self.max_delay,
                 deadline=self.deadline
             )
+            # Wrap functions to provide an exponential backoff request logic
+            self._apply_backoff()
         else:
             self.retry_handler = lambda func, on_error=None: func
 
-        # Wrap functions to provide an exponential backoff request logic
-        self._apply_backoff()
 
     def _apply_backoff(self):
         self.client.create_bucket = self.retry_handler(self.client.create_bucket)
@@ -244,9 +244,7 @@ class GoogleCloudStorage(BaseStorage):
             name += '/'
 
         iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
-        actual_iterator = iter(iterator)
-        actual_iterator.__next__ = self.retry_handler(actual_iterator.__next__)
-        blobs = list(actual_iterator)
+        blobs = list(iterator)
         prefixes = iterator.prefixes
 
         files = []
