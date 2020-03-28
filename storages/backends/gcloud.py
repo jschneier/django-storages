@@ -121,7 +121,6 @@ class GoogleCloudStorage(BaseStorage):
         else:
             self.retry_handler = lambda func, on_error=None: func
 
-
     def _apply_backoff(self):
         self.client.create_bucket = self.retry_handler(self.client.create_bucket)
         self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
