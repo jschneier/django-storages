@@ -551,10 +551,8 @@ class GCloudStorageTests(GCloudTestCase):
         create_mock.assert_called_once()
         get_mock.assert_called_once()
 
-    @mock.patch("storages.backends.gcloud.Client.return_value")
-    def test_complete_failed_request_dirs(self, client_mock):
-        bucket_mock = client_mock.bucket.return_value
-
+    @mock.patch.object(gcloud.GoogleCloudStorage, "_get_blobs")
+    def test_complete_failed_request_dirs(self, get_blobs_mock):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
         subdir = ""
 
@@ -568,16 +566,14 @@ class GCloudStorageTests(GCloudTestCase):
             else:
                 prefixes.append(directory.split("/")[0] + "/")
 
-        blobs = (blobs + self.retry_side_effects[:3]) * 2
-
-        actual_iterator = mock.MagicMock(return_value=iter(blobs))
-        iterator_mock = mock.MagicMock()
-        iterator_mock.__iter__ = actual_iterator
-        iterator_mock.prefixes = prefixes
-
-        bucket_mock.list_blobs.return_value = iterator_mock
+        return_value = [prefixes, blobs]
+        side_effects = self.retry_side_effects[:3]
+        side_effects.append(return_value)
+        get_blobs_mock.side_effect = side_effects
 
         storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
-        dirs, files = self.storage.listdir(subdir)
+        dirs, files = storage.listdir(subdir)
 
         self.assertEqual(len(files), 2)
+        self.assertEqual(len(dirs), 2)
+        self.assertEqual(get_blobs_mock.call_count, 4)

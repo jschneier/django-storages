@@ -126,7 +126,7 @@ class GoogleCloudStorage(BaseStorage):
         self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
         self.client.get_bucket = self.retry_handler(self.client.get_bucket)
         self.bucket.get_blob = self.retry_handler(self.bucket.get_blob)
-        self.bucket.list_blobs = self.retry_handler(self.bucket.list_blobs)
+        self._get_blobs = self.retry_handler(self._get_blobs)
 
     def get_default_settings(self):
         return {
@@ -242,18 +242,7 @@ class GoogleCloudStorage(BaseStorage):
         if name and not name.endswith('/'):
             name += '/'
 
-        # Iterating manually to use a retry handled version of function
-        iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
-        actual_iterator = iter(iterator)
-        ensure_next = self.retry_handler(next)
-
-        blobs = []
-        prefixes = iterator.prefixes
-        while True:
-            try:
-                blobs.append(ensure_next(actual_iterator))
-            except StopIteration:
-                break
+        prefixes, blobs = self._get_blobs(self._encode_name(name), '/')
 
         files = []
         dirs = []
@@ -266,6 +255,11 @@ class GoogleCloudStorage(BaseStorage):
             dirs.append(parts[-2])
 
         return list(dirs), files
+
+    def _get_blobs(self, prefix, delimiter):
+        iterator = self.bucket.list_blobs(prefix, delimiter)
+        blobs = list(iterator)
+        return iterator.prefixes, blobs
 
     def _get_blob(self, name):
         # Wrap google.cloud.storage's blob to raise if the file doesn't exist
