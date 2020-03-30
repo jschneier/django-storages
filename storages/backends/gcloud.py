@@ -37,10 +37,17 @@ class GoogleCloudFile(File):
                 self.name, storage.bucket,
                 chunk_size=setting('GS_BLOB_CHUNK_SIZE'))
         if self.blob:
-            self.blob.upload_from_file = storage.retry_handler(self.blob.upload_from_file)
-            self.blob.download_to_file = storage.retry_handler(self.blob.download_to_file)
+            self._apply_backoff_blob()
         self._file = None
         self._is_dirty = False
+
+    def _apply_backoff_blob(self):
+        """
+        Every Blob method that needs a backoff wrapper
+        and is used by this class must be wrapped here
+        """
+        self.blob.upload_from_file = self.storage.retry_handler(self.blob.upload_from_file)
+        self.blob.download_to_file = self.storage.retry_handler(self.blob.download_to_file)
 
     @property
     def size(self):
@@ -109,24 +116,16 @@ class GoogleCloudStorage(BaseStorage):
         self._client = None
 
         if self.retry:
-            # Some functions aren't available at this point
-            # so we'll keep the wrapper to wrap them later
+            # Most functions aren't available at this point
+            # so we'll keep this wrapper to wrap them later
             self.retry_handler = retry.Retry(
                 initial=self.initial_delay,
                 maximum=self.max_delay,
                 deadline=self.deadline
             )
-            # Wrap functions to provide an exponential backoff request logic
-            self._apply_backoff()
+            self._apply_backoff_self()
         else:
             self.retry_handler = lambda func, on_error=None: func
-
-    def _apply_backoff(self):
-        self.client.create_bucket = self.retry_handler(self.client.create_bucket)
-        self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
-        self.client.get_bucket = self.retry_handler(self.client.get_bucket)
-        self.bucket.get_blob = self.retry_handler(self.bucket.get_blob)
-        self._get_blobs = self.retry_handler(self._get_blobs)
 
     def get_default_settings(self):
         return {
@@ -159,12 +158,14 @@ class GoogleCloudStorage(BaseStorage):
                 project=self.project_id,
                 credentials=self.credentials
             )
+            self._apply_backoff_client()
         return self._client
 
     @property
     def bucket(self):
         if self._bucket is None:
             self._bucket = self._get_or_create_bucket(self.bucket_name)
+            self._apply_backoff_bucket()
         return self._bucket
 
     def _get_or_create_bucket(self, name):
@@ -183,6 +184,32 @@ class GoogleCloudStorage(BaseStorage):
                 # Bucket already exists
                 pass
         return bucket
+
+    def _apply_backoff_self(self):
+        """
+        If any class method needs a backoff wrapper
+        then it must be wrapped here. In most cases
+        wrapping a whole class method is the last
+        thing you should do. Instead of this, you
+        should try to wrap a Client/Bucket method.
+        """
+        self._get_blobs = self.retry_handler(self._get_blobs)
+
+    def _apply_backoff_client(self):
+        """
+        Every Client method that needs a backoff wrapper
+        and is used by this class must be wrapped here
+        """
+        self.client.create_bucket = self.retry_handler(self.client.create_bucket)
+        self.client.get_bucket = self.retry_handler(self.client.get_bucket)
+
+    def _apply_backoff_bucket(self):
+        """
+        Every Bucket method that needs a backoff wrapper
+        and is used by this class must be wrapped here
+        """
+        self.bucket.delete_blob = self.retry_handler(self.bucket.delete_blob)
+        self.bucket.get_blob = self.retry_handler(self.bucket.get_blob)
 
     def _normalize_name(self, name):
         """
@@ -257,6 +284,13 @@ class GoogleCloudStorage(BaseStorage):
         return list(dirs), files
 
     def _get_blobs(self, prefix, delimiter):
+        """
+        This method allows us to treat the whole
+        list_blobs process as if it were just one
+        API request. Thus, it's easier to wrap it with
+        a backoff handler and to control the time it
+        uses in case of getting an internal server error.
+        """
         iterator = self.bucket.list_blobs(prefix, delimiter)
         blobs = list(iterator)
         return iterator.prefixes, blobs
