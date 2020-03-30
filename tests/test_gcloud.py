@@ -488,20 +488,18 @@ class GCloudStorageTests(GCloudTestCase):
 
     @mock.patch("storages.backends.gcloud.Client.return_value")
     def test_complete_failed_request_file(self, client_mock):
-        # These have to be mocked before storage creation
-        # not to replace wrapped mocks with mocks
-        bucket_mock = client_mock.bucket.return_value
-        delete_blob_mock = bucket_mock.delete_blob
-        delete_blob_mock.side_effect = self.retry_side_effects
-        blob_mock = bucket_mock.get_blob.return_value
-
         storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
         data = "Some test data"
         content = ContentFile(data)
 
+        bucket_mock = client_mock.bucket.return_value
+        delete_blob_mock = bucket_mock.delete_blob
+        blob_mock = bucket_mock.get_blob.return_value
         upload_mock = blob_mock.upload_from_file
-        upload_mock.side_effect = self.retry_side_effects
         download_mock = blob_mock.download_to_file
+
+        delete_blob_mock.side_effect = self.retry_side_effects
+        upload_mock.side_effect = self.retry_side_effects
         download_mock.side_effect = self.retry_side_effects
 
         gfile = gcloud.GoogleCloudFile(self.filename, 'rw', storage)
@@ -519,12 +517,10 @@ class GCloudStorageTests(GCloudTestCase):
 
     @mock.patch("storages.backends.gcloud.Client.return_value")
     def test_complete_failed_request_file_info(self, client_mock):
-        # Same thing with mocks here, these have
-        # to be mocked before creating a storage
+        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
+
         get_blob_mock = mock.MagicMock(side_effect=self.retry_side_effects)
         client_mock.bucket.return_value.get_blob = get_blob_mock
-
-        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
 
         with self.assertRaises(NotFound):
             storage.size(self.filename)
@@ -535,6 +531,8 @@ class GCloudStorageTests(GCloudTestCase):
 
     @mock.patch("storages.backends.gcloud.Client.return_value")
     def test_complete_failed_request_bucket_managing(self, client_mock):
+        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02, auto_create_bucket=True)
+
         # "None" from the original list isn't acceptable here
         local_side_effects = self.retry_side_effects[:4]
         local_side_effects[-1] = mock.MagicMock()
@@ -544,8 +542,6 @@ class GCloudStorageTests(GCloudTestCase):
         get_mock = client_mock.get_bucket
         get_mock.side_effects = local_side_effects
 
-        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02, auto_create_bucket=True)
-
         storage.exists(None)
 
         create_mock.assert_called_once()
@@ -553,6 +549,8 @@ class GCloudStorageTests(GCloudTestCase):
 
     @mock.patch.object(gcloud.GoogleCloudStorage, "_get_blobs")
     def test_complete_failed_request_dirs(self, get_blobs_mock):
+        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
+
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
         subdir = ""
 
@@ -571,7 +569,6 @@ class GCloudStorageTests(GCloudTestCase):
         side_effects.append(return_value)
         get_blobs_mock.side_effect = side_effects
 
-        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
         dirs, files = storage.listdir(subdir)
 
         self.assertEqual(len(files), 2)

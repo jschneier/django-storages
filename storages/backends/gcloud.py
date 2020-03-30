@@ -46,8 +46,8 @@ class GoogleCloudFile(File):
         Every Blob method that needs a backoff wrapper
         and is used by this class must be wrapped here
         """
-        self.blob.upload_from_file = self.storage.retry_handler(self.blob.upload_from_file)
-        self.blob.download_to_file = self.storage.retry_handler(self.blob.download_to_file)
+        self.blob.upload_from_file = self._storage.retry_handler(self.blob.upload_from_file)
+        self.blob.download_to_file = self._storage.retry_handler(self.blob.download_to_file)
 
     @property
     def size(self):
