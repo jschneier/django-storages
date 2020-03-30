@@ -189,6 +189,8 @@ It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
 Enables Google's exponential backoff algorithm to handle requests that were failed
 due to some transient server side errors (TooManyRequests, ServiceUnavailable, InternalServerError).
+If all such errors are handled, but there is still no available reply, and the deadline is
+already exceeded, then it raises `google.api_core.RetryError`.
 Retrying failed requests is `recommended by Google <https://cloud.google.com/storage/docs/key-terms#immutability>`_
 for some `specific errors <https://cloud.google.com/apis/design/errors#error_retries>`_.
 
