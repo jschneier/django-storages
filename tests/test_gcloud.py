@@ -25,10 +25,10 @@ class GCloudTestCase(TestCase):
         self.bucket_name = 'test_bucket'
         self.filename = 'test_file.txt'
 
+        self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
+
         self.client_patcher = mock.patch('storages.backends.gcloud.Client')
         self.client_patcher.start()
-
-        self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
 
         self.retry_side_effects = 50 * [
             exceptions.TooManyRequests('possible error'),
