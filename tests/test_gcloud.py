@@ -486,6 +486,28 @@ class GCloudStorageTests(GCloudTestCase):
             for _ in self.retry_side_effects:
                 self.storage.save(self.filename, content)
 
+    def test_using_custom_retryable(self):
+        class SomeTransientException1(Exception):
+            pass
+
+        class SomeTransientException2(Exception):
+            pass
+
+        storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02,
+                                            retryable=(SomeTransientException1, SomeTransientException2))
+
+        side_effects = [SomeTransientException1, SomeTransientException2] * 2
+        side_effects.append(None)
+
+        bucket_mock = mock.MagicMock()
+        get_blob_mock = mock.MagicMock(side_effect=side_effects)
+        bucket_mock.get_blob = storage.retry_handler(get_blob_mock)
+        storage._bucket = bucket_mock
+
+        storage.exists(self.filename)
+
+        self.assertEqual(get_blob_mock.call_count, 5)
+
     @mock.patch("storages.backends.gcloud.Client.return_value")
     def test_complete_failed_request_file(self, client_mock):
         storage = gcloud.GoogleCloudStorage(retry=True, initial_delay=0.01, max_delay=0.02)
