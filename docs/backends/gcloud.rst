@@ -210,6 +210,13 @@ Time in seconds. Determines how long the algorithm should retry before giving up
 Keep in mind, that the last sleeping time is shortened to meet the deadline -
 the last retry runs just at the deadline.
 
+``GS_RETRYABLE`` (optional: default is `Tuple[google.api_core.exceptions.InternalServerError,
+google.api_core.exceptions.TooManyRequests, google.api_core.exceptions.ServiceUnavailable]`)
+
+A tuple/list of exception types to apply retry strategy to. Keep in mind,
+that not all exceptions are retryable. To learn more about what exceptions are retryable and
+what are not check out `Google's retry handling strategy <https://cloud.google.com/storage/docs/gsutil/addlhelp/RetryHandlingStrategy#retry-strategy_1>`_.
+
 Usage
 -----
 
