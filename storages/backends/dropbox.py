@@ -21,11 +21,12 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor
+from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor, WriteMode
 
 from storages.utils import setting
 
 _DEFAULT_TIMEOUT = 100
+_DEFAULT_OVERWRITE = False
 
 
 class DropBoxStorageException(Exception):
@@ -69,15 +70,18 @@ class DropBoxStorage(Storage):
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
+    overwrite = setting('DROPBOX_OVERWRITE', _DEFAULT_OVERWRITE)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout):
+    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
+                 overwrite=overwrite):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure an auth token at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
 
         self.root_path = root_path
+        self.overwrite = overwrite
         self.client = Dropbox(oauth2_access_token, timeout=timeout)
 
     def _full_path(self, name):
@@ -89,6 +93,9 @@ class DropBoxStorage(Storage):
         self.client.files_delete(self._full_path(name))
 
     def exists(self, name):
+        if self.overwrite:
+            return False
+
         try:
             return bool(self.client.files_get_metadata(self._full_path(name)))
         except ApiError:
@@ -132,7 +139,7 @@ class DropBoxStorage(Storage):
     def _save(self, name, content):
         content.open()
         if content.size <= self.CHUNK_SIZE:
-            self.client.files_upload(content.read(), self._full_path(name))
+            self.client.files_upload(content.read(), self._full_path(name), mode=WriteMode('overwrite'))
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
@@ -146,7 +153,7 @@ class DropBoxStorage(Storage):
             session_id=upload_session.session_id,
             offset=content.tell()
         )
-        commit = CommitInfo(path=dest_path)
+        commit = CommitInfo(path=dest_path, mode=WriteMode('overwrite'))
 
         while content.tell() < content.size:
             if (content.size - content.tell()) <= self.CHUNK_SIZE:
