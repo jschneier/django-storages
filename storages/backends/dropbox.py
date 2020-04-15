@@ -71,17 +71,19 @@ class DropBoxStorage(Storage):
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
     file_overwrite = setting('DROPBOX_FILE_OVERWRITE', True)
+    write_mode = setting('DROPBOX_WRITE_MODE', 'overwrite')
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
     def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
-                 file_overwrite=file_overwrite):
+                 file_overwrite=file_overwrite, write_mode=write_mode):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure an auth token at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
 
         self.root_path = root_path
-        self.overwrite = file_overwrite
+        self.file_overwrite = file_overwrite
+        self.write_mode = write_mode
         self.client = Dropbox(oauth2_access_token, timeout=timeout)
 
     def _full_path(self, name):
@@ -136,7 +138,7 @@ class DropBoxStorage(Storage):
     def _save(self, name, content):
         content.open()
         if content.size <= self.CHUNK_SIZE:
-            self.client.files_upload(content.read(), self._full_path(name), mode=WriteMode('overwrite'))
+            self.client.files_upload(content.read(), self._full_path(name), mode=WriteMode(self.write_mode))
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
@@ -150,7 +152,7 @@ class DropBoxStorage(Storage):
             session_id=upload_session.session_id,
             offset=content.tell()
         )
-        commit = CommitInfo(path=dest_path, mode=WriteMode('overwrite'))
+        commit = CommitInfo(path=dest_path, mode=WriteMode(self.write_mode))
 
         while content.tell() < content.size:
             if (content.size - content.tell()) <= self.CHUNK_SIZE:
