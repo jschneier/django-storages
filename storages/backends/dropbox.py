@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import
 
+import posixpath
 from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
@@ -23,10 +24,9 @@ from dropbox import Dropbox
 from dropbox.exceptions import ApiError
 from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor, WriteMode
 
-from storages.utils import setting
+from storages.utils import setting, get_available_overwrite_name
 
 _DEFAULT_TIMEOUT = 100
-_DEFAULT_OVERWRITE = False
 
 
 class DropBoxStorageException(Exception):
@@ -70,18 +70,18 @@ class DropBoxStorage(Storage):
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
-    overwrite = setting('DROPBOX_OVERWRITE', _DEFAULT_OVERWRITE)
+    file_overwrite = setting('DROPBOX_FILE_OVERWRITE', True)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
     def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
-                 overwrite=overwrite):
+                 file_overwrite=file_overwrite):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure an auth token at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
 
         self.root_path = root_path
-        self.overwrite = overwrite
+        self.overwrite = file_overwrite
         self.client = Dropbox(oauth2_access_token, timeout=timeout)
 
     def _full_path(self, name):
@@ -93,9 +93,6 @@ class DropBoxStorage(Storage):
         self.client.files_delete(self._full_path(name))
 
     def exists(self, name):
-        if self.overwrite:
-            return False
-
         try:
             return bool(self.client.files_get_metadata(self._full_path(name)))
         except ApiError:
@@ -165,3 +162,24 @@ class DropBoxStorage(Storage):
                     content.read(self.CHUNK_SIZE), cursor
                 )
                 cursor.offset = content.tell()
+
+    def _clean_name(self, name):
+        """
+        Cleans the name so that Windows style paths work
+        """
+        # Normalize Windows style paths
+        clean_name = posixpath.normpath(name).replace('\\', '/')
+
+        # os.path.normpath() can strip trailing slashes so we implement
+        # a workaround here.
+        if name.endswith('/') and not clean_name.endswith('/'):
+            # Add a trailing slash as it was stripped.
+            clean_name += '/'
+        return clean_name
+
+    def get_available_name(self, name, max_length=None):
+        """Overwrite existing file with the same name."""
+        name = self._clean_name(name)
+        if self.file_overwrite:
+            return get_available_overwrite_name(name, max_length)
+        return super(DropBoxStorage, self).get_available_name(name, max_length)
