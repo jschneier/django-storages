@@ -218,7 +218,7 @@ The IAM policy permissions needed for most common use cases are:
                     "s3:PutObjectAcl"
                 ],
                 "Principal": {
-                    "AWS": "example-AWS-account-ID"
+                    "AWS": "arn:aws:iam::example-AWS-account-ID:user/example-user-name"
                 },
                 "Resource": [
                     "arn:aws:s3:::example-bucket-name/*",
