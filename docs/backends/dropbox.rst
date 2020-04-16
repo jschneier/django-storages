@@ -26,5 +26,13 @@ To use DropBoxStorage set::
       Timeout in seconds for making requests to the API. If ``None``, the client will wait forever.
       The default is ``100`` seconds which is the current default in the official SDK.
 
+``DROPBOX_FILE_OVERWRITE`` (optional)
+      Overwrite an existing file when it has the same name as the file being uploaded.
+      Otherwise, rename it. Default is ``False``
+
+``DROPBOX_WRITE_MODE`` (optional)
+      Allow to set Dropbox WriteMode strategy.
+      Default is ``overwrite``
+
 .. _`tutorial`: https://www.dropbox.com/developers/documentation/python#tutorial
 .. _`Dropbox SDK for Python`: https://www.dropbox.com/developers/documentation/python#tutorial
