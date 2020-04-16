@@ -166,23 +166,9 @@ class DropBoxStorage(Storage):
                 )
                 cursor.offset = content.tell()
 
-    def _clean_name(self, name):
-        """
-        Cleans the name so that Windows style paths work
-        """
-        # Normalize Windows style paths
-        clean_name = posixpath.normpath(name).replace('\\', '/')
-
-        # os.path.normpath() can strip trailing slashes so we implement
-        # a workaround here.
-        if name.endswith('/') and not clean_name.endswith('/'):
-            # Add a trailing slash as it was stripped.
-            clean_name += '/'
-        return clean_name
-
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
-        name = self._clean_name(name)
+        name = self._full_path(name)
         if self.write_mode == 'overwrite':
             return get_available_overwrite_name(name, max_length)
         return super(DropBoxStorage, self).get_available_name(name, max_length)
