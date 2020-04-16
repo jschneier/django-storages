@@ -10,7 +10,6 @@
 
 from __future__ import absolute_import
 
-import posixpath
 from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
