@@ -29,6 +29,7 @@ from dropbox.files import (
 from storages.utils import get_available_overwrite_name, setting
 
 _DEFAULT_TIMEOUT = 100
+_DEFAULT_MODE = 'add'
 
 
 class DropBoxStorageException(Exception):
@@ -72,19 +73,17 @@ class DropBoxStorage(Storage):
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
-    file_overwrite = setting('DROPBOX_FILE_OVERWRITE', False)
-    write_mode = setting('DROPBOX_WRITE_MODE', 'overwrite')
+    write_mode = setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
     def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
-                 file_overwrite=file_overwrite, write_mode=write_mode):
+                 write_mode=write_mode):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure an auth token at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
 
         self.root_path = root_path
-        self.file_overwrite = file_overwrite
         self.write_mode = write_mode
         self.client = Dropbox(oauth2_access_token, timeout=timeout)
 
@@ -184,6 +183,6 @@ class DropBoxStorage(Storage):
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
         name = self._clean_name(name)
-        if self.file_overwrite:
+        if self.write_mode == 'overwrite':
             return get_available_overwrite_name(name, max_length)
         return super(DropBoxStorage, self).get_available_name(name, max_length)
