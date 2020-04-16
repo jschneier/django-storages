@@ -19,3 +19,6 @@ class BaseStorage(Storage):
                     )
                 )
             setattr(self, name, value)
+
+    def get_default_settings(self):
+        return {}

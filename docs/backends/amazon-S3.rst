@@ -217,6 +217,9 @@ The IAM policy permissions needed for most common use cases are:
                     "s3:DeleteObject",
                     "s3:PutObjectAcl"
                 ],
+                "Principal": {
+                    "AWS": "arn:aws:iam::example-AWS-account-ID:user/example-user-name"
+                },
                 "Resource": [
                     "arn:aws:s3:::example-bucket-name/*",
                     "arn:aws:s3:::example-bucket-name"
@@ -224,6 +227,11 @@ The IAM policy permissions needed for most common use cases are:
             }
         ]
     }
+
+
+For more information about Principal, please refer to `AWS JSON Policy Elements`_
+
+.. _AWS JSON Policy Elements: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
 
 Storage
 -------
