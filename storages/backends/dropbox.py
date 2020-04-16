@@ -24,7 +24,7 @@ from dropbox import Dropbox
 from dropbox.exceptions import ApiError
 from dropbox.files import CommitInfo, FolderMetadata, UploadSessionCursor, WriteMode
 
-from storages.utils import setting, get_available_overwrite_name
+from storages.utils import get_available_overwrite_name, setting
 
 _DEFAULT_TIMEOUT = 100
 
@@ -70,7 +70,7 @@ class DropBoxStorage(Storage):
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
-    file_overwrite = setting('DROPBOX_FILE_OVERWRITE', True)
+    file_overwrite = setting('DROPBOX_FILE_OVERWRITE', False)
     write_mode = setting('DROPBOX_WRITE_MODE', 'overwrite')
 
     CHUNK_SIZE = 4 * 1024 * 1024
