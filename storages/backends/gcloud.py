@@ -34,7 +34,7 @@ class GoogleCloudFile(File):
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
-                chunk_size=setting('GS_BLOB_CHUNK_SIZE'))
+                chunk_size=storage.blob_chunk_size)
         self._file = None
         self._is_dirty = False
 
@@ -122,6 +122,7 @@ class GoogleCloudStorage(BaseStorage):
             # rolled over into a temporary file on disk. Default is 0: Do not
             # roll over.
             "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
+            "blob_chunk_size": setting('GS_BLOB_CHUNK_SIZE'),
         }
 
     @property
