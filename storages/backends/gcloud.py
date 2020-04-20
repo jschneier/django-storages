@@ -122,7 +122,7 @@ class GoogleCloudStorage(BaseStorage):
             # rolled over into a temporary file on disk. Default is 0: Do not
             # roll over.
             "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
-            "blob_chunk_size":setting('GS_BLOB_CHUNK_SIZE'),
+            "blob_chunk_size": setting('GS_BLOB_CHUNK_SIZE'),
         }
 
     @property
