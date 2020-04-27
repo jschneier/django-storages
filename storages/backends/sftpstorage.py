@@ -14,9 +14,9 @@ from datetime import datetime
 
 import paramiko
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 
+from storages.base import BaseStorage
 from storages.utils import setting
 
 try:
@@ -26,31 +26,34 @@ except ImportError:
 
 
 @deconstructible
-class SFTPStorage(Storage):
-
-    def __init__(self, host=None, params=None, interactive=None, file_mode=None,
-                 dir_mode=None, uid=None, gid=None, known_host_file=None,
-                 root_path=None, base_url=None):
-        self._host = host or setting('SFTP_STORAGE_HOST')
-
-        self._params = params or setting('SFTP_STORAGE_PARAMS', {})
-        self._interactive = setting('SFTP_STORAGE_INTERACTIVE', False) \
-            if interactive is None else interactive
-        self._file_mode = setting('SFTP_STORAGE_FILE_MODE') \
-            if file_mode is None else file_mode
-        self._dir_mode = setting('SFTP_STORAGE_DIR_MODE') if \
-            dir_mode is None else dir_mode
-
-        self._uid = setting('SFTP_STORAGE_UID') if uid is None else uid
-        self._gid = setting('SFTP_STORAGE_GID') if gid is None else gid
-        self._known_host_file = setting('SFTP_KNOWN_HOST_FILE') \
-            if known_host_file is None else known_host_file
-
-        self._root_path = setting('SFTP_STORAGE_ROOT', '') \
-            if root_path is None else root_path
-        self._base_url = setting('MEDIA_URL') if base_url is None else base_url
-
+class SFTPStorage(BaseStorage):
+    def __init__(self, host=None, **settings):
+        super(SFTPStorage, self).__init__(host=host, **settings)
+        self._host = self.host
+        self._params = self.params
+        self._interactive = self.interactive
+        self._file_mode = self.file_mode
+        self._dir_mode = self.dir_mode
+        self._uid = self.uid
+        self._gid = self.gid
+        self._known_host_file = self.known_host_file
+        self._root_path = self.root_path
+        self._base_url = self.base_url
         self._sftp = None
+
+    def get_default_settings(self):
+        return {
+            'host': setting('SFTP_STORAGE_HOST'),
+            'params': setting('SFTP_STORAGE_PARAMS', {}),
+            'interactive': setting('SFTP_STORAGE_INTERACTIVE', False),
+            'file_mode': setting('SFTP_STORAGE_FILE_MODE'),
+            'dir_mode': setting('SFTP_STORAGE_DIR_MODE'),
+            'uid': setting('SFTP_STORAGE_UID'),
+            'gid': setting('SFTP_STORAGE_GID'),
+            'known_host_file': setting('SFTP_KNOWN_HOST_FILE'),
+            'root_path': setting('SFTP_STORAGE_ROOT', ''),
+            'base_url': setting('MEDIA_URL'),
+        }
 
     def _connect(self):
         self._ssh = paramiko.SSHClient()
