@@ -45,7 +45,7 @@ By order of apparition, thanks:
     * Taras Petriichuk (Dropbox write_mode option)
     * Zoe Liao (S3 docs)
     * Jonathan Ehwald
-
+    * Gregor Krmelj (S3 SSE-C fix)
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
