@@ -71,7 +71,7 @@ class S3Boto3StorageFile(File):
         self.obj = storage.bucket.Object(storage._encode_name(name))
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
-            self.obj.load()
+            self.obj.load(**self._storage.get_object_parameters(name))
         self._is_dirty = False
         self._raw_bytes_written = 0
         self._file = None
@@ -97,7 +97,8 @@ class S3Boto3StorageFile(File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.obj.download_fileobj(self._file)
+                params = self._storage.get_object_parameters(self.name)
+                self.obj.download_fileobj(self._file, ExtraArgs=params)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
                 self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
