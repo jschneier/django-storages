@@ -4,6 +4,7 @@ import os
 import posixpath
 import threading
 import warnings
+from datetime import datetime, timedelta
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 
@@ -33,8 +34,53 @@ try:
     from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
+    from botocore.signers import CloudFrontSigner
 except ImportError as e:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
+
+
+# NOTE: these are defined as functions so both can be tested
+def _use_cryptography_signer():
+    # https://cryptography.io as an RSA backend
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.primitives.serialization import (
+        load_pem_private_key
+    )
+
+    def _cloud_front_signer_from_pem(key_id, pem):
+        key = load_pem_private_key(
+            pem, password=None, backend=default_backend())
+
+        return CloudFrontSigner(
+            key_id, lambda x: key.sign(x, padding.PKCS1v15(), hashes.SHA1()))
+
+    return _cloud_front_signer_from_pem
+
+
+def _use_rsa_signer():
+    # https://stuvel.eu/rsa as an RSA backend
+    import rsa
+
+    def _cloud_front_signer_from_pem(key_id, pem):
+        key = rsa.PrivateKey.load_pkcs1(pem)
+        return CloudFrontSigner(key_id, lambda x: rsa.sign(x, key, 'SHA-1'))
+
+    return _cloud_front_signer_from_pem
+
+
+for _signer_factory in (_use_cryptography_signer, _use_rsa_signer):
+    try:
+        _cloud_front_signer_from_pem = _signer_factory()
+        break
+    except ImportError:
+        pass
+else:
+    def _cloud_front_signer_from_pem(key_id, pem):
+        raise ImproperlyConfigured(
+            'An RSA backend is required for signing cloudfront URLs.\n'
+            'Supported backends are packages: cryptography and rsa.')
 
 
 boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
@@ -307,7 +353,23 @@ class S3Boto3Storage(BaseStorage):
                 "set AWS_DEFAULT_ACL."
             )
 
+    def get_cloudfront_signer(self, key_id, key):
+        return _cloud_front_signer_from_pem(key_id, key)
+
     def get_default_settings(self):
+        cloudfront_key_id = setting('AWS_CLOUDFRONT_KEY_ID')
+        cloudfront_key = setting('AWS_CLOUDFRONT_KEY')
+        if bool(cloudfront_key_id) ^ bool(cloudfront_key):
+            raise ImproperlyConfigured(
+                'Both AWS_CLOUDFRONT_KEY_ID and AWS_CLOUDFRONT_KEY must be '
+                'provided together.'
+            )
+
+        if cloudfront_key_id:
+            cloudfront_signer = self.get_cloudfront_signer(cloudfront_key_id, cloudfront_key)
+        else:
+            cloudfront_signer = None
+
         return {
             "access_key": setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
             "secret_key": setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
@@ -324,6 +386,7 @@ class S3Boto3Storage(BaseStorage):
             "location": setting('AWS_LOCATION', ''),
             "encryption": setting('AWS_S3_ENCRYPTION', False),
             "custom_domain": setting('AWS_S3_CUSTOM_DOMAIN'),
+            "cloudfront_signer": cloudfront_signer,
             "addressing_style": setting('AWS_S3_ADDRESSING_STYLE'),
             "secure_urls": setting('AWS_S3_SECURE_URLS', True),
             "file_name_charset": setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
@@ -670,11 +733,19 @@ class S3Boto3Storage(BaseStorage):
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
-        if self.custom_domain:
-            return "{}//{}/{}".format(self.url_protocol,
-                                      self.custom_domain, filepath_to_uri(name))
         if expire is None:
             expire = self.querystring_expire
+
+        if self.custom_domain:
+            url = "{}//{}/{}".format(
+                self.url_protocol, self.custom_domain, filepath_to_uri(name))
+
+            if self.cloudfront_signer:
+                expiration = datetime.utcnow() + timedelta(seconds=expire)
+
+                return self.cloudfront_signer.generate_presigned_url(url, date_less_than=expiration)
+
+            return url
 
         params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name

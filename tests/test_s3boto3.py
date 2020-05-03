@@ -6,6 +6,7 @@ import pickle
 import threading
 import warnings
 from datetime import datetime
+from textwrap import dedent
 from unittest import skipIf
 
 from botocore.exceptions import ClientError
@@ -580,6 +581,41 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExpiresIn=self.storage.querystring_expire,
             HttpMethod=custom_method,
         )
+
+    def test_storage_url_custom_domain_signed_urls(self):
+        key_id = 'test-key'
+        filename = 'file.txt'
+        pem = dedent(
+            '''\
+            -----BEGIN RSA PRIVATE KEY-----
+            MIICWwIBAAKBgQCXVuwcMk+JmVSKuQ1K4dZx4Z1dEcRQgTlqvhAyljIpttXlZh2/
+            fD3GkJCiqfwEmo+cdNK/LFzRj/CX8Wz1z1lH2USONpG6sAkotkatCbejiItDu5y6
+            janGJHfuWXu6B/o9gwZylU1gIsePY3lLNk+r9QhXUO4jXw6zLJftVwKPhQIDAQAB
+            AoGAbpkRV9HUmoQ5al+uPSkp5HOy4s8XHpYxdbaMc8ubwSxiyJCF8OhE5RXE/Xso
+            N90UUox1b0xmUKfWddPzgvgTD/Ub7D6Ukf+nVWDX60tWgNxICAUHptGL3tWweaAy
+            H+0+vZ0TzvTt9r00vW0FzO7F8X9/Rs1ntDRLtF3RCCxdq0kCQQDHFu+t811lCvy/
+            67rMEKGvNsNNSTrzOrNr3PqUrCnOrzKazjFVjsKv5VzI/U+rXGYKWJsMpuCFiHZ3
+            DILUC09TAkEAwpm2S6MN6pzn9eY6pmhOxZ+GQGGRUkKZfC1GDxaRSRb8sKTjptYw
+            WSemJSxiDzdj3Po2hF0lbhkpJgUq6xnCxwJAZgHHfn5CLSJrDD7Q7/vZi/foK3JJ
+            BRTfl3Wa4pAvv5meuRjKyEakVBGV79lyd5+ZHNX3Y40hXunjoO3FHrZIxwJAdRzu
+            waxahrRxQOKSr20c4wAzWnGddIUSO9I/VHs/al5EKsbBHrnOlQkwizSfuwqZtfZ7
+            csNf8FeCFRiNELoLJwJAZxWBE2+8J9VW9AQ0SE7j4FyM/B8FvRhF5PLAAsw/OxHO
+            SxiFP7Ptdac1tm5H5zOqaqSHWphI19HNNilXKmxuCA==
+            -----END RSA PRIVATE KEY-----'''
+        ).encode('ascii')
+
+        url = 'https://mock.cloudfront.net/file.txt?Expires=3600&Signature=DbqVgh3FHtttQxof214tSAVE8Nqn3Q4Ii7eR3iykbOqAPbV89HC3EB~0CWxarpLNtbfosS5LxiP5EutriM7E8uR4Gm~UVY-PFUjPcwqdnmAiKJF0EVs7koJcMR8MKDStuWfFKVUPJ8H7ORYTOrixyHBV2NOrpI6SN5UX6ctNM50_&Key-Pair-Id=test-key'  # noqa
+
+        self.storage.custom_domain = "mock.cloudfront.net"
+
+        for pem_to_signer in (
+                s3boto3._use_cryptography_signer(),
+                s3boto3._use_rsa_signer()):
+            self.storage.cloudfront_signer = pem_to_signer(key_id, pem)
+
+            with mock.patch('storages.backends.s3boto3.datetime') as mock_datetime:
+                mock_datetime.utcnow.return_value = datetime.utcfromtimestamp(0)
+                self.assertEqual(self.storage.url(filename), url)
 
     def test_generated_url_is_encoded(self):
         self.storage.custom_domain = "mock.cloudfront.net"
