@@ -612,7 +612,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                 s3boto3._use_cryptography_signer(),
                 s3boto3._use_rsa_signer()):
             self.storage.cloudfront_signer = pem_to_signer(key_id, pem)
+            self.storage.querystring_auth = False
+            self.assertEqual(self.storage.url(filename), self.storage._strip_signing_parameters(url))
 
+            self.storage.querystring_auth = True
             with mock.patch('storages.backends.s3boto3.datetime') as mock_datetime:
                 mock_datetime.utcnow.return_value = datetime.utcfromtimestamp(0)
                 self.assertEqual(self.storage.url(filename), url)
