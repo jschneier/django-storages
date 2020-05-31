@@ -103,6 +103,11 @@ class FTPTest(TestCase):
         self.storage._start_connection()
         self.storage._mkremdirs('foo/bar')
 
+    @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo'})
+    def test_mkremdirs_n_subdirectories(self, mock_ftp):
+        self.storage._start_connection()
+        self.storage._mkremdirs('foo/bar/null')
+
     @patch('ftplib.FTP', **{
         'return_value.pwd.return_value': 'foo',
         'return_value.storbinary.return_value': None
