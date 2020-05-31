@@ -740,7 +740,7 @@ class S3Boto3Storage(BaseStorage):
             url = "{}//{}/{}".format(
                 self.url_protocol, self.custom_domain, filepath_to_uri(name))
 
-            if self.cloudfront_signer:
+            if self.querystring_auth and self.cloudfront_signer:
                 expiration = datetime.utcnow() + timedelta(seconds=expire)
 
                 return self.cloudfront_signer.generate_presigned_url(url, date_less_than=expiration)

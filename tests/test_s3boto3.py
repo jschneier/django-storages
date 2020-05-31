@@ -604,7 +604,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             -----END RSA PRIVATE KEY-----'''
         ).encode('ascii')
 
-        url = 'https://mock.cloudfront.net/file.txt?Expires=3600&Signature=DbqVgh3FHtttQxof214tSAVE8Nqn3Q4Ii7eR3iykbOqAPbV89HC3EB~0CWxarpLNtbfosS5LxiP5EutriM7E8uR4Gm~UVY-PFUjPcwqdnmAiKJF0EVs7koJcMR8MKDStuWfFKVUPJ8H7ORYTOrixyHBV2NOrpI6SN5UX6ctNM50_&Key-Pair-Id=test-key'  # noqa
+        url = 'https://mock.cloudfront.net/file.txt'
+        signed_url = url + '?Expires=3600&Signature=DbqVgh3FHtttQxof214tSAVE8Nqn3Q4Ii7eR3iykbOqAPbV89HC3EB~0CWxarpLNtbfosS5LxiP5EutriM7E8uR4Gm~UVY-PFUjPcwqdnmAiKJF0EVs7koJcMR8MKDStuWfFKVUPJ8H7ORYTOrixyHBV2NOrpI6SN5UX6ctNM50_&Key-Pair-Id=test-key'  # noqa
 
         self.storage.custom_domain = "mock.cloudfront.net"
 
@@ -612,10 +613,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
                 s3boto3._use_cryptography_signer(),
                 s3boto3._use_rsa_signer()):
             self.storage.cloudfront_signer = pem_to_signer(key_id, pem)
+            self.storage.querystring_auth = False
+            self.assertEqual(self.storage.url(filename), url)
 
+            self.storage.querystring_auth = True
             with mock.patch('storages.backends.s3boto3.datetime') as mock_datetime:
                 mock_datetime.utcnow.return_value = datetime.utcfromtimestamp(0)
-                self.assertEqual(self.storage.url(filename), url)
+                self.assertEqual(self.storage.url(filename), signed_url)
 
     def test_generated_url_is_encoded(self):
         self.storage.custom_domain = "mock.cloudfront.net"
