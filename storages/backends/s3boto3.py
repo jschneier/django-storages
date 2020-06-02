@@ -13,7 +13,7 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import (
-    filepath_to_uri, force_bytes, force_text, smart_text,
+    filepath_to_uri, force_bytes, force_str, smart_text,
 )
 from django.utils.timezone import is_naive, make_naive
 
@@ -113,7 +113,7 @@ class S3Boto3StorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
-        self._force_mode = (lambda b: b) if 'b' in mode else force_text
+        self._force_mode = (lambda b: b) if 'b' in mode else force_str
         self.obj = storage.bucket.Object(storage._encode_name(name))
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
@@ -558,7 +558,7 @@ class S3Boto3Storage(BaseStorage):
         return smart_text(name, encoding=self.file_name_charset)
 
     def _decode_name(self, name):
-        return force_text(name, encoding=self.file_name_charset)
+        return force_str(name, encoding=self.file_name_charset)
 
     def _compress_content(self, content):
         """Gzip a given string content."""
