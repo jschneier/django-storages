@@ -23,7 +23,7 @@ from storages.utils import setting
 @deconstructible
 class SFTPStorage(BaseStorage):
     def __init__(self, host=None, **settings):
-        super(SFTPStorage, self).__init__(host=host, **settings)
+        super().__init__(host=host, **settings)
         self._host = self.host
         self._params = self.params
         self._interactive = self.interactive

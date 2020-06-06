@@ -168,4 +168,4 @@ class DropBoxStorage(Storage):
         name = self._full_path(name)
         if self.write_mode == 'overwrite':
             return get_available_overwrite_name(name, max_length)
-        return super(DropBoxStorage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)
