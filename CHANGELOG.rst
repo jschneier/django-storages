@@ -8,6 +8,8 @@ UNRELEASED
 
 - Removed support for end-of-life Python 2.7 and 3.4.
 
+- Removed support for end-of-life Django 1.11.
+
 - The minimum supported version of boto3 is now 1.4.4.
 
 - The ``S3Boto3Storage`` backend no longer accepts the argument ``acl``. Use
