@@ -7,14 +7,13 @@ import warnings
 from datetime import datetime, timedelta
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
+from urllib.parse import parse_qsl, urlsplit
 
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import (
-    filepath_to_uri, force_bytes, force_text, smart_text,
-)
+from django.utils.encoding import filepath_to_uri, force_bytes
 from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
@@ -22,12 +21,6 @@ from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
     setting,
 )
-
-try:
-    from django.utils.six.moves.urllib import parse as urlparse
-except ImportError:
-    from urllib import parse as urlparse
-
 
 try:
     import boto3.session
@@ -113,8 +106,8 @@ class S3Boto3StorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
-        self._force_mode = (lambda b: b) if 'b' in mode else force_text
-        self.obj = storage.bucket.Object(storage._encode_name(name))
+        self._force_mode = lambda b: b if 'b' in mode else lambda b: b.decode()
+        self.obj = storage.bucket.Object(name)
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
             self.obj.load()
@@ -157,12 +150,12 @@ class S3Boto3StorageFile(File):
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super(S3Boto3StorageFile, self).read(*args, **kwargs))
+        return self._force_mode(super().read(*args, **kwargs))
 
     def readline(self, *args, **kwargs):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super(S3Boto3StorageFile, self).readline(*args, **kwargs))
+        return self._force_mode(super().readline(*args, **kwargs))
 
     def write(self, content):
         if 'w' not in self._mode:
@@ -176,7 +169,7 @@ class S3Boto3StorageFile(File):
             self._flush_write_buffer()
         bstr = force_bytes(content)
         self._raw_bytes_written += len(bstr)
-        return super(S3Boto3StorageFile, self).write(bstr)
+        return super().write(bstr)
 
     @property
     def _buffer_file_size(self):
@@ -263,7 +256,7 @@ class S3Boto3Storage(BaseStorage):
     security_token = None
 
     def __init__(self, acl=None, bucket=None, **settings):
-        super(S3Boto3Storage, self).__init__(**settings)
+        super().__init__(**settings)
 
         # For backward-compatibility of old differing parameter names
         if acl is not None:
@@ -454,7 +447,7 @@ class S3Boto3Storage(BaseStorage):
         """
         if self.preload_metadata and not self._entries:
             self._entries = {
-                self._decode_name(entry.key): entry
+                entry.key: entry
                 for entry in self.bucket.objects.filter(Prefix=self.location)
             }
         return self._entries
@@ -554,12 +547,6 @@ class S3Boto3Storage(BaseStorage):
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
 
-    def _encode_name(self, name):
-        return smart_text(name, encoding=self.file_name_charset)
-
-    def _decode_name(self, name):
-        return force_text(name, encoding=self.file_name_charset)
-
     def _compress_content(self, content):
         """Gzip a given string content."""
         content.seek(0)
@@ -585,7 +572,7 @@ class S3Boto3Storage(BaseStorage):
             f = S3Boto3StorageFile(name, mode, self)
         except ClientError as err:
             if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
-                raise IOError('File does not exist: %s' % name)
+                raise FileNotFoundError('File does not exist: %s' % name)
             raise  # Let it bubble up if it was some other error
         return f
 
@@ -600,10 +587,9 @@ class S3Boto3Storage(BaseStorage):
             content = self._compress_content(content)
             params['ContentEncoding'] = 'gzip'
 
-        encoded_name = self._encode_name(name)
-        obj = self.bucket.Object(encoded_name)
+        obj = self.bucket.Object(name)
         if self.preload_metadata:
-            self._entries[encoded_name] = obj
+            self._entries[name] = obj
 
         content.seek(0, os.SEEK_SET)
         obj.upload_fileobj(content, ExtraArgs=params)
@@ -611,7 +597,7 @@ class S3Boto3Storage(BaseStorage):
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
-        self.bucket.Object(self._encode_name(name)).delete()
+        self.bucket.Object(name).delete()
 
         if name in self._entries:
             del self._entries[name]
@@ -651,7 +637,7 @@ class S3Boto3Storage(BaseStorage):
             if entry:
                 return entry.size if hasattr(entry, 'size') else entry.content_length
             return 0
-        return self.bucket.Object(self._encode_name(name)).content_length
+        return self.bucket.Object(name).content_length
 
     def _get_write_parameters(self, name, content=None):
         params = {}
@@ -695,7 +681,7 @@ class S3Boto3Storage(BaseStorage):
         # only call self.bucket.Object() if the key is not found
         # in the preloaded metadata.
         if entry is None:
-            entry = self.bucket.Object(self._encode_name(name))
+            entry = self.bucket.Object(name)
         if setting('USE_TZ'):
             # boto3 returns TZ aware timestamps
             return entry.last_modified
@@ -716,8 +702,8 @@ class S3Boto3Storage(BaseStorage):
         # passed in that only work with signed URLs, e.g. response header params.
         # The code attempts to strip all query parameters that match names of known parameters
         # from v2 and v4 signatures, regardless of the actual signature version used.
-        split_url = urlparse.urlsplit(url)
-        qs = urlparse.parse_qsl(split_url.query, keep_blank_values=True)
+        split_url = urlsplit(url)
+        qs = parse_qsl(split_url.query, keep_blank_values=True)
         blacklist = {
             'x-amz-algorithm', 'x-amz-credential', 'x-amz-date',
             'x-amz-expires', 'x-amz-signedheaders', 'x-amz-signature',
@@ -749,7 +735,7 @@ class S3Boto3Storage(BaseStorage):
 
         params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
-        params['Key'] = self._encode_name(name)
+        params['Key'] = name
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire, HttpMethod=http_method)
         if self.querystring_auth:
@@ -761,4 +747,4 @@ class S3Boto3Storage(BaseStorage):
         name = self._clean_name(name)
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
-        return super(S3Boto3Storage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)

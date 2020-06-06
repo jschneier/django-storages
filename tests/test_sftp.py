@@ -2,17 +2,13 @@ import io
 import os
 import stat
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import paramiko
 from django.core.files.base import File
 from django.test import TestCase, override_settings
 
 from storages.backends import sftpstorage
-
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:  # Python 3.2 and below
-    from mock import patch, MagicMock
 
 
 class SFTPStorageTest(TestCase):

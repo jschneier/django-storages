@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
-
-try:
-    from unittest import mock
-except ImportError:  # Python 3.2 and below
-    import mock
-
 import mimetypes
 import warnings
 from datetime import datetime, timedelta
+from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
@@ -63,7 +57,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
 
-        self.assertRaises(IOError, self.storage.open, self.filename)
+        self.assertRaises(FileNotFoundError, self.storage.open, self.filename)
         self.storage._bucket.get_blob.assert_called_with(self.filename)
 
     def test_open_read_nonexistent_unicode(self):
@@ -72,7 +66,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket = mock.MagicMock()
         self.storage._bucket.get_blob.return_value = None
 
-        self.assertRaises(IOError, self.storage.open, filename)
+        self.assertRaises(FileNotFoundError, self.storage.open, filename)
 
     @mock.patch('storages.backends.gcloud.Blob')
     def test_open_write(self, MockBlob):

@@ -1,6 +1,11 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED
+**********
+
+- Removed support for end-of-life Python 2.7 and 3.4.
+
 1.9.1 (2020-02-03)
 ******************
 

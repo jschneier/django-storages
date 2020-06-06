@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import mimetypes
 from datetime import datetime, timedelta
 from tempfile import SpooledTemporaryFile
@@ -62,7 +60,7 @@ class AzureStorageFile(File):
     def read(self, *args, **kwargs):
         if 'r' not in self._mode and 'a' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return super(AzureStorageFile, self).read(*args, **kwargs)
+        return super().read(*args, **kwargs)
 
     def write(self, content):
         if ('w' not in self._mode and
@@ -70,7 +68,7 @@ class AzureStorageFile(File):
                 'a' not in self._mode):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super(AzureStorageFile, self).write(force_bytes(content))
+        return super().write(force_bytes(content))
 
     def close(self):
         if self._file is None:
@@ -123,7 +121,7 @@ _AZURE_NAME_MAX_LEN = 1024
 @deconstructible
 class AzureStorage(BaseStorage):
     def __init__(self, **settings):
-        super(AzureStorage, self).__init__(**settings)
+        super().__init__(**settings)
         self._service = None
         self._custom_service = None
 
@@ -217,7 +215,7 @@ class AzureStorage(BaseStorage):
         name = clean_name(name)
         if self.overwrite_files:
             return get_available_overwrite_name(name, max_length)
-        return super(AzureStorage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)
 
     def exists(self, name):
         return self.service.exists(
