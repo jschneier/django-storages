@@ -31,6 +31,11 @@ UNRELEASED
 - The ``S3Boto3Storage`` backend no longer supports the undocumented
   ``AWS_PRELOAD_METADATA`` setting.
 
+- The ``GoogleCloudStorage`` backend no longer automatically creates the
+  bucket. Doing so had encouraged using overly broad credentials. As a result,
+  the ``GS_AUTO_CREATE_BUCKET`` setting has been removed.
+
+
 1.9.1 (2020-02-03)
 ******************
 
