@@ -1,5 +1,4 @@
 import mimetypes
-import warnings
 from datetime import datetime, timedelta
 from unittest import mock
 
@@ -7,7 +6,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from google.cloud.exceptions import Conflict, NotFound
+from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
 
 from storages.backends import gcloud
@@ -158,26 +157,6 @@ class GCloudStorageTests(GCloudTestCase):
     def test_exists_bucket(self):
         # exists('') should return True if the bucket exists
         self.assertTrue(self.storage.exists(''))
-
-    def test_exists_no_bucket_auto_create(self):
-        # exists('') should return true when auto_create_bucket is configured
-        # and bucket already exists
-        # exists('') should automatically create the bucket if
-        # auto_create_bucket is configured
-        self.storage.auto_create_bucket = True
-        self.storage._client = mock.MagicMock()
-        self.storage._client.create_bucket.side_effect = Conflict('dang')
-
-        self.assertTrue(self.storage.exists(''))
-
-    def test_exists_bucket_auto_create(self):
-        # exists('') should automatically create the bucket if
-        # auto_create_bucket is configured
-        self.storage.auto_create_bucket = True
-        self.storage._client = mock.MagicMock()
-
-        self.assertTrue(self.storage.exists(''))
-        self.storage._client.create_bucket.assert_called_with(self.bucket_name)
 
     def test_listdir(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
@@ -419,19 +398,6 @@ class GCloudStorageTests(GCloudTestCase):
         )
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             gcloud.GoogleCloudStorage(location='/')
-
-    def test_deprecated_autocreate_bucket(self):
-        with warnings.catch_warnings(record=True) as w:
-            gcloud.GoogleCloudStorage(auto_create_bucket=True)
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-        message = (
-            "Automatic bucket creation will be removed in version 1.10. It encourages "
-            "using overly broad credentials with this library. Either create it before "
-            "manually or use one of a myriad of automatic configuration management tools. "
-            "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning."
-        )
-        assert str(w[-1].message) == message
 
     def test_override_settings(self):
         with override_settings(GS_LOCATION='foo1'):

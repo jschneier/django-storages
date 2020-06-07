@@ -1,5 +1,4 @@
 import mimetypes
-import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -18,7 +17,7 @@ from storages.utils import (
 try:
     from google.cloud.storage import Blob, Client
     from google.cloud.storage.blob import _quote
-    from google.cloud.exceptions import Conflict, NotFound
+    from google.cloud.exceptions import NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
@@ -92,15 +91,6 @@ class GoogleCloudStorage(BaseStorage):
 
         check_location(self)
 
-        if self.auto_create_bucket:
-            warnings.warn(
-                "Automatic bucket creation will be removed in version 1.10. It encourages "
-                "using overly broad credentials with this library. Either create it before "
-                "manually or use one of a myriad of automatic configuration management tools. "
-                "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
-                DeprecationWarning,
-            )
-
         self._bucket = None
         self._client = None
 
@@ -111,7 +101,6 @@ class GoogleCloudStorage(BaseStorage):
             "bucket_name": setting('GS_BUCKET_NAME'),
             "custom_endpoint": setting('GS_CUSTOM_ENDPOINT', None),
             "location": setting('GS_LOCATION', ''),
-            "auto_create_bucket": setting('GS_AUTO_CREATE_BUCKET', False),
             "auto_create_acl": setting('GS_AUTO_CREATE_ACL', 'projectPrivate'),
             "default_acl": setting('GS_DEFAULT_ACL'),
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
@@ -136,24 +125,8 @@ class GoogleCloudStorage(BaseStorage):
     @property
     def bucket(self):
         if self._bucket is None:
-            self._bucket = self._get_or_create_bucket(self.bucket_name)
+            self._bucket = self.client.bucket(self.bucket_name)
         return self._bucket
-
-    def _get_or_create_bucket(self, name):
-        """
-        Returns bucket. If auto_create_bucket is True, creates bucket if it
-        doesn't exist.
-        """
-        bucket = self.client.bucket(name)
-        if self.auto_create_bucket:
-            try:
-                new_bucket = self.client.create_bucket(name)
-                new_bucket.acl.save_predefined(self.auto_create_acl)
-                return new_bucket
-            except Conflict:
-                # Bucket already exists
-                pass
-        return bucket
 
     def _normalize_name(self, name):
         """
