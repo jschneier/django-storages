@@ -10,6 +10,9 @@ There is only one supported backend for interacting with Amazon's S3,
 The legacy ``S3BotoStorage`` backend was removed in version 1.9. To continue getting new features you must upgrade
 to the ``S3Boto3Storage`` backend by following the :ref:`migration instructions <migrating-boto-to-boto3>`.
 
+The minimum required version of ``boto3`` is 1.4.4 although we always recommend
+the most recent.
+
 Settings
 --------
 
@@ -34,37 +37,6 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.
 
-``AWS_DEFAULT_ACL`` (optional, ``None`` or canned ACL, default ``public-read``)
-    Must be either ``None`` or from the `list of canned ACLs`_. If set to ``None``
-    then all files will inherit the bucket's ACL.
-
-.. warning::
-
-    The default value of ``public-read`` is insecure and will be changing to ``None`` in
-    a future release of django-storages. Please set this explicitly to ``public-read``
-    if that is the desired behavior.
-
-``AWS_BUCKET_ACL`` (optional, default ``public-read``)
-    Only used if ``AWS_AUTO_CREATE_BUCKET=True``. The ACL of the created bucket.
-
-    Must be either ``None`` or from the `list of canned ACLs`_. If set to ``None``
-    then the bucket will use the AWS account's default.
-
-.. warning::
-
-    The default value of ``public-read`` is insecure and will be changing to ``None`` in
-    a future release of django-storages. Please set this explicitly to ``public-read``
-    if that is the desired behavior.
-
-``AWS_AUTO_CREATE_BUCKET`` (optional)
-    If set to ``True`` the bucket specified in ``AWS_STORAGE_BUCKET_NAME`` is automatically created.
-
-.. deprecated:: 1.9
-
-   The ability to automatically create a bucket will be removed in version 1.10. The permissions needed
-   to do so are incongruent with the requirements of the rest of this library. Either create it yourself
-   or use one of the popular configuration management tools.
-
 ``AWS_S3_OBJECT_PARAMETERS`` (optional, default ``{}``)
   Use this to set parameters on all objects. To set these on a per-object
   basis, subclass the backend and override ``S3Boto3Storage.get_object_parameters``.
@@ -83,14 +55,6 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
 ``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
     The number of seconds that a generated URL is valid for.
-
-``AWS_S3_ENCRYPTION`` (optional; default is ``False``)
-    Enable server-side file encryption while at rest.
-
-.. deprecated:: 1.9
-
-   Support for this top level setting is deprecated. The functionality is still available by setting
-   ServerSideEncryption=AES256 in AWS_S3_OBJECT_PARAMETERS.
 
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
@@ -170,9 +134,8 @@ The following adjustments to settings are required:
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
 - Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
 
-Additionally, you must install ``boto3``.  In order to use
-all currently supported features, ``1.4.4`` is the minimum required version although we
-always recommend the most recent.
+Additionally, you must install ``boto3``. The minimum required version is 1.4.4
+although we always recommend the most recent.
 
 Please open an issue on the GitHub repo if any further issues are encountered or steps were omitted.
 
