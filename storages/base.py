@@ -13,7 +13,7 @@ class BaseStorage(Storage):
         for name, value in settings.items():
             if name not in default_settings:
                 raise ImproperlyConfigured(
-                    "Invalid setting '%s' for %s" % (
+                    "Invalid setting '{}' for {}".format(
                         name,
                         self.__class__.__name__,
                     )
