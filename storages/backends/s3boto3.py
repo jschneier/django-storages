@@ -100,7 +100,7 @@ class S3Boto3StorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
-        self._force_mode = lambda b: b if 'b' in mode else lambda b: b.decode()
+        self._force_mode = (lambda b: b) if 'b' in mode else (lambda b: b.decode())
         self.obj = storage.bucket.Object(name)
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
