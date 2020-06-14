@@ -129,6 +129,7 @@ class AzureStorage(BaseStorage):
         return {
             "account_name": setting("AZURE_ACCOUNT_NAME"),
             "account_key": setting("AZURE_ACCOUNT_KEY"),
+            "object_parameters": setting("AZURE_OBJECT_PARAMETERS", {}),
             "azure_container": setting("AZURE_CONTAINER"),
             "azure_ssl": setting("AZURE_SSL", True),
             "upload_max_conn": setting("AZURE_UPLOAD_MAX_CONN", 2),
@@ -242,11 +243,7 @@ class AzureStorage(BaseStorage):
     def _save(self, name, content):
         cleaned_name = clean_name(name)
         name = self._get_valid_path(name)
-        guessed_type, content_encoding = mimetypes.guess_type(name)
-        content_type = (
-            _content_type(content) or
-            guessed_type or
-            self.default_content_type)
+        params = self._get_content_settings_parameters(name, content)
 
         # Unwrap django file (wrapped by parent's save call)
         if isinstance(content, File):
@@ -257,10 +254,7 @@ class AzureStorage(BaseStorage):
             container_name=self.azure_container,
             blob_name=name,
             stream=content,
-            content_settings=ContentSettings(
-                content_type=content_type,
-                content_encoding=content_encoding,
-                cache_control=self.cache_control),
+            content_settings=ContentSettings(**params),
             max_connections=self.upload_max_conn,
             timeout=self.timeout)
         return cleaned_name
@@ -286,6 +280,31 @@ class AzureStorage(BaseStorage):
             blob_name=filepath_to_uri(name),
             protocol=self.azure_protocol,
             **make_blob_url_kwargs)
+
+    def _get_content_settings_parameters(self, name, content=None):
+        params = {}
+
+        guessed_type, content_encoding = mimetypes.guess_type(name)
+        content_type = (
+            _content_type(content) or
+            guessed_type or
+            self.default_content_type)
+
+        params['cache_control'] = self.cache_control
+        params['content_type'] = content_type
+        params['content_encoding'] = content_encoding
+
+        params.update(self.get_object_parameters(name))
+        return params
+
+    def get_object_parameters(self, name):
+        """
+        Returns a dictionary that is passed to content settings. Override this
+        method to adjust this on a per-object basis to set e.g ContentDisposition.
+
+        By default, returns the value of AZURE_OBJECT_PARAMETERS.
+        """
+        return self.object_parameters.copy()
 
     def get_modified_time(self, name):
         """
