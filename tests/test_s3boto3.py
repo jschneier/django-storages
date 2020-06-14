@@ -224,6 +224,14 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         content = self.storage._compress_content(content)
         self.assertTrue(len(content.read()) > 0)
 
+    def test_storage_open_read_string(self):
+        """
+        Test opening a file in "r" mode (ie reading as string, not bytes)
+        """
+        name = 'test_open_read_string.txt'
+        content_str = self.storage.open(name, "r").read()
+        self.assertEqual(content_str, "")
+
     def test_storage_open_write(self):
         """
         Test opening a file in write mode
