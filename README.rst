@@ -30,7 +30,7 @@ If, for example, you want to use the boto3 backend you would set:
 
 .. code-block:: python
 
-  DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+  DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 
 If you are using the ``FileSystemStorage`` as your storage management class in your models ``FileField`` fields, remove them
@@ -41,7 +41,7 @@ For example, if you have a `photo` field defined as:
 
     photo = models.FileField(
         storage=FileSystemStorage(location=settings.MEDIA_ROOT),
-        upload_to='photos',
+        upload_to="photos",
     )
 
 Set it to just:
@@ -49,7 +49,7 @@ Set it to just:
 .. code-block:: python
 
     photo = models.FileField(
-        upload_to='photos',
+        upload_to="photos",
     )
 
 There are also a number of settings available to control how each storage backend functions,
@@ -97,12 +97,28 @@ Documentation for django-storages is located at https://django-storages.readthed
 Contributing
 ============
 
-#. `Check for open issues
-   <https://github.com/jschneier/django-storages/issues>`_ at the project
-   issue page or open a new issue to start a discussion about a feature or bug.
-#. Fork the `django-storages repository on GitHub
-   <https://github.com/jschneier/django-storages>`_ to start making changes.
-#. Add a test case to show that the bug is fixed or the feature is implemented
-   correctly.
-#. Bug me until I can merge your pull request. Also, don't forget to add
-   yourself to ``AUTHORS``.
+First, `check for open issues
+<https://github.com/jschneier/django-storages/issues>`_ at the project issue
+page or open a new issue to start a discussion about a feature or bug.
+
+Next, fork the `django-storages repository on GitHub
+<https://github.com/jschneier/django-storages>`_ to start making changes.
+
+After adding a feature or fixing a bug, add a test case to show that it is
+implemented correctly.
+
+Format the code using black and isort:
+
+.. code-block:: console
+
+    $ black --target-version py35 .
+    $ isort .
+
+Run the full test suite using tox:
+
+.. code-block:: console
+
+    $ tox
+
+Bug me until I can merge your pull request. Also, don't forget to add yourself
+to ``AUTHORS``.

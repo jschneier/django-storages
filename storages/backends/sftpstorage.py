@@ -38,16 +38,16 @@ class SFTPStorage(BaseStorage):
 
     def get_default_settings(self):
         return {
-            'host': setting('SFTP_STORAGE_HOST'),
-            'params': setting('SFTP_STORAGE_PARAMS', {}),
-            'interactive': setting('SFTP_STORAGE_INTERACTIVE', False),
-            'file_mode': setting('SFTP_STORAGE_FILE_MODE'),
-            'dir_mode': setting('SFTP_STORAGE_DIR_MODE'),
-            'uid': setting('SFTP_STORAGE_UID'),
-            'gid': setting('SFTP_STORAGE_GID'),
-            'known_host_file': setting('SFTP_KNOWN_HOST_FILE'),
-            'root_path': setting('SFTP_STORAGE_ROOT', ''),
-            'base_url': setting('MEDIA_URL'),
+            "host": setting("SFTP_STORAGE_HOST"),
+            "params": setting("SFTP_STORAGE_PARAMS", {}),
+            "interactive": setting("SFTP_STORAGE_INTERACTIVE", False),
+            "file_mode": setting("SFTP_STORAGE_FILE_MODE"),
+            "dir_mode": setting("SFTP_STORAGE_DIR_MODE"),
+            "uid": setting("SFTP_STORAGE_UID"),
+            "gid": setting("SFTP_STORAGE_GID"),
+            "known_host_file": setting("SFTP_KNOWN_HOST_FILE"),
+            "root_path": setting("SFTP_STORAGE_ROOT", ""),
+            "base_url": setting("MEDIA_URL"),
         }
 
     def _connect(self):
@@ -66,13 +66,13 @@ class SFTPStorage(BaseStorage):
         try:
             self._ssh.connect(self._host, **self._params)
         except paramiko.AuthenticationException as e:
-            if self._interactive and 'password' not in self._params:
+            if self._interactive and "password" not in self._params:
                 # If authentication has failed, and we haven't already tried
                 # username/password, and configuration allows it, then try
                 # again with username/password.
-                if 'username' not in self._params:
-                    self._params['username'] = getpass.getuser()
-                self._params['password'] = getpass.getpass()
+                if "username" not in self._params:
+                    self._params["username"] = getpass.getuser()
+                self._params["password"] = getpass.getpass()
                 self._connect()
             else:
                 raise paramiko.AuthenticationException(e)
@@ -90,12 +90,12 @@ class SFTPStorage(BaseStorage):
     def _remote_path(self, name):
         return posixpath.join(self._root_path, name)
 
-    def _open(self, name, mode='rb'):
+    def _open(self, name, mode="rb"):
         return SFTPStorageFile(name, self, mode)
 
     def _read(self, name):
         remote_path = self._remote_path(name)
-        return self.sftp.open(remote_path, 'rb')
+        return self.sftp.open(remote_path, "rb")
 
     def _chown(self, path, uid=None, gid=None):
         """Set uid and/or gid for file at path."""
@@ -129,7 +129,7 @@ class SFTPStorage(BaseStorage):
         if not self.exists(dirname):
             self._mkdir(dirname)
 
-        f = self.sftp.open(path, 'wb')
+        f = self.sftp.open(path, "wb")
         f.write(content.file.read())
         f.close()
 
@@ -187,7 +187,7 @@ class SFTPStorage(BaseStorage):
     def url(self, name):
         if self._base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urljoin(self._base_url, name).replace('\\', '/')
+        return urljoin(self._base_url, name).replace("\\", "/")
 
 
 class SFTPStorageFile(File):
@@ -201,7 +201,7 @@ class SFTPStorageFile(File):
 
     @property
     def size(self):
-        if not hasattr(self, '_size'):
+        if not hasattr(self, "_size"):
             self._size = self._storage.size(self.name)
         return self._size
 
@@ -213,7 +213,7 @@ class SFTPStorageFile(File):
         return self.file.read(num_bytes)
 
     def write(self, content):
-        if 'w' not in self.mode:
+        if "w" not in self.mode:
             raise AttributeError("File was opened for read-only access.")
         self.file = io.BytesIO(content)
         self._is_dirty = True
