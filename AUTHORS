@@ -45,6 +45,7 @@ By order of apparition, thanks:
     * Taras Petriichuk (Dropbox write_mode option)
     * Zoe Liao (S3 docs)
     * Jonathan Ehwald
+    * François Freitag (S3)
 
 
 Extra thanks to Marty for adding this in Django,
