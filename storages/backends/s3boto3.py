@@ -502,7 +502,9 @@ class S3Boto3Storage(BaseStorage):
             for entry in page.get('CommonPrefixes', ()):
                 directories.append(posixpath.relpath(entry['Prefix'], path))
             for entry in page.get('Contents', ()):
-                files.append(posixpath.relpath(entry['Key'], path))
+                key = entry['Key']
+                if key != path:
+                    files.append(posixpath.relpath(key, path))
         return directories, files
 
     def size(self, name):
