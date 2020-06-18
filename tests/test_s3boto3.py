@@ -509,6 +509,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(dirs, ['path'])
         self.assertEqual(files, ['2.txt'])
 
+    def test_storage_listdir_empty(self):
+        # Files:
+        #   dir/
+        pages = [
+            {
+                'Contents': [
+                    {'Key': 'dir/'},
+                ],
+            },
+        ]
+
+        paginator = mock.MagicMock()
+        paginator.paginate.return_value = pages
+        self.storage._connections.connection.meta.client.get_paginator.return_value = paginator
+
+        dirs, files = self.storage.listdir('dir/')
+        paginator.paginate.assert_called_with(Bucket=None, Delimiter='/', Prefix='dir/')
+
+        self.assertEqual(dirs, [])
+        self.assertEqual(files, [])
+
     def test_storage_size(self):
         obj = self.storage.bucket.Object.return_value
         obj.content_length = 4098
