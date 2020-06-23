@@ -161,6 +161,34 @@ origin manually for this to work.
 If you need to use multiple storages that are served via CloudFront, pass the
 `custom_domain` parameter to their constructors.
 
+CloudFront Signed Urls
+^^^^^^^^^^^^^^^^^^^^^^
+If you want django-storages to generate Signed Cloudfront Urls, you can do so by following these steps:
+
+- As this feature isn't officially released as of 23/06/2020 you must install the package via source::
+
+        pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
+        
+- modify `settings.py` to include::
+
+    AWS_CLOUDFRONT_KEY = os.environ.get('AWS_CLOUDFRONT_KEY', None).encode('ascii')
+    AWS_CLOUDFRONT_KEY_ID = os.environ.get('AWS_CLOUDFRONT_KEY_ID', None)
+    
+- Generate a CloudFront Key Pair as specified in the `AWS Doc to create  CloudFront key pairs`_.
+
+- Updated ENV vars with the corresponding values::
+
+        AWS_CLOUDFRONT_KEY=-----BEGIN RSA PRIVATE KEY-----
+        ...
+        -----END RSA PRIVATE KEY-----
+        AWS_CLOUDFRONT_KEY_ID=APK....
+
+.. _AWS Doc to create  CloudFront key pairs: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs-procedure
+
+django-storages will now generate `signed cloudfront urls`_
+
+.. _signed cloudfront urls: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html
+
 IAM Policy
 ----------
 
