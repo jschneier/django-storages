@@ -15,19 +15,23 @@ Use pip to install from PyPI::
 Authentication
 --------------
 By default, this library will try to use the credentials associated with the
-current Google Compute Engine (GCE) or Google Kubernetes Engine (GKE) instance
-for authentication. In most cases, the default service accounts are not sufficient
-to read/write and sign files in GCS.
+current Google Cloud infrastrcture/environment for authentication. 
+
+In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, you so you will need to create a dedicated service account: 
 
 1. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 
-2. Create the key and download `your-project-XXXXX.json` file.
+2. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
 
-3. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
+3. Ensure this service account is associated to the type of compute being used (Google Compute Engine (GCE), Google Kubernetes Engine (GKE), Google Cloud Run (GCR), etc)
 
-4. The key must be mounted/available to your running Django app. Note: a json keyfile will work for developer machines (or other instances outside Google infrastructure).
+For development use cases, or other instances outside Google infrastructure:
 
-5. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
+4. Create the key and download `your-project-XXXXX.json` file.
+
+5. Ensure the key is mounted/available to your running Django app.
+
+6. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
 
 Alternatively, you can use the setting `GS_CREDENTIALS` as described below.
 
