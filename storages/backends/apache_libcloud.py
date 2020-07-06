@@ -3,19 +3,13 @@
 #
 import io
 import os
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-
-try:
-    from django.utils.six import string_types
-    from django.utils.six.moves.urllib.parse import urljoin
-except ImportError:
-    string_types = str
-    from urllib.parse import urljoin
 
 try:
     from libcloud.storage.providers import get_driver
@@ -44,7 +38,7 @@ class LibCloudStorage(Storage):
             extra_kwargs['project'] = self.provider['project']
         try:
             provider_type = self.provider['type']
-            if isinstance(provider_type, string_types):
+            if isinstance(provider_type, str):
                 module_path, tag = provider_type.rsplit('.', 1)
                 if module_path != 'libcloud.storage.types.Provider':
                     raise ValueError("Invalid module path")

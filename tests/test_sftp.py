@@ -2,17 +2,13 @@ import io
 import os
 import stat
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import paramiko
 from django.core.files.base import File
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from storages.backends import sftpstorage
-
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:  # Python 3.2 and below
-    from mock import patch, MagicMock
 
 
 class SFTPStorageTest(TestCase):
@@ -151,6 +147,33 @@ class SFTPStorageTest(TestCase):
 
         self.assertTrue(self.storage.sftp)
         self.assertTrue(connect.called)
+
+    def test_override_settings(self):
+        with override_settings(SFTP_STORAGE_ROOT='foo1'):
+            storage = sftpstorage.SFTPStorage()
+            self.assertEqual(storage._root_path, 'foo1')
+        with override_settings(SFTP_STORAGE_ROOT='foo2'):
+            storage = sftpstorage.SFTPStorage()
+            self.assertEqual(storage._root_path, 'foo2')
+
+    def test_override_class_variable(self):
+        class MyStorage1(sftpstorage.SFTPStorage):
+            root_path = 'foo1'
+
+        storage = MyStorage1()
+        self.assertEqual(storage._root_path, 'foo1')
+
+        class MyStorage2(sftpstorage.SFTPStorage):
+            root_path = 'foo2'
+
+        storage = MyStorage2()
+        self.assertEqual(storage._root_path, 'foo2')
+
+    def test_override_init_argument(self):
+        storage = sftpstorage.SFTPStorage(root_path='foo1')
+        self.assertEqual(storage._root_path, 'foo1')
+        storage = sftpstorage.SFTPStorage(root_path='foo2')
+        self.assertEqual(storage._root_path, 'foo2')
 
 
 class SFTPStorageFileTest(TestCase):

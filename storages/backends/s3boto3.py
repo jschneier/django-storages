@@ -3,41 +3,74 @@ import mimetypes
 import os
 import posixpath
 import threading
-import warnings
+from datetime import datetime, timedelta
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
+from urllib.parse import parse_qsl, urlsplit
 
-from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import (
-    filepath_to_uri, force_bytes, force_text, smart_text,
-)
+from django.utils.encoding import filepath_to_uri, force_bytes
 from django.utils.timezone import is_naive, make_naive
 
+from storages.base import BaseStorage
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
     setting,
 )
 
 try:
-    from django.utils.six.moves.urllib import parse as urlparse
-except ImportError:
-    from urllib import parse as urlparse
-
-
-try:
     import boto3.session
-    from boto3 import __version__ as boto3_version
     from botocore.client import Config
     from botocore.exceptions import ClientError
+    from botocore.signers import CloudFrontSigner
 except ImportError as e:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
 
 
-boto3_version_info = tuple([int(i) for i in boto3_version.split('.')])
+# NOTE: these are defined as functions so both can be tested
+def _use_cryptography_signer():
+    # https://cryptography.io as an RSA backend
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.primitives.serialization import (
+        load_pem_private_key
+    )
+
+    def _cloud_front_signer_from_pem(key_id, pem):
+        key = load_pem_private_key(
+            pem, password=None, backend=default_backend())
+
+        return CloudFrontSigner(
+            key_id, lambda x: key.sign(x, padding.PKCS1v15(), hashes.SHA1()))
+
+    return _cloud_front_signer_from_pem
+
+
+def _use_rsa_signer():
+    # https://stuvel.eu/rsa as an RSA backend
+    import rsa
+
+    def _cloud_front_signer_from_pem(key_id, pem):
+        key = rsa.PrivateKey.load_pkcs1(pem)
+        return CloudFrontSigner(key_id, lambda x: rsa.sign(x, key, 'SHA-1'))
+
+    return _cloud_front_signer_from_pem
+
+
+for _signer_factory in (_use_cryptography_signer, _use_rsa_signer):
+    try:
+        _cloud_front_signer_from_pem = _signer_factory()
+        break
+    except ImportError:
+        pass
+else:
+    def _cloud_front_signer_from_pem(key_id, pem):
+        raise ImproperlyConfigured(
+            'An RSA backend is required for signing cloudfront URLs.\n'
+            'Supported backends are packages: cryptography and rsa.')
 
 
 @deconstructible
@@ -67,8 +100,8 @@ class S3Boto3StorageFile(File):
         self._storage = storage
         self.name = name[len(self._storage.location):].lstrip('/')
         self._mode = mode
-        self._force_mode = (lambda b: b) if 'b' in mode else force_text
-        self.obj = storage.bucket.Object(storage._encode_name(name))
+        self._force_mode = (lambda b: b) if 'b' in mode else (lambda b: b.decode())
+        self.obj = storage.bucket.Object(name)
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
             self.obj.load()
@@ -111,12 +144,12 @@ class S3Boto3StorageFile(File):
     def read(self, *args, **kwargs):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super(S3Boto3StorageFile, self).read(*args, **kwargs))
+        return self._force_mode(super().read(*args, **kwargs))
 
     def readline(self, *args, **kwargs):
         if 'r' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super(S3Boto3StorageFile, self).readline(*args, **kwargs))
+        return self._force_mode(super().readline(*args, **kwargs))
 
     def write(self, content):
         if 'w' not in self._mode:
@@ -130,7 +163,7 @@ class S3Boto3StorageFile(File):
             self._flush_write_buffer()
         bstr = force_bytes(content)
         self._raw_bytes_written += len(bstr)
-        return super(S3Boto3StorageFile, self).write(bstr)
+        return super().write(bstr)
 
     @property
     def _buffer_file_size(self):
@@ -198,7 +231,7 @@ class S3Boto3StorageFile(File):
 
 
 @deconstructible
-class S3Boto3Storage(Storage):
+class S3Boto3Storage(BaseStorage):
     """
     Amazon Simple Storage Service using Boto3
 
@@ -216,94 +249,8 @@ class S3Boto3Storage(Storage):
     security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
     security_token = None
 
-    access_key = setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID'))
-    secret_key = setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY'))
-    file_overwrite = setting('AWS_S3_FILE_OVERWRITE', True)
-    object_parameters = setting('AWS_S3_OBJECT_PARAMETERS', {})
-    bucket_name = setting('AWS_STORAGE_BUCKET_NAME')
-    auto_create_bucket = setting('AWS_AUTO_CREATE_BUCKET', False)
-    default_acl = setting('AWS_DEFAULT_ACL', 'public-read')
-    bucket_acl = setting('AWS_BUCKET_ACL', default_acl)
-    querystring_auth = setting('AWS_QUERYSTRING_AUTH', True)
-    querystring_expire = setting('AWS_QUERYSTRING_EXPIRE', 3600)
-    signature_version = setting('AWS_S3_SIGNATURE_VERSION')
-    reduced_redundancy = setting('AWS_REDUCED_REDUNDANCY', False)
-    location = setting('AWS_LOCATION', '')
-    encryption = setting('AWS_S3_ENCRYPTION', False)
-    custom_domain = setting('AWS_S3_CUSTOM_DOMAIN')
-    addressing_style = setting('AWS_S3_ADDRESSING_STYLE')
-    secure_urls = setting('AWS_S3_SECURE_URLS', True)
-    file_name_charset = setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8')
-    gzip = setting('AWS_IS_GZIPPED', False)
-    preload_metadata = setting('AWS_PRELOAD_METADATA', False)
-    gzip_content_types = setting('GZIP_CONTENT_TYPES', (
-        'text/css',
-        'text/javascript',
-        'application/javascript',
-        'application/x-javascript',
-        'image/svg+xml',
-    ))
-    url_protocol = setting('AWS_S3_URL_PROTOCOL', 'http:')
-    endpoint_url = setting('AWS_S3_ENDPOINT_URL')
-    proxies = setting('AWS_S3_PROXIES')
-    region_name = setting('AWS_S3_REGION_NAME')
-    use_ssl = setting('AWS_S3_USE_SSL', True)
-    verify = setting('AWS_S3_VERIFY', None)
-    max_memory_size = setting('AWS_S3_MAX_MEMORY_SIZE', 0)
-
-    def __init__(self, acl=None, bucket=None, **settings):
-        # check if some of the settings we've provided as class attributes
-        # need to be overwritten with values passed in here
-        for name, value in settings.items():
-            if hasattr(self, name):
-                setattr(self, name, value)
-
-        # For backward-compatibility of old differing parameter names
-        if acl is not None:
-            warnings.warn(
-                "The acl argument of S3Boto3Storage is deprecated. Use "
-                "argument default_acl or setting AWS_DEFAULT_ACL instead. The "
-                "acl argument will be removed in version 1.10.",
-                DeprecationWarning,
-            )
-            self.default_acl = acl
-        if bucket is not None:
-            warnings.warn(
-                "The bucket argument of S3Boto3Storage is deprecated. Use "
-                "argument bucket_name or setting AWS_STORAGE_BUCKET_NAME "
-                "instead. The bucket argument will be removed in version 1.10.",
-                DeprecationWarning,
-            )
-            self.bucket_name = bucket
-        if self.auto_create_bucket:
-            warnings.warn(
-                "Automatic bucket creation will be removed in version 1.10. It encourages "
-                "using overly broad credentials with this library. Either create it before "
-                "manually or use one of a myriad of automatic configuration management tools. "
-                "Unset AWS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
-                DeprecationWarning,
-            )
-        if self.reduced_redundancy:
-            warnings.warn(
-                "Support for AWS_REDUCED_REDUNDANCY will be removed in version 1.10. "
-                "Update now by adding StorageClass=REDUCED_REDUNDANCY to "
-                "AWS_S3_OBJECT_PARAMETERS. There are also several other possible values "
-                "for StorageClass available. Check the AWS & boto3 docs for more info.",
-                DeprecationWarning,
-            )
-        if self.encryption:
-            warnings.warn(
-                "Support for AWS_S3_ENCRYPTION will be removed in version 1.10. "
-                "Update now by adding ServerSideEncryption=AES256 to "
-                "AWS_S3_OBJECT_PARAMETERS. Doing so also easily allows using 'aws:kms' "
-                "for encryption. Check the AWS & boto3 docs for more info.",
-                DeprecationWarning,
-            )
-        if self.preload_metadata:
-            warnings.warn(
-                "Support for AWS_PRELOAD_METADATA will be removed in version 1.10. ",
-                DeprecationWarning,
-            )
+    def __init__(self, **settings):
+        super().__init__(**settings)
 
         check_location(self)
 
@@ -313,7 +260,6 @@ class S3Boto3Storage(Storage):
         if self.secure_urls:
             self.url_protocol = 'https:'
 
-        self._entries = {}
         self._bucket = None
         self._connections = threading.local()
 
@@ -321,30 +267,61 @@ class S3Boto3Storage(Storage):
         self.security_token = self._get_security_token()
 
         if not self.config:
-            kwargs = dict(
+            self.config = Config(
                 s3={'addressing_style': self.addressing_style},
                 signature_version=self.signature_version,
+                proxies=self.proxies,
             )
 
-            if boto3_version_info >= (1, 4, 4):
-                kwargs['proxies'] = self.proxies
-            else:
-                warnings.warn(
-                    "In version 1.10 of django-storages the minimum required version of "
-                    "boto3 will be 1.4.4. You have %s " % boto3_version_info
-                )
-            self.config = Config(**kwargs)
+    def get_cloudfront_signer(self, key_id, key):
+        return _cloud_front_signer_from_pem(key_id, key)
 
-        # warn about upcoming change in default AWS_DEFAULT_ACL setting
-        if not hasattr(django_settings, 'AWS_DEFAULT_ACL') and self.default_acl == 'public-read':
-            warnings.warn(
-                "The default behavior of S3Boto3Storage is insecure and will change "
-                "in django-storages 1.10. By default files and new buckets are saved "
-                "with an ACL of 'public-read' (globally publicly readable). Version 1.10 will "
-                "default to using the bucket's ACL. To opt into the new behavior set "
-                "AWS_DEFAULT_ACL = None, otherwise to silence this warning explicitly "
-                "set AWS_DEFAULT_ACL."
+    def get_default_settings(self):
+        cloudfront_key_id = setting('AWS_CLOUDFRONT_KEY_ID')
+        cloudfront_key = setting('AWS_CLOUDFRONT_KEY')
+        if bool(cloudfront_key_id) ^ bool(cloudfront_key):
+            raise ImproperlyConfigured(
+                'Both AWS_CLOUDFRONT_KEY_ID and AWS_CLOUDFRONT_KEY must be '
+                'provided together.'
             )
+
+        if cloudfront_key_id:
+            cloudfront_signer = self.get_cloudfront_signer(cloudfront_key_id, cloudfront_key)
+        else:
+            cloudfront_signer = None
+
+        return {
+            "access_key": setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
+            "secret_key": setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
+            "file_overwrite": setting('AWS_S3_FILE_OVERWRITE', True),
+            "object_parameters": setting('AWS_S3_OBJECT_PARAMETERS', {}),
+            "bucket_name": setting('AWS_STORAGE_BUCKET_NAME'),
+            "bucket_acl": setting('AWS_BUCKET_ACL', 'public-read'),
+            "querystring_auth": setting('AWS_QUERYSTRING_AUTH', True),
+            "querystring_expire": setting('AWS_QUERYSTRING_EXPIRE', 3600),
+            "signature_version": setting('AWS_S3_SIGNATURE_VERSION'),
+            "location": setting('AWS_LOCATION', ''),
+            "custom_domain": setting('AWS_S3_CUSTOM_DOMAIN'),
+            "cloudfront_signer": cloudfront_signer,
+            "addressing_style": setting('AWS_S3_ADDRESSING_STYLE'),
+            "secure_urls": setting('AWS_S3_SECURE_URLS', True),
+            "file_name_charset": setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
+            "gzip": setting('AWS_IS_GZIPPED', False),
+            "gzip_content_types": setting('GZIP_CONTENT_TYPES', (
+                'text/css',
+                'text/javascript',
+                'application/javascript',
+                'application/x-javascript',
+                'image/svg+xml',
+            )),
+            "url_protocol": setting('AWS_S3_URL_PROTOCOL', 'http:'),
+            "endpoint_url": setting('AWS_S3_ENDPOINT_URL'),
+            "proxies": setting('AWS_S3_PROXIES'),
+            "region_name": setting('AWS_S3_REGION_NAME'),
+            "use_ssl": setting('AWS_S3_USE_SSL', True),
+            "verify": setting('AWS_S3_VERIFY', None),
+            "max_memory_size": setting('AWS_S3_MAX_MEMORY_SIZE', 0),
+        }
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -382,20 +359,8 @@ class S3Boto3Storage(Storage):
         create it.
         """
         if self._bucket is None:
-            self._bucket = self._get_or_create_bucket(self.bucket_name)
+            self._bucket = self.connection.Bucket(self.bucket_name)
         return self._bucket
-
-    @property
-    def entries(self):
-        """
-        Get the locally cached files for the bucket.
-        """
-        if self.preload_metadata and not self._entries:
-            self._entries = {
-                self._decode_name(entry.key): entry
-                for entry in self.bucket.objects.filter(Prefix=self.location)
-            }
-        return self._entries
 
     def _get_access_keys(self):
         """
@@ -414,57 +379,6 @@ class S3Boto3Storage(Storage):
         """
         security_token = self.security_token or lookup_env(S3Boto3Storage.security_token_names)
         return security_token
-
-    def _get_or_create_bucket(self, name):
-        """
-        Retrieves a bucket if it exists, otherwise creates it.
-        """
-        bucket = self.connection.Bucket(name)
-        if self.auto_create_bucket:
-            try:
-                # Directly call head_bucket instead of bucket.load() because head_bucket()
-                # fails on wrong region, while bucket.load() does not.
-                bucket.meta.client.head_bucket(Bucket=name)
-            except ClientError as err:
-                if err.response['ResponseMetadata']['HTTPStatusCode'] == 301:
-                    raise ImproperlyConfigured("Bucket %s exists, but in a different "
-                                               "region than we are connecting to. Set "
-                                               "the region to connect to by setting "
-                                               "AWS_S3_REGION_NAME to the correct region." % name)
-
-                elif err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
-                    # Notes: When using the us-east-1 Standard endpoint, you can create
-                    # buckets in other regions. The same is not true when hitting region specific
-                    # endpoints. However, when you create the bucket not in the same region, the
-                    # connection will fail all future requests to the Bucket after the creation
-                    # (301 Moved Permanently).
-                    #
-                    # For simplicity, we enforce in S3Boto3Storage that any auto-created
-                    # bucket must match the region that the connection is for.
-                    #
-                    # Also note that Amazon specifically disallows "us-east-1" when passing bucket
-                    # region names; LocationConstraint *must* be blank to create in US Standard.
-                    if not hasattr(django_settings, 'AWS_BUCKET_ACL'):
-                        warnings.warn(
-                            "The default behavior of S3Boto3Storage is insecure and will change "
-                            "in django-storages 1.10. By default new buckets are saved with an ACL of "
-                            "'public-read' (globally publicly readable). Version 1.10 will default to "
-                            "Amazon's default of the bucket owner. To opt into this behavior this warning "
-                            "set AWS_BUCKET_ACL = None, otherwise to silence this warning explicitly set "
-                            "AWS_BUCKET_ACL."
-                        )
-                    if self.bucket_acl:
-                        bucket_params = {'ACL': self.bucket_acl}
-                    else:
-                        bucket_params = {}
-                    region_name = self.connection.meta.client.meta.region_name
-                    if region_name != 'us-east-1':
-                        bucket_params['CreateBucketConfiguration'] = {
-                            'LocationConstraint': region_name}
-                    bucket.create(**bucket_params)
-                else:
-                    raise
-        return bucket
 
     def _clean_name(self, name):
         """
@@ -492,12 +406,6 @@ class S3Boto3Storage(Storage):
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
 
-    def _encode_name(self, name):
-        return smart_text(name, encoding=self.file_name_charset)
-
-    def _decode_name(self, name):
-        return force_text(name, encoding=self.file_name_charset)
-
     def _compress_content(self, content):
         """Gzip a given string content."""
         content.seek(0)
@@ -523,7 +431,7 @@ class S3Boto3Storage(Storage):
             f = S3Boto3StorageFile(name, mode, self)
         except ClientError as err:
             if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
-                raise IOError('File does not exist: %s' % name)
+                raise FileNotFoundError('File does not exist: %s' % name)
             raise  # Let it bubble up if it was some other error
         return f
 
@@ -538,26 +446,17 @@ class S3Boto3Storage(Storage):
             content = self._compress_content(content)
             params['ContentEncoding'] = 'gzip'
 
-        encoded_name = self._encode_name(name)
-        obj = self.bucket.Object(encoded_name)
-        if self.preload_metadata:
-            self._entries[encoded_name] = obj
-
+        obj = self.bucket.Object(name)
         content.seek(0, os.SEEK_SET)
         obj.upload_fileobj(content, ExtraArgs=params)
         return cleaned_name
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
-        self.bucket.Object(self._encode_name(name)).delete()
-
-        if name in self._entries:
-            del self._entries[name]
+        self.bucket.Object(name).delete()
 
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
-        if self.entries:
-            return name in self.entries
         try:
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
@@ -584,22 +483,10 @@ class S3Boto3Storage(Storage):
 
     def size(self, name):
         name = self._normalize_name(self._clean_name(name))
-        if self.entries:
-            entry = self.entries.get(name)
-            if entry:
-                return entry.size if hasattr(entry, 'size') else entry.content_length
-            return 0
-        return self.bucket.Object(self._encode_name(name)).content_length
+        return self.bucket.Object(name).content_length
 
     def _get_write_parameters(self, name, content=None):
         params = {}
-
-        if self.encryption:
-            params['ServerSideEncryption'] = 'AES256'
-        if self.reduced_redundancy:
-            params['StorageClass'] = 'REDUCED_REDUNDANCY'
-        if self.default_acl:
-            params['ACL'] = self.default_acl
 
         _type, encoding = mimetypes.guess_type(name)
         content_type = getattr(content, 'content_type', None)
@@ -629,11 +516,7 @@ class S3Boto3Storage(Storage):
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
         name = self._normalize_name(self._clean_name(name))
-        entry = self.entries.get(name)
-        # only call self.bucket.Object() if the key is not found
-        # in the preloaded metadata.
-        if entry is None:
-            entry = self.bucket.Object(self._encode_name(name))
+        entry = self.bucket.Object(name)
         if setting('USE_TZ'):
             # boto3 returns TZ aware timestamps
             return entry.last_modified
@@ -654,8 +537,8 @@ class S3Boto3Storage(Storage):
         # passed in that only work with signed URLs, e.g. response header params.
         # The code attempts to strip all query parameters that match names of known parameters
         # from v2 and v4 signatures, regardless of the actual signature version used.
-        split_url = urlparse.urlsplit(url)
-        qs = urlparse.parse_qsl(split_url.query, keep_blank_values=True)
+        split_url = urlsplit(url)
+        qs = parse_qsl(split_url.query, keep_blank_values=True)
         blacklist = {
             'x-amz-algorithm', 'x-amz-credential', 'x-amz-date',
             'x-amz-expires', 'x-amz-signedheaders', 'x-amz-signature',
@@ -668,15 +551,26 @@ class S3Boto3Storage(Storage):
         split_url = split_url._replace(query="&".join(joined_qs))
         return split_url.geturl()
 
-    def url(self, name, parameters=None, expire=None):
+    def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
         if expire is None:
             expire = self.querystring_expire
 
+        if self.custom_domain:
+            url = "{}//{}/{}".format(
+                self.url_protocol, self.custom_domain, filepath_to_uri(name))
+
+            if self.querystring_auth and self.cloudfront_signer:
+                expiration = datetime.utcnow() + timedelta(seconds=expire)
+
+                return self.cloudfront_signer.generate_presigned_url(url, date_less_than=expiration)
+
+            return url
+
         params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
-        params['Key'] = self._encode_name(name)
+        params['Key'] = name
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire, HttpMethod=http_method)
 
@@ -701,4 +595,4 @@ class S3Boto3Storage(Storage):
         name = self._clean_name(name)
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
-        return super(S3Boto3Storage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)

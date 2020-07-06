@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core.exceptions import (
     ImproperlyConfigured, SuspiciousFileOperation,
 )
-from django.utils.encoding import force_text
 
 
 def setting(name, default=None):
@@ -54,9 +53,9 @@ def safe_join(base, *paths):
     Paths outside the base path indicate a possible security
     sensitive operation.
     """
-    base_path = force_text(base)
+    base_path = base
     base_path = base_path.rstrip('/')
-    paths = [force_text(p) for p in paths]
+    paths = [p for p in paths]
 
     final_path = base_path + '/'
     for path in paths:

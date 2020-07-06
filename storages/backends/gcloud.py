@@ -1,15 +1,14 @@
 import mimetypes
-import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, smart_str
+from django.utils.encoding import force_bytes
 
+from storages.base import BaseStorage
 from storages.utils import (
     check_location, clean_name, get_available_overwrite_name, safe_join,
     setting,
@@ -18,7 +17,7 @@ from storages.utils import (
 try:
     from google.cloud.storage import Blob, Client
     from google.cloud.storage.blob import _quote
-    from google.cloud.exceptions import Conflict, NotFound
+    from google.cloud.exceptions import NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
@@ -34,7 +33,7 @@ class GoogleCloudFile(File):
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
-                chunk_size=setting('GS_BLOB_CHUNK_SIZE'))
+                chunk_size=storage.blob_chunk_size)
         self._file = None
         self._is_dirty = False
 
@@ -67,13 +66,13 @@ class GoogleCloudFile(File):
         if num_bytes is None:
             num_bytes = -1
 
-        return super(GoogleCloudFile, self).read(num_bytes)
+        return super().read(num_bytes)
 
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super(GoogleCloudFile, self).write(force_bytes(content))
+        return super().write(force_bytes(content))
 
     def close(self):
         if self._file is not None:
@@ -86,45 +85,33 @@ class GoogleCloudFile(File):
 
 
 @deconstructible
-class GoogleCloudStorage(Storage):
-    project_id = setting('GS_PROJECT_ID')
-    credentials = setting('GS_CREDENTIALS')
-    bucket_name = setting('GS_BUCKET_NAME')
-    custom_endpoint = setting('GS_CUSTOM_ENDPOINT', None)
-    location = setting('GS_LOCATION', '')
-    auto_create_bucket = setting('GS_AUTO_CREATE_BUCKET', False)
-    auto_create_acl = setting('GS_AUTO_CREATE_ACL', 'projectPrivate')
-    default_acl = setting('GS_DEFAULT_ACL')
-
-    expiration = setting('GS_EXPIRATION', timedelta(seconds=86400))
-
-    file_name_charset = setting('GS_FILE_NAME_CHARSET', 'utf-8')
-    file_overwrite = setting('GS_FILE_OVERWRITE', True)
-    cache_control = setting('GS_CACHE_CONTROL')
-    # The max amount of memory a returned file can take up before being
-    # rolled over into a temporary file on disk. Default is 0: Do not roll over.
-    max_memory_size = setting('GS_MAX_MEMORY_SIZE', 0)
-
+class GoogleCloudStorage(BaseStorage):
     def __init__(self, **settings):
-        # check if some of the settings we've provided as class attributes
-        # need to be overwritten with values passed in here
-        for name, value in settings.items():
-            if hasattr(self, name):
-                setattr(self, name, value)
+        super().__init__(**settings)
 
         check_location(self)
 
-        if self.auto_create_bucket:
-            warnings.warn(
-                "Automatic bucket creation will be removed in version 1.10. It encourages "
-                "using overly broad credentials with this library. Either create it before "
-                "manually or use one of a myriad of automatic configuration management tools. "
-                "Unset GS_AUTO_CREATE_BUCKET (it defaults to False) to silence this warning.",
-                DeprecationWarning,
-            )
-
         self._bucket = None
         self._client = None
+
+    def get_default_settings(self):
+        return {
+            "project_id": setting('GS_PROJECT_ID'),
+            "credentials": setting('GS_CREDENTIALS'),
+            "bucket_name": setting('GS_BUCKET_NAME'),
+            "custom_endpoint": setting('GS_CUSTOM_ENDPOINT', None),
+            "location": setting('GS_LOCATION', ''),
+            "auto_create_acl": setting('GS_AUTO_CREATE_ACL', 'projectPrivate'),
+            "default_acl": setting('GS_DEFAULT_ACL'),
+            "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
+            "file_overwrite": setting('GS_FILE_OVERWRITE', True),
+            "cache_control": setting('GS_CACHE_CONTROL'),
+            # The max amount of memory a returned file can take up before being
+            # rolled over into a temporary file on disk. Default is 0: Do not
+            # roll over.
+            "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
+            "blob_chunk_size": setting('GS_BLOB_CHUNK_SIZE'),
+        }
 
     @property
     def client(self):
@@ -138,24 +125,8 @@ class GoogleCloudStorage(Storage):
     @property
     def bucket(self):
         if self._bucket is None:
-            self._bucket = self._get_or_create_bucket(self.bucket_name)
+            self._bucket = self.client.bucket(self.bucket_name)
         return self._bucket
-
-    def _get_or_create_bucket(self, name):
-        """
-        Returns bucket. If auto_create_bucket is True, creates bucket if it
-        doesn't exist.
-        """
-        bucket = self.client.bucket(name)
-        if self.auto_create_bucket:
-            try:
-                new_bucket = self.client.create_bucket(name)
-                new_bucket.acl.save_predefined(self.auto_create_acl)
-                return new_bucket
-            except Conflict:
-                # Bucket already exists
-                pass
-        return bucket
 
     def _normalize_name(self, name):
         """
@@ -170,14 +141,11 @@ class GoogleCloudStorage(Storage):
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
 
-    def _encode_name(self, name):
-        return smart_str(name, encoding=self.file_name_charset)
-
     def _open(self, name, mode='rb'):
         name = self._normalize_name(clean_name(name))
         file_object = GoogleCloudFile(name, mode, self)
         if not file_object.blob:
-            raise IOError(u'File does not exist: %s' % name)
+            raise FileNotFoundError('File does not exist: %s' % name)
         return file_object
 
     def _save(self, name, content):
@@ -185,8 +153,7 @@ class GoogleCloudStorage(Storage):
         name = self._normalize_name(cleaned_name)
 
         content.name = cleaned_name
-        encoded_name = self._encode_name(name)
-        file = GoogleCloudFile(encoded_name, 'rw', self)
+        file = GoogleCloudFile(name, 'rw', self)
         file.blob.cache_control = self.cache_control
         file.blob.upload_from_file(
             content, rewind=True, size=content.size,
@@ -195,7 +162,7 @@ class GoogleCloudStorage(Storage):
 
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
-        self.bucket.delete_blob(self._encode_name(name))
+        self.bucket.delete_blob(name)
 
     def exists(self, name):
         if not name:  # root element aka the bucket
@@ -206,7 +173,7 @@ class GoogleCloudStorage(Storage):
                 return False
 
         name = self._normalize_name(clean_name(name))
-        return bool(self.bucket.get_blob(self._encode_name(name)))
+        return bool(self.bucket.get_blob(name))
 
     def listdir(self, name):
         name = self._normalize_name(clean_name(name))
@@ -215,7 +182,7 @@ class GoogleCloudStorage(Storage):
         if name and not name.endswith('/'):
             name += '/'
 
-        iterator = self.bucket.list_blobs(prefix=self._encode_name(name), delimiter='/')
+        iterator = self.bucket.list_blobs(prefix=name, delimiter='/')
         blobs = list(iterator)
         prefixes = iterator.prefixes
 
@@ -236,23 +203,23 @@ class GoogleCloudStorage(Storage):
         blob = self.bucket.get_blob(name)
 
         if blob is None:
-            raise NotFound(u'File does not exist: {}'.format(name))
+            raise NotFound('File does not exist: {}'.format(name))
 
         return blob
 
     def size(self, name):
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         return blob.size
 
     def modified_time(self, name):
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         return timezone.make_naive(blob.updated)
 
     def get_modified_time(self, name):
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         updated = blob.updated
         return updated if setting('USE_TZ') else timezone.make_naive(updated)
 
@@ -262,7 +229,7 @@ class GoogleCloudStorage(Storage):
         The datetime will be timezone-aware if USE_TZ=True.
         """
         name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(self._encode_name(name))
+        blob = self._get_blob(name)
         created = blob.time_created
         return created if setting('USE_TZ') else timezone.make_naive(created)
 
@@ -273,7 +240,7 @@ class GoogleCloudStorage(Storage):
         for many use cases.
         """
         name = self._normalize_name(clean_name(name))
-        blob = self.bucket.blob(self._encode_name(name))
+        blob = self.bucket.blob(name)
 
         if not self.custom_endpoint and self.default_acl == 'publicRead':
             return blob.public_url
@@ -294,4 +261,4 @@ class GoogleCloudStorage(Storage):
         name = clean_name(name)
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
-        return super(GoogleCloudStorage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)
