@@ -671,7 +671,6 @@ class S3Boto3Storage(Storage):
     def url(self, name, parameters=None, expire=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
-
         if expire is None:
             expire = self.querystring_expire
 
@@ -679,7 +678,7 @@ class S3Boto3Storage(Storage):
         params['Bucket'] = self.bucket.name
         params['Key'] = self._encode_name(name)
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
-                                                             ExpiresIn=expire)
+                                                             ExpiresIn=expire, HttpMethod=http_method)
 
         if self.custom_domain:
             # Key parameter can't be empty. Use "/" and remove it later.
