@@ -3,6 +3,8 @@ language: python
 
 cache: pip
 
+dist: bionic
+
 matrix:
   fast_finish: true
   include:
