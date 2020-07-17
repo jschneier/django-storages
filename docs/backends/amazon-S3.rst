@@ -20,7 +20,7 @@ To upload your media files to S3 set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
-To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
+To allow ``django-admin.py collectstatic`` to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
