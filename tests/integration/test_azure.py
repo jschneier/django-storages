@@ -6,9 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from tests.integration.models import SimpleFileModel
 
 from storages.backends import azure_storage
+from tests.integration.models import SimpleFileModel
 
 
 class AzureStorageTest(TestCase):

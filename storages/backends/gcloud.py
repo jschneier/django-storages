@@ -15,9 +15,9 @@ from storages.utils import (
 )
 
 try:
+    from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob, Client
     from google.cloud.storage.blob import _quote
-    from google.cloud.exceptions import NotFound
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")

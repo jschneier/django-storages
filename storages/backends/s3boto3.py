@@ -36,7 +36,7 @@ def _use_cryptography_signer():
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import padding
     from cryptography.hazmat.primitives.serialization import (
-        load_pem_private_key
+        load_pem_private_key,
     )
 
     def _cloud_front_signer_from_pem(key_id, pem):
