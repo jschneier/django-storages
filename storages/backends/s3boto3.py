@@ -464,7 +464,7 @@ class S3Boto3Storage(BaseStorage):
                 params['ContentEncoding'] = 'gzip'
 
             obj = self.bucket.Object(name)
-            content.seek(0, os.SEEK_SET)
+            content_autoclose.seek(0, os.SEEK_SET)
             obj.upload_fileobj(content, ExtraArgs=params)
             return cleaned_name
 
