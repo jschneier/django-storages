@@ -465,7 +465,7 @@ class S3Boto3Storage(BaseStorage):
 
             obj = self.bucket.Object(name)
             content_autoclose.seek(0, os.SEEK_SET)
-            obj.upload_fileobj(content, ExtraArgs=params)
+            obj.upload_fileobj(content_autoclose, ExtraArgs=params)
             return cleaned_name
 
     def delete(self, name):
