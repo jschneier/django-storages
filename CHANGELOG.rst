@@ -4,6 +4,8 @@ django-storages CHANGELOG
 UNRELEASED
 **********
 
+- Add support for Django 3.1.
+
 **Breaking**
 
 - Removed support for end-of-life Python 2.7 and 3.4.
