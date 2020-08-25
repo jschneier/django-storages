@@ -56,7 +56,7 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         settings.AWS_S3_SESSION_PROFILE = "test_profile"
         with mock.patch('boto3.Session') as mock_session:
             storage = s3boto3.S3Boto3Storage()
-            connection = storage.connection
+            _ = storage.connection
             mock_session.assert_called_once_with(profile_name="test_profile")
 
     def test_pickle_with_bucket(self):
