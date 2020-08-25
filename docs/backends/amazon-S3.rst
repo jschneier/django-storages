@@ -32,7 +32,14 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
 .. note::
 
-      If ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are not set, boto3 internally looks up IAM credentials.
+      If ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``, and ``AWS_S3_SESSION_PROFILE`` are not set, boto3 internally looks up IAM credentials.
+
+``AWS_S3_SESSION_PROFILE``
+    The AWS profile to use instead of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
+
+.. note::
+      If this is set, then ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are ignored
+
 
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.
@@ -98,8 +105,8 @@ To allow ``django-admin.py`` collectstatic to automatically put your static file
 
 ``AWS_S3_SIGNATURE_VERSION`` (optional)
 
-  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned 
-  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned 
+  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned
+  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned
   urls, explicitly set this to ``s3v4``.
 
   Set this to use an alternate version such as ``s3``. Note that only certain regions

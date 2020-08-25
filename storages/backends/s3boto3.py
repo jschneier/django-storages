@@ -338,18 +338,29 @@ class S3Boto3Storage(BaseStorage):
     def connection(self):
         connection = getattr(self._connections, 'connection', None)
         if connection is None:
-            session = boto3.session.Session()
-            self._connections.connection = session.resource(
-                's3',
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                aws_session_token=self.security_token,
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=self.config,
-                verify=self.verify,
-            )
+            if setting('AWS_S3_SESSION_PROFILE'):
+                session = boto3.Session(profile_name=setting('AWS_S3_SESSION_PROFILE'))
+                self._connections.connection = session.resource(
+                    's3',
+                    region_name=self.region_name,
+                    use_ssl=self.use_ssl,
+                    endpoint_url=self.endpoint_url,
+                    config=self.config,
+                    verify=self.verify,
+                )
+            else:
+                session = boto3.session.Session()
+                self._connections.connection = session.resource(
+                    's3',
+                    aws_access_key_id=self.access_key,
+                    aws_secret_access_key=self.secret_key,
+                    aws_session_token=self.security_token,
+                    region_name=self.region_name,
+                    use_ssl=self.use_ssl,
+                    endpoint_url=self.endpoint_url,
+                    config=self.config,
+                    verify=self.verify,
+                )
         return self._connections.connection
 
     @property
