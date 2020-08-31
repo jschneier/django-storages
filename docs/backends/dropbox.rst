@@ -27,8 +27,8 @@ To use DropBoxStorage set::
    The default value matches the SDK at the time of this writing.
 
 ``DROPBOX_WRITE_MODE`` (optional, default ``'add'``)
-   Sets the Dropbox WriteMode strategy. Read more in the `offical docs`_.
+   Sets the Dropbox WriteMode strategy. Read more in the `official docs`_.
 
 .. _`tutorial`: https://www.dropbox.com/developers/documentation/python#tutorial
 .. _`Dropbox SDK for Python`: https://www.dropbox.com/developers/documentation/python#tutorial
-.. _`offical docs`: https://dropbox-sdk-python.readthedocs.io/en/latest/api/files.html#dropbox.files.WriteMode
+.. _`official docs`: https://dropbox-sdk-python.readthedocs.io/en/latest/api/files.html#dropbox.files.WriteMode

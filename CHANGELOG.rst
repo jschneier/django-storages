@@ -18,7 +18,7 @@ S3
 --
 
 - **Breaking**: Automatic bucket creation has been removed. Doing so encourages using overly broad credentials.
-  As a result support for the corresponding ``AWS_BUCKET_ACL`` and ``AWS_AUTO_CREATE_BUCKET`` settings have been removed. (`#636`_)
+  As a result, support for the corresponding ``AWS_BUCKET_ACL`` and ``AWS_AUTO_CREATE_BUCKET`` settings have been removed. (`#636`_)
 - **Breaking**: Support for the undocumented setting ``AWS_PRELOAD_METADATA`` has been removed (`#636`_)
 - **Breaking**: The constructor kwarg ``acl`` is no longer accepted. Instead, use the ``ACL`` key in setting ``AWS_S3_OBJECT_PARAMETERS``
   (`#636`_)
@@ -27,7 +27,7 @@ S3
 - **Breaking**: Support for setting ``AWS_REDUCED_REDUNDANCY`` has been removed. Replace with ``StorageClass=REDUCED_REDUNDANCY``
   in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
 - **Breaking**: Support for setting ``AWS_S3_ENCRYPTION`` has been removed. Replace with ``ServerSideEncryption=AES256`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
-- **Breaking**: Support for setting ``AWS_DEFAULT_ACL`` has been removed. Replace with ```ACL`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- **Breaking**: Support for setting ``AWS_DEFAULT_ACL`` has been removed. Replace with ``ACL`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
 - Add ``http_method`` parameter to ``.url`` method (`#854`_)
 - Add support for signing Cloudfront URLs to the ``.url`` method. You must set ``AWS_CLOUDFRONT_KEY``,
   ``AWS_CLOUDFRONT_KEY_ID`` and install either `cryptography`_ or `rsa`_ (`#456`_, `#587`_). See the docs for more info.
