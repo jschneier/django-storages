@@ -45,7 +45,7 @@ Set the default storage and bucket name in your settings.py file:
     DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
     GS_BUCKET_NAME = 'YOUR_BUCKET_NAME_GOES_HERE'
 
-To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
+To allow ``django-admin`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
