@@ -17,18 +17,18 @@ To use DropBoxStorage set::
     DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
 
 ``DROPBOX_OAUTH2_TOKEN``
-    Your Dropbox token. You can obtain one by following the instructions in the `tutorial`_.
+   Your Dropbox token. You can obtain one by following the instructions in the `tutorial`_.
 
-``DROPBOX_ROOT_PATH`` (optional)
-    Allow to jail your storage to a defined directory.
+``DROPBOX_ROOT_PATH`` (optional, default ``'/'``)
+   Path which will prefix all uploaded files. Must begin with a ``/``.
 
-``DROPBOX_TIMEOUT`` (optional)
-      Timeout in seconds for making requests to the API. If ``None``, the client will wait forever.
-      The default is ``100`` seconds which is the current default in the official SDK.
+``DROPBOX_TIMEOUT`` (optional, default ``100``)
+   Timeout in seconds for requests to the API. If ``None``, the client will wait forever.
+   The default value matches the SDK at the time of this writing.
 
-``DROPBOX_WRITE_MODE`` (optional)
-      Allow to set Dropbox WriteMode strategy.
-      Default is ``add``. Read more at https://dropbox-sdk-python.readthedocs.io/en/latest/api/files.html#dropbox.files.CommitInfo.mode
+``DROPBOX_WRITE_MODE`` (optional, default ``'add'``)
+   Sets the Dropbox WriteMode strategy. Read more in the `official docs`_.
 
 .. _`tutorial`: https://www.dropbox.com/developers/documentation/python#tutorial
 .. _`Dropbox SDK for Python`: https://www.dropbox.com/developers/documentation/python#tutorial
+.. _`official docs`: https://dropbox-sdk-python.readthedocs.io/en/latest/api/files.html#dropbox.files.WriteMode

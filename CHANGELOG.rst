@@ -1,42 +1,80 @@
 django-storages CHANGELOG
 =========================
 
-UNRELEASED
-**********
+1.10 (2020-08-30)
+*****************
 
-- Add support for Django 3.1.
+General
+-------
 
-**Breaking**
+- **Breaking**: Removed support for end-of-life Python 2.7 and 3.4 (`#709`_)
+- **Breaking**: Removed support for end-of-life Django 1.11 (`#891`_)
+- Add support for Django 3.1 (`#916`_)
+- Introduce a new ``BaseStorage`` class with a ``get_default_settings`` method and use
+  it in ``S3Boto3Storage``, ``AzureStorage``, ``GoogleCloudStorage``, and ``SFTPStorage``. These backends
+  now calculate their settings when instantiated, not imported. (`#524`_, `#852`_)
 
-- Removed support for end-of-life Python 2.7 and 3.4.
+S3
+--
 
-- Removed support for end-of-life Django 1.11.
+- **Breaking**: Automatic bucket creation has been removed. Doing so encourages using overly broad credentials.
+  As a result, support for the corresponding ``AWS_BUCKET_ACL`` and ``AWS_AUTO_CREATE_BUCKET`` settings have been removed. (`#636`_)
+- **Breaking**: Support for the undocumented setting ``AWS_PRELOAD_METADATA`` has been removed (`#636`_)
+- **Breaking**: The constructor kwarg ``acl`` is no longer accepted. Instead, use the ``ACL`` key in setting ``AWS_S3_OBJECT_PARAMETERS``
+  (`#636`_)
+- **Breaking**: The constructor kwarg ``bucket`` is no longer accepted. Instead, use ``bucket_name`` or the ``AWS_STORAGE_BUCKET_NAME``
+  setting (`#636`_)
+- **Breaking**: Support for setting ``AWS_REDUCED_REDUNDANCY`` has been removed. Replace with ``StorageClass=REDUCED_REDUNDANCY``
+  in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- **Breaking**: Support for setting ``AWS_S3_ENCRYPTION`` has been removed. Replace with ``ServerSideEncryption=AES256`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- **Breaking**: Support for setting ``AWS_DEFAULT_ACL`` has been removed. Replace with ``ACL`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- Add ``http_method`` parameter to ``.url`` method (`#854`_)
+- Add support for signing Cloudfront URLs to the ``.url`` method. You must set ``AWS_CLOUDFRONT_KEY``,
+  ``AWS_CLOUDFRONT_KEY_ID`` and install either `cryptography`_ or `rsa`_ (`#456`_, `#587`_). See the docs for more info.
+  URLs will only be signed if ``AWS_QUERYSTRING_AUTH`` is set to ``True`` (`#885`_)
 
-- The minimum supported version of boto3 is now 1.4.4.
+Google Cloud
+------------
 
-- The ``S3Boto3Storage`` backend no longer accepts the argument ``acl``. Use
-  the ``ACL`` key in ``AWS_S3_OBJECT_PARAMETERS`` instead.
+- **Breaking**: Automatic bucket creation has been removed. Doing so encourages using overly broad credentials.
+  As a result, support for the corresponding ``GS_AUTO_CREATE_BUCKET`` and ``GS_AUTO_CREATE_ACL`` settings have been removed. (`#894`_)
 
-- The ``S3Boto3Storage`` backend no longer accepts the argument ``bucket``. Use
-  ``bucket_name`` or the setting ``AWS_STORAGE_BUCKET_NAME`` instead.
+Dropbox
+-------
 
-- The ``S3Boto3Storage`` backend no longer automatically creates the bucket.
-  Doing so had encouraged using overly broad credentials. As a result, the
-  ``AWS_BUCKET_ACL`` setting has been removed.
+- Add ``DROPBOX_WRITE_MODE`` setting to control e.g. overwriting behavior. Check the docs
+  for more info (`#873`_, `#138`_)
 
-- The ``S3Boto3Storage`` backend no longer not longer supports the settings
-  ``AWS_DEFAULT_ACL``, ``AWS_REDUCED_REDUNDANCY`` and ``AWS_S3_ENCRYPTION``.
-  They have been removed in favor of the ``AWS_S3_OBJECT_PARAMETERS`` setting.
-  Using ``AWS_S3_OBJECT_PARAMETERS`` allows for full control over these S3
-  parameters.
+SFTP
+----
 
-- The ``S3Boto3Storage`` backend no longer supports the undocumented
-  ``AWS_PRELOAD_METADATA`` setting.
+- Remove exception swallowing during ssh connection (`#835`_, `#838`_)
 
-- The ``GoogleCloudStorage`` backend no longer automatically creates the
-  bucket. Doing so had encouraged using overly broad credentials. As a result,
-  the ``GS_AUTO_CREATE_BUCKET`` setting has been removed.
+FTP
+---
 
+- Add ``FTP_STORAGE_ENCODING`` setting to set the filesystem encoding  (`#803`_)
+- Support multiple nested paths for files (`#886`_)
+
+.. _cryptography: https://cryptography.io
+.. _rsa: https://stuvel.eu/rsa
+.. _#885: https://github.com/jschneier/django-storages/pull/885
+.. _#894: https://github.com/jschneier/django-storages/pull/894
+.. _#636: https://github.com/jschneier/django-storages/pull/636
+.. _#709: https://github.com/jschneier/django-storages/pull/709
+.. _#891: https://github.com/jschneier/django-storages/pull/891
+.. _#916: https://github.com/jschneier/django-storages/pull/916
+.. _#852: https://github.com/jschneier/django-storages/pull/852
+.. _#873: https://github.com/jschneier/django-storages/pull/873
+.. _#854: https://github.com/jschneier/django-storages/pull/854
+.. _#138: https://github.com/jschneier/django-storages/issues/138
+.. _#524: https://github.com/jschneier/django-storages/pull/524
+.. _#835: https://github.com/jschneier/django-storages/issues/835
+.. _#838: https://github.com/jschneier/django-storages/pull/838
+.. _#803: https://github.com/jschneier/django-storages/pull/803
+.. _#456: https://github.com/jschneier/django-storages/issues/456
+.. _#587: https://github.com/jschneier/django-storages/pull/587
+.. _#886: https://github.com/jschneier/django-storages/pull/886
 
 1.9.1 (2020-02-03)
 ******************
