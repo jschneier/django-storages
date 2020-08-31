@@ -296,7 +296,6 @@ class S3Boto3Storage(BaseStorage):
             "file_overwrite": setting('AWS_S3_FILE_OVERWRITE', True),
             "object_parameters": setting('AWS_S3_OBJECT_PARAMETERS', {}),
             "bucket_name": setting('AWS_STORAGE_BUCKET_NAME'),
-            "bucket_acl": setting('AWS_BUCKET_ACL', 'public-read'),
             "querystring_auth": setting('AWS_QUERYSTRING_AUTH', True),
             "querystring_expire": setting('AWS_QUERYSTRING_EXPIRE', 3600),
             "signature_version": setting('AWS_S3_SIGNATURE_VERSION'),
