@@ -101,7 +101,6 @@ class GoogleCloudStorage(BaseStorage):
             "bucket_name": setting('GS_BUCKET_NAME'),
             "custom_endpoint": setting('GS_CUSTOM_ENDPOINT', None),
             "location": setting('GS_LOCATION', ''),
-            "auto_create_acl": setting('GS_AUTO_CREATE_ACL', 'projectPrivate'),
             "default_acl": setting('GS_DEFAULT_ACL'),
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
             "file_overwrite": setting('GS_FILE_OVERWRITE', True),

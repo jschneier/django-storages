@@ -96,18 +96,6 @@ back to the default inferred from the environment
         "path/to/credentials.json"
     )
 
-``GS_AUTO_CREATE_ACL`` (optional, default is ``projectPrivate``)
-
-ACL used when creating a new bucket, from the
-`list of predefined ACLs <https://cloud.google.com/storage/docs/access-control/lists#predefined-acl>`_.
-(A "JSON API" ACL is preferred but an "XML API/gsutil" ACL will be
-translated.)
-
-Note that the ACL you select must still give the service account
-running the GCE backend to have OWNER permission on the bucket. If
-you're using the default service account, this means you're restricted
-to the ``projectPrivate`` ACL.
-
 ``GS_DEFAULT_ACL`` (optional, default is None)
 
 ACL used when creating a new blob, from the
