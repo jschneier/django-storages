@@ -163,5 +163,5 @@ The following settings are available:
 
 ``AZURE_CACHE_CONTROL``
 
-    A variable to set the Cache-Control HTTP response header. E.g. 
+    A variable to set the Cache-Control HTTP response header. E.g.
     ``AZURE_CACHE_CONTROL = "public,max-age=31536000,immutable"``

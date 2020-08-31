@@ -15,9 +15,9 @@ Use pip to install from PyPI::
 Authentication
 --------------
 By default, this library will try to use the credentials associated with the
-current Google Cloud infrastrcture/environment for authentication. 
+current Google Cloud infrastrcture/environment for authentication.
 
-In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, you so you will need to create a dedicated service account: 
+In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, you so you will need to create a dedicated service account:
 
 1. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 
@@ -114,7 +114,7 @@ a signed (expiring) url.
    the bucket to public or set the file permissions directly in GCS to public.
 
 .. note::
-    When using this setting, make sure you have ``fine-grained`` access control enabled on your bucket, 
+    When using this setting, make sure you have ``fine-grained`` access control enabled on your bucket,
     as opposed to ``Uniform`` access control, or else, file  uploads will return with HTTP 400.
 
 ``GS_FILE_CHARSET`` (optional)
