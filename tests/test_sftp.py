@@ -13,7 +13,7 @@ from storages.backends import sftpstorage
 
 class SFTPStorageTest(TestCase):
     def setUp(self):
-        self.storage = sftpstorage.SFTPStorage('foo')
+        self.storage = sftpstorage.SFTPStorage(host='foo')
 
     def test_init(self):
         pass
@@ -178,7 +178,7 @@ class SFTPStorageTest(TestCase):
 
 class SFTPStorageFileTest(TestCase):
     def setUp(self):
-        self.storage = sftpstorage.SFTPStorage('foo')
+        self.storage = sftpstorage.SFTPStorage(host='foo')
         self.file = sftpstorage.SFTPStorageFile('bar', self.storage, 'wb')
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
