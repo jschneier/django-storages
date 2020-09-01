@@ -98,8 +98,8 @@ To allow ``django-admin collectstatic`` to automatically put your static files i
 
 ``AWS_S3_SIGNATURE_VERSION`` (optional)
 
-  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned 
-  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned 
+  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned
+  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned
   urls, explicitly set this to ``s3v4``.
 
   Set this to use an alternate version such as ``s3``. Note that only certain regions
