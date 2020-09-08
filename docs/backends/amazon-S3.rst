@@ -164,10 +164,6 @@ If you need to use multiple storages that are served via CloudFront, pass the
 CloudFront Signed Urls
 ^^^^^^^^^^^^^^^^^^^^^^
 If you want django-storages to generate Signed Cloudfront Urls, you can do so by following these steps:
-
-- As this feature isn't officially released as of 23/06/2020 you must install the package via source::
-
-        pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
         
 - modify `settings.py` to include::
 
