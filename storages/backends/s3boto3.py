@@ -75,7 +75,6 @@ else:
 
 @deconstructible
 class S3Boto3StorageFile(File):
-
     """
     The default file object used by the S3Boto3Storage backend.
 
@@ -92,7 +91,6 @@ class S3Boto3StorageFile(File):
     order to properly write the file to S3. Be sure to close the file
     in your application.
     """
-    buffer_size = setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
 
     def __init__(self, name, mode, storage, buffer_size=None):
         if 'r' in mode and 'w' in mode:
@@ -113,8 +111,7 @@ class S3Boto3StorageFile(File):
         # Amazon allows up to 10,000 parts.  The default supports uploads
         # up to roughly 50 GB.  Increase the part size to accommodate
         # for files larger than this.
-        if buffer_size is not None:
-            self.buffer_size = buffer_size
+        self.buffer_size = buffer_size or setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
         self._write_counter = 0
 
     @property
