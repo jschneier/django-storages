@@ -332,6 +332,7 @@ Model
 -----
 
 An object without a file has limited functionality::
+
     from django.db import models
 
     class MyModel(models.Model):
