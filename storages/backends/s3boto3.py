@@ -290,9 +290,19 @@ class S3Boto3Storage(BaseStorage):
         else:
             cloudfront_signer = None
 
+        s3_access_key_id = setting('AWS_S3_ACCESS_KEY_ID')
+        s3_secret_access_key = setting('AWS_S3_SECRET_ACCESS_KEY')
+        s3_session_profile = setting('AWS_S3_SESSION_PROFILE')
+        if (s3_access_key_id or s3_secret_access_key) and s3_session_profile:
+            raise ImproperlyConfigured(
+                'AWS_S3_SESSION_PROFILE should not be provided with '
+                'AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY'
+            )
+
         return {
             "access_key": setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
             "secret_key": setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
+            "session_profile": setting('AWS_S3_SESSION_PROFILE'),
             "file_overwrite": setting('AWS_S3_FILE_OVERWRITE', True),
             "object_parameters": setting('AWS_S3_OBJECT_PARAMETERS', {}),
             "bucket_name": setting('AWS_STORAGE_BUCKET_NAME'),
@@ -338,8 +348,8 @@ class S3Boto3Storage(BaseStorage):
     def connection(self):
         connection = getattr(self._connections, 'connection', None)
         if connection is None:
-            if setting('AWS_S3_SESSION_PROFILE'):
-                session = boto3.Session(profile_name=setting('AWS_S3_SESSION_PROFILE'))
+            if self.session_profile:
+                session = boto3.Session(profile_name=self.session_profile)
                 self._connections.connection = session.resource(
                     's3',
                     region_name=self.region_name,
