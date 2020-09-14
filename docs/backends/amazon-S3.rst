@@ -44,6 +44,11 @@ To allow ``django-admin collectstatic`` to automatically put your static files i
   To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_.
   Some of the included ones are ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
+``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will inherit the bucket's permission)
+
+   Use this to set an ACL on your file such as ``public-read``. By default the file will inherit the bucket's ACL.
+   If the ``ACL`` parameter is set in ``AWS_S3_OBJECT_PARAMETERS``, then this setting is ignored.
+
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
     Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
     authentication from generated URLs. This can be useful if your S3 buckets

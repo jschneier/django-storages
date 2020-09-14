@@ -320,6 +320,7 @@ class S3Boto3Storage(BaseStorage):
             "use_ssl": setting('AWS_S3_USE_SSL', True),
             "verify": setting('AWS_S3_VERIFY', None),
             "max_memory_size": setting('AWS_S3_MAX_MEMORY_SIZE', 0),
+            "default_acl": setting('AWS_DEFAULT_ACL', None),
         }
 
     def __getstate__(self):
@@ -496,6 +497,10 @@ class S3Boto3Storage(BaseStorage):
             params['ContentEncoding'] = encoding
 
         params.update(self.get_object_parameters(name))
+
+        if 'ACL' not in params and self.default_acl:
+            params['ACL'] = self.default_acl
+
         return params
 
     def get_object_parameters(self, name):
