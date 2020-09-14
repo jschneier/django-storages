@@ -1,6 +1,22 @@
 django-storages CHANGELOG
 =========================
 
+1.10.1 (2020-09-13)
+
+S3
+--
+
+- Restore ``AWS_DEFAULT_ACL`` handling. This setting is ignored if ``ACL`` is set in
+  ``AWS_S3_OBJECT_PARAMETERS`` (`#934`_)
+
+SFTP
+----
+
+- Fix using ``SFTP_STORAGE_HOST`` (`#926`_)
+
+.. _#926: https://github.com/jschneier/django-storages/pull/926
+.. _#934: https://github.com/jschneier/django-storages/pull/934
+
 1.10 (2020-08-30)
 *****************
 
