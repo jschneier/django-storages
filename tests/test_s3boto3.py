@@ -114,12 +114,32 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             }
         )
 
-    def test_storage_save_with_acl(self):
+    def test_storage_save_with_default_acl(self):
         """
         Test saving a file with user defined ACL.
         """
         name = 'test_storage_save.txt'
         content = ContentFile('new content')
+        self.storage.default_acl = 'private'
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+                'ACL': 'private',
+            }
+        )
+
+    def test_storage_object_parameters_not_overwritten_by_default(self):
+        """
+        Test saving a file with user defined ACL.
+        """
+        name = 'test_storage_save.txt'
+        content = ContentFile('new content')
+        self.storage.default_acl = 'public-read'
         self.storage.object_parameters = {'ACL': 'private'}
         self.storage.save(name, content)
         self.storage.bucket.Object.assert_called_once_with(name)
