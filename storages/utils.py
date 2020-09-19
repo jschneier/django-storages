@@ -125,3 +125,33 @@ def get_available_overwrite_name(name, max_length):
 
 def is_seekable(file_object):
     return not hasattr(file_object, 'seekable') or file_object.seekable()
+
+
+class ReadBytesWrapper:
+    """
+    A wrapper for a file-like object, that makes read() always returns bytes.
+    """
+    def __init__(self, file, encoding=None):
+        """
+        :param file: The file-like object to wrap.
+        :param encoding: Specify the encoding to use when file.read() returns strings.
+            If not provided will default to file.encoding, of if that's not available,
+            to utf-8.
+        """
+        self._file = file
+        self.encoding = (
+            encoding
+            or getattr(file, "encoding", None)
+            or "utf-8"
+        )
+
+    def read(self, *args, **kwargs):
+        content = self._file.read(*args, **kwargs)
+
+        if not isinstance(content, bytes):
+            return content.encode(self.encoding)
+        else:
+            return content
+
+    def seek(self, *args, **kwargs):
+        return self._file.seek(*args, **kwargs)
