@@ -27,6 +27,7 @@ from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
 from storages.utils import is_seekable
+from storages.utils import ReadBytesWrapper
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
@@ -432,6 +433,11 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
         if is_seekable(content):
             content.seek(0, os.SEEK_SET)
+
+        # wrap content so read() always returns bytes. This is required for passing it
+        # to obj.upload_fileobj() or self._compress_content()
+        content = ReadBytesWrapper(content)
+
         if (self.gzip and
                 params['ContentType'] in self.gzip_content_types and
                 'ContentEncoding' not in params):
