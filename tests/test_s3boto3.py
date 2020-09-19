@@ -3,19 +3,21 @@ import gzip
 import io
 import pickle
 import threading
+from datetime import datetime
 from textwrap import dedent
 from unittest import mock
 from unittest import skipIf
 from urllib.parse import urlparse
 
+import boto3
 import boto3.s3.transfer
-from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test import override_settings
 from django.utils.timezone import is_aware
+from moto import mock_s3
 
 from storages.backends import s3boto3
 from tests.utils import NonSeekableContentFile
@@ -131,7 +133,7 @@ class S3Boto3StorageTests(TestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            mock.ANY,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
@@ -152,7 +154,7 @@ class S3Boto3StorageTests(TestCase):
 
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            mock.ANY,
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
@@ -188,7 +190,7 @@ class S3Boto3StorageTests(TestCase):
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(
-            content,
+            mock.ANY,
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
@@ -287,7 +289,7 @@ class S3Boto3StorageTests(TestCase):
         Test that file returned by _compress_content() is readable.
         """
         self.storage.gzip = True
-        content = ContentFile("I should be gzip'd")
+        content = ContentFile(b"I should be gzip'd")
         content = self.storage._compress_content(content)
         self.assertTrue(len(content.read()) > 0)
 
@@ -569,7 +571,7 @@ class S3Boto3StorageTests(TestCase):
         self.storage._connections.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir('')
-        paginator.paginate.assert_called_with(Bucket=None, Delimiter='/', Prefix='')
+        paginator.paginate.assert_called_with(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Delimiter='/', Prefix='')
 
         self.assertEqual(dirs, ['some', 'other'])
         self.assertEqual(files, ['2.txt', '4.txt'])
@@ -594,7 +596,7 @@ class S3Boto3StorageTests(TestCase):
         self.storage._connections.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir('some/')
-        paginator.paginate.assert_called_with(Bucket=None, Delimiter='/', Prefix='some/')
+        paginator.paginate.assert_called_with(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Delimiter='/', Prefix='some/')
 
         self.assertEqual(dirs, ['path'])
         self.assertEqual(files, ['2.txt'])
@@ -865,3 +867,98 @@ class S3Boto3StorageFileTests(TestCase):
         with self.subTest("is True after close"):
             f.close()
             self.assertTrue(f.closed)
+
+@mock_s3
+class S3Boto3StorageTestsWithMoto(TestCase):
+    """
+    These tests use the moto library to mock S3, rather than unittest.mock.
+    This is better because more of boto3's internal code will be run in tests.
+
+    For example this issue
+    https://github.com/jschneier/django-storages/issues/708
+    wouldn't be caught using unittest.mock, since the error occurs in boto3's internals.
+
+    Using mock_s3 as a class decorator automatically decorates methods,
+    but NOT classmethods or staticmethods.
+    """
+    @classmethod
+    @mock_s3
+    def setUpClass(cls):
+        super().setUpClass()
+        # create a bucket specified in settings.
+        cls.bucket = boto3.resource("s3").Bucket(settings.AWS_STORAGE_BUCKET_NAME)
+        cls.bucket.create()
+        # create a S3Boto3Storage backend instance.
+        cls.s3boto3_storage = s3boto3.S3Boto3Storage()
+
+    def test_save_bytes_file(self):
+        self.s3boto3_storage.save("bytes_file.txt", File(io.BytesIO(b"foo1")))
+
+        self.assertEqual(
+            b"foo1",
+            self.bucket.Object("bytes_file.txt").get()['Body'].read(),
+        )
+
+    def test_save_string_file(self):
+        self.s3boto3_storage.save("string_file.txt", File(io.StringIO("foo2")))
+
+        self.assertEqual(
+            b"foo2",
+            self.bucket.Object("string_file.txt").get()['Body'].read(),
+        )
+
+    def test_save_bytes_content_file(self):
+        self.s3boto3_storage.save("bytes_content.txt", ContentFile(b"foo3"))
+
+        self.assertEqual(
+            b"foo3",
+            self.bucket.Object("bytes_content.txt").get()['Body'].read(),
+        )
+
+    def test_save_string_content_file(self):
+        self.s3boto3_storage.save("string_content.txt", ContentFile("foo4"))
+
+        self.assertEqual(
+            b"foo4",
+            self.bucket.Object("string_content.txt").get()['Body'].read(),
+        )
+
+    def test_content_type_guess(self):
+        """
+        Test saving a file where the ContentType is guessed from the filename.
+        """
+        name = 'test_image.jpg'
+        content = ContentFile(b'data')
+        content.content_type = None
+        self.s3boto3_storage.save(name, content)
+
+        s3_object_fetched = self.bucket.Object(name).get()
+        self.assertEqual(b"data", s3_object_fetched['Body'].read())
+        self.assertEqual(s3_object_fetched["ContentType"], "image/jpeg")
+
+    def test_content_type_attribute(self):
+        """
+        Test saving a file with a custom content type attribute.
+        """
+        content = ContentFile(b'data')
+        content.content_type = "test/foo"
+        self.s3boto3_storage.save("test_file", content)
+
+        s3_object_fetched = self.bucket.Object("test_file").get()
+        self.assertEqual(b"data", s3_object_fetched['Body'].read())
+        self.assertEqual(s3_object_fetched["ContentType"], "test/foo")
+
+    def test_content_type_not_detectable(self):
+        """
+        Test saving a file with no detectable content type.
+        """
+        content = ContentFile(b'data')
+        content.content_type = None
+        self.s3boto3_storage.save("test_file", content)
+
+        s3_object_fetched = self.bucket.Object("test_file").get()
+        self.assertEqual(b"data", s3_object_fetched['Body'].read())
+        self.assertEqual(
+            s3_object_fetched["ContentType"],
+            s3boto3.S3Boto3Storage.default_content_type,
+        )
