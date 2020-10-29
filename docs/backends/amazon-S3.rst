@@ -363,6 +363,7 @@ Model
 An object without a file has limited functionality::
 
     from django.db import models
+    from django.core.files.base import ContentFile
 
     class MyModel(models.Model):
       normal = models.FileField()
