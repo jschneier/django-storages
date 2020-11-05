@@ -8,7 +8,11 @@ This implementation was done preliminary for upload files in admin to remote FTP
 Settings
 --------
 
-``LOCATION``
+To use FtpStorage set::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
+
+``FTP_STORAGE_LOCATION``
     URL of the server that holds the files. Example ``'ftp://<user>:<pass>@<host>:<port>'``
 
 ``BASE_URL``
