@@ -242,7 +242,7 @@ class GoogleCloudStorage(BaseStorage):
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(name)
         no_signed_url = (
-            self.default_acl == 'publicRead' or self.querystring_auth is False)
+            self.default_acl == 'publicRead' or not self.querystring_auth)
 
         if not self.custom_endpoint and no_signed_url:
             return blob.public_url
