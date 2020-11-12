@@ -414,11 +414,8 @@ class S3Boto3Storage(BaseStorage):
         #  This means each time a file is compressed it changes even if the other contents don't change
         #  For S3 this defeats detection of changes using MD5 sums on gzipped files
         #  Fixing the mtime at 0.0 at compression time avoids this problem
-        zfile = GzipFile(mode='wb', fileobj=zbuf, mtime=0.0)
-        try:
+        with GzipFile(mode='wb', fileobj=zbuf, mtime=0.0) as zfile:
             zfile.write(force_bytes(content.read()))
-        finally:
-            zfile.close()
         zbuf.seek(0)
         # Boto 2 returned the InMemoryUploadedFile with the file pointer replaced,
         # but Boto 3 seems to have issues with that. No need for fp.name in Boto3
