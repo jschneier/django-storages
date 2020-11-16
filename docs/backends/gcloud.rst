@@ -115,7 +115,15 @@ a signed (expiring) url.
 
 .. note::
     When using this setting, make sure you have ``fine-grained`` access control enabled on your bucket,
-    as opposed to ``Uniform`` access control, or else, file  uploads will return with HTTP 400.
+    as opposed to ``Uniform`` access control, or else, file  uploads will return with HTTP 400. If you
+    already have a bucket with ``Uniform`` access control set to public read, please keep 
+    ``GS_DEFAULT_ACL`` to ``None`` and set ``GS_QUERYSTRING_AUTH`` to ``False``.
+
+``GS_QUERYSTRING_AUTH`` (optional, default is True)
+
+If set to ``False`` it forces the url not to be signed. This setting is useful if you need to have a
+bucket configured with ``Uniform`` access control configured with public read. In that case you should
+force the flag ``GS_QUERYSTRING_AUTH = False`` and ``GS_DEFAULT_ACL = None``
 
 ``GS_FILE_CHARSET`` (optional)
 

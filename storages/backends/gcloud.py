@@ -102,6 +102,7 @@ class GoogleCloudStorage(BaseStorage):
             "custom_endpoint": setting('GS_CUSTOM_ENDPOINT', None),
             "location": setting('GS_LOCATION', ''),
             "default_acl": setting('GS_DEFAULT_ACL'),
+            "querystring_auth": setting('GS_QUERYSTRING_AUTH', True),
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
             "file_overwrite": setting('GS_FILE_OVERWRITE', True),
             "cache_control": setting('GS_CACHE_CONTROL'),
@@ -240,10 +241,12 @@ class GoogleCloudStorage(BaseStorage):
         """
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(name)
+        no_signed_url = (
+            self.default_acl == 'publicRead' or not self.querystring_auth)
 
-        if not self.custom_endpoint and self.default_acl == 'publicRead':
+        if not self.custom_endpoint and no_signed_url:
             return blob.public_url
-        elif self.default_acl == 'publicRead':
+        elif no_signed_url:
             return '{storage_base_url}/{quoted_name}'.format(
                 storage_base_url=self.custom_endpoint,
                 quoted_name=_quote(name, safe=b"/~"),
