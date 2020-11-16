@@ -22,6 +22,12 @@ class S3Boto3TestCase(TestCase):
         self.storage._connections.connection = mock.MagicMock()
 
 
+def assert_called_upload(mock_uploadobj, content, extra):
+    assert mock_uploadobj.call_count == 1
+    assert mock_uploadobj.call_args[0][0].raw == content
+    assert mock_uploadobj.call_args[1] == extra
+
+
 class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_clean_name(self):
@@ -107,12 +113,12 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.upload_fileobj.assert_called_with(
-            content,
-            ExtraArgs={
+        extra = {
+            'ExtraArgs': {
                 'ContentType': 'text/plain',
             }
-        )
+        }
+        assert_called_upload(obj.upload_fileobj, content, extra)
 
     def test_storage_save_with_default_acl(self):
         """
@@ -125,13 +131,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.upload_fileobj.assert_called_with(
-            content,
-            ExtraArgs={
+        extra = {
+            'ExtraArgs': {
                 'ContentType': 'text/plain',
                 'ACL': 'private',
             }
-        )
+        }
+        assert_called_upload(obj.upload_fileobj, content, extra)
 
     def test_storage_object_parameters_not_overwritten_by_default(self):
         """
@@ -145,13 +151,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.upload_fileobj.assert_called_with(
-            content,
-            ExtraArgs={
+        extra = {
+            'ExtraArgs': {
                 'ContentType': 'text/plain',
                 'ACL': 'private',
             }
-        )
+        }
+        assert_called_upload(obj.upload_fileobj, content, extra)
 
     def test_content_type(self):
         """
@@ -164,12 +170,12 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.storage.bucket.Object.assert_called_once_with(name)
 
         obj = self.storage.bucket.Object.return_value
-        obj.upload_fileobj.assert_called_with(
-            content,
-            ExtraArgs={
+        extra = {
+            'ExtraArgs': {
                 'ContentType': 'image/jpeg',
             }
-        )
+        }
+        assert_called_upload(obj.upload_fileobj, content, extra)
 
     def test_storage_save_gzipped(self):
         """
@@ -179,13 +185,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         content = ContentFile("I am gzip'd")
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
-        obj.upload_fileobj.assert_called_with(
-            content,
-            ExtraArgs={
+        extra = {
+            'ExtraArgs': {
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
             }
-        )
+        }
+        assert_called_upload(obj.upload_fileobj, content, extra)
 
     def test_storage_save_gzip(self):
         """

@@ -1,3 +1,4 @@
+import io
 import os
 import posixpath
 
@@ -117,3 +118,10 @@ def get_available_overwrite_name(name, max_length):
             'allows sufficient "max_length".' % name
         )
     return os.path.join(dir_name, "{}{}".format(file_root, file_ext))
+
+
+# A buffered reader that does not actually close, workaround for
+# https://github.com/boto/s3transfer/issues/80#issuecomment-562356142
+class NonCloseableBufferedReader(io.BufferedReader):
+    def close(self):
+        self.flush()

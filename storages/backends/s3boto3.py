@@ -17,7 +17,7 @@ from django.utils.timezone import is_naive, make_naive
 from storages.base import BaseStorage
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
-    setting,
+    setting, NonCloseableBufferedReader,
 )
 
 try:
@@ -445,7 +445,8 @@ class S3Boto3Storage(BaseStorage):
 
         obj = self.bucket.Object(name)
         content.seek(0, os.SEEK_SET)
-        obj.upload_fileobj(content, ExtraArgs=params)
+        with NonCloseableBufferedReader(content) as reader:
+            obj.upload_fileobj(reader, ExtraArgs=params)
         return cleaned_name
 
     def delete(self, name):
