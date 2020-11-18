@@ -29,10 +29,24 @@ To allow ``django-admin collectstatic`` to automatically put your static files i
 
 ``AWS_SECRET_ACCESS_KEY``
     Your Amazon Web Services secret access key, as a string.
+      
+``AWS_S3_ACCESS_KEY_ID``
+    Your Amazon Web Services access key, as a string, used specifically by django-storages.
 
+``AWS_S3_SECRET_ACCESS_KEY``
+    Your Amazon Web Services secret access key, as a string, used specifically by django-storages.
+    
 .. note::
 
-      If ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are not set, boto3 internally looks up IAM credentials.
+      If neither ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` nor ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``
+      are set, boto3 internally looks up IAM credentials.
+
+      If ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY`` are set, django-storages will use these credentials.
+      instead of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
+      
+      ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY`` are particularly useful when boto3 obtains temporary AWS credentials
+      via the EC2 IAM Role and you use generated URLs. Otherwise, generated URLs will expire when the temporary credentials
+      used to generate URLs expire.
 
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.
