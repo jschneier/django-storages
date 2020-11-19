@@ -132,7 +132,7 @@ The following adjustments to settings are required:
 
 - Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
   names as in the following example: ``cache-control`` becomes ``CacheControl``.
-- Raname ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
+- Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
 - If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE`` to ``virtual``
 - Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
 - Extract the region name from ``AWS_S3_HOST`` and set ``AWS_S3_REGION_NAME``
