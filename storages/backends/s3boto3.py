@@ -16,8 +16,8 @@ from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
 from storages.utils import (
-    check_location, get_available_overwrite_name, lookup_env, safe_join,
-    setting, NonCloseableBufferedReader,
+    NonCloseableBufferedReader, check_location, get_available_overwrite_name,
+    lookup_env, safe_join, setting,
 )
 
 try:
