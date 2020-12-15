@@ -165,3 +165,8 @@ The following settings are available:
 
     A variable to set the Cache-Control HTTP response header. E.g.
     ``AZURE_CACHE_CONTROL = "public,max-age=31536000,immutable"``
+
+``AZURE_OBJECT_PARAMETERS``
+
+    Use this to set content settings on all objects. To set these on a per-object
+    basis, subclass the backend and override ``AzureStorage.get_object_parameters``.
