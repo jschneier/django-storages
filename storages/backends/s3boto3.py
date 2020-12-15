@@ -11,13 +11,13 @@ from urllib.parse import parse_qsl, urlsplit
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import filepath_to_uri, force_bytes
+from django.utils.encoding import filepath_to_uri
 from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
 from storages.utils import (
     NonCloseableBufferedReader, check_location, get_available_overwrite_name,
-    lookup_env, safe_join, setting,
+    lookup_env, safe_join, setting, to_bytes,
 )
 
 try:
@@ -158,7 +158,7 @@ class S3Boto3StorageFile(File):
             )
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
-        bstr = force_bytes(content)
+        bstr = to_bytes(content)
         self._raw_bytes_written += len(bstr)
         return super().write(bstr)
 
@@ -412,7 +412,7 @@ class S3Boto3Storage(BaseStorage):
         #  For S3 this defeats detection of changes using MD5 sums on gzipped files
         #  Fixing the mtime at 0.0 at compression time avoids this problem
         with GzipFile(mode='wb', fileobj=zbuf, mtime=0.0) as zfile:
-            zfile.write(force_bytes(content.read()))
+            zfile.write(to_bytes(content.read()))
         zbuf.seek(0)
         # Boto 2 returned the InMemoryUploadedFile with the file pointer replaced,
         # but Boto 3 seems to have issues with that. No need for fp.name in Boto3

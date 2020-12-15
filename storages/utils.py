@@ -6,6 +6,15 @@ from django.conf import settings
 from django.core.exceptions import (
     ImproperlyConfigured, SuspiciousFileOperation,
 )
+from django.utils.encoding import force_bytes
+
+
+def to_bytes(content):
+    """Wrap Django's force_bytes to pass through bytearrays."""
+    if isinstance(content, bytearray):
+        return content
+
+    return force_bytes(content)
 
 
 def setting(name, default=None):
