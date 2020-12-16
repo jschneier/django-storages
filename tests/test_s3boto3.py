@@ -296,6 +296,17 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         multipart.complete.assert_called_once_with(
             MultipartUpload={'Parts': [{'ETag': '123', 'PartNumber': 1}]})
 
+    def test_write_bytearray(self):
+        """Test that bytearray write exactly (no extra "bytearray" from stringify)."""
+        name = "saved_file.bin"
+        content = bytearray(b"content")
+        file = self.storage.open(name, "wb")
+        obj = self.storage.bucket.Object.return_value
+        # Set the name of the mock object
+        obj.key = name
+        bytes_written = file.write(content)
+        self.assertEqual(len(content), bytes_written)
+
     def test_storage_open_no_write(self):
         """
         Test opening file in write mode and closing without writing.
