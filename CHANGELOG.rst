@@ -1,6 +1,43 @@
 django-storages CHANGELOG
 =========================
 
+1.11 (2020-12-16)
+*****************
+
+General
+-------
+
+- Test against Python 3.9 (`#964`_)
+
+S3
+--
+
+- Fix ``ValueError: I/O operation on closed file`` when calling ``collectstatic`` (`#382`_, `#955`_)
+- Calculate ``S3Boto3StorageFile.buffer_size`` (via setting ``AWS_S3_FILE_BUFFER_SIZE``)
+  at run-time rather than import-time. (`#930`_)
+- Fix writing ``bytearray`` content (`#958`_, `#965`_)
+
+Google Cloud
+------------
+
+- Add setting ``GS_QUERYSTRING_AUTH`` to avoid signing URLs. This is useful for buckets with a
+  policy of Uniform public read (`#952`_)
+
+Azure
+-----
+
+- Add ``AZURE_OBJECT_PARAMETERS`` and overridable ``AzureStorage.get_object_parameters`` to customize
+  ``ContentSettings`` parameters for all keys and per-key respectively. (`#898`_)
+
+.. _#382: https://github.com/jschneier/django-storages/issues/382
+.. _#955: https://github.com/jschneier/django-storages/pull/955
+.. _#930: https://github.com/jschneier/django-storages/pull/930
+.. _#952: https://github.com/jschneier/django-storages/pull/952
+.. _#898: https://github.com/jschneier/django-storages/pull/898
+.. _#964: https://github.com/jschneier/django-storages/pull/964
+.. _#958: https://github.com/jschneier/django-storages/issues/958
+.. _#965: https://github.com/jschneier/django-storages/pull/965
+
 1.10.1 (2020-09-13)
 *******************
 
