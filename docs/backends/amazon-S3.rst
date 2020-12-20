@@ -22,7 +22,11 @@ To upload your media files to S3 set::
 
 To allow ``django-admin collectstatic`` to automatically put your static files in your bucket set the following in your settings.py::
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+
+If you want to use something like `ManifestStaticFilesStorage`_ then you must instead use::
+
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
 
 ``AWS_ACCESS_KEY_ID``
     Your Amazon Web Services access key, as a string.
@@ -120,6 +124,7 @@ To allow ``django-admin collectstatic`` to automatically put your static files i
 .. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
+.. _ManifestStaticFilesStorage: https://docs.djangoproject.com/en/3.1/ref/contrib/staticfiles/#manifeststaticfilesstorage
 
 .. _migrating-boto-to-boto3:
 

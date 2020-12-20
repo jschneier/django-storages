@@ -2,12 +2,14 @@ import io
 import mimetypes
 import os
 import posixpath
+import tempfile
 import threading
 from datetime import datetime, timedelta
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 from urllib.parse import parse_qsl, urlsplit
 
+from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
@@ -16,8 +18,8 @@ from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
 from storages.utils import (
-    NonCloseableBufferedReader, check_location, get_available_overwrite_name,
-    lookup_env, safe_join, setting, to_bytes,
+    check_location, get_available_overwrite_name, lookup_env, safe_join,
+    setting, to_bytes,
 )
 
 try:
@@ -442,8 +444,7 @@ class S3Boto3Storage(BaseStorage):
 
         obj = self.bucket.Object(name)
         content.seek(0, os.SEEK_SET)
-        with NonCloseableBufferedReader(content) as reader:
-            obj.upload_fileobj(reader, ExtraArgs=params)
+        obj.upload_fileobj(content, ExtraArgs=params)
         return cleaned_name
 
     def delete(self, name):
@@ -582,3 +583,22 @@ class S3Boto3Storage(BaseStorage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
+
+
+class S3StaticStorage(S3Boto3Storage):
+    """Querystring auth must be disabled so that url() returns a consistent output."""
+    querystring_auth = False
+
+
+class S3ManifestStaticStorage(ManifestFilesMixin, S3StaticStorage):
+    """Copy the file before saving for compatibility with ManifestFilesMixin
+    which does not play nicely with boto3 automatically closing the file.
+
+    See: https://github.com/boto/s3transfer/issues/80#issuecomment-562356142
+    """
+
+    def _save(self, name, content):
+        content.seek(0)
+        with tempfile.SpooledTemporaryFile() as tmp:
+            tmp.write(content.read())
+            return super()._save(name, tmp)
