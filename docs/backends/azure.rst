@@ -170,3 +170,5 @@ The following settings are available:
 
     Use this to set content settings on all objects. To set these on a per-object
     basis, subclass the backend and override ``AzureStorage.get_object_parameters``.
+    
+    This is a Python ``dict`` and the possible parameters are: ``content_type``, ``content_encoding``, ``content_language``, ``content_disposition``, ``cache_control``, and ``content_md5``.
