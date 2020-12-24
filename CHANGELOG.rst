@@ -1,6 +1,17 @@
 django-storages CHANGELOG
 =========================
 
+1.11.1 (2020-12-23)
+*******************
+
+S3
+--
+
+- Revert fix for ``ValueError: I/O operation on closed file`` when calling ``collectstatic`` and
+  introduce ``S3StaticStorage`` and ``S3ManifestStaticStorage`` for use as ``STATICFILES_STORAGE`` targets (`#968`_)
+
+.. _#968: https://github.com/jschneier/django-storages/pull/968
+
 1.11 (2020-12-16)
 *****************
 
