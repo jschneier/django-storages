@@ -360,6 +360,11 @@ class S3Boto3Storage(BaseStorage):
         return self._connections.connection
 
     def _create_session(self):
+        """
+        If a user specifies a profile name and this class obtains access keys
+        from another source such as environment variables,we want the profile
+        name to take precedence.
+        """
         if self.session_profile:
             session = boto3.Session(profile_name=self.session_profile)
         else:
