@@ -1,3 +1,4 @@
+import gzip
 import mimetypes
 from datetime import datetime, timedelta
 from unittest import mock
@@ -101,7 +102,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl=None)
+            content_encoding=None, predefined_acl=None)
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -113,7 +114,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
-            predefined_acl=None)
+            content_encoding=None, predefined_acl=None)
 
     def test_save_with_default_acl(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -130,7 +131,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
-            predefined_acl='publicRead')
+            content_encoding=None, predefined_acl='publicRead')
 
     def test_delete(self):
         self.storage.delete(self.filename)
@@ -390,6 +391,56 @@ class GCloudStorageTests(GCloudTestCase):
         bucket = self.storage.client.bucket(self.bucket_name)
         blob = bucket.get_blob(filename)
         self.assertEqual(blob.cache_control, cache_control)
+
+    def test_save_gzip(self):
+        """
+        Test saving a file with gzip enabled.
+        """
+        self.storage.gzip = True
+
+        data = "I should be gzip'd"
+        filename = 'test_storage_save.css'
+        content = ContentFile(data)
+        self.storage.save(filename, content)
+
+        self.storage._client.bucket.assert_called_with(self.bucket_name)
+        obj = self.storage._bucket.get_blob()
+        obj.upload_from_file.assert_called()
+        args, kwargs = obj.upload_from_file.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
+
+    def test__save_gzip_twice(self):
+        """
+        Test saving the same file content twice with gzip enabled.
+        """
+        # Given
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+
+        # When
+        self.storage.save(name, content)
+        self.storage.save('test_storage_save_2.css', content)
+
+        # Then
+        self.storage._client.bucket.assert_called_with(self.bucket_name)
+        obj = self.storage._bucket.get_blob()
+        obj.upload_from_file.assert_called()
+        args, kwargs = obj.upload_from_file.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
+
+    def test_compress_content_len(self):
+        """
+        Test that file returned by _compress_content() is readable.
+        """
+        self.storage.gzip = True
+        content = ContentFile("I should be gzip'd")
+        content = self.storage._compress_content(content)
+        self.assertTrue(len(content.read()) > 0)
 
     def test_location_leading_slash(self):
         msg = (

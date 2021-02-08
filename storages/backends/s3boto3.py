@@ -1,11 +1,9 @@
-import io
 import mimetypes
 import os
 import posixpath
 import tempfile
 import threading
 from datetime import datetime, timedelta
-from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
 from urllib.parse import parse_qsl, urlsplit
 
@@ -17,6 +15,7 @@ from django.utils.encoding import filepath_to_uri
 from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
+from storages.compress import CompressFileMixin, CompressStorageMixin
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
     setting, to_bytes,
@@ -76,7 +75,7 @@ else:
 
 
 @deconstructible
-class S3Boto3StorageFile(File):
+class S3Boto3StorageFile(CompressFileMixin, File):
     """
     The default file object used by the S3Boto3Storage backend.
 
@@ -132,7 +131,7 @@ class S3Boto3StorageFile(File):
                 self.obj.download_fileobj(self._file)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
-                self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
+                self._file = self._compress_file()
         return self._file
 
     def _set_file(self, value):
@@ -230,7 +229,8 @@ class S3Boto3StorageFile(File):
 
 
 @deconstructible
-class S3Boto3Storage(BaseStorage):
+class S3Boto3Storage(CompressStorageMixin, BaseStorage):
+
     """
     Amazon Simple Storage Service using Boto3
 
@@ -404,22 +404,6 @@ class S3Boto3Storage(BaseStorage):
         except ValueError:
             raise SuspiciousOperation("Attempted access to '%s' denied." %
                                       name)
-
-    def _compress_content(self, content):
-        """Gzip a given string content."""
-        content.seek(0)
-        zbuf = io.BytesIO()
-        #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
-        #  This means each time a file is compressed it changes even if the other contents don't change
-        #  For S3 this defeats detection of changes using MD5 sums on gzipped files
-        #  Fixing the mtime at 0.0 at compression time avoids this problem
-        with GzipFile(mode='wb', fileobj=zbuf, mtime=0.0) as zfile:
-            zfile.write(to_bytes(content.read()))
-        zbuf.seek(0)
-        # Boto 2 returned the InMemoryUploadedFile with the file pointer replaced,
-        # but Boto 3 seems to have issues with that. No need for fp.name in Boto3
-        # so just returning the BytesIO directly
-        return zbuf
 
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
