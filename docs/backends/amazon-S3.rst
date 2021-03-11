@@ -29,10 +29,10 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
 
 ``AWS_ACCESS_KEY_ID``
-    Your Amazon Web Services access key, as a string.
+    Your Amazon Web Services access key, as a string. You can also use ``AWS_S3_ACCESS_KEY_ID``.
 
 ``AWS_SECRET_ACCESS_KEY``
-    Your Amazon Web Services secret access key, as a string.
+    Your Amazon Web Services secret access key, as a string. You can also use ``AWS_S3_SECRET_ACCESS_KEY``.
 
 .. note::
 
