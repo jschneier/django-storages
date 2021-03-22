@@ -329,7 +329,9 @@ class GCloudStorageTests(GCloudTestCase):
         url = self.storage.url(secret_filename)
         self.storage._bucket.blob.assert_called_with(secret_filename)
         self.assertEqual(url, 'http://signed_url')
-        blob.generate_signed_url.assert_called_with(timedelta(seconds=86400))
+        blob.generate_signed_url.assert_called_with(
+            expiration=timedelta(seconds=86400), version="v4"
+        )
 
     def test_url_not_public_file_with_custom_expires(self):
         secret_filename = 'secret_file.txt'
@@ -344,7 +346,9 @@ class GCloudStorageTests(GCloudTestCase):
         url = self.storage.url(secret_filename)
         self.storage._bucket.blob.assert_called_with(secret_filename)
         self.assertEqual(url, 'http://signed_url')
-        blob.generate_signed_url.assert_called_with(timedelta(seconds=3600))
+        blob.generate_signed_url.assert_called_with(
+            expiration=timedelta(seconds=3600), version="v4"
+        )
 
     def test_custom_endpoint(self):
         self.storage.custom_endpoint = "https://example.com"
@@ -353,14 +357,21 @@ class GCloudStorageTests(GCloudTestCase):
         url = "{}/{}".format(self.storage.custom_endpoint, self.filename)
         self.assertEqual(self.storage.url(self.filename), url)
 
-        signed_url = 'https://signed_url'
+        bucket_name = "hyacinth"
         self.storage.default_acl = 'projectPrivate'
         self.storage._bucket = mock.MagicMock()
         blob = mock.MagicMock()
-        generate_signed_url = mock.MagicMock(return_value=signed_url)
+        generate_signed_url = mock.MagicMock()
+        blob.bucket = mock.MagicMock()
+        type(blob.bucket).name = mock.PropertyMock(return_value=bucket_name)
         blob.generate_signed_url = generate_signed_url
         self.storage._bucket.blob.return_value = blob
-        self.assertEqual(self.storage.url(self.filename), signed_url)
+        self.storage.url(self.filename)
+        blob.generate_signed_url.assert_called_with(
+            bucket_bound_hostname=self.storage.custom_endpoint,
+            expiration=timedelta(seconds=86400),
+            version="v4",
+        )
 
     def test_get_available_name(self):
         self.storage.file_overwrite = True
