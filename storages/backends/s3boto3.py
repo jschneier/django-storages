@@ -167,6 +167,9 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
             raise AttributeError("File was not opened in read mode.")
         return self._force_mode(super().readline(*args, **kwargs))
 
+    def readlines(self):
+        return list(self)
+
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
