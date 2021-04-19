@@ -7,7 +7,7 @@ import threading
 from datetime import datetime, timedelta
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, urlsplit, urlencode
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -24,6 +24,9 @@ from storages.utils import (
 
 try:
     import boto3.session
+    import botocore.loaders
+    import botocore.model
+    import botocore.serialize
     from botocore.client import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
@@ -265,6 +268,7 @@ class S3Boto3Storage(BaseStorage):
 
         self._bucket = None
         self._connections = threading.local()
+        self._s3_service_model = botocore.loaders.Loader().load_service_model('s3', 'service-2')
 
         self.access_key, self.secret_key = self._get_access_keys()
         self.security_token = self._get_security_token()
@@ -555,26 +559,46 @@ class S3Boto3Storage(BaseStorage):
         split_url = split_url._replace(query="&".join(joined_qs))
         return split_url.geturl()
 
+    def _build_s3_getobject_querystring(self, params):
+        """Validate and transform names for S3 GetObject query parameters"""
+        # valid parameters as of the time of writing: Bucket, IfMatch,
+        #  IfModifiedSince, IfNoneMatch, IfUnmodifiedSince, Key, Range,
+        #  ResponseCacheControl, ResponseContentDisposition,
+        #  ResponseContentEncoding, ResponseContentLanguage, ResponseContentType,
+        #  ResponseExpires, VersionId, SSECustomerAlgorithm, SSECustomerKey,
+        #  SSECustomerKeyMD5, RequestPayer, PartNumber
+        sm = botocore.model.ServiceModel(self._s3_service_model)
+        om = botocore.model.OperationModel(
+                self._s3_service_model['operations']['GetObject'], sm)
+        serializer = botocore.serialize.create_serializer('rest-json')
+        url_dict = serializer.serialize_to_request(params, om)
+        return urlencode(url_dict['query_string'])
+
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
         if expire is None:
             expire = self.querystring_expire
+        expiration = datetime.utcnow() + timedelta(seconds=expire)
+        params = parameters.copy() if parameters else {}
+        params['Bucket'] = self.bucket.name
+        params['Key'] = name
+        params['ResponseExpires'] = expiration
 
         if self.custom_domain:
-            url = "{}//{}/{}".format(
-                self.url_protocol, self.custom_domain, filepath_to_uri(name))
+            url_parts = urlsplit(None)
+            url = url_parts._replace(
+                scheme=self.url_protocol.split(':')[0],
+                netloc=self.custom_domain,
+                path=filepath_to_uri(name),
+                query=self._build_s3_getobject_querystring(params),
+                ).geturl()
 
             if self.querystring_auth and self.cloudfront_signer:
-                expiration = datetime.utcnow() + timedelta(seconds=expire)
-
                 return self.cloudfront_signer.generate_presigned_url(url, date_less_than=expiration)
 
             return url
 
-        params = parameters.copy() if parameters else {}
-        params['Bucket'] = self.bucket.name
-        params['Key'] = name
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,
                                                              ExpiresIn=expire, HttpMethod=http_method)
         if self.querystring_auth:
