@@ -42,6 +42,8 @@ def _use_cryptography_signer():
     )
 
     def _cloud_front_signer_from_pem(key_id, pem):
+        if isinstance(pem, str):
+            pem = pem.encode('ascii')
         key = load_pem_private_key(
             pem, password=None, backend=default_backend())
 
@@ -56,6 +58,8 @@ def _use_rsa_signer():
     import rsa
 
     def _cloud_front_signer_from_pem(key_id, pem):
+        if isinstance(pem, str):
+            pem = pem.encode('ascii')
         key = rsa.PrivateKey.load_pkcs1(pem)
         return CloudFrontSigner(key_id, lambda x: rsa.sign(x, key, 'SHA-1'))
 
