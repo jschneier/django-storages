@@ -36,20 +36,23 @@ matrix:
     - python: 3.9
       env: TOXENV=py39-django31
     - python: 3.6
-      env: TOXENV=py36-djangomain
+      env: TOXENV=py36-django32
     - python: 3.7
-      env: TOXENV=py37-djangomain
+      env: TOXENV=py37-django32
+    - python: 3.8
+      env: TOXENV=py38-django32
+    - python: 3.9
+      env: TOXENV=py39-django32
     - python: 3.8
       env: TOXENV=py38-djangomain
     - python: 3.9
       env: TOXENV=py39-djangomain
   allow_failures:
-    - env: TOXENV=py36-djangomain
-    - env: TOXENV=py37-djangomain
     - env: TOXENV=py38-djangomain
     - env: TOXENV=py39-djangomain
 
 install:
+  - pip install --upgrade pip tox virtualenv
   - pip install tox
 
 script:
