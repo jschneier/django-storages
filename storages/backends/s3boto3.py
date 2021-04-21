@@ -583,7 +583,10 @@ class S3Boto3Storage(BaseStorage):
         params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
         params['Key'] = name
-        params['ResponseExpires'] = expiration
+        # The "ResponseExpires" value ends up with a comma, which
+        #  often gets un-escaped by some over-zealos URL re-parsers. :/
+        # Changing the signed URL then breaks the signature.
+        # params['ResponseExpires'] = expiration
 
         if self.custom_domain:
             url_parts = urlsplit(None)
