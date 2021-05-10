@@ -15,7 +15,7 @@ Use pip to install from PyPI::
 Authentication
 --------------
 By default, this library will try to use the credentials associated with the
-current Google Cloud infrastrcture/environment for authentication.
+current Google Cloud infrastructure/environment for authentication.
 
 In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, you so you will need to create a dedicated service account:
 
