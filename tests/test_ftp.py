@@ -1,9 +1,6 @@
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
 import io
 from datetime import datetime
+from unittest.mock import patch
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
@@ -102,6 +99,11 @@ class FTPTest(TestCase):
     def test_mkremdirs(self, mock_ftp):
         self.storage._start_connection()
         self.storage._mkremdirs('foo/bar')
+
+    @patch('ftplib.FTP', **{'return_value.pwd.return_value': 'foo'})
+    def test_mkremdirs_n_subdirectories(self, mock_ftp):
+        self.storage._start_connection()
+        self.storage._mkremdirs('foo/bar/null')
 
     @patch('ftplib.FTP', **{
         'return_value.pwd.return_value': 'foo',

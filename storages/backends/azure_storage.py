@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import mimetypes
 from datetime import datetime, timedelta
 from tempfile import SpooledTemporaryFile
@@ -9,11 +7,11 @@ from azure.storage.blob import BlobPermissions, ContentSettings
 from azure.storage.blob.blockblobservice import BlockBlobService
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri, force_bytes
 
+from storages.base import BaseStorage
 from storages.utils import (
     clean_name, get_available_overwrite_name, safe_join, setting,
 )
@@ -62,7 +60,7 @@ class AzureStorageFile(File):
     def read(self, *args, **kwargs):
         if 'r' not in self._mode and 'a' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return super(AzureStorageFile, self).read(*args, **kwargs)
+        return super().read(*args, **kwargs)
 
     def write(self, content):
         if ('w' not in self._mode and
@@ -70,7 +68,7 @@ class AzureStorageFile(File):
                 'a' not in self._mode):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super(AzureStorageFile, self).write(force_bytes(content))
+        return super().write(force_bytes(content))
 
     def close(self):
         if self._file is None:
@@ -121,32 +119,38 @@ _AZURE_NAME_MAX_LEN = 1024
 
 
 @deconstructible
-class AzureStorage(Storage):
-
-    account_name = setting("AZURE_ACCOUNT_NAME")
-    account_key = setting("AZURE_ACCOUNT_KEY")
-    azure_container = setting("AZURE_CONTAINER")
-    azure_ssl = setting("AZURE_SSL", True)
-    upload_max_conn = setting("AZURE_UPLOAD_MAX_CONN", 2)
-    timeout = setting('AZURE_CONNECTION_TIMEOUT_SECS', 20)
-    max_memory_size = setting('AZURE_BLOB_MAX_MEMORY_SIZE', 2*1024*1024)
-    expiration_secs = setting('AZURE_URL_EXPIRATION_SECS')
-    overwrite_files = setting('AZURE_OVERWRITE_FILES', False)
-    location = setting('AZURE_LOCATION', '')
-    default_content_type = 'application/octet-stream'
-    cache_control = setting("AZURE_CACHE_CONTROL")
-    is_emulated = setting('AZURE_EMULATED_MODE', False)
-    endpoint_suffix = setting('AZURE_ENDPOINT_SUFFIX')
-    sas_token = setting('AZURE_SAS_TOKEN')
-    custom_domain = setting('AZURE_CUSTOM_DOMAIN')
-    connection_string = setting('AZURE_CONNECTION_STRING')
-    custom_connection_string = setting(
-        'AZURE_CUSTOM_CONNECTION_STRING', setting('AZURE_CONNECTION_STRING'))
-    token_credential = setting('AZURE_TOKEN_CREDENTIAL')
-
-    def __init__(self):
+class AzureStorage(BaseStorage):
+    def __init__(self, **settings):
+        super().__init__(**settings)
         self._service = None
         self._custom_service = None
+
+    def get_default_settings(self):
+        return {
+            "account_name": setting("AZURE_ACCOUNT_NAME"),
+            "account_key": setting("AZURE_ACCOUNT_KEY"),
+            "object_parameters": setting("AZURE_OBJECT_PARAMETERS", {}),
+            "azure_container": setting("AZURE_CONTAINER"),
+            "azure_ssl": setting("AZURE_SSL", True),
+            "upload_max_conn": setting("AZURE_UPLOAD_MAX_CONN", 2),
+            "timeout": setting('AZURE_CONNECTION_TIMEOUT_SECS', 20),
+            "max_memory_size": setting('AZURE_BLOB_MAX_MEMORY_SIZE', 2*1024*1024),
+            "expiration_secs": setting('AZURE_URL_EXPIRATION_SECS'),
+            "overwrite_files": setting('AZURE_OVERWRITE_FILES', False),
+            "location": setting('AZURE_LOCATION', ''),
+            "default_content_type": 'application/octet-stream',
+            "cache_control": setting("AZURE_CACHE_CONTROL"),
+            "is_emulated": setting('AZURE_EMULATED_MODE', False),
+            "endpoint_suffix": setting('AZURE_ENDPOINT_SUFFIX'),
+            "sas_token": setting('AZURE_SAS_TOKEN'),
+            "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
+            "connection_string": setting('AZURE_CONNECTION_STRING'),
+            "custom_connection_string": setting(
+                'AZURE_CUSTOM_CONNECTION_STRING',
+                setting('AZURE_CONNECTION_STRING'),
+            ),
+            "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
+        }
 
     def _blob_service(self, custom_domain=None, connection_string=None):
         # This won't open a connection or anything,
@@ -212,7 +216,7 @@ class AzureStorage(Storage):
         name = clean_name(name)
         if self.overwrite_files:
             return get_available_overwrite_name(name, max_length)
-        return super(AzureStorage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)
 
     def exists(self, name):
         return self.service.exists(
@@ -239,11 +243,7 @@ class AzureStorage(Storage):
     def _save(self, name, content):
         cleaned_name = clean_name(name)
         name = self._get_valid_path(name)
-        guessed_type, content_encoding = mimetypes.guess_type(name)
-        content_type = (
-            _content_type(content) or
-            guessed_type or
-            self.default_content_type)
+        params = self._get_content_settings_parameters(name, content)
 
         # Unwrap django file (wrapped by parent's save call)
         if isinstance(content, File):
@@ -254,10 +254,7 @@ class AzureStorage(Storage):
             container_name=self.azure_container,
             blob_name=name,
             stream=content,
-            content_settings=ContentSettings(
-                content_type=content_type,
-                content_encoding=content_encoding,
-                cache_control=self.cache_control),
+            content_settings=ContentSettings(**params),
             max_connections=self.upload_max_conn,
             timeout=self.timeout)
         return cleaned_name
@@ -283,6 +280,31 @@ class AzureStorage(Storage):
             blob_name=filepath_to_uri(name),
             protocol=self.azure_protocol,
             **make_blob_url_kwargs)
+
+    def _get_content_settings_parameters(self, name, content=None):
+        params = {}
+
+        guessed_type, content_encoding = mimetypes.guess_type(name)
+        content_type = (
+            _content_type(content) or
+            guessed_type or
+            self.default_content_type)
+
+        params['cache_control'] = self.cache_control
+        params['content_type'] = content_type
+        params['content_encoding'] = content_encoding
+
+        params.update(self.get_object_parameters(name))
+        return params
+
+    def get_object_parameters(self, name):
+        """
+        Returns a dictionary that is passed to content settings. Override this
+        method to adjust this on a per-object basis to set e.g ContentDisposition.
+
+        By default, returns the value of AZURE_OBJECT_PARAMETERS.
+        """
+        return self.object_parameters.copy()
 
     def get_modified_time(self, name):
         """

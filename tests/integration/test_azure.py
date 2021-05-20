@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 import io
 
 from django import forms
@@ -10,9 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import Context, Template
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from tests.integration.models import SimpleFileModel
 
 from storages.backends import azure_storage
+from tests.integration.models import SimpleFileModel
 
 
 class AzureStorageTest(TestCase):

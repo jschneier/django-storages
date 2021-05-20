@@ -18,6 +18,7 @@ import ftplib
 import io
 import os
 from datetime import datetime
+from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -26,11 +27,6 @@ from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 
 from storages.utils import setting
-
-try:
-    from django.utils.six.moves.urllib import parse as urlparse
-except ImportError:
-    from urllib import parse as urlparse
 
 
 class FTPStorageException(Exception):
@@ -56,7 +52,7 @@ class FTPStorage(Storage):
 
     def _decode_location(self, location):
         """Return splitted configuration data from location."""
-        splitted_url = urlparse.urlparse(location)
+        splitted_url = urlparse(location)
         config = {}
 
         if splitted_url.scheme not in ('ftp', 'aftp'):
@@ -111,7 +107,7 @@ class FTPStorage(Storage):
 
     def _mkremdirs(self, path):
         pwd = self._connection.pwd()
-        path_splitted = os.path.split(path)
+        path_splitted = path.split(os.path.sep)
         for path_part in path_splitted:
             try:
                 self._connection.cwd(path_part)
@@ -248,7 +244,7 @@ class FTPStorage(Storage):
     def url(self, name):
         if self._base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urlparse.urljoin(self._base_url, name).replace('\\', '/')
+        return urljoin(self._base_url, name).replace('\\', '/')
 
 
 class FTPStorageFile(File):

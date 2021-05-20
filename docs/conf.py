@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # django-storages documentation build configuration file, created by
 # sphinx-quickstart on Sun Aug 28 13:44:45 2011.
 #
@@ -11,7 +9,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -41,8 +40,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'django-storages'
-copyright = u'2011-2017, David Larlet, et. al.'
+project = 'django-storages'
+copyright = '2011-2017, David Larlet, et. al.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,8 +178,8 @@ htmlhelp_basename = 'django-storagesdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'django-storages.tex', u'django-storages Documentation',
-   u'David Larlet, et. al.', 'manual'),
+  ('index', 'django-storages.tex', 'django-storages Documentation',
+   'David Larlet, et. al.', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -212,18 +211,18 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'django-storages', u'django-storages Documentation',
-     [u'David Larlet, et. al.'], 1)
+    ('index', 'django-storages', 'django-storages Documentation',
+     ['David Larlet, et. al.'], 1)
 ]
 
 
 # -- Options for Epub output ---------------------------------------------------
 
 # Bibliographic Dublin Core info.
-epub_title = u'django-storages'
-epub_author = u'David Larlet, et. al.'
-epub_publisher = u'David Larlet, et. al.'
-epub_copyright = u'2011-2017, David Larlet, et. al.'
+epub_title = 'django-storages'
+epub_author = 'David Larlet, et. al.'
+epub_publisher = 'David Larlet, et. al.'
+epub_copyright = '2011-2017, David Larlet, et. al.'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.

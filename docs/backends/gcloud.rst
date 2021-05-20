@@ -15,19 +15,23 @@ Use pip to install from PyPI::
 Authentication
 --------------
 By default, this library will try to use the credentials associated with the
-current Google Compute Engine (GCE) or Google Kubernetes Engine (GKE) instance
-for authentication. In most cases, the default service accounts are not sufficient
-to read/write and sign files in GCS.
+current Google Cloud infrastrcture/environment for authentication.
+
+In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, you so you will need to create a dedicated service account:
 
 1. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 
-2. Create the key and download `your-project-XXXXX.json` file.
+2. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
 
-3. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
+3. Ensure this service account is associated to the type of compute being used (Google Compute Engine (GCE), Google Kubernetes Engine (GKE), Google Cloud Run (GCR), etc)
 
-4. The key must be mounted/available to your running Django app. Note: a json keyfile will work for developer machines (or other instances outside Google infrastructure).
+For development use cases, or other instances outside Google infrastructure:
 
-5. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
+4. Create the key and download `your-project-XXXXX.json` file.
+
+5. Ensure the key is mounted/available to your running Django app.
+
+6. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
 
 Alternatively, you can use the setting `GS_CREDENTIALS` as described below.
 
@@ -41,7 +45,7 @@ Set the default storage and bucket name in your settings.py file:
     DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
     GS_BUCKET_NAME = 'YOUR_BUCKET_NAME_GOES_HERE'
 
-To allow ``django-admin.py`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
+To allow ``django-admin`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
@@ -92,30 +96,6 @@ back to the default inferred from the environment
         "path/to/credentials.json"
     )
 
-
-``GS_AUTO_CREATE_BUCKET`` (optional, default is ``False``)
-
-If True, attempt to create the bucket if it does not exist.
-
-.. deprecated:: 1.9
-
-   The ability to automatically create a bucket will be removed in version 1.10. The permissions needed
-   to do so are incongruent with the requirements of the rest of this library. Either create it yourself
-   or use one of the popular configuration management tools.
-
-
-``GS_AUTO_CREATE_ACL`` (optional, default is ``projectPrivate``)
-
-ACL used when creating a new bucket, from the
-`list of predefined ACLs <https://cloud.google.com/storage/docs/access-control/lists#predefined-acl>`_.
-(A "JSON API" ACL is preferred but an "XML API/gsutil" ACL will be
-translated.)
-
-Note that the ACL you select must still give the service account
-running the GCE backend to have OWNER permission on the bucket. If
-you're using the default service account, this means you're restricted
-to the ``projectPrivate`` ACL.
-
 ``GS_DEFAULT_ACL`` (optional, default is None)
 
 ACL used when creating a new blob, from the
@@ -133,6 +113,17 @@ a signed (expiring) url.
    GS_DEFAULT_ACL must be set to 'publicRead' to return a public url. Even if you set
    the bucket to public or set the file permissions directly in GCS to public.
 
+.. note::
+    When using this setting, make sure you have ``fine-grained`` access control enabled on your bucket,
+    as opposed to ``Uniform`` access control, or else, file  uploads will return with HTTP 400. If you
+    already have a bucket with ``Uniform`` access control set to public read, please keep 
+    ``GS_DEFAULT_ACL`` to ``None`` and set ``GS_QUERYSTRING_AUTH`` to ``False``.
+
+``GS_QUERYSTRING_AUTH`` (optional, default is True)
+
+If set to ``False`` it forces the url not to be signed. This setting is useful if you need to have a
+bucket configured with ``Uniform`` access control configured with public read. In that case you should
+force the flag ``GS_QUERYSTRING_AUTH = False`` and ``GS_DEFAULT_ACL = None``
 
 ``GS_FILE_CHARSET`` (optional)
 
@@ -275,11 +266,4 @@ Push the objects into the cache to make sure they pickle properly::
     >>> cache.set('obj1', obj1)
     >>> cache.set('obj2', obj2)
     >>> cache.get('obj2').pdf
-    <FieldFile: tests/django_test_.txt>
-
-Deleting an object deletes the file it uses, if there are no other objects still using that file::
-
-    >>> obj2.delete()
-    >>> obj2.pdf.save('django_test.txt', ContentFile('more content'))
-    >>> obj2.pdf
     <FieldFile: tests/django_test_.txt>

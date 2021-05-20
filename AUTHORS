@@ -41,6 +41,10 @@ By order of apparition, thanks:
     * Chris Rink
     * Shaung Cheng (S3 docs)
     * Andrew Perry (Bug fixes in SFTPStorage)
+    * Manuel Kaufmann (humitos)
+    * Taras Petriichuk (Dropbox write_mode option)
+    * Zoe Liao (S3 docs)
+    * Jonathan Ehwald
 
 
 Extra thanks to Marty for adding this in Django,

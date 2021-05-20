@@ -163,5 +163,12 @@ The following settings are available:
 
 ``AZURE_CACHE_CONTROL``
 
-    A variable to set the Cache-Control HTTP response header. E.g. 
+    A variable to set the Cache-Control HTTP response header. E.g.
     ``AZURE_CACHE_CONTROL = "public,max-age=31536000,immutable"``
+
+``AZURE_OBJECT_PARAMETERS``
+
+    Use this to set content settings on all objects. To set these on a per-object
+    basis, subclass the backend and override ``AzureStorage.get_object_parameters``.
+    
+    This is a Python ``dict`` and the possible parameters are: ``content_type``, ``content_encoding``, ``content_language``, ``content_disposition``, ``cache_control``, and ``content_md5``.
