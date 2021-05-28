@@ -52,7 +52,7 @@ To allow ``django-admin`` collectstatic to automatically put your static files i
 Once you're done, default_storage will be Google Cloud Storage::
 
     >>> from django.core.files.storage import default_storage
-    >>> print default_storage.__class__
+    >>> print(default_storage.__class__)
     <class 'storages.backends.gcloud.GoogleCloudStorage'>
 
 This way, if you define a new FileField, it will use the Google Cloud Storage::
@@ -63,7 +63,7 @@ This way, if you define a new FileField, it will use the Google Cloud Storage::
     ...     photos = models.ImageField(upload_to='photos')
     ...
     >>> resume = Resume()
-    >>> print resume.pdf.storage
+    >>> print(resume.pdf.storage)
     <storages.backends.gcloud.GoogleCloudStorage object at ...>
 
 Settings
@@ -183,7 +183,7 @@ Fields
 Once you're done, default_storage will be Google Cloud Storage::
 
     >>> from django.core.files.storage import default_storage
-    >>> print default_storage.__class__
+    >>> print(default_storage.__class__)
     <class 'storages.backends.gcloud.GoogleCloudStorage'>
 
 This way, if you define a new FileField, it will use the Google Cloud Storage::
@@ -194,7 +194,7 @@ This way, if you define a new FileField, it will use the Google Cloud Storage::
     ...     photos = models.ImageField(upload_to='photos')
     ...
     >>> resume = Resume()
-    >>> print resume.pdf.storage
+    >>> print(resume.pdf.storage)
     <storages.backends.gcloud.GoogleCloudStorage object at ...>
 
 Storage
