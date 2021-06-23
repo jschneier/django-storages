@@ -30,10 +30,11 @@ class GoogleCloudFile(File):
         self._mode = mode
         self._storage = storage
         self._blob = None
-        if 'w' in mode and not self.blob:
-            self.blob = Blob(
-                self.name, self._storage.bucket,
-                chunk_size=self._storage.blob_chunk_size)
+        if 'w' in mode:
+            if not self.blob:
+                self.blob = Blob(
+                    self.name, self.bucket,
+                    chunk_size=self.blob_chunk_size)
         self._file = None
         self._is_dirty = False
 
@@ -43,7 +44,7 @@ class GoogleCloudFile(File):
 
     def _get_blob(self):
         if self._blob is None:
-            # will be called every time now
+            # will be called every time if the file doesn't exist
             self._blob = self._storage.bucket.get_blob(self.name)
         return self._blob
 
@@ -51,7 +52,6 @@ class GoogleCloudFile(File):
         self._blob = value
 
     blob = property(_get_blob, _set_blob)
-
 
     def _get_file(self):
         if self._file is None:
