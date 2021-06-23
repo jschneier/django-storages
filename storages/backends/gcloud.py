@@ -29,17 +29,29 @@ class GoogleCloudFile(File):
         self.mime_type = mimetypes.guess_type(name)[0]
         self._mode = mode
         self._storage = storage
-        self.blob = storage.bucket.get_blob(name)
-        if not self.blob and 'w' in mode:
+        self._blob = None
+        if 'w' in mode and not self.blob:
             self.blob = Blob(
-                self.name, storage.bucket,
-                chunk_size=storage.blob_chunk_size)
+                self.name, self._storage.bucket,
+                chunk_size=self._storage.blob_chunk_size)
         self._file = None
         self._is_dirty = False
 
     @property
     def size(self):
         return self.blob.size
+
+    def _get_blob(self):
+        if self._blob is None:
+            # will be called every time now
+            self._blob = self._storage.bucket.get_blob(self.name)
+        return self._blob
+
+    def _set_blob(self, value):
+        self._blob = value
+
+    blob = property(_get_blob, _set_blob)
+
 
     def _get_file(self):
         if self._file is None:
