@@ -33,8 +33,8 @@ class GoogleCloudFile(File):
         if 'w' in mode:
             if not self.blob:
                 self.blob = Blob(
-                    self.name, self.bucket,
-                    chunk_size=self.blob_chunk_size)
+                    self.name, storage.bucket,
+                    chunk_size=storage.blob_chunk_size)
         self._file = None
         self._is_dirty = False
 
