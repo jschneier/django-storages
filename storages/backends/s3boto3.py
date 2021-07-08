@@ -380,7 +380,7 @@ class S3Boto3Storage(BaseStorage):
         Gets the security token to use when accessing S3. Get it from
         the environment variables.
         """
-        security_token = self.security_token or lookup_env(S3Boto3Storage.security_token_names)
+        security_token = self.security_token or lookup_env(self.security_token_names)
         return security_token
 
     def _clean_name(self, name):
