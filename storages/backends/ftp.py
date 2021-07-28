@@ -6,7 +6,7 @@
 # Usage:
 #
 # Add below to settings.py:
-# FTP_STORAGE_LOCATION = '[a]ftp://<user>:<pass>@<host>:<port>/[path]'
+# FTP_STORAGE_LOCATION = '[a]ftp[s]://<user>:<pass>@<host>:<port>/[path]'
 #
 # In models.py you can write:
 # from FTPStorage import FTPStorage
@@ -18,13 +18,14 @@ import ftplib
 import io
 import os
 from datetime import datetime
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
+from re import search
 
 from storages.utils import setting
 
@@ -52,25 +53,37 @@ class FTPStorage(Storage):
 
     def _decode_location(self, location):
         """Return splitted configuration data from location."""
-        splitted_url = urlparse(location)
+        splitted_url = search(
+            '^(?P<scheme>.+)://(?P<user>.+):(?P<passwd>.+)@'
+            '(?P<host>.+):(?P<port>\d+)/(?P<path>.*)$',
+            location)
         config = {}
+        if splitted_url is None:
+            raise ImproperlyConfigured(
+                'Wrong FTP adress format, correct formatting is:\n\
+                    [a]ftp[s]://<user>:<passwd>@<host>:<port>/[path]'
+            )
+        splitted_url = splitted_url.groupdict()
 
-        if splitted_url.scheme not in ('ftp', 'aftp'):
+        if splitted_url["scheme"] not in ('ftp', 'aftp', 'ftps'):
             raise ImproperlyConfigured(
                 'FTPStorage works only with FTP protocol!'
             )
-        if splitted_url.hostname == '':
-            raise ImproperlyConfigured('You must at least provide hostname!')
 
-        if splitted_url.scheme == 'aftp':
+        config['active'] = False
+        config['secure'] = False
+        if splitted_url['scheme'] == 'aftp':
             config['active'] = True
-        else:
-            config['active'] = False
-        config['path'] = splitted_url.path
-        config['host'] = splitted_url.hostname
-        config['user'] = splitted_url.username
-        config['passwd'] = splitted_url.password
-        config['port'] = int(splitted_url.port)
+        if splitted_url['scheme'] == 'ftps':
+            config['secure'] = True
+
+        config['user'] = splitted_url['user']
+        config['passwd'] = splitted_url['passwd']
+        config['host'] = splitted_url['host']
+        config['port'] = int(splitted_url['port'])
+        config['path'] = splitted_url['path']
+        if config['port'] > 65535:
+            raise ImproperlyConfigured('Port must be from 0 to 65535')
 
         return config
 
@@ -84,11 +97,16 @@ class FTPStorage(Storage):
 
         # Real reconnect
         if self._connection is None:
-            ftp = ftplib.FTP()
+            if self._config['secure']:
+                ftp = ftplib.FTP_TLS()
+            else:
+                ftp = ftplib.FTP()
             ftp.encoding = self.encoding
             try:
                 ftp.connect(self._config['host'], self._config['port'])
                 ftp.login(self._config['user'], self._config['passwd'])
+                if self._config['secure']:
+                    ftp.prot_p()
                 if self._config['active']:
                     ftp.set_pasv(False)
                 if self._config['path'] != '':
@@ -191,7 +209,7 @@ class FTPStorage(Storage):
                 s = str(1900 + int(s[2:5])) + s[5:]
             return datetime.strptime(s, '%Y%m%d%H%M%S')
         raise FTPStorageException(
-                'Error getting modification time of file %s' % name
+            'Error getting modification time of file %s' % name
         )
 
     def listdir(self, path):
