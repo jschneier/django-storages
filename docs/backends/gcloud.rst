@@ -306,24 +306,26 @@ You can now use your custom storage class for default file storage in Django set
 
 Or you may want to upload files to different buckets depending on your needs::
 
-from storages.backends.gcloud import GoogleCloudStorage
+    from storages.backends.gcloud import GoogleCloudStorage
 
-    class MediaFiles_A_Storage(GoogleCloudStorage):
-        bucket_name = 'my-media-bucket-A'
-        location = ''
-        file_overwrite = False
-        default_acl = 'private'
-        
-    class MediaFiles_B_Storage(GoogleCloudStorage):
-        bucket_name = 'my-media-bucket-B'
-        location = ''
-        file_overwrite = False
-        default_acl = 'private'
+        class MediaFiles_A_Storage(GoogleCloudStorage):
+            bucket_name = 'my-media-bucket-A'
+            location = ''
+            file_overwrite = False
+            default_acl = 'private'
+
+        class MediaFiles_B_Storage(GoogleCloudStorage):
+            bucket_name = 'my-media-bucket-B'
+            location = ''
+            file_overwrite = False
+            default_acl = 'private'
 
 In the models, you have to do::
+
+    from django.db import models
+    from my_django_app.storage_backends import (MediaFiles_A_Storage, MediaFiles_B_Storage,)
+
+    class Resume(models.Model):
+        pdf = models.FileField(storage=MediaFiles_A_Storage(),)
+        photos = models.ImageField(storage=MediaFiles_B_Storage(),)
         
->>> from django.db import models
->>> from my_django_app.storage_backends import (MediaFiles_A_Storage, MediaFiles_B_Storage,)
->>> class Resume(models.Model):
-...     pdf = models.FileField(storage=MediaFiles_A_Storage(),)
-...     photos = models.ImageField(storage=MediaFiles_B_Storage(),)
