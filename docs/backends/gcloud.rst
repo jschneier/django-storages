@@ -267,3 +267,63 @@ Push the objects into the cache to make sure they pickle properly::
     >>> cache.set('obj2', obj2)
     >>> cache.get('obj2').pdf
     <FieldFile: tests/django_test_.txt>
+
+Overriding the default Storage class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can override the default Storage class and create your custom storage backend. Below provides some examples and common use cases to help you get started. This section assumes you have your ``GS_CREDENTIALS`` credentials configured.
+
+To create a storage class using a specific bucket::
+
+    from storages.backends.gcloud import GoogleCloudStorage
+
+    class MediaFilesStorage(GoogleCloudStorage):
+        bucket_name = 'my-media-bucket'
+        location = 'media'
+        file_overwrite = False
+        default_acl = 'private'
+        
+    class StaticFilesStorage(GoogleCloudStorage):
+        bucket_name = 'my-static-bucket'
+        location = 'static'
+        file_overwrite = True
+        default_acl = 'publicRead'
+
+
+Assume that you store the above class ``MediaFilesStorage`` in a file called ``storage_backends.py`` in the project directory tree like below::
+
+    | (your django project root directory)
+    | ├── manage.py
+    | ├── my_django_app
+    | |   ├── settings.py
+    | │   ├── custom_storage.py
+    | │   └── ...
+    | ├── ...
+
+You can now use your custom storage class for default file storage in Django settings like below::
+
+    DEFAULT_FILE_STORAGE = 'my_django_app.storage_backends.MediaFilesStorage'
+
+Or you may want to upload files to different buckets depending on your needs::
+
+from storages.backends.gcloud import GoogleCloudStorage
+
+    class MediaFiles_A_Storage(GoogleCloudStorage):
+        bucket_name = 'my-media-bucket-A'
+        location = ''
+        file_overwrite = False
+        default_acl = 'private'
+        
+    class MediaFiles_B_Storage(GoogleCloudStorage):
+        bucket_name = 'my-media-bucket-B'
+        location = ''
+        file_overwrite = False
+        default_acl = 'private'
+
+In the models, you have to do::
+        
+>>> from django.db import models
+>>> from my_django_app.storage_backends import (MediaFiles_A_Storage, MediaFiles_B_Storage,)
+>>> class Resume(models.Model):
+...     pdf = models.FileField(storage=MediaFiles_A_Storage(),)
+...     photos = models.ImageField(storage=MediaFiles_B_Storage(),)
