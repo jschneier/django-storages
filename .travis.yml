@@ -1,5 +1,6 @@
 # https://travis-ci.org/jschneier/django-storages/
 language: python
+dist: focal
 
 cache: pip
 
