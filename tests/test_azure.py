@@ -111,20 +111,20 @@ class AzureStorageTest(TestCase):
     def test_get_available_invalid(self):
         self.storage.overwrite_files = False
         self.storage._service.exists.return_value = False
-        if django.VERSION < (3,):
+        if django.VERSION[:2] == (3, 0):
             # Django 2.2.21 added this security fix:
             # https://docs.djangoproject.com/en/3.2/releases/2.2.21/#cve-2021-31542-potential-directory-traversal-via-uploaded-files
             # It raises SuspiciousOperation before we get to our ValueError.
-            # The security issue doesn't apply to 3.x so they didn't change the behaviour there.
-            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "")
-            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "/")
-            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, ".")
-            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "///")
-        else:
+            # The fix wasn't applied to 3.0 (no longer in support), but was applied to 3.1 & 3.2.
             self.assertRaises(ValueError, self.storage.get_available_name, "")
             self.assertRaises(ValueError, self.storage.get_available_name, "/")
             self.assertRaises(ValueError, self.storage.get_available_name, ".")
             self.assertRaises(ValueError, self.storage.get_available_name, "///")
+        else:
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "/")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, ".")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "///")
         self.assertRaises(ValueError, self.storage.get_available_name, "...")
 
     def test_url(self):
