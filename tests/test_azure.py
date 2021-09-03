@@ -2,9 +2,9 @@ import datetime
 from datetime import timedelta
 from unittest import mock
 
+import django
 import pytz
 from azure.storage.blob import Blob, BlobPermissions, BlobProperties
-import django
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
