@@ -2,8 +2,10 @@ import datetime
 from datetime import timedelta
 from unittest import mock
 
+import django
 import pytz
 from azure.storage.blob import Blob, BlobPermissions, BlobProperties
+from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 
@@ -109,10 +111,20 @@ class AzureStorageTest(TestCase):
     def test_get_available_invalid(self):
         self.storage.overwrite_files = False
         self.storage._service.exists.return_value = False
-        self.assertRaises(ValueError, self.storage.get_available_name, "")
-        self.assertRaises(ValueError, self.storage.get_available_name, "/")
-        self.assertRaises(ValueError, self.storage.get_available_name, ".")
-        self.assertRaises(ValueError, self.storage.get_available_name, "///")
+        if django.VERSION[:2] == (3, 0):
+            # Django 2.2.21 added this security fix:
+            # https://docs.djangoproject.com/en/3.2/releases/2.2.21/#cve-2021-31542-potential-directory-traversal-via-uploaded-files
+            # It raises SuspiciousOperation before we get to our ValueError.
+            # The fix wasn't applied to 3.0 (no longer in support), but was applied to 3.1 & 3.2.
+            self.assertRaises(ValueError, self.storage.get_available_name, "")
+            self.assertRaises(ValueError, self.storage.get_available_name, "/")
+            self.assertRaises(ValueError, self.storage.get_available_name, ".")
+            self.assertRaises(ValueError, self.storage.get_available_name, "///")
+        else:
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "/")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, ".")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "///")
         self.assertRaises(ValueError, self.storage.get_available_name, "...")
 
     def test_url(self):
