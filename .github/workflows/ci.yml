@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches:
+      - '**'
+
+
+jobs:
+  run_tests:
+    name: tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9"]
+        include:
+          - python-version: 3.5
+            toxenv: ["flake8", "integration"]
+          - python-version: 3.6
+            toxenv: ["py36-django22", "py36-django30", "py36-django31", "py36-django32", "py36-djangomain"]
+          - python-version: 3.7
+            toxenv: ["py37-django22", "py37-django30", "py37-django31", "py37-django32", "py37-djangomain"]
+          - python-version: 3.8
+            toxenv: ["py38-django22", "py38-django30", "py38-django31", "py38-django32", "py38-djangomain"]
+          - python-version: 3.9
+            toxenv: ["py39-django22", "py39-django30", "py39-django31", "py39-django32", "py39-djangomain"]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: pip install tox
+
+      - name: Run Tests
+        env:
+          TOXENV: ${{ matrix.toxenv }}
+        run: tox
