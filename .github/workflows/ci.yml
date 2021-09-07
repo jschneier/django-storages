@@ -1,6 +1,11 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches:
+      - '**'
 
 
 jobs:
@@ -68,7 +73,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04]
-        python-version: ["3.6"]
+        python-version: ["3.5"]
 
     steps:
       - uses: actions/checkout@v2
@@ -78,7 +83,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: pip install tox
+        run: |
+          pip install --upgrade setuptools
+          pip install tox
 
       - name: Quality tests
         env:
