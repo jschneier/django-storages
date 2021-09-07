@@ -90,4 +90,6 @@ jobs:
       - name: Quality tests
         env:
           TOXENV: flake8
-        run: tox
+        run: |
+          pip show isort
+          tox
