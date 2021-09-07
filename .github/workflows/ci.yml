@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches:
+      - '**'
+
+
+jobs:
+  run_unittest_tests:
+    name: Unittest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9"]
+        django-version: ["2.2", "3.0", "3.1", "3.2"]
+        exclude:
+            - python-version: "3.5"
+              django-version: "3.0"
+            - python-version: "3.5"
+              django-version: "3.1"
+            - python-version: "3.5"
+              django-version: "3.2"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade setuptools
+          pip install tox
+
+      - name: Run unittest Python ${{ matrix.python-version }} -- Django ${{ matrix.django-version }}
+        env:
+          TOXENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}
+        run: tox
+
+  run_integration_tests:
+    name: Integration tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["3.5"]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade setuptools
+          pip install tox
+
+      - name: Integration tests
+        env:
+          TOXENV: integration
+        run: tox
+
+  run_quality_tests:
+    name: Quality tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["3.6"]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          pip install tox
+
+      - name: Quality tests
+        env:
+          TOXENV: flake8
+        run: |
+          tox
