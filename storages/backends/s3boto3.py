@@ -113,6 +113,7 @@ class S3Boto3StorageFile(File):
         self._raw_bytes_written = 0
         self._file = None
         self._multipart = None
+        self._parts = None
         # 5 MB is the minimum part size (if there is more than one part).
         # Amazon allows up to 10,000 parts.  The default supports uploads
         # up to roughly 50 GB.  Increase the part size to accommodate
@@ -162,6 +163,7 @@ class S3Boto3StorageFile(File):
             self._multipart = self.obj.initiate_multipart_upload(
                 **self._storage._get_write_parameters(self.obj.key)
             )
+            self._parts = []
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
         bstr = to_bytes(content)
@@ -184,7 +186,11 @@ class S3Boto3StorageFile(File):
             self._write_counter += 1
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
-            part.upload(Body=self.file.read())
+            response = part.upload(Body=self.file.read())
+            self._parts.append({
+                'ETag': response['ETag'],
+                'PartNumber': self._write_counter
+            })
             self.file.seek(0)
             self.file.truncate()
 
@@ -216,13 +222,8 @@ class S3Boto3StorageFile(File):
     def close(self):
         if self._is_dirty:
             self._flush_write_buffer()
-            # TODO: Possibly cache the part ids as they're being uploaded
-            # instead of requesting parts from server. For now, emulating
-            # s3boto's behavior.
-            parts = [{'ETag': part.e_tag, 'PartNumber': part.part_number}
-                     for part in self._multipart.parts.all()]
             self._multipart.complete(
-                MultipartUpload={'Parts': parts})
+                MultipartUpload={'Parts': self._parts})
         else:
             if self._multipart is not None:
                 self._multipart.abort()
