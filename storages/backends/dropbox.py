@@ -79,7 +79,8 @@ class DropBoxStorage(Storage):
         if oauth2_access_token is None:
             raise ImproperlyConfigured("You must configure an auth token at"
                                        "'settings.DROPBOX_OAUTH2_TOKEN'.")
-
+        if write_mode not in ["add", "overwrite",  "update"]:
+            raise ImproperlyConfigured("DROPBOX_WRITE_MODE must be set to either: 'add', 'overwrite' or 'update'")
         self.root_path = root_path
         self.write_mode = write_mode
         self.client = Dropbox(oauth2_access_token, timeout=timeout)
