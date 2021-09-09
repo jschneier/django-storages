@@ -28,15 +28,29 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
 
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
 
-``AWS_ACCESS_KEY_ID``
-    Your Amazon Web Services access key, as a string.
+There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Boto3Storage``
+searches for them:
 
-``AWS_SECRET_ACCESS_KEY``
-    Your Amazon Web Services secret access key, as a string.
+#. ``AWS_S3_SESSION_PROFILE``
+#. ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_KEY_ID``
+#. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
+#. The environment variables AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY
+#. The environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+#. Use Boto3's default session
+
+``AWS_S3_SESSION_PROFILE``
+    The AWS profile to use instead of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``. All configuration information
+    other than the key id and secret key is ignored in favor of the other settings specified below.
 
 .. note::
+      If this is set, then it is a configuration error to also set ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``.
+      ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are ignored
 
-      If ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are not set, boto3 internally looks up IAM credentials.
+``AWS_S3_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID``
+    Your Amazon Web Services access key, as a string.
+
+``AWS_S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY``
+    Your Amazon Web Services secret access key, as a string.
 
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.

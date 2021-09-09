@@ -52,6 +52,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
 
+    def test_s3_session(self):
+        settings.AWS_S3_SESSION_PROFILE = "test_profile"
+        with mock.patch('boto3.Session') as mock_session:
+            storage = s3boto3.S3Boto3Storage()
+            _ = storage.connection
+            mock_session.assert_called_once_with(profile_name="test_profile")
+
     def test_pickle_with_bucket(self):
         """
         Test that the storage can be pickled with a bucket attached
