@@ -7,7 +7,7 @@ import threading
 from datetime import datetime, timedelta
 from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -559,12 +559,17 @@ class S3Boto3Storage(BaseStorage):
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
+        params = parameters.copy() if parameters else {}
         if expire is None:
             expire = self.querystring_expire
 
         if self.custom_domain:
-            url = "{}//{}/{}".format(
-                self.url_protocol, self.custom_domain, filepath_to_uri(name))
+            url = "{}//{}/{}{}".format(
+                self.url_protocol,
+                self.custom_domain,
+                filepath_to_uri(name),
+                "?{}".format(urlencode(params)) if params else "",
+            )
 
             if self.querystring_auth and self.cloudfront_signer:
                 expiration = datetime.utcnow() + timedelta(seconds=expire)
@@ -573,7 +578,6 @@ class S3Boto3Storage(BaseStorage):
 
             return url
 
-        params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
         params['Key'] = name
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,

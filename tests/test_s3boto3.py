@@ -627,6 +627,14 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path, "/%C3%A3l%C3%B6h%C3%A2.jpg")
 
+    def test_custom_domain_parameters(self):
+        self.storage.custom_domain = "mock.cloudfront.net"
+        filename = "filename.mp4"
+        url = self.storage.url(filename, parameters={"version": 10})
+        parsed_url = urlparse(url)
+        self.assertEqual(parsed_url.path, "/filename.mp4")
+        self.assertEqual(parsed_url.query, "version=10")
+
     def test_strip_signing_parameters(self):
         expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
         self.assertEqual(self.storage._strip_signing_parameters(
