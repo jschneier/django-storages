@@ -272,6 +272,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         # Set the name of the mock object
         obj.key = name
 
+        multipart = obj.initiate_multipart_upload.return_value
+        multipart.Part.return_value.upload.side_effect = [
+            {'ETag': '123'},
+        ]
         file.write(content)
         obj.initiate_multipart_upload.assert_called_with(
             ACL='public-read',
@@ -281,8 +285,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
 
         # Save the internal file before closing
-        multipart = obj.initiate_multipart_upload.return_value
-        multipart.parts.all.return_value = [mock.MagicMock(e_tag='123', part_number=1)]
         file.close()
         multipart.Part.assert_called_with(1)
         part = multipart.Part.return_value
@@ -391,6 +393,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         # Write content at least twice as long as the buffer size
         written_content = ''
         counter = 1
+        multipart.Part.return_value.upload.side_effect = [
+            {'ETag': '123'},
+            {'ETag': '456'},
+        ]
         while len(written_content) < 2 * file.buffer_size:
             content = 'hello, aws {counter}\n'.format(counter=counter)
             # Write more than just a few bytes in each iteration to keep the
@@ -401,10 +407,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             counter += 1
 
         # Save the internal file before closing
-        multipart.parts.all.return_value = [
-            mock.MagicMock(e_tag='123', part_number=1),
-            mock.MagicMock(e_tag='456', part_number=2)
-        ]
         file.close()
         self.assertListEqual(
             multipart.Part.call_args_list,
