@@ -6,8 +6,8 @@
     :target: https://pypi.org/project/django-storages/
     :alt: PyPI Version
 
-.. image:: https://travis-ci.org/jschneier/django-storages.svg?branch=master
-    :target: https://travis-ci.org/jschneier/django-storages
+.. image:: https://github.com/jschneier/django-storages/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/jschneier/django-storages/actions/workflows/ci.yml
     :alt: Build Status
 
 Installation
