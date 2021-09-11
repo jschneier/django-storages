@@ -395,8 +395,8 @@ class S3Boto3Storage(BaseStorage):
         provided in the settings then get them from the environment
         variables.
         """
-        access_key = self.access_key or lookup_env(S3Boto3Storage.access_key_names)
-        secret_key = self.secret_key or lookup_env(S3Boto3Storage.secret_key_names)
+        access_key = self.access_key or lookup_env(self.access_key_names)
+        secret_key = self.secret_key or lookup_env(self.secret_key_names)
         return access_key, secret_key
 
     def _get_security_token(self):
@@ -404,7 +404,7 @@ class S3Boto3Storage(BaseStorage):
         Gets the security token to use when accessing S3. Get it from
         the environment variables.
         """
-        security_token = self.security_token or lookup_env(S3Boto3Storage.security_token_names)
+        security_token = self.security_token or lookup_env(self.security_token_names)
         return security_token
 
     def _clean_name(self, name):
