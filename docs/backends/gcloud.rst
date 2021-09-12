@@ -148,9 +148,31 @@ must fit in memory. Recommended if you are going to be uploading large files.
 
    This must be a multiple of 256K (1024 * 256)
 
-``GS_CACHE_CONTROL`` (optional: default is ``None``)
+``GS_OBJECT_PARAMETERS`` (optional: default is ``{}``)
 
-Sets Cache-Control HTTP header for the file, more about HTTP caching can be found `here <https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching#cache-control>`_
+Dictionary of key-value pairs mapping from blob property name to value.
+
+Use this to set parameters on all objects. To set these on a per-object
+basis, subclass the backend and override ``GoogleCloudStorage.get_object_parameters``.
+
+The valid property names are ::
+
+  acl
+  cache_control
+  content_disposition
+  content_encoding
+  content_language
+  content_type
+  metadata
+  storage_class
+
+If not set, the ``content_type`` property will be guessed.
+
+If set, ``acl`` overrides :ref:`GS_DEFAULT_ACL <gs-default-acl>`.
+
+.. warning::
+
+   Do not set ``name``. This is set automatically based on the filename.
 
 ``GS_CUSTOM_ENDPOINT`` (optional: default is ``None``)
 
