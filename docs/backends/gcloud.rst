@@ -38,24 +38,29 @@ Alternatively, you can use the setting `GS_CREDENTIALS` as described below.
 
 Getting Started
 ---------------
-Set the default storage and bucket name in your settings.py file:
+Set the default storage and bucket name in your settings.py file
 
-::
+.. code-block:: python
 
     DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
     GS_BUCKET_NAME = 'YOUR_BUCKET_NAME_GOES_HERE'
+
 
 To allow ``django-admin`` collectstatic to automatically put your static files in your bucket set the following in your settings.py::
 
     STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
-Once you're done, default_storage will be Google Cloud Storage::
+Once you're done, default_storage will be Google Cloud Storage
+
+.. code-block:: python
 
     >>> from django.core.files.storage import default_storage
     >>> print(default_storage.__class__)
     <class 'storages.backends.gcloud.GoogleCloudStorage'>
 
-This way, if you define a new FileField, it will use the Google Cloud Storage::
+This way, if you define a new FileField, it will use the Google Cloud Storage
+
+.. code-block:: python
 
     >>> from django.db import models
     >>> class Resume(models.Model):
@@ -69,10 +74,6 @@ This way, if you define a new FileField, it will use the Google Cloud Storage::
 Settings
 --------
 
-To use gcloud set::
-
-    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-
 ``GS_BUCKET_NAME``
 
 Your Google Storage bucket name, as a string. Required.
@@ -81,6 +82,8 @@ Your Google Storage bucket name, as a string. Required.
 
 Your Google Cloud project ID. If unset, falls back to the default
 inferred from the environment.
+
+.. _gs-creds:
 
 ``GS_CREDENTIALS`` (optional)
 
@@ -96,6 +99,8 @@ back to the default inferred from the environment
         "path/to/credentials.json"
     )
 
+.. _gs-default-acl:
+
 ``GS_DEFAULT_ACL`` (optional, default is None)
 
 ACL used when creating a new blob, from the
@@ -104,7 +109,7 @@ ACL used when creating a new blob, from the
 translated.)
 
 For most cases, the blob will need to be set to the ``publicRead`` ACL in order for the file to be viewed.
-If GS_DEFAULT_ACL is not set, the blob will have the default permissions set by the bucket.
+If ``GS_DEFAULT_ACL`` is not set, the blob will have the default permissions set by the bucket.
 
 ``publicRead`` files will return a public, non-expiring url. All other files return
 a signed (expiring) url.
@@ -124,10 +129,6 @@ a signed (expiring) url.
 If set to ``False`` it forces the url not to be signed. This setting is useful if you need to have a
 bucket configured with ``Uniform`` access control configured with public read. In that case you should
 force the flag ``GS_QUERYSTRING_AUTH = False`` and ``GS_DEFAULT_ACL = None``
-
-``GS_FILE_CHARSET`` (optional)
-
-Allows overriding the character set used in filenames.
 
 ``GS_FILE_OVERWRITE`` (optional: default is ``True``)
 
@@ -165,7 +166,7 @@ Defaults to the root of the bucket.
 
 The time that a generated URL is valid before expiration. The default is 1 day.
 Public files will return a url that does not expire. Files will be signed by
-the credentials provided to django-storages (See GS_CREDENTIALS).
+the credentials provided to django-storages (See :ref:`GS Credentials <gs-creds>`).
 
 Note: Default Google Compute Engine (GCE) Service accounts are
 `unable to sign urls <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
@@ -180,13 +181,17 @@ Usage
 Fields
 ^^^^^^
 
-Once you're done, default_storage will be Google Cloud Storage::
+Once you're done, default_storage will be Google Cloud Storage
+
+.. code-block:: python
 
     >>> from django.core.files.storage import default_storage
     >>> print(default_storage.__class__)
     <class 'storages.backends.gcloud.GoogleCloudStorage'>
 
-This way, if you define a new FileField, it will use the Google Cloud Storage::
+This way, if you define a new FileField, it will use the Google Cloud Storage
+
+.. code-block:: python
 
     >>> from django.db import models
     >>> class Resume(models.Model):
@@ -200,7 +205,9 @@ This way, if you define a new FileField, it will use the Google Cloud Storage::
 Storage
 ^^^^^^^
 
-Standard file access options are available, and work as expected::
+Standard file access options are available, and work as expected
+
+.. code-block:: python
 
     >>> default_storage.exists('storage_test')
     False
@@ -222,7 +229,9 @@ Standard file access options are available, and work as expected::
 Model
 ^^^^^
 
-An object without a file has limited functionality::
+An object without a file has limited functionality
+
+.. code-block:: python
 
     >>> obj1 = Resume()
     >>> obj1.pdf
@@ -232,7 +241,9 @@ An object without a file has limited functionality::
     ...
     ValueError: The 'pdf' attribute has no file associated with it.
 
-Saving a file enables full functionality::
+Saving a file enables full functionality
+
+.. code-block:: python
 
     >>> obj1.pdf.save('django_test.txt', ContentFile('content'))
     >>> obj1.pdf
@@ -242,7 +253,9 @@ Saving a file enables full functionality::
     >>> obj1.pdf.read()
     'content'
 
-Files can be read in a little at a time, if necessary::
+Files can be read in a little at a time, if necessary
+
+.. code-block:: python
 
     >>> obj1.pdf.open()
     >>> obj1.pdf.read(3)
@@ -252,7 +265,9 @@ Files can be read in a little at a time, if necessary::
     >>> '-'.join(obj1.pdf.chunks(chunk_size=2))
     'co-nt-en-t'
 
-Save another file with the same name::
+Save another file with the same name
+
+.. code-block:: python
 
     >>> obj2 = Resume()
     >>> obj2.pdf.save('django_test.txt', ContentFile('more content'))
@@ -261,7 +276,9 @@ Save another file with the same name::
     >>> obj2.pdf.size
     12
 
-Push the objects into the cache to make sure they pickle properly::
+Push the objects into the cache to make sure they pickle properly
+
+.. code-block:: python
 
     >>> cache.set('obj1', obj1)
     >>> cache.set('obj2', obj2)
