@@ -142,7 +142,7 @@ class AzureStorageTest(TestCase):
         blob_mock.url = 'https://ret_foo.blob.core.windows.net/test/some%20blob'
         self.storage._client.get_blob_client.return_value = blob_mock
         self.assertEqual(self.storage.url('some blob'), blob_mock.url)
-        self.storage._client.get_blob_client.assert_called_once_with('some%20blob')
+        self.storage._client.get_blob_client.assert_called_once_with('some blob')
 
     def test_url_unsafe_chars(self):
         blob_mock = mock.MagicMock()
@@ -151,7 +151,7 @@ class AzureStorageTest(TestCase):
         self.assertEqual(
             self.storage.url('foo;?:@=&"<>#%{}|^~[]`bar/~!*()\''), blob_mock.url)
         self.storage.client.get_blob_client.assert_called_once_with(
-            'foo%3B%3F%3A%40%3D%26%22%3C%3E%23%25%7B%7D%7C%5E~%5B%5D%60bar/~!*()\'')
+            'foo;?:@=&"<>#%{}|^~[]`bar/~!*()\'')
 
     @mock.patch('storages.backends.azure_storage.generate_blob_sas')
     def test_url_expire(self, generate_blob_sas_mocked):

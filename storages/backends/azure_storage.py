@@ -11,7 +11,7 @@ from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import filepath_to_uri, force_bytes
+from django.utils.encoding import force_bytes
 
 from storages.base import BaseStorage
 from storages.utils import (
@@ -271,8 +271,7 @@ class AzureStorage(BaseStorage):
                 expiry=self._expire_at(expire))
             credential = sas_token
 
-        container_blob_url = self.client.get_blob_client(
-            filepath_to_uri(name)).url
+        container_blob_url = self.client.get_blob_client(name).url
         return BlobClient.from_blob_url(container_blob_url, credential=credential).url
 
     def _get_content_settings_parameters(self, name, content=None):
