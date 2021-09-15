@@ -22,6 +22,18 @@ class S3Boto3TestCase(TestCase):
         self.storage._connections.connection = mock.MagicMock()
 
 
+class NonSeekableContentFile(ContentFile):
+
+    def open(self, mode=None):
+        return self
+
+    def seekable(self):
+        return False
+
+    def seek(self, pos, whence=0):
+        raise AttributeError()
+
+
 class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_clean_name(self):
@@ -121,6 +133,23 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             }
         )
 
+    def test_storage_save_non_seekable(self):
+        """
+        Test saving a non-seekable file
+        """
+        name = 'test_storage_save.txt'
+        content = NonSeekableContentFile('new content')
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+            }
+        )
+
     def test_storage_save_with_default_acl(self):
         """
         Test saving a file with user defined ACL.
@@ -184,6 +213,22 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         """
         name = 'test_storage_save.gz'
         content = ContentFile("I am gzip'd")
+        self.storage.save(name, content)
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'application/octet-stream',
+                'ContentEncoding': 'gzip',
+            }
+        )
+
+    def test_storage_save_gzipped_non_seekable(self):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        content = NonSeekableContentFile("I am gzip'd")
         self.storage.save(name, content)
         obj = self.storage.bucket.Object.return_value
         obj.upload_fileobj.assert_called_with(

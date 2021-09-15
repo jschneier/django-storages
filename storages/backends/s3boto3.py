@@ -463,7 +463,8 @@ class S3Boto3Storage(BaseStorage):
         name = self._normalize_name(cleaned_name)
         params = self._get_write_parameters(name, content)
 
-        content.seek(0, os.SEEK_SET)
+        if content.seekable():
+            content.seek(0, os.SEEK_SET)
         if (self.gzip and
                 params['ContentType'] in self.gzip_content_types and
                 'ContentEncoding' not in params):
