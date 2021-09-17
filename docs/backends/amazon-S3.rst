@@ -32,7 +32,7 @@ There are several different methods for specifying the AWS credentials used to c
 searches for them:
 
 #. ``AWS_S3_SESSION_PROFILE``
-#. ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_KEY_ID``
+#. ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``
 #. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
 #. The environment variables AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY
 #. The environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
