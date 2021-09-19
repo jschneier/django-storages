@@ -435,7 +435,6 @@ class S3Boto3Storage(BaseStorage):
 
     def _compress_content(self, content):
         """Gzip a given string content."""
-        content.seek(0)
         zbuf = io.BytesIO()
         #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
         #  This means each time a file is compressed it changes even if the other contents don't change
@@ -464,6 +463,8 @@ class S3Boto3Storage(BaseStorage):
         name = self._normalize_name(cleaned_name)
         params = self._get_write_parameters(name, content)
 
+        if content.seekable():
+            content.seek(0, os.SEEK_SET)
         if (self.gzip and
                 params['ContentType'] in self.gzip_content_types and
                 'ContentEncoding' not in params):
@@ -471,7 +472,6 @@ class S3Boto3Storage(BaseStorage):
             params['ContentEncoding'] = 'gzip'
 
         obj = self.bucket.Object(name)
-        content.seek(0, os.SEEK_SET)
         obj.upload_fileobj(content, ExtraArgs=params)
         return cleaned_name
 
