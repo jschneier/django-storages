@@ -1,4 +1,5 @@
 import mimetypes
+import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -21,6 +22,9 @@ try:
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
+
+
+CONTENT_TYPE = 'content_type'
 
 
 class GoogleCloudFile(File):
@@ -106,6 +110,7 @@ class GoogleCloudStorage(BaseStorage):
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
             "file_overwrite": setting('GS_FILE_OVERWRITE', True),
             "cache_control": setting('GS_CACHE_CONTROL'),
+            "object_parameters": setting('GS_OBJECT_PARAMETERS', {}),
             # The max amount of memory a returned file can take up before being
             # rolled over into a temporary file on disk. Default is 0: Do not
             # roll over.
@@ -154,11 +159,33 @@ class GoogleCloudStorage(BaseStorage):
 
         content.name = cleaned_name
         file = GoogleCloudFile(name, 'rw', self)
-        file.blob.cache_control = self.cache_control
-        file.blob.upload_from_file(
-            content, rewind=True, size=content.size,
-            content_type=file.mime_type, predefined_acl=self.default_acl)
+
+        upload_params = {}
+        blob_params = self.get_object_parameters(name, content)
+        if 'cache_control' not in blob_params and self.cache_control:
+            warnings.warn(
+                'The GS_CACHE_CONTROL setting is deprecated. Use GS_OBJECT_PARAMETERS to set any '
+                'writable blob property or override GoogleCloudStorage.get_object_parameters to '
+                'vary the parameters per object.', DeprecationWarning
+            )
+            blob_params['cache_control'] = self.cache_control
+
+        upload_params['predefined_acl'] = blob_params.pop('acl', self.default_acl)
+        if CONTENT_TYPE not in blob_params:
+            upload_params[CONTENT_TYPE] = file.mime_type
+
+        for prop, val in blob_params.items():
+            setattr(file.blob, prop, val)
+
+        file.blob.upload_from_file(content, rewind=True, size=content.size, **upload_params)
         return cleaned_name
+
+    def get_object_parameters(self, name, content):
+        """Override this to return a dictionary of overwritable blob-property to value.
+
+        Returns GS_OBJECT_PARAMETRS by default. See the docs for all possible options.
+        """
+        return self.object_parameters.copy()
 
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
