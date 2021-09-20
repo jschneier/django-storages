@@ -141,10 +141,6 @@ class AzureStorage(BaseStorage):
             "sas_token": setting('AZURE_SAS_TOKEN'),
             "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
             "connection_string": setting('AZURE_CONNECTION_STRING'),
-            "custom_connection_string": setting(
-                'AZURE_CUSTOM_CONNECTION_STRING',
-                setting('AZURE_CONNECTION_STRING'),
-            ),
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
         }
 

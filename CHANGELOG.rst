@@ -273,9 +273,9 @@ Azure
   ``azure-storage-blob`` (`#680`_, `#684`_)
 - Fix compatability with ``generate_blob_shared_access_signature`` updated signature (`#705`_, `#723`_)
 - Fetching a file now uses the configured timeout rather than hardcoding one (`#727`_)
-- Add support for configuring all blobservice options: ``AZURE_EMULATED_MODE``, ``AZURE_ENDPOINT_SUFFIX``,
-  ``AZURE_CUSTOM_DOMAIN``, ``AZURE_CONNECTION_STRING``, ``AZURE_CUSTOM_CONNECTION_STRING``,
-  ``AZURE_TOKEN_CREDENTIAL``. See the docs for more info. Huge thanks once again to @nitely. (`#750`_)
+- Add support for configuring all blobservice options: ``AZURE_ENDPOINT_SUFFIX``,
+  ``AZURE_CUSTOM_DOMAIN``, ``AZURE_CONNECTION_STRING``, ``AZURE_TOKEN_CREDENTIAL``.
+  See the docs for more info. Huge thanks once again to @nitely. (`#750`_)
 - Fix filename handling to not strip special characters (`#609`_, `#752`_)
 
 

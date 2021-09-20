@@ -129,9 +129,6 @@ The following settings are available:
     The custom domain to use. This can be set in the Azure Portal. For
     example, ``www.mydomain.com`` or ``mycdn.azureedge.net``.
 
-    It may contain a ``host:port`` when using the emulator
-    (``AZURE_EMULATED_MODE = True``).
-
 ``AZURE_CONNECTION_STRING``
 
     If specified, this will override all other parameters.
