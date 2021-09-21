@@ -83,7 +83,7 @@ class GoogleCloudFile(File):
             if self._is_dirty:
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
-                    predefined_acl= self._storage.object_parameters.pop('acl', self._storage.default_acl))
+                    predefined_acl=self._storage.object_parameters.pop('acl', self._storage.default_acl))
             self._file.close()
             self._file = None
 
@@ -189,7 +189,7 @@ class GoogleCloudStorage(BaseStorage):
             object_parameters['cache_control'] = self.cache_control
         if 'acl' not in object_parameters:
             object_parameters['acl'] = self.default_acl
-        
+
         return object_parameters
 
     def delete(self, name):
