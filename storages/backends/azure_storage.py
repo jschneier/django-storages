@@ -4,7 +4,7 @@ from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import (
-    BlobClient, BlobSasPermissions, ContainerClient, ContentSettings,
+    BlobClient, BlobSasPermissions, BlobServiceClient, ContentSettings,
     generate_blob_sas,
 )
 from django.core.exceptions import SuspiciousOperation
@@ -121,7 +121,10 @@ _AZURE_NAME_MAX_LEN = 1024
 class AzureStorage(BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
+        self._service_client = None
         self._client = None
+        self._user_delegation_key = None
+        self._user_delegation_key_expiry = datetime.utcnow()
 
     def get_default_settings(self):
         return {
@@ -144,16 +147,14 @@ class AzureStorage(BaseStorage):
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
         }
 
-    def _container_client(self, custom_domain=None, connection_string=None):
-        if custom_domain is None:
-            account_domain = "blob.core.windows.net"
-        else:
-            account_domain = custom_domain
-        if connection_string is None:
-            connection_string = "{}://{}.{}".format(
-                self.azure_protocol,
-                self.account_name,
-                account_domain)
+    def _get_service_client(self):
+        if self.connection_string is not None:
+            return BlobServiceClient.from_connection_string(self.connection_string)
+
+        account_domain = self.custom_domain or "blob.core.windows.net"
+        account_url = "{}://{}.{}".format(
+            self.azure_protocol, self.account_name, account_domain
+        )
         credential = None
         if self.account_key:
             credential = self.account_key
@@ -161,18 +162,42 @@ class AzureStorage(BaseStorage):
             credential = self.sas_token
         elif self.token_credential:
             credential = self.token_credential
-        return ContainerClient(
-            connection_string,
-            self.azure_container,
-            credential=credential)
+        return BlobServiceClient(account_url, credential=credential)
+
+    @property
+    def service_client(self):
+        if self._service_client is None:
+            self._service_client = self._get_service_client()
+        return self._service_client
 
     @property
     def client(self):
         if self._client is None:
-            self._client = self._container_client(
-                custom_domain=self.custom_domain,
-                connection_string=self.connection_string)
+            self._client = self.service_client.get_container_client(
+                self.azure_container
+            )
         return self._client
+
+    def get_user_delegation_key(self, expiry):
+        # We'll only be able to get a user delegation key if we've authenticated with a
+        # token credential.
+        if self.token_credential is None:
+            return None
+
+        # Get a new key if we don't already have one, or if the one we have expires too
+        # soon.
+        if (
+            self._user_delegation_key is None
+            or expiry > self._user_delegation_key_expiry
+        ):
+            now = datetime.utcnow()
+            key_expiry_time = now + timedelta(days=7)
+            self._user_delegation_key = self.service_client.get_user_delegation_key(
+                key_start_time=now, key_expiry_time=key_expiry_time
+            )
+            self._user_delegation_key_expiry = key_expiry_time
+
+        return self._user_delegation_key
 
     @property
     def azure_protocol(self):
@@ -258,13 +283,16 @@ class AzureStorage(BaseStorage):
 
         credential = None
         if expire:
+            expiry = self._expire_at(expire)
+            user_delegation_key = self.get_user_delegation_key(expiry)
             sas_token = generate_blob_sas(
                 self.account_name,
                 self.azure_container,
                 name,
                 account_key=self.account_key,
+                user_delegation_key=user_delegation_key,
                 permission=BlobSasPermissions(read=True),
-                expiry=self._expire_at(expire))
+                expiry=expiry)
             credential = sas_token
 
         container_blob_url = self.client.get_blob_client(name).url
