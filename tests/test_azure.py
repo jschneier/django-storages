@@ -270,7 +270,7 @@ class AzureStorageTest(TestCase):
         storage.connection_string = 'foo_conn'
         with mock.patch(
                 'storages.backends.azure_storage.BlobServiceClient.from_connection_string',
-                autospec=True) as bsc_mocked:
+                spec=azure_storage.BlobServiceClient.from_connection_string) as bsc_mocked:
             client_mock = mock.MagicMock()
             bsc_mocked.return_value.get_container_client.return_value = client_mock
             self.assertEqual(storage.client, client_mock)
