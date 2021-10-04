@@ -84,7 +84,7 @@ class GoogleCloudFile(File):
                 blob_params = self._storage.get_object_parameters(self.name)
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
-                    predefined_acl=blob_params.get('acl'))                
+                    predefined_acl=blob_params.get('acl', self._storage.default_acl))
             self._file.close()
             self._file = None
 
@@ -163,7 +163,7 @@ class GoogleCloudStorage(BaseStorage):
 
         upload_params = {}
         blob_params = self.get_object_parameters(name)
-        upload_params['predefined_acl'] = blob_params.pop('acl')
+        upload_params['predefined_acl'] = blob_params.pop('acl', self.default_acl)
 
         if CONTENT_TYPE not in blob_params:
             upload_params[CONTENT_TYPE] = file_object.mime_type
@@ -188,8 +188,6 @@ class GoogleCloudStorage(BaseStorage):
                 'vary the parameters per object.', DeprecationWarning
             )
             object_parameters['cache_control'] = self.cache_control
-        if 'acl' not in object_parameters:
-            object_parameters['acl'] = self.default_acl
 
         return object_parameters
 
@@ -279,7 +277,7 @@ class GoogleCloudStorage(BaseStorage):
         blob = self.bucket.blob(name)
         blob_params = self.get_object_parameters(name)
         no_signed_url = (
-            blob_params.get('acl') == 'publicRead' or not self.querystring_auth)
+            blob_params.get('acl', self.default_acl) == 'publicRead' or not self.querystring_auth)
 
         if not self.custom_endpoint and no_signed_url:
             return blob.public_url
