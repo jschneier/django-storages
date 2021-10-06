@@ -157,7 +157,6 @@ class GoogleCloudStorage(BaseStorage):
         cleaned_name = clean_name(name)
         name = self._normalize_name(cleaned_name)
 
-        content.name = cleaned_name
         file = GoogleCloudFile(name, 'rw', self)
 
         upload_params = {}
