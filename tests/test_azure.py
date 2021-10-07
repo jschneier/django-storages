@@ -165,7 +165,7 @@ class AzureStorageTest(TestCase):
         fixed_time = utc.localize(datetime.datetime(2016, 11, 6, 4))
         with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
-            self.assertEquals(
+            self.assertEqual(
                 self.storage.url('some blob', 100),
                 'https://ret_foo.blob.core.windows.net/test/some%20blob')
             generate_blob_sas_mocked.assert_called_once_with(
@@ -173,6 +173,35 @@ class AzureStorageTest(TestCase):
                 self.container_name,
                 'some blob',
                 account_key=self.account_key,
+                user_delegation_key=None,
+                permission=mock.ANY,
+                expiry=fixed_time + timedelta(seconds=100))
+
+    @mock.patch('storages.backends.azure_storage.generate_blob_sas')
+    def test_url_expire_user_delegation_key(self, generate_blob_sas_mocked):
+        generate_blob_sas_mocked.return_value = 'foo_token'
+        blob_mock = mock.MagicMock()
+        blob_mock.url = 'https://ret_foo.blob.core.windows.net/test/some%20blob'
+        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage.account_name = self.account_name
+        service_client = mock.MagicMock()
+        self.storage._service_client = service_client
+        self.storage.token_credential = 'token_credential'
+
+        utc = pytz.timezone('UTC')
+        fixed_time = utc.localize(datetime.datetime(2016, 11, 6, 4))
+        with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
+            d_mocked.utcnow.return_value = fixed_time
+            service_client.get_user_delegation_key.return_value = 'user delegation key'
+            self.assertEqual(
+                self.storage.url('some blob', 100),
+                'https://ret_foo.blob.core.windows.net/test/some%20blob')
+            generate_blob_sas_mocked.assert_called_once_with(
+                self.account_name,
+                self.container_name,
+                'some blob',
+                account_key=self.account_key,
+                user_delegation_key='user delegation key',
                 permission=mock.ANY,
                 expiry=fixed_time + timedelta(seconds=100))
 
@@ -180,31 +209,72 @@ class AzureStorageTest(TestCase):
         storage = azure_storage.AzureStorage()
         storage.account_name = self.account_name
         with mock.patch(
-                'storages.backends.azure_storage.ContainerClient',
-                autospec=True) as c_mocked:
-            self.assertIsNotNone(storage.client)
-            c_mocked.assert_called_once_with(
+                'storages.backends.azure_storage.BlobServiceClient',
+                autospec=True) as bsc_mocked:
+            client_mock = mock.MagicMock()
+            bsc_mocked.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc_mocked.assert_called_once_with(
                 'https://test.blob.core.windows.net',
-                None,
                 credential=None)
 
-    def test_container_client_params(self):
+    def test_container_client_params_account_key(self):
         storage = azure_storage.AzureStorage()
         storage.account_name = 'foo_name'
-        storage.account_key = 'foo_key'
-        storage.sas_token = 'foo_token'
         storage.azure_ssl = True
         storage.custom_domain = 'foo_domain'
-        storage.connection_string = 'foo_conn'
+        storage.account_key = 'foo_key'
+        with mock.patch(
+                'storages.backends.azure_storage.BlobServiceClient',
+                autospec=True) as bsc_mocked:
+            client_mock = mock.MagicMock()
+            bsc_mocked.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc_mocked.assert_called_once_with(
+                'https://foo_name.foo_domain',
+                credential='foo_key')
+
+    def test_container_client_params_sas_token(self):
+        storage = azure_storage.AzureStorage()
+        storage.account_name = 'foo_name'
+        storage.azure_ssl = False
+        storage.custom_domain = 'foo_domain'
+        storage.sas_token = 'foo_token'
+        with mock.patch(
+                'storages.backends.azure_storage.BlobServiceClient',
+                autospec=True) as bsc_mocked:
+            client_mock = mock.MagicMock()
+            bsc_mocked.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc_mocked.assert_called_once_with(
+                'http://foo_name.foo_domain',
+                credential='foo_token')
+
+    def test_container_client_params_token_credential(self):
+        storage = azure_storage.AzureStorage()
+        storage.account_name = self.account_name
         storage.token_credential = 'foo_cred'
         with mock.patch(
-                'storages.backends.azure_storage.ContainerClient',
-                autospec=True) as c_mocked:
-            self.assertIsNotNone(storage.client)
-            c_mocked.assert_called_once_with(
-                'foo_conn',
-                None,
-                credential='foo_key')
+                'storages.backends.azure_storage.BlobServiceClient',
+                autospec=True) as bsc_mocked:
+            client_mock = mock.MagicMock()
+            bsc_mocked.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc_mocked.assert_called_once_with(
+                'https://test.blob.core.windows.net',
+                credential='foo_cred')
+
+    def test_container_client_params_connection_string(self):
+        storage = azure_storage.AzureStorage()
+        storage.account_name = self.account_name
+        storage.connection_string = 'foo_conn'
+        with mock.patch(
+                'storages.backends.azure_storage.BlobServiceClient.from_connection_string',
+                spec=azure_storage.BlobServiceClient.from_connection_string) as bsc_mocked:
+            client_mock = mock.MagicMock()
+            bsc_mocked.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc_mocked.assert_called_once_with('foo_conn')
 
     # From boto3
 
