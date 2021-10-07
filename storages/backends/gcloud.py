@@ -81,9 +81,10 @@ class GoogleCloudFile(File):
     def close(self):
         if self._file is not None:
             if self._is_dirty:
+                blob_params = self._storage.get_object_parameters(self.name)
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
-                    predefined_acl=self._storage.default_acl)
+                    predefined_acl=blob_params.get('acl', self._storage.default_acl))
             self._file.close()
             self._file = None
 
@@ -158,34 +159,37 @@ class GoogleCloudStorage(BaseStorage):
         name = self._normalize_name(cleaned_name)
 
         content.name = cleaned_name
-        file = GoogleCloudFile(name, 'rw', self)
+        file_object = GoogleCloudFile(name, 'rw', self)
 
         upload_params = {}
-        blob_params = self.get_object_parameters(name, content)
-        if 'cache_control' not in blob_params and self.cache_control:
+        blob_params = self.get_object_parameters(name)
+        upload_params['predefined_acl'] = blob_params.pop('acl', self.default_acl)
+
+        if CONTENT_TYPE not in blob_params:
+            upload_params[CONTENT_TYPE] = file_object.mime_type
+
+        for prop, val in blob_params.items():
+            setattr(file_object.blob, prop, val)
+
+        file_object.blob.upload_from_file(content, rewind=True, size=content.size, **upload_params)
+        return cleaned_name
+
+    def get_object_parameters(self, name):
+        """Override this to return a dictionary of overwritable blob-property to value.
+
+        Returns GS_OBJECT_PARAMETRS by default. See the docs for all possible options.
+        """
+        object_parameters = self.object_parameters.copy()
+
+        if 'cache_control' not in object_parameters and self.cache_control:
             warnings.warn(
                 'The GS_CACHE_CONTROL setting is deprecated. Use GS_OBJECT_PARAMETERS to set any '
                 'writable blob property or override GoogleCloudStorage.get_object_parameters to '
                 'vary the parameters per object.', DeprecationWarning
             )
-            blob_params['cache_control'] = self.cache_control
+            object_parameters['cache_control'] = self.cache_control
 
-        upload_params['predefined_acl'] = blob_params.pop('acl', self.default_acl)
-        if CONTENT_TYPE not in blob_params:
-            upload_params[CONTENT_TYPE] = file.mime_type
-
-        for prop, val in blob_params.items():
-            setattr(file.blob, prop, val)
-
-        file.blob.upload_from_file(content, rewind=True, size=content.size, **upload_params)
-        return cleaned_name
-
-    def get_object_parameters(self, name, content):
-        """Override this to return a dictionary of overwritable blob-property to value.
-
-        Returns GS_OBJECT_PARAMETRS by default. See the docs for all possible options.
-        """
-        return self.object_parameters.copy()
+        return object_parameters
 
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
@@ -271,8 +275,9 @@ class GoogleCloudStorage(BaseStorage):
         """
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(name)
+        blob_params = self.get_object_parameters(name)
         no_signed_url = (
-            self.default_acl == 'publicRead' or not self.querystring_auth)
+            blob_params.get('acl', self.default_acl) == 'publicRead' or not self.querystring_auth)
 
         if not self.custom_endpoint and no_signed_url:
             return blob.public_url
