@@ -1,6 +1,68 @@
 django-storages CHANGELOG
 =========================
 
+1.12 (2021-10-06)
+*****************
+
+- Add support for Django 3.2 (`#1046`_, `#1042`_, `#1005`_)
+- Replace Travis CI with GitHub actions (`#1051`_)
+
+
+S3
+--
+
+- Convert signing keys to bytes if necessary (`#1003`_)
+- Avoid a ListParts API call during multipart upload (`#1041`_)
+- Custom domains now use passed URL params (`#1054`_)
+- Allow the use of AWS profiles and clarify the options for passing credentials (`fbe9538`_)
+- Re-allow override of various access key names (`#1026`_)
+- Properly exclude empty folders during ``listdir`` (`66f4f8e`_)
+- Support saving file objects that are not ``seekable`` (`#860`_, `#1057`_)
+- Return ``True`` for ``.exists()`` if a non-404 error is encountered (`#938`_)
+
+Azure
+-----
+
+- **Breaking**: This backend has been rewritten to use the newer versions of ``azure-storage-blob``, which now has a minimum required version of 12.0. The settings ``AZURE_EMULATED_MODE``, ``AZURE_ENDPOINT_SUFFIX``, and ``AZURE_CUSTOM_CONNECTION_STRING`` are now ignored. (`#784`_, `#805`_)
+- Add support for user delegation keys (`#1063`_)
+
+Google Cloud
+------------
+
+- **Breaking**: The minimum required version of ``google-cloud-storage`` is now 1.27.0 (`#994`_)
+- **Breaking**: Switch URL signing version from v2 to v4 (`#994`_)
+- **Deprecated**: Support for ``GS_CACHE_CONTROL`` will be removed in 1.13. Please set the ``cache_control`` parameter of ``GS_OBJECT_PARAMETERS`` instead. (`#970`_)
+- Add ``GS_OBJECT_PARAMETERS`` and overridable ``GoogleCloudStorage.get_object_parameters`` to customize blob parameters for all blobs and per-blob respectively. (`#970`_)
+- Catch the ``NotFound`` exception raised when deleting a non-existent blob, this matches Django and other backends (`#998`_, `#999`_)
+- Fix signing URLs with custom endpoints (`#994`_)
+
+Dropbox
+-------
+
+- Validate ``write_mode`` param (`#1020`_)
+
+.. _fbe9538: https://github.com/jschneier/django-storages/commit/fbe9538b8574cfb0d95b04c9c477650dbfe8547b
+.. _66f4f8e: https://github.com/jschneier/django-storages/commit/66f4f8ec68daaac767c013d6b1a30cf26a7ac1ca
+.. _#1003: https://github.com/jschneier/django-storages/pull/1003
+.. _#1054: https://github.com/jschneier/django-storages/pull/1054
+.. _#1026: https://github.com/jschneier/django-storages/pull/1026
+.. _#1041: https://github.com/jschneier/django-storages/pull/1041
+.. _#970: https://github.com/jschneier/django-storages/pull/970
+.. _#998: https://github.com/jschneier/django-storages/issues/998
+.. _#784: https://github.com/jschneier/django-storages/issues/784
+.. _#805: https://github.com/jschneier/django-storages/pull/805
+.. _#999: https://github.com/jschneier/django-storages/pull/999
+.. _#1051: https://github.com/jschneier/django-storages/pull/1051
+.. _#1042: https://github.com/jschneier/django-storages/pull/1042
+.. _#1046: https://github.com/jschneier/django-storages/issues/1046
+.. _#1005: https://github.com/jschneier/django-storages/pull/1005
+.. _#1020: https://github.com/jschneier/django-storages/pull/1020
+.. _#860: https://github.com/jschneier/django-storages/issues/860
+.. _#1057: https://github.com/jschneier/django-storages/pull/1057
+.. _#938: https://github.com/jschneier/django-storages/pull/938
+.. _#994: https://github.com/jschneier/django-storages/pull/994
+.. _#1063: https://github.com/jschneier/django-storages/pull/1063
+
 1.11.1 (2020-12-23)
 *******************
 
