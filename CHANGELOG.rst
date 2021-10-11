@@ -1,6 +1,19 @@
 django-storages CHANGELOG
 =========================
 
+1.12.1 (2021-10-11)
+*******************
+
+S3
+--
+
+- Change gzip compression to use a streaming implementation (`#1061`_)
+- Fix saving files with ``S3ManifestStaticStorage`` (`#1068`_, `#1069`_)
+
+.. _#1061: https://github.com/jschneier/django-storages/pull/1003
+.. _#1068: https://github.com/jschneier/django-storages/issues/1068
+.. _#1069: https://github.com/jschneier/django-storages/pull/1069
+
 1.12 (2021-10-06)
 *****************
 
