@@ -17,7 +17,7 @@ Authentication
 By default, this library will try to use the credentials associated with the
 current Google Cloud infrastructure/environment for authentication.
 
-In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, you so you will need to create a dedicated service account:
+In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, so you will need to create a dedicated service account:
 
 1. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 
