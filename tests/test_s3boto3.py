@@ -16,10 +16,9 @@ from django.utils.timezone import is_aware, utc
 from storages.backends import s3boto3
 
 
-class S3Boto3TestCase(TestCase):
-    def setUp(self):
-        self.storage = s3boto3.S3Boto3Storage()
-        self.storage._connections.connection = mock.MagicMock()
+class S3ManifestStaticStorageTestStorage(s3boto3.S3ManifestStaticStorage):
+    def read_manifest(self):
+        return None
 
 
 class NonSeekableContentFile(ContentFile):
@@ -34,7 +33,10 @@ class NonSeekableContentFile(ContentFile):
         raise AttributeError()
 
 
-class S3Boto3StorageTests(S3Boto3TestCase):
+class S3Boto3StorageTests(TestCase):
+    def setUp(self):
+        self.storage = s3boto3.S3Boto3Storage()
+        self.storage._connections.connection = mock.MagicMock()
 
     def test_clean_name(self):
         """
@@ -764,3 +766,24 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(storage.location, 'foo1')
         storage = s3boto3.S3Boto3Storage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
+
+
+class S3StaticStorageTests(TestCase):
+    def setUp(self):
+        self.storage = s3boto3.S3StaticStorage()
+        self.storage._connections.connection = mock.MagicMock()
+
+    def test_querystring_auth(self):
+        self.assertFalse(self.storage.querystring_auth)
+
+
+class S3ManifestStaticStorageTests(TestCase):
+    def setUp(self):
+        self.storage = S3ManifestStaticStorageTestStorage()
+        self.storage._connections.connection = mock.MagicMock()
+
+    def test_querystring_auth(self):
+        self.assertFalse(self.storage.querystring_auth)
+
+    def test_save(self):
+        self.storage.save('x.txt', ContentFile(b'abc'))
