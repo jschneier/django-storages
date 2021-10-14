@@ -512,14 +512,14 @@ class S3Boto3Storage(BaseStorage):
         if encoding:
             params['ContentEncoding'] = encoding
 
-        params.update(self.get_object_parameters(name))
+        params.update(self.get_object_parameters(name, content_type))
 
         if 'ACL' not in params and self.default_acl:
             params['ACL'] = self.default_acl
 
         return params
 
-    def get_object_parameters(self, name):
+    def get_object_parameters(self, name, content_type):
         """
         Returns a dictionary that is passed to file upload. Override this
         method to adjust this on a per-object basis to set e.g ContentDisposition.
