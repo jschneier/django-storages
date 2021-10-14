@@ -61,6 +61,20 @@ Then on settings set::
     DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
     STATICFILES_STORAGE = 'custom_storage.custom_azure.PublicAzureStorage'
 
++++++++++++++++++++++
+Private VS Public URL
++++++++++++++++++++++
+
+The difference between public and private URLs is that private includes the SAS token.
+With private URLs you can override certain properties stored for the blob by specifying
+query parameters as part of the shared access signature. These properties include the
+cache-control, content-type, content-encoding, content-language, and content-disposition.
+See https://docs.microsoft.com/en-us/rest/api/storageservices/set-blob-properties#remarks
+
+You can specify these parameters by::
+    az_storage = AzureStorage()
+    az_url = az_storage.url(blob_name, parameters={'content_type': 'text/html;'})
+
 
 Settings
 ********
