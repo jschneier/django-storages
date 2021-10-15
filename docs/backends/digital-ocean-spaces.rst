@@ -19,7 +19,6 @@ It is possible to use signed urls with a custom domain on Digital Ocean spaces. 
 To accomplish this, consider the following settings in your ``settings.py``::
 
     MEDIAFILES_LOCATION = 'media'
-    DEFAULT_FILE_STORAGE = 'custom_storages.MediaStorage'
     AWS_PRIVSTORAGE_BUCKET_NAME = 'my-app-priv-bucket'
     AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
     AWS_S3_REGION_NAME = 'nyc3'
