@@ -408,7 +408,7 @@ You could also pass different characteristics to different buckets::
 
     s3_priv_storage = PrivStorage()
 
-The above setup would use two buckets, one that could use an ``AWS_S3_CUSTOM_DOMAIN`` specified in your settings for static files in one folder and media files in another folder of the same bucket, and a separate private bucket that would ignore the custom domain setting and use signed S3 urls to store private media files in a separate bucket.
+The above setup would use two buckets, one that could use an ``AWS_S3_CUSTOM_DOMAIN`` specified in your settings for static files in one folder and media files in another folder of the same bucket, and a separate private bucket that would ignore the custom domain setting and use signed S3 urls for private media files in a separate bucket.
 
 The resulting hierarchy would look like::
 
@@ -438,7 +438,7 @@ The function variables in the ``custom_storage.py`` in this above example can be
         file = models.FileField(storage=s3_priv_storage, verbose_name=_('file'))
         thumbnail = models.FileField(storage=s3_media_storage, blank=True, verbose_name=_('thumbnail'))
         
-The above model would upload its media file to the private bucket and the thumbnail to the public bucket, in both cases using ``media`` as the folder location, as specified in the respective storage classes in ``custom_storages.py``.
+The above model would upload its media ``file`` to the private bucket and the ``thumbnail`` to the public bucket, in both cases using ``media`` as the folder location, as specified in the respective storage classes in ``custom_storages.py``.
 
 
 Model
