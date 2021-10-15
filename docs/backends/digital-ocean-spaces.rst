@@ -48,7 +48,8 @@ Digital Ocean can provide signed urls but not via a custom domain, so we have de
     @register.filter
     def cdn_url(value):
         if settings.AWS_S3_ENDPOINT_URL in value:
-            new_url = value.replace(settings.AWS_S3_ENDPOINT_URL, settings.AWS_S3_CUSTOM_DOMAIN)
+            cdn_domain = 'https://' + settings.AWS_S3_CUSTOM_DOMAIN
+            new_url = value.replace(settings.AWS_S3_ENDPOINT_URL, cdn_domain)
             return new_url
         else:
             return value
