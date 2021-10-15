@@ -151,10 +151,11 @@ class AzureStorage(BaseStorage):
         if self.connection_string is not None:
             return BlobServiceClient.from_connection_string(self.connection_string)
 
-        account_domain = self.custom_domain or "blob.core.windows.net"
-        account_url = "{}://{}.{}".format(
-            self.azure_protocol, self.account_name, account_domain
+        account_domain = self.custom_domain or "{}.blob.core.windows.net".format(
+            self.account_name
         )
+        account_url = "{}://{}".format(self.azure_protocol, account_domain)
+
         credential = None
         if self.account_key:
             credential = self.account_key
