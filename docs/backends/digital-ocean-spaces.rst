@@ -60,6 +60,6 @@ In your template(s), you could then use the filter to replace the ``digitalocean
 
     {{ self.media.url|cdn_url }}
 
-If your signed url contains the ``nyc3.digitaloceanspaces.com`` endpoint you specified in ``settings.py``, that hostname will be replaced by your ``AWS_S3_CUSTOM_DOMAIN`` 
+If your signed url contains the ``nyc3.digitaloceanspaces.com`` endpoint you specified in ``settings.py``, that hostname will be replaced by your ``AWS_S3_CUSTOM_DOMAIN``, else the media object's url value will be returned unmodified.
 
 .. _Digital Ocean docs for the Spaces API: https://docs.digitalocean.com/products/spaces/resources/s3-sdk-examples/#presigned-url
