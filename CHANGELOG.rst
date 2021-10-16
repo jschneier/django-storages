@@ -1,10 +1,19 @@
 django-storages CHANGELOG
 =========================
 
+1.12.2 (2021-10-16)
+*******************
+
 Azure
 -----
 
-- ``AZURE_CUSTOM_DOMAIN`` now once again behaves as it did at 1.11: that is, it is a full domain, rather than only a replacement for the ``blob.core.windows.net`` part of the domain.
+- Add ``parameters`` kwarg to ``AzureStorage.url`` to configure blob properties in the SAS token (`#1071`_)
+- Fix regression where ``AZURE_CUSTOM_DOMAIN`` was interpreted as a replacement of ``blob.core.windows.net`` rather than as a full domain
+  (`#1073`_, `#1076`_)
+
+.. _#1071: https://github.com/jschneier/django-storages/pull/1071
+.. _#1073: https://github.com/jschneier/django-storages/issues/1073
+.. _#1076: https://github.com/jschneier/django-storages/pull/1076
 
 1.12.1 (2021-10-11)
 *******************
@@ -15,7 +24,7 @@ S3
 - Change gzip compression to use a streaming implementation (`#1061`_)
 - Fix saving files with ``S3ManifestStaticStorage`` (`#1068`_, `#1069`_)
 
-.. _#1061: https://github.com/jschneier/django-storages/pull/1003
+.. _#1061: https://github.com/jschneier/django-storages/pull/1061
 .. _#1068: https://github.com/jschneier/django-storages/issues/1068
 .. _#1069: https://github.com/jschneier/django-storages/pull/1069
 
