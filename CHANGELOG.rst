@@ -1,6 +1,11 @@
 django-storages CHANGELOG
 =========================
 
+Azure
+-----
+
+- ``AZURE_CUSTOM_DOMAIN`` now once again behaves as it did at 1.11: that is, it is a full domain, rather than only a replacement for the ``blob.core.windows.net`` part of the domain.
+
 1.12.1 (2021-10-11)
 *******************
 

@@ -231,7 +231,7 @@ class AzureStorageTest(TestCase):
             bsc_mocked.return_value.get_container_client.return_value = client_mock
             self.assertEqual(storage.client, client_mock)
             bsc_mocked.assert_called_once_with(
-                'https://foo_name.foo_domain',
+                'https://foo_domain',
                 credential='foo_key')
 
     def test_container_client_params_sas_token(self):
@@ -247,7 +247,7 @@ class AzureStorageTest(TestCase):
             bsc_mocked.return_value.get_container_client.return_value = client_mock
             self.assertEqual(storage.client, client_mock)
             bsc_mocked.assert_called_once_with(
-                'http://foo_name.foo_domain',
+                'http://foo_domain',
                 credential='foo_token')
 
     def test_container_client_params_token_credential(self):
