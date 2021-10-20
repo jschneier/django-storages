@@ -232,7 +232,6 @@ class S3Boto3StorageFile(CompressFileMixin, File):
 
 @deconstructible
 class S3Boto3Storage(CompressStorageMixin, BaseStorage):
-
     """
     Amazon Simple Storage Service using Boto3
 

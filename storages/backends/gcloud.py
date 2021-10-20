@@ -182,12 +182,12 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         if self.gzip and upload_params.get(CONTENT_TYPE) in self.gzip_content_types:
             content = self._compress_content(content)
             file_object.blob.content_encoding = 'gzip'
-            CONTENT_TYPE[CONTENT_ENCODING] = 'gzip'
+            upload_params[CONTENT_ENCODING] = 'gzip'
 
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
-        file_object.blob.upload_from_file(content, rewind=True, size=content.size, **upload_params)
+        file_object.blob.upload_from_file(content, rewind=True, size=getattr(content, 'size', None), **upload_params)
         return cleaned_name
 
     def get_object_parameters(self, name):
