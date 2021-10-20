@@ -1,5 +1,8 @@
+import io
 import os
 import posixpath
+import zlib
+from typing import Optional
 
 from django.conf import settings
 from django.core.exceptions import (
@@ -126,3 +129,35 @@ def get_available_overwrite_name(name, max_length):
             'allows sufficient "max_length".' % name
         )
     return os.path.join(dir_name, "{}{}".format(file_root, file_ext))
+
+
+class GzipCompressionWrapper(io.RawIOBase):
+    """Wrapper for compressing file contents on the fly."""
+
+    def __init__(self, raw, level=zlib.Z_BEST_COMPRESSION):
+        super().__init__()
+        self.raw = raw
+        self.compress = zlib.compressobj(level=level, wbits=31)
+        self.leftover = bytearray()
+
+    @staticmethod
+    def readable():
+        return True
+
+    def readinto(self, buf: bytearray) -> Optional[int]:
+        size = len(buf)
+        while len(self.leftover) < size:
+            chunk = to_bytes(self.raw.read(size))
+            if not chunk:
+                if self.compress:
+                    self.leftover += self.compress.flush(zlib.Z_FINISH)
+                    self.compress = None
+                break
+            self.leftover += self.compress.compress(chunk)
+        if len(self.leftover) == 0:
+            return 0
+        output = self.leftover[:size]
+        size = len(output)
+        buf[:size] = output
+        self.leftover = self.leftover[size:]
+        return size
