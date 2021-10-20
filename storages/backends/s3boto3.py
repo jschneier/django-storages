@@ -15,10 +15,10 @@ from django.utils.encoding import filepath_to_uri
 from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
-from storages.compress import CompressFileMixin, CompressStorageMixin
+from storages.compress import CompressedFileMixin, CompressStorageMixin
 from storages.utils import (
-    check_location, get_available_overwrite_name,
-    lookup_env, safe_join, setting, to_bytes,
+    check_location, get_available_overwrite_name, lookup_env, safe_join,
+    setting, to_bytes,
 )
 
 try:
@@ -79,7 +79,7 @@ else:
 
 
 @deconstructible
-class S3Boto3StorageFile(CompressFileMixin, File):
+class S3Boto3StorageFile(CompressedFileMixin, File):
     """
     The default file object used by the S3Boto3Storage backend.
 
@@ -136,7 +136,7 @@ class S3Boto3StorageFile(CompressFileMixin, File):
                 self.obj.download_fileobj(self._file)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
-                self._file = self._compress_file()
+                self._file = self._decompress_file(mode=self._mode, file=self._file)
         return self._file
 
     def _set_file(self, value):

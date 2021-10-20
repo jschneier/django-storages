@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
-from storages.compress import CompressFileMixin, CompressStorageMixin
+from storages.compress import CompressedFileMixin, CompressStorageMixin
 from storages.utils import (
     check_location, clean_name, get_available_overwrite_name, safe_join,
     setting, to_bytes,
@@ -25,10 +25,9 @@ except ImportError:
 
 
 CONTENT_TYPE = 'content_type'
-CONTENT_ENCODING = 'content_encoding'
 
 
-class GoogleCloudFile(CompressFileMixin, File):
+class GoogleCloudFile(CompressedFileMixin, File):
     def __init__(self, name, mode, storage):
         self.name = name
         self.mime_type = mimetypes.guess_type(name)[0]
@@ -58,7 +57,7 @@ class GoogleCloudFile(CompressFileMixin, File):
                 self.blob.download_to_file(self._file)
                 self._file.seek(0)
             if self._storage.gzip and self.blob.content_encoding == 'gzip':
-                self._file = self._compress_file()
+                self._file = self._decompress_file(mode=self._mode, file=self._file)
         return self._file
 
     def _set_file(self, value):
@@ -182,7 +181,6 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         if self.gzip and upload_params.get(CONTENT_TYPE) in self.gzip_content_types:
             content = self._compress_content(content)
             file_object.blob.content_encoding = 'gzip'
-            upload_params[CONTENT_ENCODING] = 'gzip'
 
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)

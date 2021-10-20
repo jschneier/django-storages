@@ -14,23 +14,12 @@ from django.test import TestCase, override_settings
 from django.utils.timezone import is_aware, utc
 
 from storages.backends import s3boto3
+from tests.utils import NonSeekableContentFile
 
 
 class S3ManifestStaticStorageTestStorage(s3boto3.S3ManifestStaticStorage):
     def read_manifest(self):
         return None
-
-
-class NonSeekableContentFile(ContentFile):
-
-    def open(self, mode=None):
-        return self
-
-    def seekable(self):
-        return False
-
-    def seek(self, pos, whence=0):
-        raise AttributeError()
 
 
 class S3Boto3StorageTests(TestCase):

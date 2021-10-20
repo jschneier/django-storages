@@ -11,7 +11,7 @@ from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
 
 from storages.backends import gcloud
-from tests.test_s3boto3 import NonSeekableContentFile
+from tests.utils import NonSeekableContentFile
 
 
 class GCloudTestCase(TestCase):
@@ -446,13 +446,13 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage.save(name, content)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         obj = self.storage._bucket.get_blob()
+        self.assertEqual(obj.content_encoding, 'gzip')
         obj.upload_from_file.assert_called_with(
             mock.ANY,
             rewind=True,
             size=None,
             predefined_acl=None,
             content_type='text/css',
-            content_encoding='gzip'
         )
         args, kwargs = obj.upload_from_file.call_args
         content = args[0]
@@ -475,13 +475,13 @@ class GCloudStorageTests(GCloudTestCase):
         # Then
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         obj = self.storage._bucket.get_blob()
+        self.assertEqual(obj.content_encoding, 'gzip')
         obj.upload_from_file.assert_called_with(
             mock.ANY,
             rewind=True,
             size=None,
             predefined_acl=None,
             content_type='text/css',
-            content_encoding='gzip'
         )
         args, kwargs = obj.upload_from_file.call_args
         content = args[0]

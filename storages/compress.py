@@ -1,4 +1,3 @@
-import io
 from gzip import GzipFile
 
 from storages.utils import GzipCompressionWrapper
@@ -10,6 +9,6 @@ class CompressStorageMixin():
         return GzipCompressionWrapper(content)
 
 
-class CompressFileMixin():
-    def _compress_file(self):
-        return GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
+class CompressedFileMixin():
+    def _decompress_file(self, mode, file, mtime=0.0):
+        return GzipFile(mode=mode, fileobj=file, mtime=mtime)
