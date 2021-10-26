@@ -488,14 +488,24 @@ class S3Boto3StorageTests(TestCase):
 
     def test_storage_exists_false(self):
         self.storage.connection.meta.client.head_object.side_effect = ClientError(
-            {'Error': {'Code': '404', 'Message': 'Not Found'}},
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 404}},
             'HeadObject',
         )
-        self.assertFalse(self.storage.exists("file.txt"))
+        self.assertFalse(self.storage.exists('file.txt'))
         self.storage.connection.meta.client.head_object.assert_called_with(
             Bucket=self.storage.bucket_name,
             Key='file.txt',
         )
+
+    def test_storage_exists_other_error_reraise(self):
+        self.storage.connection.meta.client.head_object.side_effect = ClientError(
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 403}},
+            'HeadObject',
+        )
+        with self.assertRaises(ClientError) as cm:
+            self.storage.exists('file.txt')
+
+        self.assertEqual(cm.exception.response['ResponseMetadata']['HTTPStatusCode'], 403)
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")
