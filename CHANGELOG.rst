@@ -1,16 +1,37 @@
 django-storages CHANGELOG
 =========================
 
-Unreleased
-**********
+1.12.3 (2021-10-29)
+*******************
+
+General
+-------
+
+- Add support for Python 3.10 (`#1078`_)
+
+S3
+--
+
+- Re-raise non-404 errors in ``.exists()`` (`#1084`_, `#1085`_)
 
 Azure
 -----
 
 - Fix using ``AZURE_CUSTOM_DOMAIN`` with an account key credential (`#1082`_, `#1083`_)
 
+SFTP
+----
+
+- Catch ``FileNotFoundError`` instead of ``OSerror`` in ``.exists()`` to prevent swallowing ``socket.timeout`` exceptions (`#1064`_, `#1087`_)
+
+
+.. _#1078: https://github.com/jschneier/django-storages/pull/1078
+.. _#1084: https://github.com/jschneier/django-storages/issues/1084
+.. _#1085: https://github.com/jschneier/django-storages/pull/1085
 .. _#1082: https://github.com/jschneier/django-storages/issues/1082
 .. _#1083: https://github.com/jschneier/django-storages/pull/1083
+.. _#1064: https://github.com/jschneier/django-storages/issues/1064
+.. _#1087: https://github.com/jschneier/django-storages/pull/1087
 
 1.12.2 (2021-10-16)
 *******************
@@ -42,9 +63,10 @@ S3
 1.12 (2021-10-06)
 *****************
 
+General
+-------
 - Add support for Django 3.2 (`#1046`_, `#1042`_, `#1005`_)
 - Replace Travis CI with GitHub actions (`#1051`_)
-
 
 S3
 --
