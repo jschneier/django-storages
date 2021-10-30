@@ -158,7 +158,10 @@ class AzureStorage(BaseStorage):
 
         credential = None
         if self.account_key:
-            credential = self.account_key
+            credential = {
+                "account_name": self.account_name,
+                "account_key": self.account_key,
+            }
         elif self.sas_token:
             credential = self.sas_token
         elif self.token_credential:

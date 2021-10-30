@@ -1,6 +1,17 @@
 django-storages CHANGELOG
 =========================
 
+Unreleased
+**********
+
+Azure
+-----
+
+- Fix using ``AZURE_CUSTOM_DOMAIN`` with an account key credential (`#1082`_, `#1083`_)
+
+.. _#1082: https://github.com/jschneier/django-storages/issues/1082
+.. _#1083: https://github.com/jschneier/django-storages/pull/1083
+
 1.12.2 (2021-10-16)
 *******************
 
