@@ -150,7 +150,7 @@ class SFTPStorage(BaseStorage):
         try:
             self.sftp.stat(self._remote_path(name))
             return True
-        except OSError:
+        except FileNotFoundError:
             return False
 
     def _isdir_attr(self, item):
