@@ -469,18 +469,15 @@ class S3Boto3Storage(BaseStorage):
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
         except ClientError as error:
-            if error.response.get('Error', {}).get('Code') == '404':
+            if error.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 return False
 
-            # Some other error was encountered. As `get_available_name` calls this,
-            # we have to assume the filename is unavailable. If we return true due to some
-            # other error, we'd overwrite a file.
-            return True
+            # Some other error was encountered. Re-raise it.
+            raise
 
     def listdir(self, name):
         path = self._normalize_name(self._clean_name(name))
-        # The path needs to end with a slash, but if the root is empty, leave
-        # it.
+        # The path needs to end with a slash, but if the root is empty, leave it.
         if path and not path.endswith('/'):
             path += '/'
 
