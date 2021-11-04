@@ -232,7 +232,7 @@ class AzureStorageTest(TestCase):
             self.assertEqual(storage.client, client_mock)
             bsc_mocked.assert_called_once_with(
                 'https://foo_domain',
-                credential='foo_key')
+                credential={'account_name': 'foo_name', 'account_key': 'foo_key'})
 
     def test_container_client_params_sas_token(self):
         storage = azure_storage.AzureStorage()
