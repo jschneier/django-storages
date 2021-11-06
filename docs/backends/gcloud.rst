@@ -83,6 +83,14 @@ Your Google Storage bucket name, as a string. Required.
 Your Google Cloud project ID. If unset, falls back to the default
 inferred from the environment.
 
+``GS_IS_GZIPPED`` (optional: default is ``False``)
+
+Whether or not to enable gzipping of content types specified by ``GZIP_CONTENT_TYPES``
+
+``GZIP_CONTENT_TYPES`` (optional: default is ``text/css``, ``text/javascript``, ``application/javascript``, ``application/x-javascript``, ``image/svg+xml``)
+
+When ``GS_IS_GZIPPED`` is set to ``True`` the content types which will be gzipped
+
 .. _gs-creds:
 
 ``GS_CREDENTIALS`` (optional)
@@ -121,7 +129,7 @@ a signed (expiring) url.
 .. note::
     When using this setting, make sure you have ``fine-grained`` access control enabled on your bucket,
     as opposed to ``Uniform`` access control, or else, file  uploads will return with HTTP 400. If you
-    already have a bucket with ``Uniform`` access control set to public read, please keep 
+    already have a bucket with ``Uniform`` access control set to public read, please keep
     ``GS_DEFAULT_ACL`` to ``None`` and set ``GS_QUERYSTRING_AUTH`` to ``False``.
 
 ``GS_QUERYSTRING_AUTH`` (optional, default is True)

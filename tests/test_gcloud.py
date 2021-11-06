@@ -1,3 +1,4 @@
+import gzip
 import mimetypes
 from datetime import datetime, timedelta
 from unittest import mock
@@ -10,6 +11,7 @@ from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
 
 from storages.backends import gcloud
+from tests.utils import NonSeekableContentFile
 
 
 class GCloudTestCase(TestCase):
@@ -401,6 +403,99 @@ class GCloudStorageTests(GCloudTestCase):
         bucket = self.storage.client.bucket(self.bucket_name)
         blob = bucket.get_blob(filename)
         self.assertEqual(blob.cache_control, cache_control)
+
+    def test_storage_save_gzipped(self):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        content = ContentFile("I am gzip'd")
+        self.storage.save(name, content)
+        obj = self.storage._bucket.get_blob()
+        obj.upload_from_file.assert_called_with(
+            mock.ANY,
+            rewind=True,
+            size=11,
+            predefined_acl=None,
+            content_type=None
+        )
+
+    def test_storage_save_gzipped_non_seekable(self):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        content = NonSeekableContentFile("I am gzip'd")
+        self.storage.save(name, content)
+        obj = self.storage._bucket.get_blob()
+        obj.upload_from_file.assert_called_with(
+            mock.ANY,
+            rewind=True,
+            size=11,
+            predefined_acl=None,
+            content_type=None
+        )
+
+    def test_storage_save_gzip(self):
+        """
+        Test saving a file with gzip enabled.
+        """
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+        self.storage.save(name, content)
+        self.storage._client.bucket.assert_called_with(self.bucket_name)
+        obj = self.storage._bucket.get_blob()
+        self.assertEqual(obj.content_encoding, 'gzip')
+        obj.upload_from_file.assert_called_with(
+            mock.ANY,
+            rewind=True,
+            size=None,
+            predefined_acl=None,
+            content_type='text/css',
+        )
+        args, kwargs = obj.upload_from_file.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
+
+    def test_storage_save_gzip_twice(self):
+        """
+        Test saving the same file content twice with gzip enabled.
+        """
+        # Given
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+
+        # When
+        self.storage.save(name, content)
+        self.storage.save('test_storage_save_2.css', content)
+
+        # Then
+        self.storage._client.bucket.assert_called_with(self.bucket_name)
+        obj = self.storage._bucket.get_blob()
+        self.assertEqual(obj.content_encoding, 'gzip')
+        obj.upload_from_file.assert_called_with(
+            mock.ANY,
+            rewind=True,
+            size=None,
+            predefined_acl=None,
+            content_type='text/css',
+        )
+        args, kwargs = obj.upload_from_file.call_args
+        content = args[0]
+        zfile = gzip.GzipFile(mode='rb', fileobj=content)
+        self.assertEqual(zfile.read(), b"I should be gzip'd")
+
+    def test_compress_content_len(self):
+        """
+        Test that file returned by _compress_content() is readable.
+        """
+        self.storage.gzip = True
+        content = ContentFile("I should be gzip'd")
+        content = self.storage._compress_content(content)
+        self.assertTrue(len(content.read()) > 0)
 
     def test_location_leading_slash(self):
         msg = (
