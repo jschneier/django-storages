@@ -11,11 +11,10 @@ from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes
 
 from storages.base import BaseStorage
 from storages.utils import (
-    clean_name, get_available_overwrite_name, safe_join, setting,
+    clean_name, get_available_overwrite_name, safe_join, setting, to_bytes,
 )
 
 
@@ -67,7 +66,7 @@ class AzureStorageFile(File):
                 'a' not in self._mode):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super().write(force_bytes(content))
+        return super().write(to_bytes(content))
 
     def close(self):
         if self._file is None:

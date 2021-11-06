@@ -24,6 +24,7 @@ except ImportError:
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
 
 
+CONTENT_ENCODING = 'content_encoding'
 CONTENT_TYPE = 'content_type'
 
 
@@ -174,13 +175,13 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         upload_params = {}
         blob_params = self.get_object_parameters(name)
         upload_params['predefined_acl'] = blob_params.pop('acl', self.default_acl)
+        upload_params[CONTENT_TYPE] = blob_params.pop(CONTENT_TYPE, file_object.mime_type)
 
-        if CONTENT_TYPE not in blob_params:
-            upload_params[CONTENT_TYPE] = file_object.mime_type
-
-        if self.gzip and upload_params.get(CONTENT_TYPE) in self.gzip_content_types:
+        if (self.gzip and
+                upload_params[CONTENT_TYPE] in self.gzip_content_types and
+                CONTENT_ENCODING not in blob_params):
             content = self._compress_content(content)
-            file_object.blob.content_encoding = 'gzip'
+            blob_params[CONTENT_ENCODING] = 'gzip'
 
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
