@@ -3,12 +3,13 @@ from datetime import timedelta
 from unittest import mock
 
 import django
-import pytz
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobProperties
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
+from django.utils import timezone
+from django.utils.timezone import make_aware
 
 from storages.backends import azure_storage
 
@@ -161,8 +162,7 @@ class AzureStorageTest(TestCase):
         self.storage._client.get_blob_client.return_value = blob_mock
         self.storage.account_name = self.account_name
 
-        utc = pytz.timezone('UTC')
-        fixed_time = utc.localize(datetime.datetime(2016, 11, 6, 4))
+        fixed_time = make_aware(datetime.datetime(2016, 11, 6, 4), timezone.utc)
         with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
             self.assertEqual(
@@ -188,8 +188,7 @@ class AzureStorageTest(TestCase):
         self.storage._service_client = service_client
         self.storage.token_credential = 'token_credential'
 
-        utc = pytz.timezone('UTC')
-        fixed_time = utc.localize(datetime.datetime(2016, 11, 6, 4))
+        fixed_time = make_aware(datetime.datetime(2016, 11, 6, 4), timezone.utc)
         with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
             service_client.get_user_delegation_key.return_value = 'user delegation key'
