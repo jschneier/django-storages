@@ -1,6 +1,20 @@
 django-storages CHANGELOG
 =========================
 
+1.12.4
+******
+
+General
+-------
+
+- Add support for Django 4.0 (`#1093`_)
+- Drop support for Django 3.0 and 3.1 (`#1093`_)
+- Drop support for Python 3.5 and 3.6 (`#1093`_)
+
+
+.. _#1093: https://github.com/jschneier/django-storages/pull/1093
+
+
 1.12.3 (2021-10-29)
 *******************
 
