@@ -8,12 +8,13 @@ Alibaba Cloud Object Storage Service is compatible with the S3 protocol. To use 
 - Set ``AWS_S3_ENDPOINT_URL`` to the value of ``https://${AWS_S3_REGION_NAME}.aliyuncs.com``
 - Set the values of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` to the corresponding values from OSS
 
-.. note::
+Notes
+*****
 
-  Alibaba OSS are not fully compatible so there are some difference between them.
+  Be aware Alibaba OSS are not fully compatible so there are some difference between them.
 
-- see `Use S3 API operations to access OSS after migration`_.
-- see `Compatible S3 API operations`_.
+- See `Use S3 API operations to access OSS after migration`_.
+- See `Compatible S3 API operations`_.
 
 .. _Use S3 API operations to access OSS after migration: https://www.alibabacloud.com/help/doc-detail/64919.htm#title-zhf-v8d-71i
 .. _Compatible S3 API operations: https://www.alibabacloud.com/help/doc-detail/64919.htm#title-cds-fai-yxp
