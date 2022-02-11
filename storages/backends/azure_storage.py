@@ -39,11 +39,9 @@ class AzureStorageFile(File):
             dir=setting("FILE_UPLOAD_TEMP_DIR", None))
 
         if 'r' in self._mode or 'a' in self._mode:
-            # I set max connection to 1 since spooledtempfile is
-            # not seekable which is required if we use max_connections > 1
             download_stream = self._storage.client.download_blob(
                 self._path, timeout=self._storage.timeout)
-            download_stream.download_to_stream(file, max_concurrency=1)
+            download_stream.readinto(file)
         if 'r' in self._mode:
             file.seek(0)
 
