@@ -39,11 +39,9 @@ class AzureStorageFile(File):
             dir=setting("FILE_UPLOAD_TEMP_DIR", None))
 
         if 'r' in self._mode or 'a' in self._mode:
-            # I set max connection to 1 since spooledtempfile is
-            # not seekable which is required if we use max_connections > 1
             download_stream = self._storage.client.download_blob(
                 self._path, timeout=self._storage.timeout)
-            download_stream.download_to_stream(file, max_concurrency=1)
+            download_stream.readinto(file)
         if 'r' in self._mode:
             file.seek(0)
 
@@ -141,6 +139,7 @@ class AzureStorage(BaseStorage):
             "default_content_type": 'application/octet-stream',
             "cache_control": setting("AZURE_CACHE_CONTROL"),
             "sas_token": setting('AZURE_SAS_TOKEN'),
+            "endpoint_suffix": setting('AZURE_ENDPOINT_SUFFIX', 'core.windows.net'),
             "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
             "connection_string": setting('AZURE_CONNECTION_STRING'),
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
@@ -150,8 +149,9 @@ class AzureStorage(BaseStorage):
         if self.connection_string is not None:
             return BlobServiceClient.from_connection_string(self.connection_string)
 
-        account_domain = self.custom_domain or "{}.blob.core.windows.net".format(
-            self.account_name
+        account_domain = self.custom_domain or "{}.blob.{}".format(
+            self.account_name,
+            self.endpoint_suffix,
         )
         account_url = "{}://{}".format(self.azure_protocol, account_domain)
 

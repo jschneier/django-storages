@@ -59,13 +59,14 @@ searches for them:
   Use this to set parameters on all objects. To set these on a per-object
   basis, subclass the backend and override ``S3Boto3Storage.get_object_parameters``.
 
-  To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_.
-  Some of the included ones are ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
+  To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_; an incomplete list includes: ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
-``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will inherit the bucket's permission)
+``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's defalt)
 
-   Use this to set an ACL on your file such as ``public-read``. By default the file will inherit the bucket's ACL.
+   Use this to set an ACL on your file such as ``public-read``. If not set the file will be ``private`` per Amazon's default.
    If the ``ACL`` parameter is set in ``AWS_S3_OBJECT_PARAMETERS``, then this setting is ignored.
+
+   Options such as ``public-read`` and ``private`` come from the `list of canned ACLs`_.
 
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
     Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
@@ -81,11 +82,6 @@ searches for them:
 
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
-
-.. note::
-
-    The signature versions are not backwards compatible so be careful about url endpoints if making this change
-    for legacy projects.
 
 ``AWS_LOCATION`` (optional: default is `''`)
     A path prefix that will be prepended to all uploads
@@ -114,10 +110,6 @@ searches for them:
 ``AWS_S3_PROXIES`` (optional: default is ``None``)
   A dictionary of proxy servers to use by protocol or endpoint, e.g.:
   {'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}.
-
-.. note::
-
-  The minimum required version of ``boto3`` to use this feature is 1.4.4
 
 ``AWS_S3_SIGNATURE_VERSION`` (optional)
 
