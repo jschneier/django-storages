@@ -23,10 +23,10 @@ from storages.utils import (
 
 try:
     import boto3.session
+    from boto3.s3.transfer import TransferConfig
     from botocore.client import Config
     from botocore.exceptions import ClientError
-    from botocore.signers import CloudFrontSigner
-    from boto3.s3.transfer import TransferConfig
+    from botocore.signers import CloudFrontSigner 
 except ImportError as e:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
 
