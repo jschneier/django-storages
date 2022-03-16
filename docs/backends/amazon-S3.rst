@@ -61,7 +61,7 @@ searches for them:
 
   To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_; an incomplete list includes: ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
-``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's defalt)
+``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's default)
 
    Use this to set an ACL on your file such as ``public-read``. If not set the file will be ``private`` per Amazon's default.
    If the ``ACL`` parameter is set in ``AWS_S3_OBJECT_PARAMETERS``, then this setting is ignored.
