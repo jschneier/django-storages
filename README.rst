@@ -1,31 +1,56 @@
-===============
-django-storages
-===============
-
+.. image:: https://raw.githubusercontent.com/jschneier/django-storages/master/docs/logos/horizontal.png
+    :alt: Django-Storages
+    :width: 100%
 
 .. image:: https://img.shields.io/pypi/v/django-storages.svg
-    :target: https://pypi.python.org/pypi/django-storages
+    :target: https://pypi.org/project/django-storages/
     :alt: PyPI Version
 
-.. image:: https://travis-ci.org/jschneier/django-storages.svg?branch=master
-    :target: https://travis-ci.org/jschneier/django-storages
+.. image:: https://github.com/jschneier/django-storages/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/jschneier/django-storages/actions/workflows/ci.yml
     :alt: Build Status
 
 Installation
 ============
-Installing from PyPI is as easy as doing::
+Installing from PyPI is as easy as doing:
+
+.. code-block:: bash
 
   pip install django-storages
 
 If you'd prefer to install from source (maybe there is a bugfix in master that
-hasn't been released yet) then the magic incantation you are looking for is::
+hasn't been released yet) then the magic incantation you are looking for is:
+
+.. code-block:: bash
 
   pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
 
-Once that is done add ``storages`` to your ``INSTALLED_APPS`` and set ``DEFAULT_FILE_STORAGE`` to the
-backend of your choice. If, for example, you want to use the boto3 backend you would set::
+Once that is done set ``DEFAULT_FILE_STORAGE`` to the backend of your choice.
+If, for example, you want to use the boto3 backend you would set:
+
+.. code-block:: python
 
   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+
+If you are using the ``FileSystemStorage`` as your storage management class in your models ``FileField`` fields, remove them
+and don't specify any storage parameter. That way, the ``DEFAULT_FILE_STORAGE`` class will be used by default in your field.
+For example, if you have a `photo` field defined as:
+
+.. code-block:: python
+
+    photo = models.FileField(
+        storage=FileSystemStorage(location=settings.MEDIA_ROOT),
+        upload_to='photos',
+    )
+
+Set it to just:
+
+.. code-block:: python
+
+    photo = models.FileField(
+        upload_to='photos',
+    )
 
 There are also a number of settings available to control how each storage backend functions,
 please consult the documentation for a comprehensive list.
@@ -36,6 +61,19 @@ django-storages is a project to provide a variety of storage backends in a singl
 
 This library is usually compatible with the currently supported versions of
 Django. Check the Trove classifiers in setup.py to be sure.
+
+django-storages is backed in part by `Tidelift`_. Check them out for all of your enterprise open source
+software commerical support needs.
+
+.. _Tidelift: https://tidelift.com/subscription/pkg/pypi-django-storages?utm_source=pypi-django-storages&utm_medium=referral&utm_campaign=enterprise&utm_term=repo
+
+Security
+========
+
+To report a security vulnerability, please use the `Tidelift security contact`_. Tidelift will coordinate the
+fix and disclosure. Please **do not** post a public issue on the tracker.
+
+.. _Tidelift security contact: https://tidelift.com/security
 
 History
 =======
@@ -54,8 +92,7 @@ Issues are tracked via GitHub issues at the `project issue page
 
 Documentation
 =============
-The original documentation for django-storages is located at https://django-storages.readthedocs.org/.
-Stay tuned for forthcoming documentation updates.
+Documentation for django-storages is located at https://django-storages.readthedocs.io/.
 
 Contributing
 ============

@@ -3,52 +3,52 @@
 # License: MIT
 #
 # Modeled on the FTP storage by Rafal Jonca <jonca.rafal@gmail.com>
-from __future__ import print_function
 
 import getpass
+import io
 import os
 import posixpath
 import stat
 from datetime import datetime
+from urllib.parse import urljoin
 
 import paramiko
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO
-from django.utils.six.moves.urllib import parse as urlparse
 
+from storages.base import BaseStorage
 from storages.utils import setting
 
 
 @deconstructible
-class SFTPStorage(Storage):
+class SFTPStorage(BaseStorage):
+    def __init__(self, **settings):
+        super().__init__(**settings)
+        self._host = self.host
+        self._params = self.params
+        self._interactive = self.interactive
+        self._file_mode = self.file_mode
+        self._dir_mode = self.dir_mode
+        self._uid = self.uid
+        self._gid = self.gid
+        self._known_host_file = self.known_host_file
+        self._root_path = self.root_path
+        self._base_url = self.base_url
+        self._sftp = None
 
-    def __init__(self, host=None, params=None, interactive=None, file_mode=None,
-                 dir_mode=None, uid=None, gid=None, known_host_file=None,
-                 root_path=None, base_url=None):
-        self._host = host or setting('SFTP_STORAGE_HOST')
-
-        self._params = params or setting('SFTP_STORAGE_PARAMS', {})
-        self._interactive = setting('SFTP_STORAGE_INTERACTIVE', False) \
-            if interactive is None else interactive
-        self._file_mode = setting('SFTP_STORAGE_FILE_MODE') \
-            if file_mode is None else file_mode
-        self._dir_mode = setting('SFTP_STORAGE_DIR_MODE') if \
-            dir_mode is None else dir_mode
-
-        self._uid = setting('SFTP_STORAGE_UID') if uid is None else uid
-        self._gid = setting('SFTP_STORAGE_GID') if gid is None else gid
-        self._known_host_file = setting('SFTP_KNOWN_HOST_FILE') \
-            if known_host_file is None else known_host_file
-
-        self._root_path = setting('SFTP_STORAGE_ROOT', '') \
-            if root_path is None else root_path
-        self._base_url = setting('MEDIA_URL') if base_url is None else base_url
-
-        # for now it's all posix paths.  Maybe someday we'll support figuring
-        # out if the remote host is windows.
-        self._pathmod = posixpath
+    def get_default_settings(self):
+        return {
+            'host': setting('SFTP_STORAGE_HOST'),
+            'params': setting('SFTP_STORAGE_PARAMS', {}),
+            'interactive': setting('SFTP_STORAGE_INTERACTIVE', False),
+            'file_mode': setting('SFTP_STORAGE_FILE_MODE'),
+            'dir_mode': setting('SFTP_STORAGE_DIR_MODE'),
+            'uid': setting('SFTP_STORAGE_UID'),
+            'gid': setting('SFTP_STORAGE_GID'),
+            'known_host_file': setting('SFTP_KNOWN_HOST_FILE'),
+            'root_path': setting('SFTP_STORAGE_ROOT', ''),
+            'base_url': setting('MEDIA_URL'),
+        }
 
     def _connect(self):
         self._ssh = paramiko.SSHClient()
@@ -76,25 +76,19 @@ class SFTPStorage(Storage):
                 self._connect()
             else:
                 raise paramiko.AuthenticationException(e)
-        except Exception as e:
-            print(e)
 
-        if not hasattr(self, '_sftp'):
+        if self._ssh.get_transport():
             self._sftp = self._ssh.open_sftp()
 
     @property
     def sftp(self):
         """Lazy SFTP connection"""
-        if not hasattr(self, '_sftp'):
+        if not self._sftp or not self._ssh.get_transport().is_active():
             self._connect()
         return self._sftp
 
-    def _join(self, *args):
-        # Use the path module for the remote host type to join a path together
-        return self._pathmod.join(*args)
-
     def _remote_path(self, name):
-        return self._join(self._root_path, name)
+        return posixpath.join(self._root_path, name)
 
     def _open(self, name, mode='rb'):
         return SFTPStorageFile(name, self, mode)
@@ -116,7 +110,7 @@ class SFTPStorage(Storage):
     def _mkdir(self, path):
         """Create directory, recursing up to create parent dirs if
         necessary."""
-        parent = self._pathmod.dirname(path)
+        parent = posixpath.dirname(path)
         if not self.exists(parent):
             self._mkdir(parent)
         self.sftp.mkdir(path)
@@ -131,7 +125,7 @@ class SFTPStorage(Storage):
         """Save file via SFTP."""
         content.open()
         path = self._remote_path(name)
-        dirname = self._pathmod.dirname(path)
+        dirname = posixpath.dirname(path)
         if not self.exists(dirname):
             self._mkdir(dirname)
 
@@ -147,17 +141,16 @@ class SFTPStorage(Storage):
         return name
 
     def delete(self, name):
-        remote_path = self._remote_path(name)
-        self.sftp.remove(remote_path)
+        try:
+            self.sftp.remove(self._remote_path(name))
+        except OSError:
+            pass
 
     def exists(self, name):
-        # Try to retrieve file info.  Return true on success, false on failure.
-        remote_path = self._remote_path(name)
-
         try:
-            self.sftp.stat(remote_path)
+            self.sftp.stat(self._remote_path(name))
             return True
-        except IOError:
+        except FileNotFoundError:
             return False
 
     def _isdir_attr(self, item):
@@ -194,39 +187,47 @@ class SFTPStorage(Storage):
     def url(self, name):
         if self._base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urlparse.urljoin(self._base_url, name).replace('\\', '/')
+        return urljoin(self._base_url, name).replace('\\', '/')
 
 
 class SFTPStorageFile(File):
     def __init__(self, name, storage, mode):
-        self._name = name
+        self.name = name
+        self.mode = mode
+        self.file = io.BytesIO()
         self._storage = storage
-        self._mode = mode
-        self._is_dirty = False
-        self.file = BytesIO()
         self._is_read = False
+        self._is_dirty = False
 
     @property
     def size(self):
         if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
+            self._size = self._storage.size(self.name)
         return self._size
 
     def read(self, num_bytes=None):
         if not self._is_read:
-            self.file = self._storage._read(self._name)
+            self.file = self._storage._read(self.name)
             self._is_read = True
 
         return self.file.read(num_bytes)
 
     def write(self, content):
-        if 'w' not in self._mode:
+        if 'w' not in self.mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        self.file = io.BytesIO(content)
         self._is_dirty = True
         self._is_read = True
 
+    def open(self, mode=None):
+        if not self.closed:
+            self.seek(0)
+        elif self.name and self._storage.exists(self.name):
+            self.file = self._storage._open(self.name, mode or self.mode)
+        else:
+            raise ValueError("The file cannot be reopened.")
+
     def close(self):
         if self._is_dirty:
-            self._storage._save(self._name, self)
+            self._storage._save(self.name, self)
         self.file.close()

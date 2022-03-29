@@ -153,8 +153,8 @@ set::
 
 Your default Libcloud provider will be used as the file store.
 
-Certifcate authorities
-----------------------
+Certificate authorities
+-----------------------
 
 Libcloud uses HTTPS connections, and in order to validate that these HTTPS connections are
 correctly signed, root CA certificates must be present. On some platforms
@@ -175,4 +175,3 @@ into your settings.py::
     libcloud.security.CA_CERTS_PATH.append("/path/to/your/cacerts.pem")
 
 .. _Download a certificate authority file: http://curl.haxx.se/ca/cacert.pem
-

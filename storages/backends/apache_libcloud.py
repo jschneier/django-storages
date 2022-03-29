@@ -1,15 +1,15 @@
 # Django storage using libcloud providers
 # Aymeric Barantal (mric at chamal.fr) 2011
 #
+import io
 import os
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.six import BytesIO, string_types
-from django.utils.six.moves.urllib.parse import urljoin
 
 try:
     from libcloud.storage.providers import get_driver
@@ -38,7 +38,7 @@ class LibCloudStorage(Storage):
             extra_kwargs['project'] = self.provider['project']
         try:
             provider_type = self.provider['type']
-            if isinstance(provider_type, string_types):
+            if isinstance(provider_type, str):
                 module_path, tag = provider_type.rsplit('.', 1)
                 if module_path != 'libcloud.storage.types.Provider':
                     raise ValueError("Invalid module path")
@@ -130,7 +130,7 @@ class LibCloudStorage(Storage):
         try:
             url = self.driver.get_object_cdn_url(obj)
         except NotImplementedError as e:
-            object_path = '%s/%s' % (self.bucket, obj.name)
+            object_path = '{}/{}'.format(self.bucket, obj.name)
             if 's3' in provider_type:
                 base_url = 'https://%s' % self.driver.connection.host
                 url = urljoin(base_url, object_path)
@@ -140,6 +140,8 @@ class LibCloudStorage(Storage):
                 base_url = ('https://%s.blob.core.windows.net' %
                             self.provider['user'])
                 url = urljoin(base_url, object_path)
+            elif 'backblaze' in provider_type:
+                url = urljoin('api.backblaze.com/b2api/v1/', object_path)
             else:
                 raise e
         return url
@@ -170,7 +172,7 @@ class LibCloudFile(File):
     def _get_file(self):
         if self._file is None:
             data = self._storage._read(self.name)
-            self._file = BytesIO(data)
+            self._file = io.BytesIO(data)
         return self._file
 
     def _set_file(self, value):
@@ -190,7 +192,7 @@ class LibCloudFile(File):
     def write(self, content):
         if 'w' not in self._mode:
             raise AttributeError("File was opened for read-only access.")
-        self.file = BytesIO(content)
+        self.file = io.BytesIO(content)
         self._is_dirty = True
 
     def close(self):

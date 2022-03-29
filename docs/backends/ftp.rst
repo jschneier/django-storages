@@ -8,8 +8,18 @@ This implementation was done preliminary for upload files in admin to remote FTP
 Settings
 --------
 
-``LOCATION``
-    URL of the server that hold the files. Example ``'ftp://<user>:<pass>@<host>:<port>'``
+To use FtpStorage set::
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
+
+``FTP_STORAGE_LOCATION``
+    URL of the server that holds the files. Example ``'ftp://<user>:<pass>@<host>:<port>'``
 
 ``BASE_URL``
     URL that serves the files stored at this location. Defaults to the value of your ``MEDIA_URL`` setting.
+
+Optional parameters
+~~~~~~~~~~~~~~~~~~~
+
+``ENCODING``
+    File encoding. Example ``'utf-8'``. Default value ``'latin-1'``
