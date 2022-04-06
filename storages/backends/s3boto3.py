@@ -23,6 +23,7 @@ from storages.utils import (
 
 try:
     import boto3.session
+    from boto3.s3.transfer import TransferConfig
     from botocore.client import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
@@ -133,7 +134,7 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.obj.download_fileobj(self._file)
+                self.obj.download_fileobj(self._file, Config=self._storage._transfer_config)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
                 self._file = self._decompress_file(mode=self._mode, file=self._file)
@@ -272,6 +273,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
                 signature_version=self.signature_version,
                 proxies=self.proxies,
             )
+        self._transfer_config = TransferConfig(use_threads=self.use_threads)
 
     def get_cloudfront_signer(self, key_id, key):
         return _cloud_front_signer_from_pem(key_id, key)
@@ -331,6 +333,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             'verify': setting('AWS_S3_VERIFY', None),
             'max_memory_size': setting('AWS_S3_MAX_MEMORY_SIZE', 0),
             'default_acl': setting('AWS_DEFAULT_ACL', None),
+            'use_threads': setting('AWS_S3_USE_THREADS', True),
         }
 
     def __getstate__(self):
@@ -452,7 +455,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             params['ContentEncoding'] = 'gzip'
 
         obj = self.bucket.Object(name)
-        obj.upload_fileobj(content, ExtraArgs=params)
+        obj.upload_fileobj(content, ExtraArgs=params, Config=self._transfer_config)
         return cleaned_name
 
     def delete(self, name):

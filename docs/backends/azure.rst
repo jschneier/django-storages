@@ -138,6 +138,10 @@ The following settings are available:
 
     Default location for the uploaded files. This is a path that gets prepended to every file name.
 
+``AZURE_ENDPOINT_SUFFIX``
+
+    Defaults to ``core.windows.net``. Use ``core.chinacloudapi.cn`` for Azure.cn accounts.
+
 ``AZURE_CUSTOM_DOMAIN``
 
     The custom domain to use. This can be set in the Azure Portal. For
