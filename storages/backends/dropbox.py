@@ -69,21 +69,27 @@ class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
+    oauth2_refresh_token = setting('DROPBOX_OAUTH2_REFRESH_TOKEN')
+    app_key = setting('DROPBOX_APP_KEY')
+    app_secret = setting('DROPBOX_APP_SECRET')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
     write_mode = setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
-                 write_mode=write_mode):
-        if oauth2_access_token is None:
-            raise ImproperlyConfigured("You must configure an auth token at"
-                                       "'settings.DROPBOX_OAUTH2_TOKEN'.")
+    def __init__(self, oauth2_access_token=oauth2_access_token, oauth2_refresh_token=oauth2_refresh_token,
+                 app_key=app_key, app_secret=app_secret, root_path=location, timeout=timeout, write_mode=write_mode):
+        if oauth2_access_token is None and not all([oauth2_refresh_token, app_key, app_secret]):
+            raise ImproperlyConfigured("Either configure an access token using 'settings.DROPBOX_OAUTH2_TOKEN', "
+                                       "or configure a refresh token, app key, and app secret using "
+                                       "'settings.DROPBOX_OAUTH2_REFRESH_TOKEN', 'settings.DROPBOX_APP_KEY', "
+                                       "and 'settings.DROPBOX_APP_SECRET'.")
         if write_mode not in ["add", "overwrite",  "update"]:
             raise ImproperlyConfigured("DROPBOX_WRITE_MODE must be set to either: 'add', 'overwrite' or 'update'")
         self.root_path = root_path
         self.write_mode = write_mode
-        self.client = Dropbox(oauth2_access_token, timeout=timeout)
+        self.client = Dropbox(oauth2_access_token=oauth2_access_token, oauth2_refresh_token=oauth2_refresh_token,
+                              app_key=app_key, app_secret=app_secret, timeout=timeout)
 
     def _full_path(self, name):
         if name == '/':

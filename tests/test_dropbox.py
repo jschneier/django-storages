@@ -54,6 +54,30 @@ class DropBoxTest(TestCase):
         with self.assertRaises(ImproperlyConfigured):
             dropbox.DropBoxStorage(None)
 
+    def test_refresh_token_app_key_no_app_secret(self, *args):
+        inputs = {
+            'oauth2_refresh_token': 'foo',
+            'app_key': 'bar',
+        }
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(**inputs)
+
+    def test_refresh_token_app_secret_no_app_key(self, *args):
+        inputs = {
+            'oauth2_refresh_token': 'foo',
+            'app_secret': 'bar',
+        }
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(**inputs)
+
+    def test_app_key_app_secret_no_refresh_token(self, *args):
+        inputs = {
+            'app_key': 'foo',
+            'app_secret': 'bar',
+        }
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(**inputs)
+
     @mock.patch('dropbox.Dropbox.files_delete',
                 return_value=FILE_METADATA_MOCK)
     def test_delete(self, *args):
