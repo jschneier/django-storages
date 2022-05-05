@@ -1,6 +1,5 @@
 import mimetypes
 from datetime import datetime, timedelta
-from sys import api_version
 from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
