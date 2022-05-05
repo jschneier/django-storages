@@ -1,5 +1,6 @@
 import mimetypes
 from datetime import datetime, timedelta
+from sys import api_version
 from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
@@ -143,6 +144,7 @@ class AzureStorage(BaseStorage):
             "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
             "connection_string": setting('AZURE_CONNECTION_STRING'),
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
+            "api_version": setting('AZURE_API_VERSION', 'latest'),
         }
 
     def _get_service_client(self):
@@ -165,7 +167,7 @@ class AzureStorage(BaseStorage):
             credential = self.sas_token
         elif self.token_credential:
             credential = self.token_credential
-        return BlobServiceClient(account_url, credential=credential)
+        return BlobServiceClient(account_url, credential=credential, api_version=self.api_version)
 
     @property
     def service_client(self):
