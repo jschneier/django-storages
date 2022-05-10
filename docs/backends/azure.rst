@@ -173,4 +173,4 @@ The following settings are available:
 
 ``AZURE_API_VERSION``
 
-    The api version to use. The defualt value is ``latest``.
+    The api version to use. The default value is ``None``.
