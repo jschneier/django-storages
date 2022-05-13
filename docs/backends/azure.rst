@@ -28,10 +28,11 @@ Gzipping for static files must be done through Azure CDN.
 Install
 *******
 
-Install Azure SDK::
+Install Azure SDK (in addition to pip installing django-storages)::
 
-  pip install django-storages[azure]
+  pip install azure-core azure-storage-blob
 
+Why doesn't the older azure package work anymore? See https://stackoverflow.com/a/58900508/5305519
 
 Private VS Public Access
 ************************
