@@ -170,3 +170,7 @@ The following settings are available:
     basis, subclass the backend and override ``AzureStorage.get_object_parameters``.
     
     This is a Python ``dict`` and the possible parameters are: ``content_type``, ``content_encoding``, ``content_language``, ``content_disposition``, ``cache_control``, and ``content_md5``.
+
+``AZURE_API_VERSION``
+
+    The api version to use. The default value is ``None``.
