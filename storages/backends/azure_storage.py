@@ -168,7 +168,7 @@ class AzureStorage(BaseStorage):
             credential = self.token_credential
         options = {}
         if self.api_version:
-            options["api_version"] =  self.api_version
+            options["api_version"] = self.api_version
         return BlobServiceClient(account_url, credential=credential, **options)
 
     @property
