@@ -338,9 +338,8 @@ class AzureStorage(BaseStorage):
         Returns an (aware) datetime object containing the last modified time if
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
-        properties = self.client.get_blob_properties(
-            self._get_valid_path(name),
-            timeout=self.timeout)
+        blob_client = self.client.get_blob_client(self._get_valid_path(name))
+        properties = blob_client.get_blob_properties(timeout=self.timeout)
         if not setting('USE_TZ', False):
             return timezone.make_naive(properties.last_modified)
 
