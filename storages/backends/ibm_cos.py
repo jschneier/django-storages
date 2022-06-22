@@ -1,7 +1,11 @@
 import tempfile
-from .s3boto3 import S3Boto3Storage
+
 from django.contrib.staticfiles.storage import ManifestFilesMixin
+
 from storages.utils import setting
+
+from .s3boto3 import S3Boto3Storage
+
 
 class IBMCloudObjectStorage(S3Boto3Storage):
     """
@@ -13,8 +17,6 @@ class IBMCloudObjectStorage(S3Boto3Storage):
     access_key_names = ['IBM_COS_ACCESS_KEY_ID', 'IBM_ACCESS_KEY_ID']
     secret_key_names = ['IBM_COS_SECRET_ACCESS_KEY', 'IBM_SECRET_ACCESS_KEY']
     security_token_names = ['IBM_SESSION_TOKEN', 'IBM_SECURITY_TOKEN']
-
-
 
     def get_default_settings(self):
         return {
@@ -51,9 +53,11 @@ class IBMCloudObjectStorage(S3Boto3Storage):
             "use_threads": setting('IBM_COS_USE_THREADS', True),
         }
 
+
 class IBMCOSStaticStorage(IBMCloudObjectStorage):
     """Querystring auth must be disabled so that url() returns a consistent output."""
     querystring_auth = False
+
 
 class IBMCOSManifestStaticStorage(ManifestFilesMixin, IBMCOSStaticStorage):
     """Copy the file before saving for compatibility with ManifestFilesMixin
