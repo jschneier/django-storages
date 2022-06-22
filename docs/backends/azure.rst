@@ -61,6 +61,20 @@ Then on settings set::
     DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
     STATICFILES_STORAGE = 'custom_storage.custom_azure.PublicAzureStorage'
 
++++++++++++++++++++++
+Private VS Public URL
++++++++++++++++++++++
+
+The difference between public and private URLs is that private includes the SAS token.
+With private URLs you can override certain properties stored for the blob by specifying
+query parameters as part of the shared access signature. These properties include the
+cache-control, content-type, content-encoding, content-language, and content-disposition.
+See https://docs.microsoft.com/en-us/rest/api/storageservices/set-blob-properties#remarks
+
+You can specify these parameters by::
+    az_storage = AzureStorage()
+    az_url = az_storage.url(blob_name, parameters={'content_type': 'text/html;'})
+
 
 Settings
 ********
@@ -124,36 +138,20 @@ The following settings are available:
 
     Default location for the uploaded files. This is a path that gets prepended to every file name.
 
-``AZURE_EMULATED_MODE``
-
-    Whether to use the emulator (i.e Azurite). Defaults to False.
-
 ``AZURE_ENDPOINT_SUFFIX``
 
-    The host base component of the url, minus the account name. Defaults
-    to Azure (``core.windows.net``). Override this to use the China cloud
-    (``core.chinacloudapi.cn``).
+    Defaults to ``core.windows.net``. Use ``core.chinacloudapi.cn`` for Azure.cn accounts.
 
 ``AZURE_CUSTOM_DOMAIN``
 
     The custom domain to use. This can be set in the Azure Portal. For
     example, ``www.mydomain.com`` or ``mycdn.azureedge.net``.
 
-    It may contain a ``host:port`` when using the emulator
-    (``AZURE_EMULATED_MODE = True``).
-
 ``AZURE_CONNECTION_STRING``
 
     If specified, this will override all other parameters.
     See http://azure.microsoft.com/en-us/documentation/articles/storage-configure-connection-string/
     for the connection string format.
-
-``AZURE_CUSTOM_CONNECTION_STRING``
-
-    This is similar to ``AZURE_CONNECTION_STRING``, but it's used
-    when generating the file's URL. A custom domain or CDN may be
-    specified here instead of within ``AZURE_CONNECTION_STRING``.
-    Defaults to ``AZURE_CONNECTION_STRING``'s value.
 
 ``AZURE_TOKEN_CREDENTIAL``
 
@@ -172,3 +170,7 @@ The following settings are available:
     basis, subclass the backend and override ``AzureStorage.get_object_parameters``.
     
     This is a Python ``dict`` and the possible parameters are: ``content_type``, ``content_encoding``, ``content_language``, ``content_disposition``, ``cache_control``, and ``content_md5``.
+
+``AZURE_API_VERSION``
+
+    The api version to use. The default value is ``None``.

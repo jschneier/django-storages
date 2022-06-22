@@ -1,4 +1,5 @@
 import mimetypes
+import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -6,12 +7,12 @@ from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes
 
 from storages.base import BaseStorage
+from storages.compress import CompressedFileMixin, CompressStorageMixin
 from storages.utils import (
     check_location, clean_name, get_available_overwrite_name, safe_join,
-    setting,
+    setting, to_bytes,
 )
 
 try:
@@ -23,7 +24,11 @@ except ImportError:
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
 
 
-class GoogleCloudFile(File):
+CONTENT_ENCODING = 'content_encoding'
+CONTENT_TYPE = 'content_type'
+
+
+class GoogleCloudFile(CompressedFileMixin, File):
     def __init__(self, name, mode, storage):
         self.name = name
         self.mime_type = mimetypes.guess_type(name)[0]
@@ -52,6 +57,8 @@ class GoogleCloudFile(File):
                 self._is_dirty = False
                 self.blob.download_to_file(self._file)
                 self._file.seek(0)
+            if self._storage.gzip and self.blob.content_encoding == 'gzip':
+                self._file = self._decompress_file(mode=self._mode, file=self._file)
         return self._file
 
     def _set_file(self, value):
@@ -72,20 +79,21 @@ class GoogleCloudFile(File):
         if 'w' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super().write(force_bytes(content))
+        return super().write(to_bytes(content))
 
     def close(self):
         if self._file is not None:
             if self._is_dirty:
+                blob_params = self._storage.get_object_parameters(self.name)
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
-                    predefined_acl=self._storage.default_acl)
+                    predefined_acl=blob_params.get('acl', self._storage.default_acl))
             self._file.close()
             self._file = None
 
 
 @deconstructible
-class GoogleCloudStorage(BaseStorage):
+class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -104,8 +112,17 @@ class GoogleCloudStorage(BaseStorage):
             "default_acl": setting('GS_DEFAULT_ACL'),
             "querystring_auth": setting('GS_QUERYSTRING_AUTH', True),
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
+            "gzip": setting('GS_IS_GZIPPED', False),
+            "gzip_content_types": setting('GZIP_CONTENT_TYPES', (
+                'text/css',
+                'text/javascript',
+                'application/javascript',
+                'application/x-javascript',
+                'image/svg+xml',
+            )),
             "file_overwrite": setting('GS_FILE_OVERWRITE', True),
             "cache_control": setting('GS_CACHE_CONTROL'),
+            "object_parameters": setting('GS_OBJECT_PARAMETERS', {}),
             # The max amount of memory a returned file can take up before being
             # rolled over into a temporary file on disk. Default is 0: Do not
             # roll over.
@@ -153,16 +170,48 @@ class GoogleCloudStorage(BaseStorage):
         name = self._normalize_name(cleaned_name)
 
         content.name = cleaned_name
-        file = GoogleCloudFile(name, 'rw', self)
-        file.blob.cache_control = self.cache_control
-        file.blob.upload_from_file(
-            content, rewind=True, size=content.size,
-            content_type=file.mime_type, predefined_acl=self.default_acl)
+        file_object = GoogleCloudFile(name, 'rw', self)
+
+        upload_params = {}
+        blob_params = self.get_object_parameters(name)
+        upload_params['predefined_acl'] = blob_params.pop('acl', self.default_acl)
+        upload_params[CONTENT_TYPE] = blob_params.pop(CONTENT_TYPE, file_object.mime_type)
+
+        if (self.gzip and
+                upload_params[CONTENT_TYPE] in self.gzip_content_types and
+                CONTENT_ENCODING not in blob_params):
+            content = self._compress_content(content)
+            blob_params[CONTENT_ENCODING] = 'gzip'
+
+        for prop, val in blob_params.items():
+            setattr(file_object.blob, prop, val)
+
+        file_object.blob.upload_from_file(content, rewind=True, size=getattr(content, 'size', None), **upload_params)
         return cleaned_name
+
+    def get_object_parameters(self, name):
+        """Override this to return a dictionary of overwritable blob-property to value.
+
+        Returns GS_OBJECT_PARAMETRS by default. See the docs for all possible options.
+        """
+        object_parameters = self.object_parameters.copy()
+
+        if 'cache_control' not in object_parameters and self.cache_control:
+            warnings.warn(
+                'The GS_CACHE_CONTROL setting is deprecated. Use GS_OBJECT_PARAMETERS to set any '
+                'writable blob property or override GoogleCloudStorage.get_object_parameters to '
+                'vary the parameters per object.', DeprecationWarning
+            )
+            object_parameters['cache_control'] = self.cache_control
+
+        return object_parameters
 
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
-        self.bucket.delete_blob(name)
+        try:
+            self.bucket.delete_blob(name)
+        except NotFound:
+            pass
 
     def exists(self, name):
         if not name:  # root element aka the bucket
@@ -241,8 +290,9 @@ class GoogleCloudStorage(BaseStorage):
         """
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(name)
+        blob_params = self.get_object_parameters(name)
         no_signed_url = (
-            self.default_acl == 'publicRead' or not self.querystring_auth)
+            blob_params.get('acl', self.default_acl) == 'publicRead' or not self.querystring_auth)
 
         if not self.custom_endpoint and no_signed_url:
             return blob.public_url
@@ -252,11 +302,14 @@ class GoogleCloudStorage(BaseStorage):
                 quoted_name=_quote(name, safe=b"/~"),
             )
         elif not self.custom_endpoint:
-            return blob.generate_signed_url(self.expiration)
+            return blob.generate_signed_url(
+                expiration=self.expiration, version="v4"
+            )
         else:
             return blob.generate_signed_url(
+                bucket_bound_hostname=self.custom_endpoint,
                 expiration=self.expiration,
-                api_access_endpoint=self.custom_endpoint,
+                version="v4",
             )
 
     def get_available_name(self, name, max_length=None):

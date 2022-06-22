@@ -14,15 +14,18 @@ from django.test import TestCase, override_settings
 from django.utils.timezone import is_aware, utc
 
 from storages.backends import s3boto3
+from tests.utils import NonSeekableContentFile
 
 
-class S3Boto3TestCase(TestCase):
+class S3ManifestStaticStorageTestStorage(s3boto3.S3ManifestStaticStorage):
+    def read_manifest(self):
+        return None
+
+
+class S3Boto3StorageTests(TestCase):
     def setUp(self):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connections.connection = mock.MagicMock()
-
-
-class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_clean_name(self):
         """
@@ -51,6 +54,13 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         """
         path = self.storage._clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
+
+    def test_s3_session(self):
+        settings.AWS_S3_SESSION_PROFILE = "test_profile"
+        with mock.patch('boto3.Session') as mock_session:
+            storage = s3boto3.S3Boto3Storage()
+            _ = storage.connection
+            mock_session.assert_called_once_with(profile_name="test_profile")
 
     def test_pickle_with_bucket(self):
         """
@@ -111,7 +121,26 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content,
             ExtraArgs={
                 'ContentType': 'text/plain',
-            }
+            },
+            Config=self.storage._transfer_config
+        )
+
+    def test_storage_save_non_seekable(self):
+        """
+        Test saving a non-seekable file
+        """
+        name = 'test_storage_save.txt'
+        content = NonSeekableContentFile('new content')
+        self.storage.save(name, content)
+        self.storage.bucket.Object.assert_called_once_with(name)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'text/plain',
+            },
+            Config=self.storage._transfer_config
         )
 
     def test_storage_save_with_default_acl(self):
@@ -130,7 +159,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
-            }
+            },
+            Config=self.storage._transfer_config
         )
 
     def test_storage_object_parameters_not_overwritten_by_default(self):
@@ -150,7 +180,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
                 'ACL': 'private',
-            }
+            },
+            Config=self.storage._transfer_config
         )
 
     def test_content_type(self):
@@ -168,7 +199,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             content,
             ExtraArgs={
                 'ContentType': 'image/jpeg',
-            }
+            },
+            Config=self.storage._transfer_config
         )
 
     def test_storage_save_gzipped(self):
@@ -184,7 +216,25 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
-            }
+            },
+            Config=self.storage._transfer_config
+        )
+
+    def test_storage_save_gzipped_non_seekable(self):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        content = NonSeekableContentFile("I am gzip'd")
+        self.storage.save(name, content)
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                'ContentType': 'application/octet-stream',
+                'ContentEncoding': 'gzip',
+            },
+            Config=self.storage._transfer_config
         )
 
     def test_storage_save_gzip(self):
@@ -201,7 +251,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
-            }
+            },
+            Config=self.storage._transfer_config
         )
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
@@ -228,7 +279,8 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             ExtraArgs={
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
-            }
+            },
+            Config=self.storage._transfer_config
         )
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
@@ -272,6 +324,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         # Set the name of the mock object
         obj.key = name
 
+        multipart = obj.initiate_multipart_upload.return_value
+        multipart.Part.return_value.upload.side_effect = [
+            {'ETag': '123'},
+        ]
         file.write(content)
         obj.initiate_multipart_upload.assert_called_with(
             ACL='public-read',
@@ -281,8 +337,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         )
 
         # Save the internal file before closing
-        multipart = obj.initiate_multipart_upload.return_value
-        multipart.parts.all.return_value = [mock.MagicMock(e_tag='123', part_number=1)]
         file.close()
         multipart.Part.assert_called_with(1)
         part = multipart.Part.return_value
@@ -391,6 +445,10 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         # Write content at least twice as long as the buffer size
         written_content = ''
         counter = 1
+        multipart.Part.return_value.upload.side_effect = [
+            {'ETag': '123'},
+            {'ETag': '456'},
+        ]
         while len(written_content) < 2 * file.buffer_size:
             content = 'hello, aws {counter}\n'.format(counter=counter)
             # Write more than just a few bytes in each iteration to keep the
@@ -401,10 +459,6 @@ class S3Boto3StorageTests(S3Boto3TestCase):
             counter += 1
 
         # Save the internal file before closing
-        multipart.parts.all.return_value = [
-            mock.MagicMock(e_tag='123', part_number=1),
-            mock.MagicMock(e_tag='456', part_number=2)
-        ]
         file.close()
         self.assertListEqual(
             multipart.Part.call_args_list,
@@ -432,14 +486,24 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
     def test_storage_exists_false(self):
         self.storage.connection.meta.client.head_object.side_effect = ClientError(
-            {'Error': {'Code': '404', 'Message': 'Not Found'}},
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 404}},
             'HeadObject',
         )
-        self.assertFalse(self.storage.exists("file.txt"))
+        self.assertFalse(self.storage.exists('file.txt'))
         self.storage.connection.meta.client.head_object.assert_called_with(
             Bucket=self.storage.bucket_name,
             Key='file.txt',
         )
+
+    def test_storage_exists_other_error_reraise(self):
+        self.storage.connection.meta.client.head_object.side_effect = ClientError(
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 403}},
+            'HeadObject',
+        )
+        with self.assertRaises(ClientError) as cm:
+            self.storage.exists('file.txt')
+
+        self.assertEqual(cm.exception.response['ResponseMetadata']['HTTPStatusCode'], 403)
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")
@@ -499,6 +563,27 @@ class S3Boto3StorageTests(S3Boto3TestCase):
 
         self.assertEqual(dirs, ['path'])
         self.assertEqual(files, ['2.txt'])
+
+    def test_storage_listdir_empty(self):
+        # Files:
+        #   dir/
+        pages = [
+            {
+                'Contents': [
+                    {'Key': 'dir/'},
+                ],
+            },
+        ]
+
+        paginator = mock.MagicMock()
+        paginator.paginate.return_value = pages
+        self.storage._connections.connection.meta.client.get_paginator.return_value = paginator
+
+        dirs, files = self.storage.listdir('dir/')
+        paginator.paginate.assert_called_with(Bucket=None, Delimiter='/', Prefix='dir/')
+
+        self.assertEqual(dirs, [])
+        self.assertEqual(files, [])
 
     def test_storage_size(self):
         obj = self.storage.bucket.Object.return_value
@@ -625,6 +710,14 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path, "/%C3%A3l%C3%B6h%C3%A2.jpg")
 
+    def test_custom_domain_parameters(self):
+        self.storage.custom_domain = "mock.cloudfront.net"
+        filename = "filename.mp4"
+        url = self.storage.url(filename, parameters={"version": 10})
+        parsed_url = urlparse(url)
+        self.assertEqual(parsed_url.path, "/filename.mp4")
+        self.assertEqual(parsed_url.query, "version=10")
+
     def test_strip_signing_parameters(self):
         expected = 'http://bucket.s3-aws-region.amazonaws.com/foo/bar'
         self.assertEqual(self.storage._strip_signing_parameters(
@@ -681,3 +774,24 @@ class S3Boto3StorageTests(S3Boto3TestCase):
         self.assertEqual(storage.location, 'foo1')
         storage = s3boto3.S3Boto3Storage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
+
+
+class S3StaticStorageTests(TestCase):
+    def setUp(self):
+        self.storage = s3boto3.S3StaticStorage()
+        self.storage._connections.connection = mock.MagicMock()
+
+    def test_querystring_auth(self):
+        self.assertFalse(self.storage.querystring_auth)
+
+
+class S3ManifestStaticStorageTests(TestCase):
+    def setUp(self):
+        self.storage = S3ManifestStaticStorageTestStorage()
+        self.storage._connections.connection = mock.MagicMock()
+
+    def test_querystring_auth(self):
+        self.assertFalse(self.storage.querystring_auth)
+
+    def test_save(self):
+        self.storage.save('x.txt', ContentFile(b'abc'))

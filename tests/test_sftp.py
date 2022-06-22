@@ -1,5 +1,6 @@
 import io
 import os
+import socket
 import stat
 from datetime import datetime
 from unittest.mock import MagicMock, patch
@@ -56,7 +57,7 @@ class SFTPStorageTest(TestCase):
         self.assertEqual(mock_sftp.mkdir.call_args[0], ('foo',))
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.side_effect': (IOError(), True)
+        'stat.side_effect': (FileNotFoundError(), True)
     })
     def test_mkdir_parent(self, mock_sftp):
         self.storage._mkdir('bar/foo')
@@ -69,7 +70,7 @@ class SFTPStorageTest(TestCase):
         self.assertTrue(mock_sftp.open.return_value.write.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.side_effect': (IOError(), True)
+        'stat.side_effect': (FileNotFoundError(), True)
     })
     def test_save_in_subdir(self, mock_sftp):
         self.storage._save('bar/foo', File(io.BytesIO(b'foo'), 'foo'))
@@ -86,10 +87,17 @@ class SFTPStorageTest(TestCase):
         self.assertTrue(self.storage.exists('foo'))
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.side_effect': IOError()
+        'stat.side_effect': FileNotFoundError()
     })
     def test_not_exists(self, mock_sftp):
         self.assertFalse(self.storage.exists('foo'))
+
+    @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
+        'stat.side_effect': socket.timeout()
+    })
+    def test_not_exists_timeout(self, mock_sftp):
+        with self.assertRaises(socket.timeout):
+            self.storage.exists('foo')
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
         'listdir_attr.return_value':

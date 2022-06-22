@@ -1,13 +1,11 @@
-import io
 import mimetypes
 import os
 import posixpath
 import tempfile
 import threading
 from datetime import datetime, timedelta
-from gzip import GzipFile
 from tempfile import SpooledTemporaryFile
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
@@ -17,6 +15,7 @@ from django.utils.encoding import filepath_to_uri
 from django.utils.timezone import is_naive, make_naive
 
 from storages.base import BaseStorage
+from storages.compress import CompressedFileMixin, CompressStorageMixin
 from storages.utils import (
     check_location, get_available_overwrite_name, lookup_env, safe_join,
     setting, to_bytes,
@@ -24,6 +23,7 @@ from storages.utils import (
 
 try:
     import boto3.session
+    from boto3.s3.transfer import TransferConfig
     from botocore.client import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
@@ -80,7 +80,7 @@ else:
 
 
 @deconstructible
-class S3Boto3StorageFile(File):
+class S3Boto3StorageFile(CompressedFileMixin, File):
     """
     The default file object used by the S3Boto3Storage backend.
 
@@ -113,6 +113,7 @@ class S3Boto3StorageFile(File):
         self._raw_bytes_written = 0
         self._file = None
         self._multipart = None
+        self._parts = None
         # 5 MB is the minimum part size (if there is more than one part).
         # Amazon allows up to 10,000 parts.  The default supports uploads
         # up to roughly 50 GB.  Increase the part size to accommodate
@@ -128,15 +129,15 @@ class S3Boto3StorageFile(File):
         if self._file is None:
             self._file = SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
-                suffix=".S3Boto3StorageFile",
-                dir=setting("FILE_UPLOAD_TEMP_DIR")
+                suffix='.S3Boto3StorageFile',
+                dir=setting('FILE_UPLOAD_TEMP_DIR')
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.obj.download_fileobj(self._file)
+                self.obj.download_fileobj(self._file, Config=self._storage._transfer_config)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
-                self._file = GzipFile(mode=self._mode, fileobj=self._file, mtime=0.0)
+                self._file = self._decompress_file(mode=self._mode, file=self._file)
         return self._file
 
     def _set_file(self, value):
@@ -162,6 +163,7 @@ class S3Boto3StorageFile(File):
             self._multipart = self.obj.initiate_multipart_upload(
                 **self._storage._get_write_parameters(self.obj.key)
             )
+            self._parts = []
         if self.buffer_size <= self._buffer_file_size:
             self._flush_write_buffer()
         bstr = to_bytes(content)
@@ -177,14 +179,15 @@ class S3Boto3StorageFile(File):
         return length
 
     def _flush_write_buffer(self):
-        """
-        Flushes the write buffer.
-        """
         if self._buffer_file_size:
             self._write_counter += 1
             self.file.seek(0)
             part = self._multipart.Part(self._write_counter)
-            part.upload(Body=self.file.read())
+            response = part.upload(Body=self.file.read())
+            self._parts.append({
+                'ETag': response['ETag'],
+                'PartNumber': self._write_counter
+            })
             self.file.seek(0)
             self.file.truncate()
 
@@ -196,19 +199,19 @@ class S3Boto3StorageFile(File):
         This behavior is meant to mimic the behavior of Django's builtin FileSystemStorage,
         where files are always created after they are opened in write mode:
 
-            f = storage.open("file.txt", mode="w")
+            f = storage.open('file.txt', mode='w')
             f.close()
         """
-        assert "w" in self._mode
+        assert 'w' in self._mode
         assert self._raw_bytes_written == 0
 
         try:
             # Check if the object exists on the server; if so, don't do anything
             self.obj.load()
         except ClientError as err:
-            if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
+            if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 self.obj.put(
-                    Body=b"", **self._storage._get_write_parameters(self.obj.key)
+                    Body=b'', **self._storage._get_write_parameters(self.obj.key)
                 )
             else:
                 raise
@@ -216,13 +219,8 @@ class S3Boto3StorageFile(File):
     def close(self):
         if self._is_dirty:
             self._flush_write_buffer()
-            # TODO: Possibly cache the part ids as they're being uploaded
-            # instead of requesting parts from server. For now, emulating
-            # s3boto's behavior.
-            parts = [{'ETag': part.e_tag, 'PartNumber': part.part_number}
-                     for part in self._multipart.parts.all()]
             self._multipart.complete(
-                MultipartUpload={'Parts': parts})
+                MultipartUpload={'Parts': self._parts})
         else:
             if self._multipart is not None:
                 self._multipart.abort()
@@ -234,7 +232,7 @@ class S3Boto3StorageFile(File):
 
 
 @deconstructible
-class S3Boto3Storage(BaseStorage):
+class S3Boto3Storage(CompressStorageMixin, BaseStorage):
     """
     Amazon Simple Storage Service using Boto3
 
@@ -275,6 +273,7 @@ class S3Boto3Storage(BaseStorage):
                 signature_version=self.signature_version,
                 proxies=self.proxies,
             )
+        self._transfer_config = TransferConfig(use_threads=self.use_threads)
 
     def get_cloudfront_signer(self, key_id, key):
         return _cloud_front_signer_from_pem(key_id, key)
@@ -293,37 +292,48 @@ class S3Boto3Storage(BaseStorage):
         else:
             cloudfront_signer = None
 
+        s3_access_key_id = setting('AWS_S3_ACCESS_KEY_ID')
+        s3_secret_access_key = setting('AWS_S3_SECRET_ACCESS_KEY')
+        s3_session_profile = setting('AWS_S3_SESSION_PROFILE')
+        if (s3_access_key_id or s3_secret_access_key) and s3_session_profile:
+            raise ImproperlyConfigured(
+                'AWS_S3_SESSION_PROFILE should not be provided with '
+                'AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY'
+            )
+
         return {
-            "access_key": setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
-            "secret_key": setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
-            "file_overwrite": setting('AWS_S3_FILE_OVERWRITE', True),
-            "object_parameters": setting('AWS_S3_OBJECT_PARAMETERS', {}),
-            "bucket_name": setting('AWS_STORAGE_BUCKET_NAME'),
-            "querystring_auth": setting('AWS_QUERYSTRING_AUTH', True),
-            "querystring_expire": setting('AWS_QUERYSTRING_EXPIRE', 3600),
-            "signature_version": setting('AWS_S3_SIGNATURE_VERSION'),
-            "location": setting('AWS_LOCATION', ''),
-            "custom_domain": setting('AWS_S3_CUSTOM_DOMAIN'),
-            "cloudfront_signer": cloudfront_signer,
-            "addressing_style": setting('AWS_S3_ADDRESSING_STYLE'),
-            "secure_urls": setting('AWS_S3_SECURE_URLS', True),
-            "file_name_charset": setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
-            "gzip": setting('AWS_IS_GZIPPED', False),
-            "gzip_content_types": setting('GZIP_CONTENT_TYPES', (
+            'access_key': setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
+            'secret_key': setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
+            'session_profile': setting('AWS_S3_SESSION_PROFILE'),
+            'file_overwrite': setting('AWS_S3_FILE_OVERWRITE', True),
+            'object_parameters': setting('AWS_S3_OBJECT_PARAMETERS', {}),
+            'bucket_name': setting('AWS_STORAGE_BUCKET_NAME'),
+            'querystring_auth': setting('AWS_QUERYSTRING_AUTH', True),
+            'querystring_expire': setting('AWS_QUERYSTRING_EXPIRE', 3600),
+            'signature_version': setting('AWS_S3_SIGNATURE_VERSION'),
+            'location': setting('AWS_LOCATION', ''),
+            'custom_domain': setting('AWS_S3_CUSTOM_DOMAIN'),
+            'cloudfront_signer': cloudfront_signer,
+            'addressing_style': setting('AWS_S3_ADDRESSING_STYLE'),
+            'secure_urls': setting('AWS_S3_SECURE_URLS', True),
+            'file_name_charset': setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
+            'gzip': setting('AWS_IS_GZIPPED', False),
+            'gzip_content_types': setting('GZIP_CONTENT_TYPES', (
                 'text/css',
                 'text/javascript',
                 'application/javascript',
                 'application/x-javascript',
                 'image/svg+xml',
             )),
-            "url_protocol": setting('AWS_S3_URL_PROTOCOL', 'http:'),
-            "endpoint_url": setting('AWS_S3_ENDPOINT_URL'),
-            "proxies": setting('AWS_S3_PROXIES'),
-            "region_name": setting('AWS_S3_REGION_NAME'),
-            "use_ssl": setting('AWS_S3_USE_SSL', True),
-            "verify": setting('AWS_S3_VERIFY', None),
-            "max_memory_size": setting('AWS_S3_MAX_MEMORY_SIZE', 0),
-            "default_acl": setting('AWS_DEFAULT_ACL', None),
+            'url_protocol': setting('AWS_S3_URL_PROTOCOL', 'http:'),
+            'endpoint_url': setting('AWS_S3_ENDPOINT_URL'),
+            'proxies': setting('AWS_S3_PROXIES'),
+            'region_name': setting('AWS_S3_REGION_NAME'),
+            'use_ssl': setting('AWS_S3_USE_SSL', True),
+            'verify': setting('AWS_S3_VERIFY', None),
+            'max_memory_size': setting('AWS_S3_MAX_MEMORY_SIZE', 0),
+            'default_acl': setting('AWS_DEFAULT_ACL', None),
+            'use_threads': setting('AWS_S3_USE_THREADS', True),
         }
 
     def __getstate__(self):
@@ -341,12 +351,9 @@ class S3Boto3Storage(BaseStorage):
     def connection(self):
         connection = getattr(self._connections, 'connection', None)
         if connection is None:
-            session = boto3.session.Session()
+            session = self._create_session()
             self._connections.connection = session.resource(
                 's3',
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                aws_session_token=self.security_token,
                 region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,
@@ -354,6 +361,22 @@ class S3Boto3Storage(BaseStorage):
                 verify=self.verify,
             )
         return self._connections.connection
+
+    def _create_session(self):
+        """
+        If a user specifies a profile name and this class obtains access keys
+        from another source such as environment variables,we want the profile
+        name to take precedence.
+        """
+        if self.session_profile:
+            session = boto3.Session(profile_name=self.session_profile)
+        else:
+            session = boto3.Session(
+                    aws_access_key_id=self.access_key,
+                    aws_secret_access_key=self.secret_key,
+                    aws_session_token=self.security_token
+            )
+        return session
 
     @property
     def bucket(self):
@@ -371,8 +394,8 @@ class S3Boto3Storage(BaseStorage):
         provided in the settings then get them from the environment
         variables.
         """
-        access_key = self.access_key or lookup_env(S3Boto3Storage.access_key_names)
-        secret_key = self.secret_key or lookup_env(S3Boto3Storage.secret_key_names)
+        access_key = self.access_key or lookup_env(self.access_key_names)
+        secret_key = self.secret_key or lookup_env(self.secret_key_names)
         return access_key, secret_key
 
     def _get_security_token(self):
@@ -380,7 +403,7 @@ class S3Boto3Storage(BaseStorage):
         Gets the security token to use when accessing S3. Get it from
         the environment variables.
         """
-        security_token = self.security_token or lookup_env(S3Boto3Storage.security_token_names)
+        security_token = self.security_token or lookup_env(self.security_token_names)
         return security_token
 
     def _clean_name(self, name):
@@ -406,24 +429,7 @@ class S3Boto3Storage(BaseStorage):
         try:
             return safe_join(self.location, name)
         except ValueError:
-            raise SuspiciousOperation("Attempted access to '%s' denied." %
-                                      name)
-
-    def _compress_content(self, content):
-        """Gzip a given string content."""
-        content.seek(0)
-        zbuf = io.BytesIO()
-        #  The GZIP header has a modification time attribute (see http://www.zlib.org/rfc-gzip.html)
-        #  This means each time a file is compressed it changes even if the other contents don't change
-        #  For S3 this defeats detection of changes using MD5 sums on gzipped files
-        #  Fixing the mtime at 0.0 at compression time avoids this problem
-        with GzipFile(mode='wb', fileobj=zbuf, mtime=0.0) as zfile:
-            zfile.write(to_bytes(content.read()))
-        zbuf.seek(0)
-        # Boto 2 returned the InMemoryUploadedFile with the file pointer replaced,
-        # but Boto 3 seems to have issues with that. No need for fp.name in Boto3
-        # so just returning the BytesIO directly
-        return zbuf
+            raise SuspiciousOperation("Attempted access to '%s' denied." % name)
 
     def _open(self, name, mode='rb'):
         name = self._normalize_name(self._clean_name(name))
@@ -440,6 +446,8 @@ class S3Boto3Storage(BaseStorage):
         name = self._normalize_name(cleaned_name)
         params = self._get_write_parameters(name, content)
 
+        if not hasattr(content, 'seekable') or content.seekable():
+            content.seek(0, os.SEEK_SET)
         if (self.gzip and
                 params['ContentType'] in self.gzip_content_types and
                 'ContentEncoding' not in params):
@@ -447,8 +455,7 @@ class S3Boto3Storage(BaseStorage):
             params['ContentEncoding'] = 'gzip'
 
         obj = self.bucket.Object(name)
-        content.seek(0, os.SEEK_SET)
-        obj.upload_fileobj(content, ExtraArgs=params)
+        obj.upload_fileobj(content, ExtraArgs=params, Config=self._transfer_config)
         return cleaned_name
 
     def delete(self, name):
@@ -460,13 +467,16 @@ class S3Boto3Storage(BaseStorage):
         try:
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
-        except ClientError:
-            return False
+        except ClientError as error:
+            if error.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+                return False
+
+            # Some other error was encountered. Re-raise it.
+            raise
 
     def listdir(self, name):
         path = self._normalize_name(self._clean_name(name))
-        # The path needs to end with a slash, but if the root is empty, leave
-        # it.
+        # The path needs to end with a slash, but if the root is empty, leave it.
         if path and not path.endswith('/'):
             path += '/'
 
@@ -478,7 +488,9 @@ class S3Boto3Storage(BaseStorage):
             for entry in page.get('CommonPrefixes', ()):
                 directories.append(posixpath.relpath(entry['Prefix'], path))
             for entry in page.get('Contents', ()):
-                files.append(posixpath.relpath(entry['Key'], path))
+                key = entry['Key']
+                if key != path:
+                    files.append(posixpath.relpath(key, path))
         return directories, files
 
     def size(self, name):
@@ -552,27 +564,30 @@ class S3Boto3Storage(BaseStorage):
         # Note: Parameters that did not have a value in the original query string will have
         # an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=
         joined_qs = ('='.join(keyval) for keyval in filtered_qs)
-        split_url = split_url._replace(query="&".join(joined_qs))
+        split_url = split_url._replace(query='&'.join(joined_qs))
         return split_url.geturl()
 
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(self._clean_name(name))
+        params = parameters.copy() if parameters else {}
         if expire is None:
             expire = self.querystring_expire
 
         if self.custom_domain:
-            url = "{}//{}/{}".format(
-                self.url_protocol, self.custom_domain, filepath_to_uri(name))
+            url = '{}//{}/{}{}'.format(
+                self.url_protocol,
+                self.custom_domain,
+                filepath_to_uri(name),
+                '?{}'.format(urlencode(params)) if params else '',
+            )
 
             if self.querystring_auth and self.cloudfront_signer:
                 expiration = datetime.utcnow() + timedelta(seconds=expire)
-
                 return self.cloudfront_signer.generate_presigned_url(url, date_less_than=expiration)
 
             return url
 
-        params = parameters.copy() if parameters else {}
         params['Bucket'] = self.bucket.name
         params['Key'] = name
         url = self.bucket.meta.client.generate_presigned_url('get_object', Params=params,

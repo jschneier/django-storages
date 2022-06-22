@@ -28,15 +28,29 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
 
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
 
-``AWS_ACCESS_KEY_ID``
-    Your Amazon Web Services access key, as a string.
+There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Boto3Storage``
+searches for them:
 
-``AWS_SECRET_ACCESS_KEY``
-    Your Amazon Web Services secret access key, as a string.
+#. ``AWS_S3_SESSION_PROFILE``
+#. ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``
+#. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
+#. The environment variables AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY
+#. The environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+#. Use Boto3's default session
+
+``AWS_S3_SESSION_PROFILE``
+    The AWS profile to use instead of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``. All configuration information
+    other than the key id and secret key is ignored in favor of the other settings specified below.
 
 .. note::
+      If this is set, then it is a configuration error to also set ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``.
+      ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are ignored
 
-      If ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are not set, boto3 internally looks up IAM credentials.
+``AWS_S3_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID``
+    Your Amazon Web Services access key, as a string.
+
+``AWS_S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY``
+    Your Amazon Web Services secret access key, as a string.
 
 ``AWS_STORAGE_BUCKET_NAME``
     Your Amazon Web Services storage bucket name, as a string.
@@ -45,13 +59,14 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
   Use this to set parameters on all objects. To set these on a per-object
   basis, subclass the backend and override ``S3Boto3Storage.get_object_parameters``.
 
-  To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_.
-  Some of the included ones are ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
+  To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_; an incomplete list includes: ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
-``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will inherit the bucket's permission)
+``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's defalt)
 
-   Use this to set an ACL on your file such as ``public-read``. By default the file will inherit the bucket's ACL.
+   Use this to set an ACL on your file such as ``public-read``. If not set the file will be ``private`` per Amazon's default.
    If the ``ACL`` parameter is set in ``AWS_S3_OBJECT_PARAMETERS``, then this setting is ignored.
+
+   Options such as ``public-read`` and ``private`` come from the `list of canned ACLs`_.
 
 ``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
     Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
@@ -67,11 +82,6 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
 
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
-
-.. note::
-
-    The signature versions are not backwards compatible so be careful about url endpoints if making this change
-    for legacy projects.
 
 ``AWS_LOCATION`` (optional: default is `''`)
     A path prefix that will be prepended to all uploads
@@ -100,10 +110,6 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
 ``AWS_S3_PROXIES`` (optional: default is ``None``)
   A dictionary of proxy servers to use by protocol or endpoint, e.g.:
   {'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}.
-
-.. note::
-
-  The minimum required version of ``boto3`` to use this feature is 1.4.4
 
 ``AWS_S3_SIGNATURE_VERSION`` (optional)
 
