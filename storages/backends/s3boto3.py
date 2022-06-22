@@ -121,6 +121,12 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
         self.buffer_size = buffer_size or setting('AWS_S3_FILE_BUFFER_SIZE', 5242880)
         self._write_counter = 0
 
+    def open(self, mode=None):
+        super().open(mode)
+        if self._mode != mode:
+            self._mode = mode
+        return self
+
     @property
     def size(self):
         return self.obj.content_length
