@@ -15,7 +15,7 @@ class IBMCOSStorageTests(IBMCOSTestCase):
     def test_get_default_settings(self):
         results = self.storage.get_default_settings()
         self.assertIsInstance(results, dict)
-        default_setting_keys: list = ["access_key", "secret_key", "file_overwrite", "object_parameters", "bucket_name",
+        default_setting_keys = ["access_key", "secret_key", "file_overwrite", "object_parameters", "bucket_name",
                                       "querystring_auth", "querystring_expire", "signature_version", "location",
                                       "custom_domain", "addressing_style", "secure_urls", "file_name_charset", "gzip",
                                       "gzip_content_types", "url_protocol", "endpoint_url", "proxies", "region_name",
