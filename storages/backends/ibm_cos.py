@@ -47,6 +47,8 @@ class IBMCloudObjectStorage(S3Boto3Storage):
             "verify": setting('IBM_COS_VERIFY', None),
             "max_memory_size": setting('IBM_COS_MAX_MEMORY_SIZE', 0),
             "default_acl": setting('IBM_DEFAULT_ACL', None),
+            "session_profile": setting('IBM_COS_SESSION_PROFILE'),
+            "use_threads": setting('IBM_COS_USE_THREADS', True),
         }
 
 class IBMCOSStaticStorage(IBMCloudObjectStorage):
