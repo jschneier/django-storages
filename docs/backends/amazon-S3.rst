@@ -104,6 +104,9 @@ searches for them:
 ``AWS_S3_ENDPOINT_URL`` (optional: default is ``None``)
     Custom S3 URL to use when connecting to S3, including scheme. Overrides ``AWS_S3_REGION_NAME`` and ``AWS_S3_USE_SSL``. To avoid ``AuthorizationQueryParametersError`` error, ``AWS_S3_REGION_NAME`` should also be set.
 
+``AWS_S3_USE_S3_URI_SCHEME`` (optional: default is ``False``)
+    Custom `s3` URI scheme use when connecting to S3.
+
 ``AWS_S3_ADDRESSING_STYLE`` (optional: default is ``None``)
     Possible values ``virtual`` and ``path``.
 

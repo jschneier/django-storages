@@ -258,7 +258,10 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         # Backward-compatibility: given the anteriority of the SECURE_URL setting
         # we fall back to https if specified in order to avoid the construction
         # of unsecure urls.
-        if self.secure_urls:
+        # If the AWS_S3_USE_S3_URI_SCHEME variable is True, use s3 scheme for the uri.
+        if self.use_s3_uri_scheme:
+            self.url_protocol = "s3:"
+        elif self.secure_urls:
             self.url_protocol = 'https:'
 
         self._bucket = None
@@ -316,6 +319,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             'cloudfront_signer': cloudfront_signer,
             'addressing_style': setting('AWS_S3_ADDRESSING_STYLE'),
             'secure_urls': setting('AWS_S3_SECURE_URLS', True),
+            'use_s3_uri_scheme': setting('AWS_S3_USE_S3_URI_SCHEME', False),
             'file_name_charset': setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
             'gzip': setting('AWS_IS_GZIPPED', False),
             'gzip_content_types': setting('GZIP_CONTENT_TYPES', (

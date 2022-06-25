@@ -756,6 +756,12 @@ class S3Boto3StorageTests(TestCase):
             storage = s3boto3.S3Boto3Storage()
             self.assertEqual(storage.location, 'foo2')
 
+    def test_s3_uri_scheme_override(self):
+        with override_settings(AWS_S3_USE_S3_URI_SCHEME=True):
+            storage = s3boto3.S3Boto3Storage()
+            self.assertEqual(storage.use_s3_uri_scheme, 's3')
+            self.assertEqual(storage.url_protocol, 's3')
+
     def test_override_class_variable(self):
         class MyStorage1(s3boto3.S3Boto3Storage):
             location = 'foo1'
