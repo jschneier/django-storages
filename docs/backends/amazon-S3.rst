@@ -104,6 +104,20 @@ searches for them:
 ``AWS_S3_ENDPOINT_URL`` (optional: default is ``None``)
     Custom S3 URL to use when connecting to S3, including scheme. Overrides ``AWS_S3_REGION_NAME`` and ``AWS_S3_USE_SSL``. To avoid ``AuthorizationQueryParametersError`` error, ``AWS_S3_REGION_NAME`` should also be set.
 
+``AWS_S3_SECURE_URLS`` (optional: default is ``True``)
+    Whether or not to use `https` or `http` in domain URI. Backward-compatibility: given the anteriority of the SECURE_URL setting
+    we fall back to https if specified in order to avoid the construction
+    of unsecure urls.
+
+``AWS_S3_URL_PROTOCOL`` (optional: default is ``http``)
+    URI scheme when building domain URI. Default is `http`, but is set to `https` when `AWS_S3_SECURE_URLS` above is
+    left as default `True`.
+
+.. note::
+
+    To use a this variable to set a custom URI scheme (URL protocol, such as `s3`), `AWS_S3_SECURE_URLS` must be set to
+    `False`.
+
 ``AWS_S3_ADDRESSING_STYLE`` (optional: default is ``None``)
     Possible values ``virtual`` and ``path``.
 
