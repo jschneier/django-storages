@@ -34,7 +34,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
         self.mime_type = mimetypes.guess_type(name)[0]
         self._mode = mode
         self._storage = storage
-        self.blob = storage.bucket.get_blob(name)
+        self.blob = storage.bucket.get_blob(name, timeout=storage.timeout)
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
@@ -55,7 +55,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.blob.download_to_file(self._file)
+                self.blob.download_to_file(self._file, timeout=self._storage.timeout)
                 self._file.seek(0)
             if self._storage.gzip and self.blob.content_encoding == 'gzip':
                 self._file = self._decompress_file(mode=self._mode, file=self._file)
@@ -87,7 +87,8 @@ class GoogleCloudFile(CompressedFileMixin, File):
                 blob_params = self._storage.get_object_parameters(self.name)
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
-                    predefined_acl=blob_params.get('acl', self._storage.default_acl))
+                    predefined_acl=blob_params.get('acl', self._storage.default_acl),
+                    timeout=self._storage.timeout)
             self._file.close()
             self._file = None
 
@@ -128,6 +129,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             # roll over.
             "max_memory_size": setting('GS_MAX_MEMORY_SIZE', 0),
             "blob_chunk_size": setting('GS_BLOB_CHUNK_SIZE'),
+            "timeout": setting('GS_TIMEOUT', 60)
         }
 
     @property
@@ -186,7 +188,10 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
-        file_object.blob.upload_from_file(content, rewind=True, size=getattr(content, 'size', None), **upload_params)
+        file_object.blob.upload_from_file(content, rewind=True,
+                                          size=getattr(content, 'size', None),
+                                          timeout=self.timeout,
+                                          **upload_params)
         return cleaned_name
 
     def get_object_parameters(self, name):
@@ -209,20 +214,20 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
         try:
-            self.bucket.delete_blob(name)
+            self.bucket.delete_blob(name, timeout=self.timeout)
         except NotFound:
             pass
 
     def exists(self, name):
         if not name:  # root element aka the bucket
             try:
-                self.client.get_bucket(self.bucket)
+                self.client.get_bucket(self.bucket, timeout=self.timeout)
                 return True
             except NotFound:
                 return False
 
         name = self._normalize_name(clean_name(name))
-        return bool(self.bucket.get_blob(name))
+        return bool(self.bucket.get_blob(name, timeout=self.timeout))
 
     def listdir(self, name):
         name = self._normalize_name(clean_name(name))
@@ -231,7 +236,8 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         if name and not name.endswith('/'):
             name += '/'
 
-        iterator = self.bucket.list_blobs(prefix=name, delimiter='/')
+        iterator = self.bucket.list_blobs(prefix=name, delimiter='/',
+                                          timeout=self.timeout)
         blobs = list(iterator)
         prefixes = iterator.prefixes
 
@@ -249,7 +255,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
 
     def _get_blob(self, name):
         # Wrap google.cloud.storage's blob to raise if the file doesn't exist
-        blob = self.bucket.get_blob(name)
+        blob = self.bucket.get_blob(name, timeout=self.timeout)
 
         if blob is None:
             raise NotFound('File does not exist: {}'.format(name))

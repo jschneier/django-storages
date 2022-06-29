@@ -204,6 +204,22 @@ Note: Default Google Compute Engine (GCE) Service accounts are
 The ``GS_EXPIRATION`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
 It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
+``GS_TIMEOUT`` (optional: default is ``60``, float or tuple)
+
+Connect/read timeout. The amount of time, in seconds, to wait for the connection to the server to establish, and between
+bytes sent from the server. If float is given it's applied to both, if a tuple – the first value is for the connect
+timeout, second for read.
+
+Note that read timeout =/= download timeout. It’s the number of seconds that the client will wait *between* bytes sent
+from the server. In 99.9% of cases, this is the time before the server sends the first byte.
+
+See https://docs.python-requests.org/en/master/user/advanced/#timeouts
+
+Sometimes requests can get stuck, so it's better if the timeout is low, couple of seconds. This means that a new request
+(via retry) will be made sooner. The default is higher to keep the behavior from before this setting was introduced.
+
+Timeouts will be automatically retried when using `google-cloud-storage` version that includes
+https://github.com/googleapis/python-storage/pull/727
 
 Usage
 -----

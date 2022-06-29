@@ -38,9 +38,9 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
-        f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+        f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
         self.assertEqual(f.read(), data)
 
     def test_open_read_num_bytes(self):
@@ -49,9 +49,9 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
-        f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+        f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
         self.assertEqual(f.read(num_bytes), data[0:num_bytes])
 
     def test_open_read_nonexistent(self):
@@ -59,7 +59,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = None
 
         self.assertRaises(FileNotFoundError, self.storage.open, self.filename)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_open_read_nonexistent_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
@@ -92,7 +92,7 @@ class GCloudStorageTests(GCloudTestCase):
         MockBlob().upload_from_file.assert_called_with(
             tmpfile, rewind=True,
             content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl='projectPrivate')
+            predefined_acl='projectPrivate', timeout=60)
 
     def test_save(self):
         data = 'This is some test content.'
@@ -103,7 +103,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl=None)
+            predefined_acl=None, timeout=60)
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -115,7 +115,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
-            predefined_acl=None)
+            predefined_acl=None, timeout=60)
 
     def test_save_with_default_acl(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -132,23 +132,23 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
             content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
-            predefined_acl='publicRead')
+            predefined_acl='publicRead', timeout=60)
 
     def test_delete(self):
         self.storage.delete(self.filename)
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.delete_blob.assert_called_with(self.filename)
+        self.storage._bucket.delete_blob.assert_called_with(self.filename, timeout=60)
 
     def test_exists(self):
         self.storage._bucket = mock.MagicMock()
         self.assertTrue(self.storage.exists(self.filename))
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
         self.storage._bucket.reset_mock()
         self.storage._bucket.get_blob.return_value = None
         self.assertFalse(self.storage.exists(self.filename))
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_exists_no_bucket(self):
         # exists('') should return False if the bucket doesn't exist
@@ -233,7 +233,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = blob
 
         self.assertEqual(self.storage.size(self.filename), size)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_size_no_file(self):
         self.storage._bucket = mock.MagicMock()
@@ -254,7 +254,7 @@ class GCloudStorageTests(GCloudTestCase):
             mt = self.storage.modified_time(self.filename)
             self.assertTrue(timezone.is_naive(mt))
             self.assertEqual(mt, naive_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_get_modified_time(self):
         naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
@@ -270,13 +270,13 @@ class GCloudStorageTests(GCloudTestCase):
             self.assertTrue(timezone.is_naive(mt))
             naive_date_montreal = timezone.make_naive(aware_date)
             self.assertEqual(mt, naive_date_montreal)
-            self.storage._bucket.get_blob.assert_called_with(self.filename)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
         with self.settings(TIME_ZONE='America/Montreal', USE_TZ=True):
             mt = self.storage.get_modified_time(self.filename)
             self.assertTrue(timezone.is_aware(mt))
             self.assertEqual(mt, aware_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_get_created_time(self):
         naive_date = datetime(2017, 1, 2, 3, 4, 5, 678)
@@ -292,13 +292,13 @@ class GCloudStorageTests(GCloudTestCase):
             self.assertTrue(timezone.is_naive(mt))
             naive_date_montreal = timezone.make_naive(aware_date)
             self.assertEqual(mt, naive_date_montreal)
-            self.storage._bucket.get_blob.assert_called_with(self.filename)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
         with self.settings(TIME_ZONE='America/Montreal', USE_TZ=True):
             mt = self.storage.get_created_time(self.filename)
             self.assertTrue(timezone.is_aware(mt))
             self.assertEqual(mt, aware_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename)
+            self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_modified_time_no_file(self):
         self.storage._bucket = mock.MagicMock()
@@ -385,7 +385,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage.file_overwrite = False
         self.assertEqual(self.storage.get_available_name(
             self.filename), self.filename)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(self.filename, timeout=60)
 
     def test_get_available_name_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
@@ -417,7 +417,8 @@ class GCloudStorageTests(GCloudTestCase):
             rewind=True,
             size=11,
             predefined_acl=None,
-            content_type=None
+            content_type=None,
+            timeout=60,
         )
 
     def test_storage_save_gzipped_non_seekable(self):
@@ -433,7 +434,8 @@ class GCloudStorageTests(GCloudTestCase):
             rewind=True,
             size=11,
             predefined_acl=None,
-            content_type=None
+            content_type=None,
+            timeout=60,
         )
 
     def test_storage_save_gzip(self):
@@ -453,6 +455,7 @@ class GCloudStorageTests(GCloudTestCase):
             size=None,
             predefined_acl=None,
             content_type='text/css',
+            timeout=60,
         )
         args, kwargs = obj.upload_from_file.call_args
         content = args[0]
@@ -482,6 +485,7 @@ class GCloudStorageTests(GCloudTestCase):
             size=None,
             predefined_acl=None,
             content_type='text/css',
+            timeout=60,
         )
         args, kwargs = obj.upload_from_file.call_args
         content = args[0]
