@@ -38,7 +38,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(
+            self.filename, chunk_size=None)
 
         f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
         self.assertEqual(f.read(), data)
@@ -49,7 +50,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(
+            self.filename, chunk_size=None)
 
         f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
         self.assertEqual(f.read(num_bytes), data[0:num_bytes])
@@ -59,7 +61,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = None
 
         self.assertRaises(FileNotFoundError, self.storage.open, self.filename)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(
+            self.filename, chunk_size=None)
 
     def test_open_read_nonexistent_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
@@ -531,3 +534,22 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(storage.location, 'foo1')
         storage = gcloud.GoogleCloudStorage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
+
+    def test_dupe_file_chunk_size(self):
+        """
+        Tests that recreating a file that already exists in the bucket
+        respects the `GS_BLOB_CHUNK_SIZE` setting
+        """
+        chunk_size = 1024*256
+
+        with override_settings(GS_BLOB_CHUNK_SIZE=chunk_size):
+            # Creating a new storage here since chunk-size is set as an
+            # attribute on init
+            storage = gcloud.GoogleCloudStorage()
+            storage._bucket = mock.MagicMock()
+            # Confirms that `get_blob` always returns a truthy value
+            storage._bucket.get_blob.return_value = True
+
+            storage.open(self.filename, 'wb')
+            storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=chunk_size)
