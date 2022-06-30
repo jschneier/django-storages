@@ -34,7 +34,8 @@ class GoogleCloudFile(CompressedFileMixin, File):
         self.mime_type = mimetypes.guess_type(name)[0]
         self._mode = mode
         self._storage = storage
-        self.blob = storage.bucket.get_blob(name)
+        self.blob = storage.bucket.get_blob(
+            name, chunk_size=storage.blob_chunk_size)
         if not self.blob and 'w' in mode:
             self.blob = Blob(
                 self.name, storage.bucket,
