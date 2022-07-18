@@ -143,6 +143,7 @@ class AzureStorage(BaseStorage):
             "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
             "connection_string": setting('AZURE_CONNECTION_STRING'),
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
+            "api_version": setting('AZURE_API_VERSION', None),
         }
 
     def _get_service_client(self):
@@ -165,7 +166,10 @@ class AzureStorage(BaseStorage):
             credential = self.sas_token
         elif self.token_credential:
             credential = self.token_credential
-        return BlobServiceClient(account_url, credential=credential)
+        options = {}
+        if self.api_version:
+            options["api_version"] = self.api_version
+        return BlobServiceClient(account_url, credential=credential, **options)
 
     @property
     def service_client(self):
@@ -334,9 +338,8 @@ class AzureStorage(BaseStorage):
         Returns an (aware) datetime object containing the last modified time if
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
-        properties = self.client.get_blob_properties(
-            self._get_valid_path(name),
-            timeout=self.timeout)
+        blob_client = self.client.get_blob_client(self._get_valid_path(name))
+        properties = blob_client.get_blob_properties(timeout=self.timeout)
         if not setting('USE_TZ', False):
             return timezone.make_naive(properties.last_modified)
 

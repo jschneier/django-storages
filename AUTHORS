@@ -49,7 +49,8 @@ By order of apparition, thanks:
     * François Freitag (S3)
     * Uxío Fuentefría (S3)
     * D. Kreeft (Dropbox fixes)
-
+    * wigeria (Google Cloud Storage patch)
+    
 
 Extra thanks to Marty for adding this in Django,
 you can buy his very interesting book (Pro Django).
