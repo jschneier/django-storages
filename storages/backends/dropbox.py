@@ -98,7 +98,7 @@ class DropBoxStorage(Storage):
                 "You must configure an auth token at"
                 "'settings.DROPBOX_OAUTH2_TOKEN' or "
                 "'setting.DROPBOX_APP_KEY', "
-                "'setting.DROPBOX_APP_SECRET', "
+                "'setting.DROPBOX_APP_SECRET' "
                 "and 'setting.DROPBOX_OAUTH2_REFRESH_TOKEN'."
             )
         self.root_path = root_path
