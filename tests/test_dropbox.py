@@ -168,10 +168,9 @@ class DropBoxRootPathTest(TestCase):
         self.assertFalse(dirs)
         self.assertFalse(files)
 
-    def test_suspicious(self, *args):
+    def test_relative_path(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', '/bar')
-        with self.assertRaises((SuspiciousFileOperation, ValueError)):
-            self.storage._full_path('..')
+        self.assertEqual('/', self.storage._full_path('..'))
 
     def test_formats(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', '/bar')
