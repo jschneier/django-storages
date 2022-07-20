@@ -16,7 +16,7 @@ To use DropBoxStorage set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
 
-Two methods of authenticating are supported: 
+Two methods of authenticating are supported:
 
 1. using an access token
 2. using a refresh token with an app key and secret
@@ -32,7 +32,7 @@ Please set the following variables accordingly:
    Your Dropbox appkey. You can obtain one by following the instructions in the `tutorial`_.
 
 ``DROPBOX_APP_SECRET``
-   Your Dropbox secrety. You can obtain one by following the instructions in the `tutorial`_.
+   Your Dropbox secret. You can obtain one by following the instructions in the `tutorial`_.
 
 ``DROPBOX_OAUTH2_REFRESH_TOKEN``
    Your Dropbox refresh token. You can obtain one by following the instructions in the `tutorial`_.
@@ -80,12 +80,12 @@ The response would be:
 .. code-block:: json
 
    {
-      "access_token": "sl.************************", 
-      "token_type": "bearer", 
-      "expires_in": 14400, 
+      "access_token": "sl.************************",
+      "token_type": "bearer",
+      "expires_in": 14400,
       "refresh_token": "************************", <-- your REFRESH_TOKEN
-      "scope": <SCOPES>, 
-      "uid": "************************", 
+      "scope": <SCOPES>,
+      "uid": "************************",
       "account_id": "dbid:************************"
    }
 
