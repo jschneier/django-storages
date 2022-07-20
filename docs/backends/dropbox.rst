@@ -16,6 +16,15 @@ To use DropBoxStorage set::
 
     DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
 
+Two methods of authenticating are supported: 
+
+1. using an access token
+2. using a refresh token with an app key and secret
+
+Dropbox has recently introduced short-lived access tokens only, and does not seem to allow new apps to generate access tokens that do not expire. Short-lived access tokens can be indentified by their prefix (short-lived access tokens start with ``'sl.'``).
+
+Please set the following variables accordingly:
+
 ``DROPBOX_OAUTH2_TOKEN``
    Your Dropbox token. You can obtain one by following the instructions in the `tutorial`_.
 
