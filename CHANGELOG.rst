@@ -1,8 +1,8 @@
 django-storages CHANGELOG
 =========================
 
-1.13
-****
+XXXX-XX-XX
+**********
 
 General
 -------
