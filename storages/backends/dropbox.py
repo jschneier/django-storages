@@ -5,8 +5,12 @@
 # Usage:
 #
 # Add below to settings.py:
-# DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
 # DROPBOX_ROOT_PATH = '/dir/'
+# DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
+# DROPBOX_APP_KEY = 'YourAppKey'
+# DROPBOX_APP_SECRET = 'YourAppSecret``
+# DROPBOX_OAUTH2_REFRESH_TOKEN = 'YourOauthRefreshToken'
+
 
 from io import BytesIO
 from shutil import copyfileobj
@@ -69,21 +73,43 @@ class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
+    app_key = setting('DROPBOX_APP_KEY')
+    app_secret = setting('DROPBOX_APP_SECRET')
+    oauth2_refresh_token = setting('DROPBOX_OAUTH2_REFRESH_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
     write_mode = setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
-                 write_mode=write_mode):
-        if oauth2_access_token is None:
-            raise ImproperlyConfigured("You must configure an auth token at"
-                                       "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        if write_mode not in ["add", "overwrite",  "update"]:
-            raise ImproperlyConfigured("DROPBOX_WRITE_MODE must be set to either: 'add', 'overwrite' or 'update'")
+    def __init__(
+        self,
+        oauth2_access_token=oauth2_access_token,
+        app_key=app_key,
+        app_secret=app_secret,
+        oauth2_refresh_token=oauth2_refresh_token,
+        root_path=location,
+        timeout=timeout,
+        write_mode=write_mode,
+    ):
+        if oauth2_access_token is None and not all(
+            [app_key, app_secret, oauth2_refresh_token]
+        ):
+            raise ImproperlyConfigured(
+                "You must configure an auth token at"
+                "'settings.DROPBOX_OAUTH2_TOKEN' or "
+                "'setting.DROPBOX_APP_KEY', "
+                "'setting.DROPBOX_APP_SECRET' "
+                "and 'setting.DROPBOX_OAUTH2_REFRESH_TOKEN'."
+            )
         self.root_path = root_path
         self.write_mode = write_mode
-        self.client = Dropbox(oauth2_access_token, timeout=timeout)
+        self.client = Dropbox(
+            oauth2_access_token,
+            app_key=app_key,
+            app_secret=app_secret,
+            oauth2_refresh_token=oauth2_refresh_token,
+            timeout=timeout,
+        )
 
     def _full_path(self, name):
         if name == '/':

@@ -2,9 +2,7 @@ import io
 from datetime import datetime
 from unittest import mock
 
-from django.core.exceptions import (
-    ImproperlyConfigured, SuspiciousFileOperation,
-)
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.test import TestCase
 from dropbox.files import FileMetadata, FolderMetadata, GetTemporaryLinkResult
@@ -53,6 +51,30 @@ class DropBoxTest(TestCase):
     def test_no_access_token(self, *args):
         with self.assertRaises(ImproperlyConfigured):
             dropbox.DropBoxStorage(None)
+
+    def test_refresh_token_app_key_no_app_secret(self, *args):
+        inputs = {
+            'oauth2_refresh_token': 'foo',
+            'app_key': 'bar',
+        }
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(**inputs)
+
+    def test_refresh_token_app_secret_no_app_key(self, *args):
+        inputs = {
+            'oauth2_refresh_token': 'foo',
+            'app_secret': 'bar',
+        }
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(**inputs)
+
+    def test_app_key_app_secret_no_refresh_token(self, *args):
+        inputs = {
+            'app_key': 'foo',
+            'app_secret': 'bar',
+        }
+        with self.assertRaises(ImproperlyConfigured):
+            dropbox.DropBoxStorage(**inputs)
 
     @mock.patch('dropbox.Dropbox.files_delete',
                 return_value=FILE_METADATA_MOCK)
@@ -168,10 +190,9 @@ class DropBoxRootPathTest(TestCase):
         self.assertFalse(dirs)
         self.assertFalse(files)
 
-    def test_suspicious(self, *args):
+    def test_relative_path(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', '/bar')
-        with self.assertRaises((SuspiciousFileOperation, ValueError)):
-            self.storage._full_path('..')
+        self.assertEqual('/', self.storage._full_path('..'))
 
     def test_formats(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', '/bar')
