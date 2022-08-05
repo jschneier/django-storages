@@ -255,12 +255,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
         check_location(self)
 
-        # Backward-compatibility: given the anteriority of the SECURE_URL setting
-        # we fall back to https if specified in order to avoid the construction
-        # of unsecure urls.
-        if self.secure_urls:
-            self.url_protocol = 'https:'
-
         self._bucket = None
         self._connections = threading.local()
 
@@ -315,7 +309,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             'custom_domain': setting('AWS_S3_CUSTOM_DOMAIN'),
             'cloudfront_signer': cloudfront_signer,
             'addressing_style': setting('AWS_S3_ADDRESSING_STYLE'),
-            'secure_urls': setting('AWS_S3_SECURE_URLS', True),
             'file_name_charset': setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
             'gzip': setting('AWS_IS_GZIPPED', False),
             'gzip_content_types': setting('GZIP_CONTENT_TYPES', (
@@ -325,7 +318,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
                 'application/x-javascript',
                 'image/svg+xml',
             )),
-            'url_protocol': setting('AWS_S3_URL_PROTOCOL', 'http:'),
+            'url_protocol': setting('AWS_S3_URL_PROTOCOL', 'https:'),
             'endpoint_url': setting('AWS_S3_ENDPOINT_URL'),
             'proxies': setting('AWS_S3_PROXIES'),
             'region_name': setting('AWS_S3_REGION_NAME'),
