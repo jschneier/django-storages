@@ -1,8 +1,8 @@
 django-storages CHANGELOG
 =========================
 
-XXXX-XX-XX
-**********
+1.13 (2022-08-05)
+*****************
 
 General
 -------
@@ -11,7 +11,44 @@ General
 - Drop support for Django 2.2, 3.0 and 3.1 (`#1093`_)
 - Drop support for Python 3.5 and 3.6 (`#1093`_)
 
+S3
+--
 
+- **Breaking** Update and document the undocumented ``AWS_S3_URL_PROTOCOL`` from ``http:`` to ``https:`` and remove the
+  undocumented ``AWS_S3_SECURE_URLS`` setting. You should only need to update your settings if you had updated either of
+  these previously undocumented settings.  The default behavior of constructing an ``https:`` URL with a custom domain
+  is unchanged. (`#1164`_)
+- Add ``AWS_S3_USE_THREADS`` to disable ``threading`` for compatibility with ``gevent`` (`#1112`_)
+
+Dropbox
+-------
+
+- Add support for refresh tokens (`#1159`_)
+- Ignore ``ApiError`` exception in ``url()`` (`#1158`_)
+
+Azure
+-----
+
+- Restore support for ``AZURE_ENDPOINT_SUFFIX`` (`#1118`_)
+- Replace deprecated ``download_to_stream`` with ``readinto`` (`#1113`_)
+- Add ``AZURE_API_VERSION`` setting (`#1132`_)
+- Fix ``get_modified_time()`` (`#1134`_)
+
+Google Cloud
+------------
+
+- Add support for gzipping files via ``GS_IS_GZIPPED`` and ``GZIP_CONTENT_TYPES`` (`#980`_)
+- Use ``GS_BLOB_CHUNK_SIZE`` with files that already exist
+
+.. _#980: https://github.com/jschneier/django-storages/pull/980
+.. _#1118: https://github.com/jschneier/django-storages/pull/1118
+.. _#1113: https://github.com/jschneier/django-storages/pull/1113
+.. _#1112: https://github.com/jschneier/django-storages/pull/1112
+.. _#1132: https://github.com/jschneier/django-storages/pull/1132
+.. _#1134: https://github.com/jschneier/django-storages/pull/1134
+.. _#1159: https://github.com/jschneier/django-storages/pull/1159
+.. _#1158: https://github.com/jschneier/django-storages/pull/1158
+.. _#1164: https://github.com/jschneier/django-storages/pull/1164
 .. _#1093: https://github.com/jschneier/django-storages/pull/1093
 
 
