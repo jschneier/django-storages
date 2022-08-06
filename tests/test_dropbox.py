@@ -2,7 +2,9 @@ import io
 from datetime import datetime
 from unittest import mock
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import (
+    ImproperlyConfigured, SuspiciousFileOperation,
+)
 from django.core.files.base import File
 from django.test import TestCase
 from dropbox.files import FileMetadata, FolderMetadata, GetTemporaryLinkResult
@@ -185,17 +187,18 @@ class DropBoxFileTest(TestCase):
             return_value=FILES_EMPTY_MOCK)
 class DropBoxRootPathTest(TestCase):
     def test_jailed(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        self.storage = dropbox.DropBoxStorage('foo', root_path='/bar')
         dirs, files = self.storage.listdir('/')
         self.assertFalse(dirs)
         self.assertFalse(files)
 
-    def test_relative_path(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo', '/bar')
-        self.assertEqual('/', self.storage._full_path('..'))
+    def test_suspicious(self, *args):
+        self.storage = dropbox.DropBoxStorage('foo', root_path='/bar')
+        with self.assertRaises((SuspiciousFileOperation, ValueError)):
+            self.storage._full_path('..')
 
     def test_formats(self, *args):
-        self.storage = dropbox.DropBoxStorage('foo', '/bar')
+        self.storage = dropbox.DropBoxStorage('foo', root_path='/bar')
         files = self.storage._full_path('')
         self.assertEqual(files, self.storage._full_path('/'))
         self.assertEqual(files, self.storage._full_path('.'))

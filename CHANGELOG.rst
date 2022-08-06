@@ -1,6 +1,16 @@
 django-storages CHANGELOG
 =========================
 
+1.13.1 (XXXX-XX-XX)
+*******************
+
+Dropbox
+-------
+
+- Update ``DropBoxStorage`` constructor parameter order to be backwards compatible (`#1167`_)
+
+.. _#1167: https://github.com/jschneier/django-storages/pull/1167
+
 1.13 (2022-08-05)
 *****************
 
