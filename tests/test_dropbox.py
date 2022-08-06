@@ -130,11 +130,12 @@ class DropBoxTest(TestCase):
         obj = self.storage._open('foo')
         self.assertIsInstance(obj, File)
 
-    @mock.patch('dropbox.Dropbox.files_upload',
-                return_value='foo')
+    @mock.patch('dropbox.Dropbox.files_upload', return_value='foo')
+    @mock.patch('dropbox.Dropbox.files_get_metadata', return_value=None)
     def test_save(self, files_upload, *args):
-        self.storage._save('foo', File(io.BytesIO(b'bar'), 'foo'))
+        name = self.storage.save('foo', File(io.BytesIO(b'bar'), 'foo'))
         self.assertTrue(files_upload.called)
+        self.assertEqual(name, 'foo')
 
     @mock.patch('dropbox.Dropbox.files_upload')
     @mock.patch('dropbox.Dropbox.files_upload_session_finish')
@@ -191,6 +192,13 @@ class DropBoxRootPathTest(TestCase):
         dirs, files = self.storage.listdir('/')
         self.assertFalse(dirs)
         self.assertFalse(files)
+
+    @mock.patch('dropbox.Dropbox.files_upload', return_value='foo')
+    @mock.patch('dropbox.Dropbox.files_get_metadata', return_value=None)
+    def test_saves(self, *args):
+        self.storage = dropbox.DropBoxStorage('foo', root_path='/bar')
+        name = self.storage.save('xyz', File(io.BytesIO(b'abc'), 'def'))
+        self.assertEqual(name, 'xyz')
 
     def test_suspicious(self, *args):
         self.storage = dropbox.DropBoxStorage('foo', root_path='/bar')

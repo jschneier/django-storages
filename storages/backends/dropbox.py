@@ -170,7 +170,9 @@ class DropBoxStorage(Storage):
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
-        return name
+        # .save() validates the filename isn't absolute but Dropbox requires an absolute filename.
+        # Work with the absolute name internally but strip it off before passing up-the-chain.
+        return name.lstrip(self.root_path)
 
     def _chunked_upload(self, content, dest_path):
         upload_session = self.client.files_upload_session_start(
