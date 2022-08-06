@@ -7,9 +7,11 @@ django-storages CHANGELOG
 Dropbox
 -------
 
+- Strip off the root path when saving files to fix saving with upgraded versions of Django (`#1168`_)
 - Update ``DropBoxStorage`` constructor parameter order to be backwards compatible (`#1167`_)
 
 .. _#1167: https://github.com/jschneier/django-storages/pull/1167
+.. _#1168: https://github.com/jschneier/django-storages/pull/1168
 
 1.13 (2022-08-05)
 *****************
