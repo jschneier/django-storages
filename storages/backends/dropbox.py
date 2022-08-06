@@ -84,12 +84,12 @@ class DropBoxStorage(Storage):
     def __init__(
         self,
         oauth2_access_token=oauth2_access_token,
-        app_key=app_key,
-        app_secret=app_secret,
-        oauth2_refresh_token=oauth2_refresh_token,
         root_path=location,
         timeout=timeout,
         write_mode=write_mode,
+        app_key=app_key,
+        app_secret=app_secret,
+        oauth2_refresh_token=oauth2_refresh_token,
     ):
         if oauth2_access_token is None and not all(
             [app_key, app_secret, oauth2_refresh_token]
