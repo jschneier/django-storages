@@ -1,7 +1,7 @@
 django-storages CHANGELOG
 =========================
 
-1.13.1 (XXXX-XX-XX)
+1.13.1 (2022-08-06)
 *******************
 
 Dropbox
