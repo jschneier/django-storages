@@ -2,12 +2,13 @@ import io
 from datetime import datetime
 from unittest import mock
 
-from django.core.exceptions import (
-    ImproperlyConfigured, SuspiciousFileOperation,
-)
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.base import File
 from django.test import TestCase
-from dropbox.files import FileMetadata, FolderMetadata, GetTemporaryLinkResult
+from dropbox.files import FileMetadata
+from dropbox.files import FolderMetadata
+from dropbox.files import GetTemporaryLinkResult
 from requests.models import Response
 
 from storages.backends import dropbox

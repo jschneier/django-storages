@@ -18,7 +18,8 @@ import ftplib
 import io
 import os
 from datetime import datetime
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured

@@ -1,21 +1,25 @@
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
-from azure.storage.blob import (
-    BlobClient, BlobSasPermissions, BlobServiceClient, ContentSettings,
-    generate_blob_sas,
-)
+from azure.storage.blob import BlobClient
+from azure.storage.blob import BlobSasPermissions
+from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import ContentSettings
+from azure.storage.blob import generate_blob_sas
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
-from storages.utils import (
-    clean_name, get_available_overwrite_name, safe_join, setting, to_bytes,
-)
+from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
+from storages.utils import safe_join
+from storages.utils import setting
+from storages.utils import to_bytes
 
 
 @deconstructible

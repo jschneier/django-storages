@@ -3,15 +3,18 @@ import pickle
 import threading
 from datetime import datetime
 from textwrap import dedent
-from unittest import mock, skipIf
+from unittest import mock
+from unittest import skipIf
 from urllib.parse import urlparse
 
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
-from django.test import TestCase, override_settings
-from django.utils.timezone import is_aware, utc
+from django.test import TestCase
+from django.test import override_settings
+from django.utils.timezone import is_aware
+from django.utils.timezone import utc
 
 from storages.backends import s3boto3
 from tests.utils import NonSeekableContentFile
