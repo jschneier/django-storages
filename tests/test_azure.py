@@ -7,7 +7,8 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobProperties
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
-from django.test import TestCase, override_settings
+from django.test import TestCase
+from django.test import override_settings
 from django.utils import timezone
 from django.utils.timezone import make_aware
 

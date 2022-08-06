@@ -23,11 +23,13 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import (
-    CommitInfo, FolderMetadata, UploadSessionCursor, WriteMode,
-)
+from dropbox.files import CommitInfo
+from dropbox.files import FolderMetadata
+from dropbox.files import UploadSessionCursor
+from dropbox.files import WriteMode
 
-from storages.utils import get_available_overwrite_name, setting
+from storages.utils import get_available_overwrite_name
+from storages.utils import setting
 
 _DEFAULT_TIMEOUT = 100
 _DEFAULT_MODE = 'add'

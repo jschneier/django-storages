@@ -3,21 +3,26 @@ import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
-from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
-from storages.compress import CompressedFileMixin, CompressStorageMixin
-from storages.utils import (
-    check_location, clean_name, get_available_overwrite_name, safe_join,
-    setting, to_bytes,
-)
+from storages.compress import CompressedFileMixin
+from storages.compress import CompressStorageMixin
+from storages.utils import check_location
+from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
+from storages.utils import safe_join
+from storages.utils import setting
+from storages.utils import to_bytes
 
 try:
     from google.cloud.exceptions import NotFound
-    from google.cloud.storage import Blob, Client
+    from google.cloud.storage import Blob
+    from google.cloud.storage import Client
     from google.cloud.storage.blob import _quote
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"

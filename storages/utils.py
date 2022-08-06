@@ -2,9 +2,8 @@ import os
 import posixpath
 
 from django.conf import settings
-from django.core.exceptions import (
-    ImproperlyConfigured, SuspiciousFileOperation,
-)
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import SuspiciousFileOperation
 from django.utils.encoding import force_bytes
 
 

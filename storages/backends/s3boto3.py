@@ -3,23 +3,31 @@ import os
 import posixpath
 import tempfile
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from tempfile import SpooledTemporaryFile
-from urllib.parse import parse_qsl, urlencode, urlsplit
+from urllib.parse import parse_qsl
+from urllib.parse import urlencode
+from urllib.parse import urlsplit
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
-from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri
-from django.utils.timezone import is_naive, make_naive
+from django.utils.timezone import is_naive
+from django.utils.timezone import make_naive
 
 from storages.base import BaseStorage
-from storages.compress import CompressedFileMixin, CompressStorageMixin
-from storages.utils import (
-    check_location, get_available_overwrite_name, lookup_env, safe_join,
-    setting, to_bytes,
-)
+from storages.compress import CompressedFileMixin
+from storages.compress import CompressStorageMixin
+from storages.utils import check_location
+from storages.utils import get_available_overwrite_name
+from storages.utils import lookup_env
+from storages.utils import safe_join
+from storages.utils import setting
+from storages.utils import to_bytes
 
 try:
     import boto3.session
@@ -37,9 +45,7 @@ def _use_cryptography_signer():
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import padding
-    from cryptography.hazmat.primitives.serialization import (
-        load_pem_private_key,
-    )
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
     def _cloud_front_signer_from_pem(key_id, pem):
         if isinstance(pem, str):

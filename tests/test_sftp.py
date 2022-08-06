@@ -3,11 +3,13 @@ import os
 import socket
 import stat
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import paramiko
 from django.core.files.base import File
-from django.test import TestCase, override_settings
+from django.test import TestCase
+from django.test import override_settings
 
 from storages.backends import sftpstorage
 

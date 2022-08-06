@@ -1,11 +1,13 @@
 import gzip
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
-from django.test import TestCase, override_settings
+from django.test import TestCase
+from django.test import override_settings
 from django.utils import timezone
 from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
