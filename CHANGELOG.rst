@@ -1,6 +1,16 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED (XXXX-XX-XX)
+***********************
+
+Google Cloud
+------------
+
+- Use ``DEFAULT_RETRY`` for all upload & delete operations (`#1156`_)
+
+.. _#1156: https://github.com/jschneier/django-storages/pull/1156
+
 1.13.1 (2022-08-06)
 *******************
 
