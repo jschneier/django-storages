@@ -8,8 +8,10 @@ Google Cloud
 ------------
 
 - Use ``DEFAULT_RETRY`` for all upload & delete operations (`#1156`_)
+- Do not ``rewind`` non-seekable files, fixing gzipping of content (`#1172`_)
 
 .. _#1156: https://github.com/jschneier/django-storages/pull/1156
+.. _#1172: https://github.com/jschneier/django-storages/pull/1172
 
 1.13.1 (2022-08-06)
 *******************
