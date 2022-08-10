@@ -223,7 +223,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
         try:
-            self.bucket.delete_blob(name)
+            self.bucket.delete_blob(name, retry=DEFAULT_RETRY)
         except NotFound:
             pass
 

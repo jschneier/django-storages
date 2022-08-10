@@ -150,7 +150,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage.delete(self.filename)
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.delete_blob.assert_called_with(self.filename)
+        self.storage._bucket.delete_blob.assert_called_with(self.filename, retry=DEFAULT_RETRY)
 
     def test_exists(self):
         self.storage._bucket = mock.MagicMock()
