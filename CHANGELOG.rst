@@ -26,10 +26,10 @@ General
 S3
 --
 
-- **Breaking** Update and document the undocumented ``AWS_S3_URL_PROTOCOL`` from ``http:`` to ``https:`` and remove the
+- **Breaking**: Update and document the undocumented ``AWS_S3_URL_PROTOCOL`` from ``http:`` to ``https:`` and remove the
   undocumented ``AWS_S3_SECURE_URLS`` setting. You should only need to update your settings if you had updated either of
   these previously undocumented settings.  The default behavior of constructing an ``https:`` URL with a custom domain
-  is unchanged. (`#1164`_)
+  is unchanged (`#1164`_)
 - Add ``AWS_S3_USE_THREADS`` to disable ``threading`` for compatibility with ``gevent`` (`#1112`_)
 
 Dropbox
@@ -50,7 +50,7 @@ Google Cloud
 ------------
 
 - Add support for gzipping files via ``GS_IS_GZIPPED`` and ``GZIP_CONTENT_TYPES`` (`#980`_)
-- Use ``GS_BLOB_CHUNK_SIZE`` with files that already exist
+- Use ``GS_BLOB_CHUNK_SIZE`` with files that already exist (`#1154`_)
 
 .. _#980: https://github.com/jschneier/django-storages/pull/980
 .. _#1118: https://github.com/jschneier/django-storages/pull/1118
@@ -62,6 +62,7 @@ Google Cloud
 .. _#1158: https://github.com/jschneier/django-storages/pull/1158
 .. _#1164: https://github.com/jschneier/django-storages/pull/1164
 .. _#1093: https://github.com/jschneier/django-storages/pull/1093
+.. _#1154: https://github.com/jschneier/django-storages/pull/1154
 
 
 1.12.3 (2021-10-29)
