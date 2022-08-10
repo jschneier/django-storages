@@ -194,9 +194,10 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
+        rewind = not hasattr(content, 'seekable') or content.seekable()
         file_object.blob.upload_from_file(
             content,
-            rewind=True,
+            rewind=rewind,
             retry=DEFAULT_RETRY,
             size=getattr(content, 'size', None),
             **upload_params

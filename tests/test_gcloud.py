@@ -21,17 +21,17 @@ class GCloudTestCase(TestCase):
     def setUp(self):
         self.bucket_name = 'test_bucket'
         self.filename = 'test_file.txt'
-
         self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
 
+
+class GCloudStorageTests(GCloudTestCase):
+    def setUp(self):
+        super().setUp()
         self.client_patcher = mock.patch('storages.backends.gcloud.Client')
         self.client_patcher.start()
 
     def tearDown(self):
         self.client_patcher.stop()
-
-
-class GCloudStorageTests(GCloudTestCase):
 
     def test_open_read(self):
         """
@@ -416,64 +416,6 @@ class GCloudStorageTests(GCloudTestCase):
         blob = bucket.get_blob(filename)
         self.assertEqual(blob.cache_control, cache_control)
 
-    def test_storage_save_gzipped(self):
-        """
-        Test saving a gzipped file
-        """
-        name = 'test_storage_save.gz'
-        content = ContentFile("I am gzip'd")
-        self.storage.save(name, content)
-        obj = self.storage._bucket.get_blob()
-        obj.upload_from_file.assert_called_with(
-            mock.ANY,
-            rewind=True,
-            retry=DEFAULT_RETRY,
-            size=11,
-            predefined_acl=None,
-            content_type=None
-        )
-
-    def test_storage_save_gzipped_non_seekable(self):
-        """
-        Test saving a gzipped file
-        """
-        name = 'test_storage_save.gz'
-        content = NonSeekableContentFile("I am gzip'd")
-        self.storage.save(name, content)
-        obj = self.storage._bucket.get_blob()
-        obj.upload_from_file.assert_called_with(
-            mock.ANY,
-            rewind=True,
-            retry=DEFAULT_RETRY,
-            size=11,
-            predefined_acl=None,
-            content_type=None
-        )
-
-    def test_storage_save_gzip(self):
-        """
-        Test saving a file with gzip enabled.
-        """
-        self.storage.gzip = True
-        name = 'test_storage_save.css'
-        content = ContentFile("I should be gzip'd")
-        self.storage.save(name, content)
-        self.storage._client.bucket.assert_called_with(self.bucket_name)
-        obj = self.storage._bucket.get_blob()
-        self.assertEqual(obj.content_encoding, 'gzip')
-        obj.upload_from_file.assert_called_with(
-            mock.ANY,
-            rewind=True,
-            retry=DEFAULT_RETRY,
-            size=None,
-            predefined_acl=None,
-            content_type='text/css',
-        )
-        args, kwargs = obj.upload_from_file.call_args
-        content = args[0]
-        zfile = gzip.GzipFile(mode='rb', fileobj=content)
-        self.assertEqual(zfile.read(), b"I should be gzip'd")
-
     def test_storage_save_gzip_twice(self):
         """
         Test saving the same file content twice with gzip enabled.
@@ -493,7 +435,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(obj.content_encoding, 'gzip')
         obj.upload_from_file.assert_called_with(
             mock.ANY,
-            rewind=True,
+            rewind=False,
             retry=DEFAULT_RETRY,
             size=None,
             predefined_acl=None,
@@ -566,3 +508,94 @@ class GCloudStorageTests(GCloudTestCase):
             storage.open(self.filename, 'wb')
             storage._bucket.get_blob.assert_called_with(
                 self.filename, chunk_size=chunk_size)
+
+
+class GoogleCloudGzipClientTests(GCloudTestCase):
+    def setUp(self):
+        super().setUp()
+        self.storage.gzip = True
+
+    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.auth.default', return_value=['foo', None])
+    def test_storage_save_gzipped(self, *args):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.js.gz'
+        content = ContentFile("I am gzip'd", name=name)
+
+        blob = Blob('x', None)
+        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
+        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        try:
+            patcher.start()
+            self.storage.save(name, content)
+            blob.upload_from_file.assert_called_with(
+                mock.ANY,
+                rewind=False,
+                retry=DEFAULT_RETRY,
+                size=None,
+                predefined_acl=None,
+                content_type='application/javascript'
+            )
+        finally:
+            patcher.stop()
+
+    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.auth.default', return_value=['foo', None])
+    def test_storage_save_gzipped_non_seekable(self, *args):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        content = NonSeekableContentFile("I am gzip'd")
+
+        blob = Blob('x', None)
+        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
+        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        try:
+            patcher.start()
+            self.storage.save(name, content)
+            blob.upload_from_file.assert_called_with(
+                mock.ANY,
+                rewind=False,
+                retry=DEFAULT_RETRY,
+                size=11,
+                predefined_acl=None,
+                content_type=None
+            )
+        finally:
+            patcher.stop()
+
+    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.auth.default', return_value=['foo', None])
+    def test_storage_save_gzip(self, *args):
+        """
+        Test saving a file with gzip enabled.
+        """
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+
+        blob = Blob('x', None)
+        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
+        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+
+        try:
+            patcher.start()
+            self.storage.save(name, content)
+            obj = self.storage._bucket.get_blob()
+            obj.upload_from_file.assert_called_with(
+                mock.ANY,
+                rewind=False,
+                retry=DEFAULT_RETRY,
+                size=None,
+                predefined_acl=None,
+                content_type='text/css',
+            )
+            args, kwargs = obj.upload_from_file.call_args
+            content = args[0]
+            zfile = gzip.GzipFile(mode='rb', fileobj=content)
+            self.assertEqual(zfile.read(), b"I should be gzip'd")
+        finally:
+            patcher.stop()
