@@ -24,6 +24,7 @@ try:
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
     from google.cloud.storage.blob import _quote
+    from google.cloud.storage.retry import DEFAULT_RETRY
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
@@ -93,6 +94,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
                 blob_params = self._storage.get_object_parameters(self.name)
                 self.blob.upload_from_file(
                     self.file, rewind=True, content_type=self.mime_type,
+                    retry=DEFAULT_RETRY,
                     predefined_acl=blob_params.get('acl', self._storage.default_acl))
             self._file.close()
             self._file = None
@@ -192,7 +194,13 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
-        file_object.blob.upload_from_file(content, rewind=True, size=getattr(content, 'size', None), **upload_params)
+        file_object.blob.upload_from_file(
+            content,
+            rewind=True,
+            retry=DEFAULT_RETRY,
+            size=getattr(content, 'size', None),
+            **upload_params
+        )
         return cleaned_name
 
     def get_object_parameters(self, name):
@@ -215,7 +223,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
     def delete(self, name):
         name = self._normalize_name(clean_name(name))
         try:
-            self.bucket.delete_blob(name)
+            self.bucket.delete_blob(name, retry=DEFAULT_RETRY)
         except NotFound:
             pass
 

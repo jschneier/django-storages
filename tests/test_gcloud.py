@@ -11,6 +11,7 @@ from django.test import override_settings
 from django.utils import timezone
 from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
+from google.cloud.storage.retry import DEFAULT_RETRY
 
 from storages.backends import gcloud
 from tests.utils import NonSeekableContentFile
@@ -97,6 +98,7 @@ class GCloudStorageTests(GCloudTestCase):
         MockBlob().upload_from_file.assert_called_with(
             tmpfile, rewind=True,
             content_type=mimetypes.guess_type(self.filename)[0],
+            retry=DEFAULT_RETRY,
             predefined_acl='projectPrivate')
 
     def test_save(self):
@@ -107,8 +109,13 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl=None)
+            content,
+            rewind=True,
+            retry=DEFAULT_RETRY,
+            size=len(data),
+            content_type=mimetypes.guess_type(self.filename)[0],
+            predefined_acl=None
+        )
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -119,7 +126,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
+            content, rewind=True, retry=DEFAULT_RETRY, size=len(data), content_type=mimetypes.guess_type(filename)[0],
             predefined_acl=None)
 
     def test_save_with_default_acl(self):
@@ -136,14 +143,14 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
+            content, rewind=True, retry=DEFAULT_RETRY, size=len(data), content_type=mimetypes.guess_type(filename)[0],
             predefined_acl='publicRead')
 
     def test_delete(self):
         self.storage.delete(self.filename)
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.delete_blob.assert_called_with(self.filename)
+        self.storage._bucket.delete_blob.assert_called_with(self.filename, retry=DEFAULT_RETRY)
 
     def test_exists(self):
         self.storage._bucket = mock.MagicMock()
@@ -420,6 +427,7 @@ class GCloudStorageTests(GCloudTestCase):
         obj.upload_from_file.assert_called_with(
             mock.ANY,
             rewind=True,
+            retry=DEFAULT_RETRY,
             size=11,
             predefined_acl=None,
             content_type=None
@@ -436,6 +444,7 @@ class GCloudStorageTests(GCloudTestCase):
         obj.upload_from_file.assert_called_with(
             mock.ANY,
             rewind=True,
+            retry=DEFAULT_RETRY,
             size=11,
             predefined_acl=None,
             content_type=None
@@ -455,6 +464,7 @@ class GCloudStorageTests(GCloudTestCase):
         obj.upload_from_file.assert_called_with(
             mock.ANY,
             rewind=True,
+            retry=DEFAULT_RETRY,
             size=None,
             predefined_acl=None,
             content_type='text/css',
@@ -484,6 +494,7 @@ class GCloudStorageTests(GCloudTestCase):
         obj.upload_from_file.assert_called_with(
             mock.ANY,
             rewind=True,
+            retry=DEFAULT_RETRY,
             size=None,
             predefined_acl=None,
             content_type='text/css',
