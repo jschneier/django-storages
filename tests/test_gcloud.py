@@ -1,14 +1,17 @@
 import gzip
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
-from django.test import TestCase, override_settings
+from django.test import TestCase
+from django.test import override_settings
 from django.utils import timezone
 from google.cloud.exceptions import NotFound
 from google.cloud.storage.blob import Blob
+from google.cloud.storage.retry import DEFAULT_RETRY
 
 from storages.backends import gcloud
 from tests.utils import NonSeekableContentFile
@@ -18,17 +21,17 @@ class GCloudTestCase(TestCase):
     def setUp(self):
         self.bucket_name = 'test_bucket'
         self.filename = 'test_file.txt'
-
         self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
 
+
+class GCloudStorageTests(GCloudTestCase):
+    def setUp(self):
+        super().setUp()
         self.client_patcher = mock.patch('storages.backends.gcloud.Client')
         self.client_patcher.start()
 
     def tearDown(self):
         self.client_patcher.stop()
-
-
-class GCloudStorageTests(GCloudTestCase):
 
     def test_open_read(self):
         """
@@ -38,7 +41,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(
+            self.filename, chunk_size=None)
 
         f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
         self.assertEqual(f.read(), data)
@@ -49,7 +53,8 @@ class GCloudStorageTests(GCloudTestCase):
 
         f = self.storage.open(self.filename)
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(
+            self.filename, chunk_size=None)
 
         f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
         self.assertEqual(f.read(num_bytes), data[0:num_bytes])
@@ -59,7 +64,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.storage._bucket.get_blob.return_value = None
 
         self.assertRaises(FileNotFoundError, self.storage.open, self.filename)
-        self.storage._bucket.get_blob.assert_called_with(self.filename)
+        self.storage._bucket.get_blob.assert_called_with(
+            self.filename, chunk_size=None)
 
     def test_open_read_nonexistent_unicode(self):
         filename = 'ủⓝï℅ⅆℇ.txt'
@@ -92,6 +98,7 @@ class GCloudStorageTests(GCloudTestCase):
         MockBlob().upload_from_file.assert_called_with(
             tmpfile, rewind=True,
             content_type=mimetypes.guess_type(self.filename)[0],
+            retry=DEFAULT_RETRY,
             predefined_acl='projectPrivate')
 
     def test_save(self):
@@ -102,8 +109,13 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(self.filename)[0],
-            predefined_acl=None)
+            content,
+            rewind=True,
+            retry=DEFAULT_RETRY,
+            size=len(data),
+            content_type=mimetypes.guess_type(self.filename)[0],
+            predefined_acl=None
+        )
 
     def test_save2(self):
         data = 'This is some test ủⓝï℅ⅆℇ content.'
@@ -114,7 +126,7 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
+            content, rewind=True, retry=DEFAULT_RETRY, size=len(data), content_type=mimetypes.guess_type(filename)[0],
             predefined_acl=None)
 
     def test_save_with_default_acl(self):
@@ -131,14 +143,14 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
         self.storage._bucket.get_blob().upload_from_file.assert_called_with(
-            content, rewind=True, size=len(data), content_type=mimetypes.guess_type(filename)[0],
+            content, rewind=True, retry=DEFAULT_RETRY, size=len(data), content_type=mimetypes.guess_type(filename)[0],
             predefined_acl='publicRead')
 
     def test_delete(self):
         self.storage.delete(self.filename)
 
         self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.delete_blob.assert_called_with(self.filename)
+        self.storage._bucket.delete_blob.assert_called_with(self.filename, retry=DEFAULT_RETRY)
 
     def test_exists(self):
         self.storage._bucket = mock.MagicMock()
@@ -404,61 +416,6 @@ class GCloudStorageTests(GCloudTestCase):
         blob = bucket.get_blob(filename)
         self.assertEqual(blob.cache_control, cache_control)
 
-    def test_storage_save_gzipped(self):
-        """
-        Test saving a gzipped file
-        """
-        name = 'test_storage_save.gz'
-        content = ContentFile("I am gzip'd")
-        self.storage.save(name, content)
-        obj = self.storage._bucket.get_blob()
-        obj.upload_from_file.assert_called_with(
-            mock.ANY,
-            rewind=True,
-            size=11,
-            predefined_acl=None,
-            content_type=None
-        )
-
-    def test_storage_save_gzipped_non_seekable(self):
-        """
-        Test saving a gzipped file
-        """
-        name = 'test_storage_save.gz'
-        content = NonSeekableContentFile("I am gzip'd")
-        self.storage.save(name, content)
-        obj = self.storage._bucket.get_blob()
-        obj.upload_from_file.assert_called_with(
-            mock.ANY,
-            rewind=True,
-            size=11,
-            predefined_acl=None,
-            content_type=None
-        )
-
-    def test_storage_save_gzip(self):
-        """
-        Test saving a file with gzip enabled.
-        """
-        self.storage.gzip = True
-        name = 'test_storage_save.css'
-        content = ContentFile("I should be gzip'd")
-        self.storage.save(name, content)
-        self.storage._client.bucket.assert_called_with(self.bucket_name)
-        obj = self.storage._bucket.get_blob()
-        self.assertEqual(obj.content_encoding, 'gzip')
-        obj.upload_from_file.assert_called_with(
-            mock.ANY,
-            rewind=True,
-            size=None,
-            predefined_acl=None,
-            content_type='text/css',
-        )
-        args, kwargs = obj.upload_from_file.call_args
-        content = args[0]
-        zfile = gzip.GzipFile(mode='rb', fileobj=content)
-        self.assertEqual(zfile.read(), b"I should be gzip'd")
-
     def test_storage_save_gzip_twice(self):
         """
         Test saving the same file content twice with gzip enabled.
@@ -478,7 +435,8 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(obj.content_encoding, 'gzip')
         obj.upload_from_file.assert_called_with(
             mock.ANY,
-            rewind=True,
+            rewind=False,
+            retry=DEFAULT_RETRY,
             size=None,
             predefined_acl=None,
             content_type='text/css',
@@ -531,3 +489,113 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(storage.location, 'foo1')
         storage = gcloud.GoogleCloudStorage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
+
+    def test_dupe_file_chunk_size(self):
+        """
+        Tests that recreating a file that already exists in the bucket
+        respects the `GS_BLOB_CHUNK_SIZE` setting
+        """
+        chunk_size = 1024*256
+
+        with override_settings(GS_BLOB_CHUNK_SIZE=chunk_size):
+            # Creating a new storage here since chunk-size is set as an
+            # attribute on init
+            storage = gcloud.GoogleCloudStorage()
+            storage._bucket = mock.MagicMock()
+            # Confirms that `get_blob` always returns a truthy value
+            storage._bucket.get_blob.return_value = True
+
+            storage.open(self.filename, 'wb')
+            storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=chunk_size)
+
+
+class GoogleCloudGzipClientTests(GCloudTestCase):
+    def setUp(self):
+        super().setUp()
+        self.storage.gzip = True
+
+    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.auth.default', return_value=['foo', None])
+    def test_storage_save_gzipped(self, *args):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.js.gz'
+        content = ContentFile("I am gzip'd", name=name)
+
+        blob = Blob('x', None)
+        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
+        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        try:
+            patcher.start()
+            self.storage.save(name, content)
+            blob.upload_from_file.assert_called_with(
+                mock.ANY,
+                rewind=False,
+                retry=DEFAULT_RETRY,
+                size=None,
+                predefined_acl=None,
+                content_type='application/javascript'
+            )
+        finally:
+            patcher.stop()
+
+    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.auth.default', return_value=['foo', None])
+    def test_storage_save_gzipped_non_seekable(self, *args):
+        """
+        Test saving a gzipped file
+        """
+        name = 'test_storage_save.gz'
+        content = NonSeekableContentFile("I am gzip'd")
+
+        blob = Blob('x', None)
+        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
+        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        try:
+            patcher.start()
+            self.storage.save(name, content)
+            blob.upload_from_file.assert_called_with(
+                mock.ANY,
+                rewind=False,
+                retry=DEFAULT_RETRY,
+                size=11,
+                predefined_acl=None,
+                content_type=None
+            )
+        finally:
+            patcher.stop()
+
+    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.auth.default', return_value=['foo', None])
+    def test_storage_save_gzip(self, *args):
+        """
+        Test saving a file with gzip enabled.
+        """
+        self.storage.gzip = True
+        name = 'test_storage_save.css'
+        content = ContentFile("I should be gzip'd")
+
+        blob = Blob('x', None)
+        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
+        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+
+        try:
+            patcher.start()
+            self.storage.save(name, content)
+            obj = self.storage._bucket.get_blob()
+            obj.upload_from_file.assert_called_with(
+                mock.ANY,
+                rewind=False,
+                retry=DEFAULT_RETRY,
+                size=None,
+                predefined_acl=None,
+                content_type='text/css',
+            )
+            args, kwargs = obj.upload_from_file.call_args
+            content = args[0]
+            zfile = gzip.GzipFile(mode='rb', fileobj=content)
+            self.assertEqual(zfile.read(), b"I should be gzip'd")
+        finally:
+            patcher.stop()

@@ -1,21 +1,25 @@
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
-from azure.storage.blob import (
-    BlobClient, BlobSasPermissions, BlobServiceClient, ContentSettings,
-    generate_blob_sas,
-)
+from azure.storage.blob import BlobClient
+from azure.storage.blob import BlobSasPermissions
+from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import ContentSettings
+from azure.storage.blob import generate_blob_sas
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
-from storages.utils import (
-    clean_name, get_available_overwrite_name, safe_join, setting, to_bytes,
-)
+from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
+from storages.utils import safe_join
+from storages.utils import setting
+from storages.utils import to_bytes
 
 
 @deconstructible
@@ -143,6 +147,7 @@ class AzureStorage(BaseStorage):
             "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
             "connection_string": setting('AZURE_CONNECTION_STRING'),
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
+            "api_version": setting('AZURE_API_VERSION', None),
         }
 
     def _get_service_client(self):
@@ -165,7 +170,10 @@ class AzureStorage(BaseStorage):
             credential = self.sas_token
         elif self.token_credential:
             credential = self.token_credential
-        return BlobServiceClient(account_url, credential=credential)
+        options = {}
+        if self.api_version:
+            options["api_version"] = self.api_version
+        return BlobServiceClient(account_url, credential=credential, **options)
 
     @property
     def service_client(self):
@@ -334,9 +342,8 @@ class AzureStorage(BaseStorage):
         Returns an (aware) datetime object containing the last modified time if
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
-        properties = self.client.get_blob_properties(
-            self._get_valid_path(name),
-            timeout=self.timeout)
+        blob_client = self.client.get_blob_client(self._get_valid_path(name))
+        properties = blob_client.get_blob_properties(timeout=self.timeout)
         if not setting('USE_TZ', False):
             return timezone.make_naive(properties.last_modified)
 

@@ -13,7 +13,8 @@ from django.utils.deconstruct import deconstructible
 
 try:
     from libcloud.storage.providers import get_driver
-    from libcloud.storage.types import ObjectDoesNotExistError, Provider
+    from libcloud.storage.types import ObjectDoesNotExistError
+    from libcloud.storage.types import Provider
 except ImportError:
     raise ImproperlyConfigured("Could not load libcloud")
 

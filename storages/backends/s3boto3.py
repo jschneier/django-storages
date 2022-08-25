@@ -3,23 +3,31 @@ import os
 import posixpath
 import tempfile
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from tempfile import SpooledTemporaryFile
-from urllib.parse import parse_qsl, urlencode, urlsplit
+from urllib.parse import parse_qsl
+from urllib.parse import urlencode
+from urllib.parse import urlsplit
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
-from django.core.exceptions import ImproperlyConfigured, SuspiciousOperation
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri
-from django.utils.timezone import is_naive, make_naive
+from django.utils.timezone import is_naive
+from django.utils.timezone import make_naive
 
 from storages.base import BaseStorage
-from storages.compress import CompressedFileMixin, CompressStorageMixin
-from storages.utils import (
-    check_location, get_available_overwrite_name, lookup_env, safe_join,
-    setting, to_bytes,
-)
+from storages.compress import CompressedFileMixin
+from storages.compress import CompressStorageMixin
+from storages.utils import check_location
+from storages.utils import get_available_overwrite_name
+from storages.utils import lookup_env
+from storages.utils import safe_join
+from storages.utils import setting
+from storages.utils import to_bytes
 
 try:
     import boto3.session
@@ -37,9 +45,7 @@ def _use_cryptography_signer():
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import padding
-    from cryptography.hazmat.primitives.serialization import (
-        load_pem_private_key,
-    )
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
     def _cloud_front_signer_from_pem(key_id, pem):
         if isinstance(pem, str):
@@ -255,12 +261,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
         check_location(self)
 
-        # Backward-compatibility: given the anteriority of the SECURE_URL setting
-        # we fall back to https if specified in order to avoid the construction
-        # of unsecure urls.
-        if self.secure_urls:
-            self.url_protocol = 'https:'
-
         self._bucket = None
         self._connections = threading.local()
 
@@ -315,7 +315,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             'custom_domain': setting('AWS_S3_CUSTOM_DOMAIN'),
             'cloudfront_signer': cloudfront_signer,
             'addressing_style': setting('AWS_S3_ADDRESSING_STYLE'),
-            'secure_urls': setting('AWS_S3_SECURE_URLS', True),
             'file_name_charset': setting('AWS_S3_FILE_NAME_CHARSET', 'utf-8'),
             'gzip': setting('AWS_IS_GZIPPED', False),
             'gzip_content_types': setting('GZIP_CONTENT_TYPES', (
@@ -325,7 +324,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
                 'application/x-javascript',
                 'image/svg+xml',
             )),
-            'url_protocol': setting('AWS_S3_URL_PROTOCOL', 'http:'),
+            'url_protocol': setting('AWS_S3_URL_PROTOCOL', 'https:'),
             'endpoint_url': setting('AWS_S3_ENDPOINT_URL'),
             'proxies': setting('AWS_S3_PROXIES'),
             'region_name': setting('AWS_S3_REGION_NAME'),

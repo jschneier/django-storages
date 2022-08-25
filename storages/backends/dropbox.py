@@ -5,8 +5,12 @@
 # Usage:
 #
 # Add below to settings.py:
-# DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
 # DROPBOX_ROOT_PATH = '/dir/'
+# DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
+# DROPBOX_APP_KEY = 'YourAppKey'
+# DROPBOX_APP_SECRET = 'YourAppSecret``
+# DROPBOX_OAUTH2_REFRESH_TOKEN = 'YourOauthRefreshToken'
+
 
 from io import BytesIO
 from shutil import copyfileobj
@@ -19,11 +23,13 @@ from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
 from dropbox.exceptions import ApiError
-from dropbox.files import (
-    CommitInfo, FolderMetadata, UploadSessionCursor, WriteMode,
-)
+from dropbox.files import CommitInfo
+from dropbox.files import FolderMetadata
+from dropbox.files import UploadSessionCursor
+from dropbox.files import WriteMode
 
-from storages.utils import get_available_overwrite_name, setting
+from storages.utils import get_available_overwrite_name
+from storages.utils import setting
 
 _DEFAULT_TIMEOUT = 100
 _DEFAULT_MODE = 'add'
@@ -69,21 +75,43 @@ class DropBoxStorage(Storage):
     """DropBox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
+    app_key = setting('DROPBOX_APP_KEY')
+    app_secret = setting('DROPBOX_APP_SECRET')
+    oauth2_refresh_token = setting('DROPBOX_OAUTH2_REFRESH_TOKEN')
     timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
     write_mode = setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE)
 
     CHUNK_SIZE = 4 * 1024 * 1024
 
-    def __init__(self, oauth2_access_token=oauth2_access_token, root_path=location, timeout=timeout,
-                 write_mode=write_mode):
-        if oauth2_access_token is None:
-            raise ImproperlyConfigured("You must configure an auth token at"
-                                       "'settings.DROPBOX_OAUTH2_TOKEN'.")
-        if write_mode not in ["add", "overwrite",  "update"]:
-            raise ImproperlyConfigured("DROPBOX_WRITE_MODE must be set to either: 'add', 'overwrite' or 'update'")
+    def __init__(
+        self,
+        oauth2_access_token=oauth2_access_token,
+        root_path=location,
+        timeout=timeout,
+        write_mode=write_mode,
+        app_key=app_key,
+        app_secret=app_secret,
+        oauth2_refresh_token=oauth2_refresh_token,
+    ):
+        if oauth2_access_token is None and not all(
+            [app_key, app_secret, oauth2_refresh_token]
+        ):
+            raise ImproperlyConfigured(
+                "You must configure an auth token at"
+                "'settings.DROPBOX_OAUTH2_TOKEN' or "
+                "'setting.DROPBOX_APP_KEY', "
+                "'setting.DROPBOX_APP_SECRET' "
+                "and 'setting.DROPBOX_OAUTH2_REFRESH_TOKEN'."
+            )
         self.root_path = root_path
         self.write_mode = write_mode
-        self.client = Dropbox(oauth2_access_token, timeout=timeout)
+        self.client = Dropbox(
+            oauth2_access_token,
+            app_key=app_key,
+            app_secret=app_secret,
+            oauth2_refresh_token=oauth2_refresh_token,
+            timeout=timeout,
+        )
 
     def _full_path(self, name):
         if name == '/':
@@ -127,8 +155,11 @@ class DropBoxStorage(Storage):
         return metadata.client_modified
 
     def url(self, name):
-        media = self.client.files_get_temporary_link(self._full_path(name))
-        return media.link
+        try:
+            media = self.client.files_get_temporary_link(self._full_path(name))
+            return media.link
+        except ApiError:
+            return None
 
     def _open(self, name, mode='rb'):
         remote_file = DropBoxFile(self._full_path(name), self)
@@ -141,7 +172,9 @@ class DropBoxStorage(Storage):
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
-        return name
+        # .save() validates the filename isn't absolute but Dropbox requires an absolute filename.
+        # Work with the absolute name internally but strip it off before passing up-the-chain.
+        return name.lstrip(self.root_path)
 
     def _chunked_upload(self, content, dest_path):
         upload_session = self.client.files_upload_session_start(

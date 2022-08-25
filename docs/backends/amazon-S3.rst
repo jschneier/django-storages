@@ -61,7 +61,7 @@ searches for them:
 
   To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_; an incomplete list includes: ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
-``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's defalt)
+``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's default)
 
    Use this to set an ACL on your file such as ``public-read``. If not set the file will be ``private`` per Amazon's default.
    If the ``ACL`` parameter is set in ``AWS_S3_OBJECT_PARAMETERS``, then this setting is ignored.
@@ -80,6 +80,9 @@ searches for them:
 ``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
     The number of seconds that a generated URL is valid for.
 
+``AWS_S3_URL_PROTOCOL`` (optional: default is ``https:``)
+    The protocol to use when constructing a custom domain, ``AWS_S3_CUSTOM_DOMAIN`` must be ``True`` for this to have any effect.
+
 ``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
     By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
 
@@ -96,7 +99,7 @@ searches for them:
     Name of the AWS S3 region to use (eg. eu-west-1)
 
 ``AWS_S3_USE_SSL`` (optional: default is ``True``)
-    Whether or not to use SSL when connecting to S3.
+    Whether or not to use SSL when connecting to S3, this is passed to the boto3 session resource constructor.
 
 ``AWS_S3_VERIFY`` (optional: default is ``None``)
     Whether or not to verify the connection to S3. Can be set to False to not verify certificates or a path to a CA cert bundle.
