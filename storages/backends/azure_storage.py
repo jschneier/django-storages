@@ -21,7 +21,6 @@ from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
 
-
 try:
     from django_guid import get_guid
 except ImportError:

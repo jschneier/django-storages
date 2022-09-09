@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from datetime import timedelta
 from unittest import mock
 
@@ -11,11 +12,9 @@ from django.test import TestCase
 from django.test import override_settings
 from django.utils import timezone
 from django.utils.timezone import make_aware
+from django_guid import set_guid
 
 from storages.backends import azure_storage
-
-from django_guid import set_guid
-import uuid
 
 
 def set_and_expect_guid():
