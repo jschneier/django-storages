@@ -366,7 +366,6 @@ class AzureStorageTest(TestCase):
         content = 'new content'
         headers = set_and_expect_guid()
 
-
         file = self.storage.open(name, 'w')
         file.write(content)
         written_file = file.file
