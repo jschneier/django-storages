@@ -113,7 +113,7 @@ class AzureStorageTest(TestCase):
         # storage will raise when file name is too long as well,
         # the form should validate this
         client_mock = mock.MagicMock()
-        client_mock.exists.side_effect = [False, True]
+        client_mock.exists.side_effect = [True, False]
         self.storage._client.get_blob_client.return_value = client_mock
         self.assertRaises(ValueError, self.storage.get_available_name, 'a' * 1025)
         name = self.storage.get_available_name('a' * 1000, max_length=100)  # max_len == 1024
@@ -258,7 +258,7 @@ class AzureStorageTest(TestCase):
             bsc_mocked.return_value.get_container_client.return_value = client_mock
             self.assertEqual(storage.client, client_mock)
             bsc_mocked.assert_called_once_with(
-                'https://foo_name.blob.core.windows.net',
+                'http://foo_name.blob.core.windows.net',
                 credential='foo_token')
 
         with mock.patch(
