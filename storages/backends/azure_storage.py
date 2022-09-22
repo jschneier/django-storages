@@ -219,7 +219,7 @@ class AzureStorage(BaseStorage):
         ):
             now = datetime.utcnow()
             key_expiry_time = now + timedelta(days=7)
-            self._user_delegation_key = self.service_client.get_user_delegation_key(
+            self._user_delegation_key = self.custom_service_client.get_user_delegation_key(
                 key_start_time=now, key_expiry_time=key_expiry_time
             )
             self._user_delegation_key_expiry = key_expiry_time
