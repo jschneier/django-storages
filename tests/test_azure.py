@@ -3,7 +3,6 @@ from datetime import timedelta
 from unittest import mock
 
 import django
-from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobProperties
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
