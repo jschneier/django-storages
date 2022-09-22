@@ -260,11 +260,7 @@ class AzureStorage(BaseStorage):
 
     def exists(self, name):
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
-        try:
-            blob_client.get_blob_properties()
-            return True
-        except ResourceNotFoundError:
-            return False
+        return blob_client.exists()
 
     def delete(self, name):
         try:
