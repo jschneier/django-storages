@@ -9,6 +9,7 @@ from tempfile import SpooledTemporaryFile
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
 from urllib.parse import urlsplit
+from io import BytesIO
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured
@@ -454,7 +455,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             params['ContentEncoding'] = 'gzip'
 
         obj = self.bucket.Object(name)
-        obj.upload_fileobj(content, ExtraArgs=params, Config=self._transfer_config)
+        obj.upload_fileobj(BytesIO(to_bytes(content.read())), ExtraArgs=params, Config=self._transfer_config)
         return cleaned_name
 
     def delete(self, name):
