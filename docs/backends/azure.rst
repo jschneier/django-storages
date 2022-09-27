@@ -144,7 +144,7 @@ The following settings are available:
 
 ``AZURE_CUSTOM_DOMAIN``
 
-    The custom domain to use. This can be set in the Azure Portal. For
+    The custom domain to use for generating URLs for files. For
     example, ``www.mydomain.com`` or ``mycdn.azureedge.net``.
 
 ``AZURE_CONNECTION_STRING``
