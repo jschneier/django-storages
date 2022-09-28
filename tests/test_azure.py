@@ -4,7 +4,6 @@ from datetime import timedelta
 from unittest import mock
 
 import django
-from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobProperties
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
@@ -32,6 +31,7 @@ class AzureStorageTest(TestCase):
     def setUp(self, *args):
         self.storage = azure_storage.AzureStorage()
         self.storage._client = mock.MagicMock()
+        self.storage._custom_client = mock.MagicMock()
         self.storage.overwrite_files = True
         self.account_name = 'test'
         self.account_key = 'key'
@@ -100,23 +100,26 @@ class AzureStorageTest(TestCase):
     def test_get_available_name(self):
         self.storage.overwrite_files = False
         client_mock = mock.MagicMock()
-        client_mock.get_blob_properties.side_effect = [True, ResourceNotFoundError]
+        client_mock.exists.side_effect = [True, False]
+        custom_client_mock = mock.MagicMock()
         self.storage._client.get_blob_client.return_value = client_mock
+        self.storage._custom_client.get_blob_client.return_value = custom_client_mock
         name = self.storage.get_available_name('foo.txt')
         self.assertTrue(name.startswith('foo_'))
         self.assertTrue(name.endswith('.txt'))
         self.assertTrue(len(name) > len('foo.txt'))
-        self.assertEqual(client_mock.get_blob_properties.call_count, 2)
+        self.assertEqual(client_mock.exists.call_count, 2)
+        self.assertEqual(custom_client_mock.exists.call_count, 0)
 
     def test_get_available_name_first(self):
         self.storage.overwrite_files = False
         client_mock = mock.MagicMock()
-        client_mock.get_blob_properties.side_effect = [ResourceNotFoundError]
+        client_mock.exists.return_value = False
         self.storage._client.get_blob_client.return_value = client_mock
         self.assertEqual(
             self.storage.get_available_name('foo bar baz.txt'),
             'foo bar baz.txt')
-        self.assertEqual(client_mock.get_blob_properties.call_count, 1)
+        self.assertEqual(client_mock.exists.call_count, 1)
 
     def test_get_available_name_max_len(self):
         self.storage.overwrite_files = False
@@ -124,17 +127,17 @@ class AzureStorageTest(TestCase):
         # storage will raise when file name is too long as well,
         # the form should validate this
         client_mock = mock.MagicMock()
-        client_mock.get_blob_properties.side_effect = [False, ResourceNotFoundError]
+        client_mock.exists.side_effect = [True, False]
         self.storage._client.get_blob_client.return_value = client_mock
         self.assertRaises(ValueError, self.storage.get_available_name, 'a' * 1025)
         name = self.storage.get_available_name('a' * 1000, max_length=100)  # max_len == 1024
         self.assertEqual(len(name), 100)
         self.assertTrue('_' in name)
-        self.assertEqual(client_mock.get_blob_properties.call_count, 2)
+        self.assertEqual(client_mock.exists.call_count, 2)
 
     def test_get_available_invalid(self):
         self.storage.overwrite_files = False
-        self.storage._client.get_blob_properties.return_value = False
+        self.storage._client.exists.return_value = False
         if django.VERSION[:2] == (3, 0):
             # Django 2.2.21 added this security fix:
             # https://docs.djangoproject.com/en/3.2/releases/2.2.21/#cve-2021-31542-potential-directory-traversal-via-uploaded-files
@@ -154,25 +157,27 @@ class AzureStorageTest(TestCase):
     def test_url(self):
         blob_mock = mock.MagicMock()
         blob_mock.url = 'https://ret_foo.blob.core.windows.net/test/some%20blob'
-        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage._custom_client.get_blob_client.return_value = blob_mock
         self.assertEqual(self.storage.url('some blob'), blob_mock.url)
-        self.storage._client.get_blob_client.assert_called_once_with('some blob')
+        self.storage.custom_client.get_blob_client.assert_called_once_with('some blob')
+        self.storage._client.get_blob_client.assert_not_called()
 
     def test_url_unsafe_chars(self):
         blob_mock = mock.MagicMock()
         blob_mock.url = 'https://ret_foo.blob.core.windows.net/test/some%20blob'
-        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage._custom_client.get_blob_client.return_value = blob_mock
         self.assertEqual(
             self.storage.url('foo;?:@=&"<>#%{}|^~[]`bar/~!*()\''), blob_mock.url)
-        self.storage.client.get_blob_client.assert_called_once_with(
+        self.storage.custom_client.get_blob_client.assert_called_once_with(
             'foo;?:@=&"<>#%{}|^~[]`bar/~!*()\'')
+        self.storage._client.get_blob_client.assert_not_called()
 
     @mock.patch('storages.backends.azure_storage.generate_blob_sas')
     def test_url_expire(self, generate_blob_sas_mocked):
         generate_blob_sas_mocked.return_value = 'foo_token'
         blob_mock = mock.MagicMock()
         blob_mock.url = 'https://ret_foo.blob.core.windows.net/test/some%20blob'
-        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage._custom_client.get_blob_client.return_value = blob_mock
         self.storage.account_name = self.account_name
 
         fixed_time = make_aware(datetime.datetime(2016, 11, 6, 4), timezone.utc)
@@ -195,16 +200,16 @@ class AzureStorageTest(TestCase):
         generate_blob_sas_mocked.return_value = 'foo_token'
         blob_mock = mock.MagicMock()
         blob_mock.url = 'https://ret_foo.blob.core.windows.net/test/some%20blob'
-        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage._custom_client.get_blob_client.return_value = blob_mock
         self.storage.account_name = self.account_name
-        service_client = mock.MagicMock()
-        self.storage._service_client = service_client
+        custom_service_client = mock.MagicMock()
+        self.storage._custom_service_client = custom_service_client
         self.storage.token_credential = 'token_credential'
 
         fixed_time = make_aware(datetime.datetime(2016, 11, 6, 4), timezone.utc)
         with mock.patch('storages.backends.azure_storage.datetime') as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
-            service_client.get_user_delegation_key.return_value = 'user delegation key'
+            custom_service_client.get_user_delegation_key.return_value = 'user delegation key'
             self.assertEqual(
                 self.storage.url('some blob', 100),
                 'https://ret_foo.blob.core.windows.net/test/some%20blob')
@@ -240,9 +245,17 @@ class AzureStorageTest(TestCase):
                 'storages.backends.azure_storage.BlobServiceClient',
                 autospec=True) as bsc_mocked:
             client_mock = mock.MagicMock()
+            custom_client_mock = mock.MagicMock()
             bsc_mocked.return_value.get_container_client.return_value = client_mock
             self.assertEqual(storage.client, client_mock)
             bsc_mocked.assert_called_once_with(
+                'https://foo_name.blob.core.windows.net',
+                credential={'account_name': 'foo_name', 'account_key': 'foo_key'})
+
+            bsc_mocked.return_value.get_container_client.return_value = custom_client_mock
+            self.assertEqual(storage.custom_client, custom_client_mock)
+            self.assertEqual(bsc_mocked.call_count, 2)
+            bsc_mocked.assert_called_with(
                 'https://foo_domain',
                 credential={'account_name': 'foo_name', 'account_key': 'foo_key'})
 
@@ -256,9 +269,17 @@ class AzureStorageTest(TestCase):
                 'storages.backends.azure_storage.BlobServiceClient',
                 autospec=True) as bsc_mocked:
             client_mock = mock.MagicMock()
+            custom_client_mock = mock.MagicMock()
             bsc_mocked.return_value.get_container_client.return_value = client_mock
             self.assertEqual(storage.client, client_mock)
             bsc_mocked.assert_called_once_with(
+                'http://foo_name.blob.core.windows.net',
+                credential='foo_token')
+
+            bsc_mocked.return_value.get_container_client.return_value = custom_client_mock
+            self.assertEqual(storage.custom_client, custom_client_mock)
+            self.assertEqual(bsc_mocked.call_count, 2)
+            bsc_mocked.assert_called_with(
                 'http://foo_domain',
                 credential='foo_token')
 
@@ -312,6 +333,7 @@ class AzureStorageTest(TestCase):
                 content_type='text/plain',
                 content_encoding=None,
                 cache_control=None)
+            self.storage._custom_client.upload_blob.assert_not_called()
 
     def test_storage_save_with_guid(self):
         """
@@ -335,6 +357,7 @@ class AzureStorageTest(TestCase):
                 content_type='text/plain',
                 content_encoding=None,
                 cache_control=None)
+            self.storage._custom_client.upload_blob.assert_not_called()
 
     @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
     def test_storage_open_write(self, mocked_get_guid):
@@ -356,6 +379,7 @@ class AzureStorageTest(TestCase):
             timeout=20,
             overwrite=True,
             headers={})
+        self.storage._custom_client.upload_blob.assert_not_called()
 
     def test_storage_open_write_with_guid(self):
         """
@@ -377,34 +401,43 @@ class AzureStorageTest(TestCase):
             timeout=20,
             overwrite=True,
             headers=headers)
+        self.storage._custom_client.upload_blob.assert_not_called()
 
     @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
     def test_storage_exists(self, mocked_get_guid):
         blob_name = "blob"
         client_mock = mock.MagicMock()
+        custom_client_mock = mock.MagicMock()
         self.storage._client.get_blob_client.return_value = client_mock
+        self.storage._custom_client.get_blob_client.return_value = client_mock
         self.assertTrue(self.storage.exists(blob_name))
         client_mock.get_blob_properties.assert_called_once_with(headers={})
+        self.assertEqual(custom_client_mock.exists.call_count, 0)
 
     def test_storage_exists_with_guid(self):
         blob_name = "blob"
         headers = set_and_expect_guid()
         client_mock = mock.MagicMock()
+        custom_client_mock = mock.MagicMock()
         self.storage._client.get_blob_client.return_value = client_mock
+        self.storage._custom_client.get_blob_client.return_value = client_mock
         self.assertTrue(self.storage.exists(blob_name))
         client_mock.get_blob_properties.assert_called_once_with(headers=headers)
+        self.assertEqual(custom_client_mock.exists.call_count, 0)
 
     @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
     def test_delete_blob(self, mocked_get_guid):
         self.storage.delete("name")
         self.storage._client.delete_blob.assert_called_once_with(
             "name", timeout=20, headers={})
+        self.storage._custom_client.delete_blob.assert_not_called()
 
     def test_delete_blob_with_guid(self):
         headers = set_and_expect_guid()
         self.storage.delete("name")
         self.storage._client.delete_blob.assert_called_once_with(
             "name", timeout=20, headers=headers)
+        self.storage._custom_client.delete_blob.assert_not_called()
 
     @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
     def test_storage_listdir_base(self, mocked_get_guid):
@@ -420,6 +453,7 @@ class AzureStorageTest(TestCase):
         dirs, files = self.storage.listdir("")
         self.storage._client.list_blobs.assert_called_with(
             name_starts_with="", timeout=20, headers={})
+        self.storage._custom_client.list_blobs.assert_not_called()
 
         self.assertEqual(len(dirs), 2)
         for directory in ["some", "other"]:
@@ -447,6 +481,8 @@ class AzureStorageTest(TestCase):
         dirs, files = self.storage.listdir("")
         self.storage._client.list_blobs.assert_called_with(
             name_starts_with="", timeout=20, headers=headers)
+        self.storage._custom_client.list_blobs.assert_not_called()
+        # Rest of functionality is tested in test_storage_listdir_base
 
     @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
     def test_storage_listdir_subdir(self, mocked_get_guid):
@@ -462,6 +498,7 @@ class AzureStorageTest(TestCase):
         dirs, files = self.storage.listdir("some/")
         self.storage._client.list_blobs.assert_called_with(
             name_starts_with="some/", timeout=20, headers={})
+        self.storage._custom_client.list_blobs.assert_not_called()
 
         self.assertEqual(len(dirs), 1)
         self.assertTrue(
@@ -487,6 +524,8 @@ class AzureStorageTest(TestCase):
         dirs, files = self.storage.listdir("some/")
         self.storage._client.list_blobs.assert_called_with(
             name_starts_with="some/", timeout=20, headers=headers)
+        self.storage._custom_client.list_blobs.assert_not_called()
+        # Rest of functionality is tested in test_storage_listdir_subdir
 
     def test_size_of_file(self):
         props = BlobProperties()
@@ -532,3 +571,37 @@ class AzureStorageTest(TestCase):
         self.assertEqual(storage.azure_container, 'foo1')
         storage = azure_storage.AzureStorage(azure_container='foo2')
         self.assertEqual(storage.azure_container, 'foo2')
+
+    @mock.patch('storages.backends.azure_storage.AzureStorage._get_service_client',)
+    def test_get_service_client_use_custom_domain(self, gsc_mocked):
+        storage = azure_storage.AzureStorage()
+        storage.account_name = self.account_name
+
+        _ = storage.service_client
+        gsc_mocked.assert_called_once_with(use_custom_domain=False)
+
+        _ = storage.custom_service_client
+        gsc_mocked.assert_called_with(use_custom_domain=True)
+
+    def test_blobserviceclient_no_custom_domain(self):
+        storage = azure_storage.AzureStorage()
+        storage.account_name = 'foo_name'
+        storage.custom_domain = None
+        storage.account_key = 'foo_key'
+        with mock.patch(
+                'storages.backends.azure_storage.BlobServiceClient',
+                autospec=True) as bsc_mocked:
+            client_mock = mock.MagicMock()
+            custom_client_mock = mock.MagicMock()
+            bsc_mocked.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc_mocked.assert_called_once_with(
+                'https://foo_name.blob.core.windows.net',
+                credential={'account_name': 'foo_name', 'account_key': 'foo_key'})
+
+            bsc_mocked.return_value.get_container_client.return_value = custom_client_mock
+            self.assertEqual(storage.custom_client, custom_client_mock)
+            self.assertEqual(bsc_mocked.call_count, 2)
+            bsc_mocked.assert_called_with(
+                'https://foo_name.blob.core.windows.net',
+                credential={'account_name': 'foo_name', 'account_key': 'foo_key'})
