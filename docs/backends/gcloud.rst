@@ -204,7 +204,10 @@ Note: Default Google Compute Engine (GCE) Service accounts are
 The ``GS_EXPIRATION`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
 It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
+``GS_SIGNED_URL_VERSION`` (optional: default is ``v4``)
 
+The version used for signing Google Cloud storage (`v4` or `v2`). The `v4` version restricts the expiration time 
+of signed urls to a maximum of 7 days.
 Usage
 -----
 

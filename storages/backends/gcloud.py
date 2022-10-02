@@ -120,6 +120,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             "default_acl": setting('GS_DEFAULT_ACL'),
             "querystring_auth": setting('GS_QUERYSTRING_AUTH', True),
             "expiration": setting('GS_EXPIRATION', timedelta(seconds=86400)),
+            "signed_url_version": setting('GS_SIGNED_URL_VERSION', 'v4'),
             "gzip": setting('GS_IS_GZIPPED', False),
             "gzip_content_types": setting('GZIP_CONTENT_TYPES', (
                 'text/css',
