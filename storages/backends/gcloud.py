@@ -20,7 +20,7 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
-    from google.cloud.exceptions import NotFound
+    from google.api_core.exceptions import NotFound
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
     from google.cloud.storage.blob import _quote
