@@ -9,7 +9,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test import override_settings
 from django.utils import timezone
-from google.cloud.exceptions import NotFound
+from google.api_core.exceptions import NotFound
 from google.cloud.storage.blob import Blob
 from google.cloud.storage.retry import DEFAULT_RETRY
 
