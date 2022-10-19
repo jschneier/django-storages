@@ -10,8 +10,8 @@ from django.test import TestCase
 from django.test import override_settings
 from django.utils import timezone
 from google.api_core.exceptions import NotFound
-from google.cloud.storage.blob import Blob
-from google.cloud.storage.retry import DEFAULT_RETRY
+from google.api_core.storage.blob import Blob
+from google.api_core.storage.retry import DEFAULT_RETRY
 
 from storages.backends import gcloud
 from tests.utils import NonSeekableContentFile
@@ -515,7 +515,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         super().setUp()
         self.storage.gzip = True
 
-    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.api_core.storage.blob.Blob._do_upload')
     @mock.patch('google.auth.default', return_value=['foo', None])
     def test_storage_save_gzipped(self, *args):
         """
@@ -526,7 +526,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
 
         blob = Blob('x', None)
         blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
-        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        patcher = mock.patch('google.api_core.storage.Bucket.get_blob', return_value=blob)
         try:
             patcher.start()
             self.storage.save(name, content)
@@ -541,7 +541,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         finally:
             patcher.stop()
 
-    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.api_core.storage.blob.Blob._do_upload')
     @mock.patch('google.auth.default', return_value=['foo', None])
     def test_storage_save_gzipped_non_seekable(self, *args):
         """
@@ -552,7 +552,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
 
         blob = Blob('x', None)
         blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
-        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        patcher = mock.patch('google.api_core.storage.Bucket.get_blob', return_value=blob)
         try:
             patcher.start()
             self.storage.save(name, content)
@@ -567,7 +567,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         finally:
             patcher.stop()
 
-    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
+    @mock.patch('google.api_core.storage.blob.Blob._do_upload')
     @mock.patch('google.auth.default', return_value=['foo', None])
     def test_storage_save_gzip(self, *args):
         """
@@ -579,7 +579,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
 
         blob = Blob('x', None)
         blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
-        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
+        patcher = mock.patch('google.api_core.storage.Bucket.get_blob', return_value=blob)
 
         try:
             patcher.start()

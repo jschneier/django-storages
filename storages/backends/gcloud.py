@@ -21,10 +21,10 @@ from storages.utils import to_bytes
 
 try:
     from google.api_core.exceptions import NotFound
-    from google.cloud.storage import Blob
-    from google.cloud.storage import Client
-    from google.cloud.storage.blob import _quote
-    from google.cloud.storage.retry import DEFAULT_RETRY
+    from google.api_core.storage import Blob
+    from google.api_core.storage import Client
+    from google.api_core.storage.blob import _quote
+    from google.api_core.storage.retry import DEFAULT_RETRY
 except ImportError:
     raise ImproperlyConfigured("Could not load Google Cloud Storage bindings.\n"
                                "See https://github.com/GoogleCloudPlatform/gcloud-python")
