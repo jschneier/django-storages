@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches:
+      - '**'
+
+
+jobs:
+  run_unittest_tests:
+    name: Unittest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        django-version: ["3.2", "4.0", "4.1", "main"]
+        exclude:
+            - python-version: "3.7"
+              django-version: "4.0"
+            - python-version: "3.7"
+              django-version: "4.1"
+            - python-version: "3.7"
+              django-version: "main"
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade setuptools
+          pip install tox
+
+      - name: Run unittest Python ${{ matrix.python-version }} -- Django ${{ matrix.django-version }}
+        env:
+          TOXENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}
+        run: tox
+
+  run_quality_tests:
+    name: Quality tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        python-version: ["3.7"]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          pip install tox
+
+      - name: Quality tests
+        env:
+          TOXENV: flake8
+        run: |
+          tox

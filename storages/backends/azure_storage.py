@@ -1,22 +1,25 @@
-from __future__ import unicode_literals
-
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
-from azure.common import AzureMissingResourceHttpError
-from azure.storage.blob import BlobPermissions, ContentSettings
-from azure.storage.blob.blockblobservice import BlockBlobService
+from azure.core.exceptions import ResourceNotFoundError
+from azure.storage.blob import BlobClient
+from azure.storage.blob import BlobSasPermissions
+from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import ContentSettings
+from azure.storage.blob import generate_blob_sas
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import filepath_to_uri, force_bytes
 
 from storages.base import BaseStorage
-from storages.utils import (
-    clean_name, get_available_overwrite_name, safe_join, setting,
-)
+from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
+from storages.utils import safe_join
+from storages.utils import setting
+from storages.utils import to_bytes
 
 
 @deconstructible
@@ -40,14 +43,9 @@ class AzureStorageFile(File):
             dir=setting("FILE_UPLOAD_TEMP_DIR", None))
 
         if 'r' in self._mode or 'a' in self._mode:
-            # I set max connection to 1 since spooledtempfile is
-            # not seekable which is required if we use max_connections > 1
-            self._storage.service.get_blob_to_stream(
-                container_name=self._storage.azure_container,
-                blob_name=self._path,
-                stream=file,
-                max_connections=1,
-                timeout=self._storage.timeout)
+            download_stream = self._storage.client.download_blob(
+                self._path, timeout=self._storage.timeout)
+            download_stream.readinto(file)
         if 'r' in self._mode:
             file.seek(0)
 
@@ -62,7 +60,7 @@ class AzureStorageFile(File):
     def read(self, *args, **kwargs):
         if 'r' not in self._mode and 'a' not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return super(AzureStorageFile, self).read(*args, **kwargs)
+        return super().read(*args, **kwargs)
 
     def write(self, content):
         if ('w' not in self._mode and
@@ -70,7 +68,7 @@ class AzureStorageFile(File):
                 'a' not in self._mode):
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
-        return super(AzureStorageFile, self).write(force_bytes(content))
+        return super().write(to_bytes(content))
 
     def close(self):
         if self._file is None:
@@ -123,14 +121,19 @@ _AZURE_NAME_MAX_LEN = 1024
 @deconstructible
 class AzureStorage(BaseStorage):
     def __init__(self, **settings):
-        super(AzureStorage, self).__init__(**settings)
-        self._service = None
-        self._custom_service = None
+        super().__init__(**settings)
+        self._service_client = None
+        self._custom_service_client = None
+        self._client = None
+        self._custom_client = None
+        self._user_delegation_key = None
+        self._user_delegation_key_expiry = datetime.utcnow()
 
     def get_default_settings(self):
         return {
             "account_name": setting("AZURE_ACCOUNT_NAME"),
             "account_key": setting("AZURE_ACCOUNT_KEY"),
+            "object_parameters": setting("AZURE_OBJECT_PARAMETERS", {}),
             "azure_container": setting("AZURE_CONTAINER"),
             "azure_ssl": setting("AZURE_SSL", True),
             "upload_max_conn": setting("AZURE_UPLOAD_MAX_CONN", 2),
@@ -141,51 +144,87 @@ class AzureStorage(BaseStorage):
             "location": setting('AZURE_LOCATION', ''),
             "default_content_type": 'application/octet-stream',
             "cache_control": setting("AZURE_CACHE_CONTROL"),
-            "is_emulated": setting('AZURE_EMULATED_MODE', False),
-            "endpoint_suffix": setting('AZURE_ENDPOINT_SUFFIX'),
             "sas_token": setting('AZURE_SAS_TOKEN'),
+            "endpoint_suffix": setting('AZURE_ENDPOINT_SUFFIX', 'core.windows.net'),
             "custom_domain": setting('AZURE_CUSTOM_DOMAIN'),
             "connection_string": setting('AZURE_CONNECTION_STRING'),
-            "custom_connection_string": setting(
-                'AZURE_CUSTOM_CONNECTION_STRING',
-                setting('AZURE_CONNECTION_STRING'),
-            ),
             "token_credential": setting('AZURE_TOKEN_CREDENTIAL'),
+            "api_version": setting('AZURE_API_VERSION', None),
         }
 
-    def _blob_service(self, custom_domain=None, connection_string=None):
-        # This won't open a connection or anything,
-        # it's akin to a client
-        return BlockBlobService(
-            account_name=self.account_name,
-            account_key=self.account_key,
-            sas_token=self.sas_token,
-            is_emulated=self.is_emulated,
-            protocol=self.azure_protocol,
-            custom_domain=custom_domain,
-            connection_string=connection_string,
-            token_credential=self.token_credential,
-            endpoint_suffix=self.endpoint_suffix)
+    def _get_service_client(self, use_custom_domain):
+        if self.connection_string is not None:
+            return BlobServiceClient.from_connection_string(self.connection_string)
+
+        account_domain = self.custom_domain if self.custom_domain and use_custom_domain else "{}.blob.{}".format(
+            self.account_name,
+            self.endpoint_suffix,
+        )
+        account_url = "{}://{}".format(self.azure_protocol, account_domain)
+
+        credential = None
+        if self.account_key:
+            credential = {
+                "account_name": self.account_name,
+                "account_key": self.account_key,
+            }
+        elif self.sas_token:
+            credential = self.sas_token
+        elif self.token_credential:
+            credential = self.token_credential
+        options = {}
+        if self.api_version:
+            options["api_version"] = self.api_version
+        return BlobServiceClient(account_url, credential=credential, **options)
 
     @property
-    def service(self):
-        if self._service is None:
-            custom_domain = None
-            if self.is_emulated:
-                custom_domain = self.custom_domain
-            self._service = self._blob_service(
-                custom_domain=custom_domain,
-                connection_string=self.connection_string)
-        return self._service
+    def service_client(self):
+        if self._service_client is None:
+            self._service_client = self._get_service_client(use_custom_domain=False)
+        return self._service_client
 
     @property
-    def custom_service(self):
-        """This is used to generate the URL"""
-        if self._custom_service is None:
-            self._custom_service = self._blob_service(
-                custom_domain=self.custom_domain,
-                connection_string=self.custom_connection_string)
-        return self._custom_service
+    def custom_service_client(self):
+        if self._custom_service_client is None:
+            self._custom_service_client = self._get_service_client(use_custom_domain=True)
+        return self._custom_service_client
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = self.service_client.get_container_client(
+                self.azure_container
+            )
+        return self._client
+
+    @property
+    def custom_client(self):
+        if self._custom_client is None:
+            self._custom_client = self.custom_service_client.get_container_client(
+                self.azure_container
+            )
+        return self._custom_client
+
+    def get_user_delegation_key(self, expiry):
+        # We'll only be able to get a user delegation key if we've authenticated with a
+        # token credential.
+        if self.token_credential is None:
+            return None
+
+        # Get a new key if we don't already have one, or if the one we have expires too
+        # soon.
+        if (
+            self._user_delegation_key is None
+            or expiry > self._user_delegation_key_expiry
+        ):
+            now = datetime.utcnow()
+            key_expiry_time = now + timedelta(days=7)
+            self._user_delegation_key = self.custom_service_client.get_user_delegation_key(
+                key_start_time=now, key_expiry_time=key_expiry_time
+            )
+            self._user_delegation_key_expiry = key_expiry_time
+
+        return self._user_delegation_key
 
     @property
     def azure_protocol(self):
@@ -217,87 +256,106 @@ class AzureStorage(BaseStorage):
         name = clean_name(name)
         if self.overwrite_files:
             return get_available_overwrite_name(name, max_length)
-        return super(AzureStorage, self).get_available_name(name, max_length)
+        return super().get_available_name(name, max_length)
 
     def exists(self, name):
-        return self.service.exists(
-            self.azure_container,
-            self._get_valid_path(name),
-            timeout=self.timeout)
+        blob_client = self.client.get_blob_client(self._get_valid_path(name))
+        return blob_client.exists()
 
     def delete(self, name):
         try:
-            self.service.delete_blob(
-                container_name=self.azure_container,
-                blob_name=self._get_valid_path(name),
+            self.client.delete_blob(
+                self._get_valid_path(name),
                 timeout=self.timeout)
-        except AzureMissingResourceHttpError:
+        except ResourceNotFoundError:
             pass
 
     def size(self, name):
-        properties = self.service.get_blob_properties(
-            self.azure_container,
-            self._get_valid_path(name),
-            timeout=self.timeout).properties
-        return properties.content_length
+        blob_client = self.client.get_blob_client(self._get_valid_path(name))
+        properties = blob_client.get_blob_properties(timeout=self.timeout)
+        return properties.size
 
     def _save(self, name, content):
         cleaned_name = clean_name(name)
         name = self._get_valid_path(name)
-        guessed_type, content_encoding = mimetypes.guess_type(name)
-        content_type = (
-            _content_type(content) or
-            guessed_type or
-            self.default_content_type)
+        params = self._get_content_settings_parameters(name, content)
 
         # Unwrap django file (wrapped by parent's save call)
         if isinstance(content, File):
             content = content.file
 
         content.seek(0)
-        self.service.create_blob_from_stream(
-            container_name=self.azure_container,
-            blob_name=name,
-            stream=content,
-            content_settings=ContentSettings(
-                content_type=content_type,
-                content_encoding=content_encoding,
-                cache_control=self.cache_control),
-            max_connections=self.upload_max_conn,
-            timeout=self.timeout)
+        self.client.upload_blob(
+            name,
+            content,
+            content_settings=ContentSettings(**params),
+            max_concurrency=self.upload_max_conn,
+            timeout=self.timeout,
+            overwrite=self.overwrite_files)
         return cleaned_name
 
     def _expire_at(self, expire):
         # azure expects time in UTC
         return datetime.utcnow() + timedelta(seconds=expire)
 
-    def url(self, name, expire=None):
+    def url(self, name, expire=None, parameters=None):
         name = self._get_valid_path(name)
+        params = parameters or {}
 
         if expire is None:
             expire = self.expiration_secs
 
-        make_blob_url_kwargs = {}
+        credential = None
         if expire:
-            sas_token = self.custom_service.generate_blob_shared_access_signature(
-                self.azure_container, name, permission=BlobPermissions.READ, expiry=self._expire_at(expire))
-            make_blob_url_kwargs['sas_token'] = sas_token
+            expiry = self._expire_at(expire)
+            user_delegation_key = self.get_user_delegation_key(expiry)
+            sas_token = generate_blob_sas(
+                self.account_name,
+                self.azure_container,
+                name,
+                account_key=self.account_key,
+                user_delegation_key=user_delegation_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=expiry,
+                **params
+            )
+            credential = sas_token
 
-        return self.custom_service.make_blob_url(
-            container_name=self.azure_container,
-            blob_name=filepath_to_uri(name),
-            protocol=self.azure_protocol,
-            **make_blob_url_kwargs)
+        container_blob_url = self.custom_client.get_blob_client(name).url
+        return BlobClient.from_blob_url(container_blob_url, credential=credential).url
+
+    def _get_content_settings_parameters(self, name, content=None):
+        params = {}
+
+        guessed_type, content_encoding = mimetypes.guess_type(name)
+        content_type = (
+            _content_type(content) or
+            guessed_type or
+            self.default_content_type)
+
+        params['cache_control'] = self.cache_control
+        params['content_type'] = content_type
+        params['content_encoding'] = content_encoding
+
+        params.update(self.get_object_parameters(name))
+        return params
+
+    def get_object_parameters(self, name):
+        """
+        Returns a dictionary that is passed to content settings. Override this
+        method to adjust this on a per-object basis to set e.g ContentDisposition.
+
+        By default, returns the value of AZURE_OBJECT_PARAMETERS.
+        """
+        return self.object_parameters.copy()
 
     def get_modified_time(self, name):
         """
         Returns an (aware) datetime object containing the last modified time if
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
-        properties = self.service.get_blob_properties(
-            self.azure_container,
-            self._get_valid_path(name),
-            timeout=self.timeout).properties
+        blob_client = self.client.get_blob_client(self._get_valid_path(name))
+        properties = blob_client.get_blob_properties(timeout=self.timeout)
         if not setting('USE_TZ', False):
             return timezone.make_naive(properties.last_modified)
 
@@ -325,9 +383,8 @@ class AzureStorage(BaseStorage):
         # XXX make generator, add start, end
         return [
             blob.name
-            for blob in self.service.list_blobs(
-                self.azure_container,
-                prefix=path,
+            for blob in self.client.list_blobs(
+                name_starts_with=path,
                 timeout=self.timeout)]
 
     def listdir(self, path=''):

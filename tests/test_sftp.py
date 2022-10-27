@@ -1,23 +1,22 @@
 import io
 import os
+import socket
 import stat
 from datetime import datetime
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import paramiko
 from django.core.files.base import File
 from django.test import TestCase
+from django.test import override_settings
 
 from storages.backends import sftpstorage
-
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:  # Python 3.2 and below
-    from mock import patch, MagicMock
 
 
 class SFTPStorageTest(TestCase):
     def setUp(self):
-        self.storage = sftpstorage.SFTPStorage('foo')
+        self.storage = sftpstorage.SFTPStorage(host='foo')
 
     def test_init(self):
         pass
@@ -60,7 +59,7 @@ class SFTPStorageTest(TestCase):
         self.assertEqual(mock_sftp.mkdir.call_args[0], ('foo',))
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.side_effect': (IOError(), True)
+        'stat.side_effect': (FileNotFoundError(), True)
     })
     def test_mkdir_parent(self, mock_sftp):
         self.storage._mkdir('bar/foo')
@@ -73,7 +72,7 @@ class SFTPStorageTest(TestCase):
         self.assertTrue(mock_sftp.open.return_value.write.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.side_effect': (IOError(), True)
+        'stat.side_effect': (FileNotFoundError(), True)
     })
     def test_save_in_subdir(self, mock_sftp):
         self.storage._save('bar/foo', File(io.BytesIO(b'foo'), 'foo'))
@@ -90,10 +89,17 @@ class SFTPStorageTest(TestCase):
         self.assertTrue(self.storage.exists('foo'))
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.side_effect': IOError()
+        'stat.side_effect': FileNotFoundError()
     })
     def test_not_exists(self, mock_sftp):
         self.assertFalse(self.storage.exists('foo'))
+
+    @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
+        'stat.side_effect': socket.timeout()
+    })
+    def test_not_exists_timeout(self, mock_sftp):
+        with self.assertRaises(socket.timeout):
+            self.storage.exists('foo')
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
         'listdir_attr.return_value':
@@ -152,10 +158,37 @@ class SFTPStorageTest(TestCase):
         self.assertTrue(self.storage.sftp)
         self.assertTrue(connect.called)
 
+    def test_override_settings(self):
+        with override_settings(SFTP_STORAGE_ROOT='foo1'):
+            storage = sftpstorage.SFTPStorage()
+            self.assertEqual(storage._root_path, 'foo1')
+        with override_settings(SFTP_STORAGE_ROOT='foo2'):
+            storage = sftpstorage.SFTPStorage()
+            self.assertEqual(storage._root_path, 'foo2')
+
+    def test_override_class_variable(self):
+        class MyStorage1(sftpstorage.SFTPStorage):
+            root_path = 'foo1'
+
+        storage = MyStorage1()
+        self.assertEqual(storage._root_path, 'foo1')
+
+        class MyStorage2(sftpstorage.SFTPStorage):
+            root_path = 'foo2'
+
+        storage = MyStorage2()
+        self.assertEqual(storage._root_path, 'foo2')
+
+    def test_override_init_argument(self):
+        storage = sftpstorage.SFTPStorage(root_path='foo1')
+        self.assertEqual(storage._root_path, 'foo1')
+        storage = sftpstorage.SFTPStorage(root_path='foo2')
+        self.assertEqual(storage._root_path, 'foo2')
+
 
 class SFTPStorageFileTest(TestCase):
     def setUp(self):
-        self.storage = sftpstorage.SFTPStorage('foo')
+        self.storage = sftpstorage.SFTPStorage(host='foo')
         self.file = sftpstorage.SFTPStorageFile('bar', self.storage, 'wb')
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{

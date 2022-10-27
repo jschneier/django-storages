@@ -13,9 +13,12 @@ class BaseStorage(Storage):
         for name, value in settings.items():
             if name not in default_settings:
                 raise ImproperlyConfigured(
-                    "Invalid setting '%s' for %s" % (
+                    "Invalid setting '{}' for {}".format(
                         name,
                         self.__class__.__name__,
                     )
                 )
             setattr(self, name, value)
+
+    def get_default_settings(self):
+        return {}

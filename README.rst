@@ -6,8 +6,8 @@
     :target: https://pypi.org/project/django-storages/
     :alt: PyPI Version
 
-.. image:: https://travis-ci.org/jschneier/django-storages.svg?branch=master
-    :target: https://travis-ci.org/jschneier/django-storages
+.. image:: https://github.com/jschneier/django-storages/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/jschneier/django-storages/actions/workflows/ci.yml
     :alt: Build Status
 
 Installation
@@ -63,7 +63,7 @@ This library is usually compatible with the currently supported versions of
 Django. Check the Trove classifiers in setup.py to be sure.
 
 django-storages is backed in part by `Tidelift`_. Check them out for all of your enterprise open source
-software commerical support needs.
+software commercial support needs.
 
 .. _Tidelift: https://tidelift.com/subscription/pkg/pypi-django-storages?utm_source=pypi-django-storages&utm_medium=referral&utm_campaign=enterprise&utm_term=repo
 
@@ -75,17 +75,9 @@ fix and disclosure. Please **do not** post a public issue on the tracker.
 
 .. _Tidelift security contact: https://tidelift.com/security
 
-History
-=======
-This repo began as a fork of the original library under the package name of django-storages-redux and
-became the official successor (releasing under django-storages on PyPI) in February of 2016.
 
-Found a Bug? Something Unsupported?
-===================================
-I suspect that a few of the storage engines in backends/ have been unsupported
-for quite a long time. I personally only really need the S3Storage backend but
-welcome bug reports (and especially) patches and tests for some of the other
-backends.
+Found a Bug?
+============
 
 Issues are tracked via GitHub issues at the `project issue page
 <https://github.com/jschneier/django-storages/issues>`_.
@@ -104,5 +96,12 @@ Contributing
    <https://github.com/jschneier/django-storages>`_ to start making changes.
 #. Add a test case to show that the bug is fixed or the feature is implemented
    correctly.
-#. Bug me until I can merge your pull request. Also, don't forget to add
-   yourself to ``AUTHORS``.
+#. Bug me until I can merge your pull request.
+
+Please don't update the library version in CHANGELOG.rst or ``storages/__init__.py``, the maintainer will do that on release.
+If you're the first to update the CHANGELOG in this release cycle, just put the version as ``XXXX-XX-XX``.
+
+History
+=======
+This repo began as a fork of the original library under the package name of django-storages-redux and
+became the official successor (releasing under django-storages on PyPI) in February of 2016.

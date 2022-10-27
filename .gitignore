@@ -11,8 +11,11 @@ __pycache__
 .cache
 
 .idea/
+.vscode/
 .pytest_cache/
 venv/
 
 dist/
 docs/_build
+
+.DS_Store

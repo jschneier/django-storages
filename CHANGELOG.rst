@@ -1,6 +1,344 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED (XXXX-XX-XX)
+***********************
+
+Google Cloud
+------------
+
+- Use ``DEFAULT_RETRY`` for all upload & delete operations (`#1156`_)
+- Do not ``rewind`` non-seekable files, fixing gzipping of content (`#1172`_)
+
+.. _#1156: https://github.com/jschneier/django-storages/pull/1156
+.. _#1172: https://github.com/jschneier/django-storages/pull/1172
+
+1.13.1 (2022-08-06)
+*******************
+
+Dropbox
+-------
+
+- Strip off the root path when saving files to fix saving with upgraded versions of Django (`#1168`_)
+- Update ``DropBoxStorage`` constructor parameter order to be backwards compatible (`#1167`_)
+
+.. _#1167: https://github.com/jschneier/django-storages/pull/1167
+.. _#1168: https://github.com/jschneier/django-storages/pull/1168
+
+1.13 (2022-08-05)
+*****************
+
+General
+-------
+
+- Add support for Django 4.0 and 4.1 (`#1093`_)
+- Drop support for Django 2.2, 3.0 and 3.1 (`#1093`_)
+- Drop support for Python 3.5 and 3.6 (`#1093`_)
+
+S3
+--
+
+- **Breaking**: Update and document the undocumented ``AWS_S3_URL_PROTOCOL`` from ``http:`` to ``https:`` and remove the
+  undocumented ``AWS_S3_SECURE_URLS`` setting. You should only need to update your settings if you had updated either of
+  these previously undocumented settings.  The default behavior of constructing an ``https:`` URL with a custom domain
+  is unchanged (`#1164`_)
+- Add ``AWS_S3_USE_THREADS`` to disable ``threading`` for compatibility with ``gevent`` (`#1112`_)
+
+Dropbox
+-------
+
+- Add support for refresh tokens (`#1159`_)
+- Ignore ``ApiError`` exception in ``url()`` (`#1158`_)
+
+Azure
+-----
+
+- Restore support for ``AZURE_ENDPOINT_SUFFIX`` (`#1118`_)
+- Replace deprecated ``download_to_stream`` with ``readinto`` (`#1113`_)
+- Add ``AZURE_API_VERSION`` setting (`#1132`_)
+- Fix ``get_modified_time()`` (`#1134`_)
+
+Google Cloud
+------------
+
+- Add support for gzipping files via ``GS_IS_GZIPPED`` and ``GZIP_CONTENT_TYPES`` (`#980`_)
+- Use ``GS_BLOB_CHUNK_SIZE`` with files that already exist (`#1154`_)
+
+.. _#980: https://github.com/jschneier/django-storages/pull/980
+.. _#1118: https://github.com/jschneier/django-storages/pull/1118
+.. _#1113: https://github.com/jschneier/django-storages/pull/1113
+.. _#1112: https://github.com/jschneier/django-storages/pull/1112
+.. _#1132: https://github.com/jschneier/django-storages/pull/1132
+.. _#1134: https://github.com/jschneier/django-storages/pull/1134
+.. _#1159: https://github.com/jschneier/django-storages/pull/1159
+.. _#1158: https://github.com/jschneier/django-storages/pull/1158
+.. _#1164: https://github.com/jschneier/django-storages/pull/1164
+.. _#1093: https://github.com/jschneier/django-storages/pull/1093
+.. _#1154: https://github.com/jschneier/django-storages/pull/1154
+
+
+1.12.3 (2021-10-29)
+*******************
+
+General
+-------
+
+- Add support for Python 3.10 (`#1078`_)
+
+S3
+--
+
+- Re-raise non-404 errors in ``.exists()`` (`#1084`_, `#1085`_)
+
+Azure
+-----
+
+- Fix using ``AZURE_CUSTOM_DOMAIN`` with an account key credential (`#1082`_, `#1083`_)
+
+SFTP
+----
+
+- Catch ``FileNotFoundError`` instead of ``OSerror`` in ``.exists()`` to prevent swallowing ``socket.timeout`` exceptions (`#1064`_, `#1087`_)
+
+
+.. _#1078: https://github.com/jschneier/django-storages/pull/1078
+.. _#1084: https://github.com/jschneier/django-storages/issues/1084
+.. _#1085: https://github.com/jschneier/django-storages/pull/1085
+.. _#1082: https://github.com/jschneier/django-storages/issues/1082
+.. _#1083: https://github.com/jschneier/django-storages/pull/1083
+.. _#1064: https://github.com/jschneier/django-storages/issues/1064
+.. _#1087: https://github.com/jschneier/django-storages/pull/1087
+
+1.12.2 (2021-10-16)
+*******************
+
+Azure
+-----
+
+- Add ``parameters`` kwarg to ``AzureStorage.url`` to configure blob properties in the SAS token (`#1071`_)
+- Fix regression where ``AZURE_CUSTOM_DOMAIN`` was interpreted as a replacement of ``blob.core.windows.net`` rather than as a full domain
+  (`#1073`_, `#1076`_)
+
+.. _#1071: https://github.com/jschneier/django-storages/pull/1071
+.. _#1073: https://github.com/jschneier/django-storages/issues/1073
+.. _#1076: https://github.com/jschneier/django-storages/pull/1076
+
+1.12.1 (2021-10-11)
+*******************
+
+S3
+--
+
+- Change gzip compression to use a streaming implementation (`#1061`_)
+- Fix saving files with ``S3ManifestStaticStorage`` (`#1068`_, `#1069`_)
+
+.. _#1061: https://github.com/jschneier/django-storages/pull/1061
+.. _#1068: https://github.com/jschneier/django-storages/issues/1068
+.. _#1069: https://github.com/jschneier/django-storages/pull/1069
+
+1.12 (2021-10-06)
+*****************
+
+General
+-------
+- Add support for Django 3.2 (`#1046`_, `#1042`_, `#1005`_)
+- Replace Travis CI with GitHub actions (`#1051`_)
+
+S3
+--
+
+- Convert signing keys to bytes if necessary (`#1003`_)
+- Avoid a ListParts API call during multipart upload (`#1041`_)
+- Custom domains now use passed URL params (`#1054`_)
+- Allow the use of AWS profiles and clarify the options for passing credentials (`fbe9538`_)
+- Re-allow override of various access key names (`#1026`_)
+- Properly exclude empty folders during ``listdir`` (`66f4f8e`_)
+- Support saving file objects that are not ``seekable`` (`#860`_, `#1057`_)
+- Return ``True`` for ``.exists()`` if a non-404 error is encountered (`#938`_)
+
+Azure
+-----
+
+- **Breaking**: This backend has been rewritten to use the newer versions of ``azure-storage-blob``, which now has a minimum required version of 12.0. The settings ``AZURE_EMULATED_MODE``, ``AZURE_ENDPOINT_SUFFIX``, and ``AZURE_CUSTOM_CONNECTION_STRING`` are now ignored. (`#784`_, `#805`_)
+- Add support for user delegation keys (`#1063`_)
+
+Google Cloud
+------------
+
+- **Breaking**: The minimum required version of ``google-cloud-storage`` is now 1.27.0 (`#994`_)
+- **Breaking**: Switch URL signing version from v2 to v4 (`#994`_)
+- **Deprecated**: Support for ``GS_CACHE_CONTROL`` will be removed in 1.13. Please set the ``cache_control`` parameter of ``GS_OBJECT_PARAMETERS`` instead. (`#970`_)
+- Add ``GS_OBJECT_PARAMETERS`` and overridable ``GoogleCloudStorage.get_object_parameters`` to customize blob parameters for all blobs and per-blob respectively. (`#970`_)
+- Catch the ``NotFound`` exception raised when deleting a non-existent blob, this matches Django and other backends (`#998`_, `#999`_)
+- Fix signing URLs with custom endpoints (`#994`_)
+
+Dropbox
+-------
+
+- Validate ``write_mode`` param (`#1020`_)
+
+.. _fbe9538: https://github.com/jschneier/django-storages/commit/fbe9538b8574cfb0d95b04c9c477650dbfe8547b
+.. _66f4f8e: https://github.com/jschneier/django-storages/commit/66f4f8ec68daaac767c013d6b1a30cf26a7ac1ca
+.. _#1003: https://github.com/jschneier/django-storages/pull/1003
+.. _#1054: https://github.com/jschneier/django-storages/pull/1054
+.. _#1026: https://github.com/jschneier/django-storages/pull/1026
+.. _#1041: https://github.com/jschneier/django-storages/pull/1041
+.. _#970: https://github.com/jschneier/django-storages/pull/970
+.. _#998: https://github.com/jschneier/django-storages/issues/998
+.. _#784: https://github.com/jschneier/django-storages/issues/784
+.. _#805: https://github.com/jschneier/django-storages/pull/805
+.. _#999: https://github.com/jschneier/django-storages/pull/999
+.. _#1051: https://github.com/jschneier/django-storages/pull/1051
+.. _#1042: https://github.com/jschneier/django-storages/pull/1042
+.. _#1046: https://github.com/jschneier/django-storages/issues/1046
+.. _#1005: https://github.com/jschneier/django-storages/pull/1005
+.. _#1020: https://github.com/jschneier/django-storages/pull/1020
+.. _#860: https://github.com/jschneier/django-storages/issues/860
+.. _#1057: https://github.com/jschneier/django-storages/pull/1057
+.. _#938: https://github.com/jschneier/django-storages/pull/938
+.. _#994: https://github.com/jschneier/django-storages/pull/994
+.. _#1063: https://github.com/jschneier/django-storages/pull/1063
+
+1.11.1 (2020-12-23)
+*******************
+
+S3
+--
+
+- Revert fix for ``ValueError: I/O operation on closed file`` when calling ``collectstatic`` and
+  introduce ``S3StaticStorage`` and ``S3ManifestStaticStorage`` for use as ``STATICFILES_STORAGE`` targets (`#968`_)
+
+.. _#968: https://github.com/jschneier/django-storages/pull/968
+
+1.11 (2020-12-16)
+*****************
+
+General
+-------
+
+- Test against Python 3.9 (`#964`_)
+
+S3
+--
+
+- Fix ``ValueError: I/O operation on closed file`` when calling ``collectstatic`` (`#382`_, `#955`_)
+- Calculate ``S3Boto3StorageFile.buffer_size`` (via setting ``AWS_S3_FILE_BUFFER_SIZE``)
+  at run-time rather than import-time. (`#930`_)
+- Fix writing ``bytearray`` content (`#958`_, `#965`_)
+
+Google Cloud
+------------
+
+- Add setting ``GS_QUERYSTRING_AUTH`` to avoid signing URLs. This is useful for buckets with a
+  policy of Uniform public read (`#952`_)
+
+Azure
+-----
+
+- Add ``AZURE_OBJECT_PARAMETERS`` and overridable ``AzureStorage.get_object_parameters`` to customize
+  ``ContentSettings`` parameters for all keys and per-key respectively. (`#898`_)
+
+.. _#382: https://github.com/jschneier/django-storages/issues/382
+.. _#955: https://github.com/jschneier/django-storages/pull/955
+.. _#930: https://github.com/jschneier/django-storages/pull/930
+.. _#952: https://github.com/jschneier/django-storages/pull/952
+.. _#898: https://github.com/jschneier/django-storages/pull/898
+.. _#964: https://github.com/jschneier/django-storages/pull/964
+.. _#958: https://github.com/jschneier/django-storages/issues/958
+.. _#965: https://github.com/jschneier/django-storages/pull/965
+
+1.10.1 (2020-09-13)
+*******************
+
+S3
+--
+
+- Restore ``AWS_DEFAULT_ACL`` handling. This setting is ignored if ``ACL`` is set in
+  ``AWS_S3_OBJECT_PARAMETERS`` (`#934`_)
+
+SFTP
+----
+
+- Fix using ``SFTP_STORAGE_HOST`` (`#926`_)
+
+.. _#926: https://github.com/jschneier/django-storages/pull/926
+.. _#934: https://github.com/jschneier/django-storages/pull/934
+
+1.10 (2020-08-30)
+*****************
+
+General
+-------
+
+- **Breaking**: Removed support for end-of-life Python 2.7 and 3.4 (`#709`_)
+- **Breaking**: Removed support for end-of-life Django 1.11 (`#891`_)
+- Add support for Django 3.1 (`#916`_)
+- Introduce a new ``BaseStorage`` class with a ``get_default_settings`` method and use
+  it in ``S3Boto3Storage``, ``AzureStorage``, ``GoogleCloudStorage``, and ``SFTPStorage``. These backends
+  now calculate their settings when instantiated, not imported. (`#524`_, `#852`_)
+
+S3
+--
+
+- **Breaking**: Automatic bucket creation has been removed. Doing so encourages using overly broad credentials.
+  As a result, support for the corresponding ``AWS_BUCKET_ACL`` and ``AWS_AUTO_CREATE_BUCKET`` settings have been removed. (`#636`_)
+- **Breaking**: Support for the undocumented setting ``AWS_PRELOAD_METADATA`` has been removed (`#636`_)
+- **Breaking**: The constructor kwarg ``acl`` is no longer accepted. Instead, use the ``ACL`` key in setting ``AWS_S3_OBJECT_PARAMETERS``
+  (`#636`_)
+- **Breaking**: The constructor kwarg ``bucket`` is no longer accepted. Instead, use ``bucket_name`` or the ``AWS_STORAGE_BUCKET_NAME``
+  setting (`#636`_)
+- **Breaking**: Support for setting ``AWS_REDUCED_REDUNDANCY`` has been removed. Replace with ``StorageClass=REDUCED_REDUNDANCY``
+  in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- **Breaking**: Support for setting ``AWS_S3_ENCRYPTION`` has been removed. Replace with ``ServerSideEncryption=AES256`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- **Breaking**: Support for setting ``AWS_DEFAULT_ACL`` has been removed. Replace with ``ACL`` in ``AWS_S3_OBJECT_PARAMETERS`` (`#636`_)
+- Add ``http_method`` parameter to ``.url`` method (`#854`_)
+- Add support for signing Cloudfront URLs to the ``.url`` method. You must set ``AWS_CLOUDFRONT_KEY``,
+  ``AWS_CLOUDFRONT_KEY_ID`` and install either `cryptography`_ or `rsa`_ (`#456`_, `#587`_). See the docs for more info.
+  URLs will only be signed if ``AWS_QUERYSTRING_AUTH`` is set to ``True`` (`#885`_)
+
+Google Cloud
+------------
+
+- **Breaking**: Automatic bucket creation has been removed. Doing so encourages using overly broad credentials.
+  As a result, support for the corresponding ``GS_AUTO_CREATE_BUCKET`` and ``GS_AUTO_CREATE_ACL`` settings have been removed. (`#894`_)
+
+Dropbox
+-------
+
+- Add ``DROPBOX_WRITE_MODE`` setting to control e.g. overwriting behavior. Check the docs
+  for more info (`#873`_, `#138`_)
+
+SFTP
+----
+
+- Remove exception swallowing during ssh connection (`#835`_, `#838`_)
+
+FTP
+---
+
+- Add ``FTP_STORAGE_ENCODING`` setting to set the filesystem encoding  (`#803`_)
+- Support multiple nested paths for files (`#886`_)
+
+.. _cryptography: https://cryptography.io
+.. _rsa: https://stuvel.eu/rsa
+.. _#885: https://github.com/jschneier/django-storages/pull/885
+.. _#894: https://github.com/jschneier/django-storages/pull/894
+.. _#636: https://github.com/jschneier/django-storages/pull/636
+.. _#709: https://github.com/jschneier/django-storages/pull/709
+.. _#891: https://github.com/jschneier/django-storages/pull/891
+.. _#916: https://github.com/jschneier/django-storages/pull/916
+.. _#852: https://github.com/jschneier/django-storages/pull/852
+.. _#873: https://github.com/jschneier/django-storages/pull/873
+.. _#854: https://github.com/jschneier/django-storages/pull/854
+.. _#138: https://github.com/jschneier/django-storages/issues/138
+.. _#524: https://github.com/jschneier/django-storages/pull/524
+.. _#835: https://github.com/jschneier/django-storages/issues/835
+.. _#838: https://github.com/jschneier/django-storages/pull/838
+.. _#803: https://github.com/jschneier/django-storages/pull/803
+.. _#456: https://github.com/jschneier/django-storages/issues/456
+.. _#587: https://github.com/jschneier/django-storages/pull/587
+.. _#886: https://github.com/jschneier/django-storages/pull/886
+
 1.9.1 (2020-02-03)
 ******************
 
@@ -133,9 +471,9 @@ Azure
   ``azure-storage-blob`` (`#680`_, `#684`_)
 - Fix compatability with ``generate_blob_shared_access_signature`` updated signature (`#705`_, `#723`_)
 - Fetching a file now uses the configured timeout rather than hardcoding one (`#727`_)
-- Add support for configuring all blobservice options: ``AZURE_EMULATED_MODE``, ``AZURE_ENDPOINT_SUFFIX``,
-  ``AZURE_CUSTOM_DOMAIN``, ``AZURE_CONNECTION_STRING``, ``AZURE_CUSTOM_CONNECTION_STRING``,
-  ``AZURE_TOKEN_CREDENTIAL``. See the docs for more info. Huge thanks once again to @nitely. (`#750`_)
+- Add support for configuring all blobservice options: ``AZURE_ENDPOINT_SUFFIX``,
+  ``AZURE_CUSTOM_DOMAIN``, ``AZURE_CONNECTION_STRING``, ``AZURE_TOKEN_CREDENTIAL``.
+  See the docs for more info. Huge thanks once again to @nitely. (`#750`_)
 - Fix filename handling to not strip special characters (`#609`_, `#752`_)
 
 
