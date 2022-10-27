@@ -1,5 +1,6 @@
 import os
 import posixpath
+from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -32,6 +33,10 @@ def clean_name(name):
     """
     Cleans the name so that Windows style paths work
     """
+    # Convert pathlib.Path to string.
+    if isinstance(name, Path):
+        name = str(Path)
+
     # Normalize Windows style paths
     clean_name = posixpath.normpath(name).replace('\\', '/')
 
