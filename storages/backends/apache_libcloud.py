@@ -153,6 +153,8 @@ class LibCloudStorage(Storage):
 
     def _read(self, name):
         obj = self._get_object(name)
+        if obj is None:
+            raise FileNotFoundError(f"{name} does not exist.")
         # TOFIX : we should be able to read chunk by chunk
         return next(self.driver.download_object_as_stream(obj, obj.size))
 
