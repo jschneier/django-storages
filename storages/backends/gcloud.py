@@ -297,7 +297,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         created = blob.time_created
         return created if setting('USE_TZ') else timezone.make_naive(created)
 
-    def url(self, name):
+    def url(self, name, parameters=None):
         """
         Return public url or a signed url for the Blob.
         This DOES NOT check for existance of Blob - that makes codes too slow
@@ -316,16 +316,19 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
                 storage_base_url=self.custom_endpoint,
                 quoted_name=_quote(name, safe=b"/~"),
             )
-        elif not self.custom_endpoint:
-            return blob.generate_signed_url(
-                expiration=self.expiration, version="v4"
-            )
         else:
-            return blob.generate_signed_url(
-                bucket_bound_hostname=self.custom_endpoint,
-                expiration=self.expiration,
-                version="v4",
-            )
+            default_params = {
+                "bucket_bound_hostname": self.custom_endpoint,
+                "expiration": self.expiration,
+                "version": "v4",
+            }
+            params = parameters or {}
+
+            for key, value in default_params.items():
+                if value and key not in params:
+                    params[key] = value
+
+            return blob.generate_signed_url(**params)
 
     def get_available_name(self, name, max_length=None):
         name = clean_name(name)
