@@ -12,6 +12,7 @@ from django.test import TestCase
 from django.test import override_settings
 
 from storages.backends import sftpstorage
+from tests.utils import NonSeekableContentFile
 
 
 class SFTPStorageTest(TestCase):
@@ -69,6 +70,11 @@ class SFTPStorageTest(TestCase):
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_save(self, mock_sftp):
         self.storage._save('foo', File(io.BytesIO(b'foo'), 'foo'))
+        self.assertTrue(mock_sftp.open.return_value.write.called)
+
+    @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
+    def test_save_non_seekable(self, mock_sftp):
+        self.storage._save('foo', NonSeekableContentFile('foo'))
         self.assertTrue(mock_sftp.open.return_value.write.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{

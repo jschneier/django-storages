@@ -17,6 +17,7 @@ from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
+from storages.utils import is_seekable
 from storages.utils import setting
 
 
@@ -123,7 +124,8 @@ class SFTPStorage(BaseStorage):
 
     def _save(self, name, content):
         """Save file via SFTP."""
-        content.open()
+        if is_seekable(content):
+            content.seek(0, os.SEEK_SET)
         path = self._remote_path(name)
         dirname = posixpath.dirname(path)
         if not self.exists(dirname):
