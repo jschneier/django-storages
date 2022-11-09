@@ -12,6 +12,7 @@ from django.test import TestCase
 from django.test import override_settings
 
 from storages.backends import sftpstorage
+from tests.utils import NonSeekableContentFile
 
 
 class SFTPStorageTest(TestCase):
@@ -69,7 +70,12 @@ class SFTPStorageTest(TestCase):
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_save(self, mock_sftp):
         self.storage._save('foo', File(io.BytesIO(b'foo'), 'foo'))
-        self.assertTrue(mock_sftp.open.return_value.write.called)
+        self.assertTrue(mock_sftp.putfo.called)
+
+    @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
+    def test_save_non_seekable(self, mock_sftp):
+        self.storage._save('foo', NonSeekableContentFile('foo'))
+        self.assertTrue(mock_sftp.putfo.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
         'stat.side_effect': (FileNotFoundError(), True)
@@ -77,7 +83,7 @@ class SFTPStorageTest(TestCase):
     def test_save_in_subdir(self, mock_sftp):
         self.storage._save('bar/foo', File(io.BytesIO(b'foo'), 'foo'))
         self.assertEqual(mock_sftp.mkdir.call_args_list[0][0], ('bar',))
-        self.assertTrue(mock_sftp.open.return_value.write.called)
+        self.assertTrue(mock_sftp.putfo.called)
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp')
     def test_delete(self, mock_sftp):
@@ -212,4 +218,4 @@ class SFTPStorageFileTest(TestCase):
     def test_close(self, mock_sftp):
         self.file.write(b'foo')
         self.file.close()
-        self.assertTrue(mock_sftp.open.return_value.write.called)
+        self.assertTrue(mock_sftp.putfo.called)

@@ -15,6 +15,7 @@ from storages.compress import CompressStorageMixin
 from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
+from storages.utils import is_seekable
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
@@ -194,7 +195,7 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
-        rewind = not hasattr(content, 'seekable') or content.seekable()
+        rewind = is_seekable(content)
         file_object.blob.upload_from_file(
             content,
             rewind=rewind,
