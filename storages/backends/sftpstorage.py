@@ -131,9 +131,7 @@ class SFTPStorage(BaseStorage):
         if not self.exists(dirname):
             self._mkdir(dirname)
 
-        f = self.sftp.open(path, 'wb')
-        f.write(content.file.read())
-        f.close()
+        self.sftp.putfo(content, path)
 
         # set file permissions if configured
         if self._file_mode is not None:
