@@ -125,3 +125,7 @@ def get_available_overwrite_name(name, max_length):
             'allows sufficient "max_length".' % name
         )
     return os.path.join(dir_name, "{}{}".format(file_root, file_ext))
+
+
+def is_seekable(file_object):
+    return not hasattr(file_object, 'seekable') or file_object.seekable()

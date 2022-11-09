@@ -24,6 +24,7 @@ from storages.compress import CompressedFileMixin
 from storages.compress import CompressStorageMixin
 from storages.utils import check_location
 from storages.utils import get_available_overwrite_name
+from storages.utils import is_seekable
 from storages.utils import lookup_env
 from storages.utils import safe_join
 from storages.utils import setting
@@ -445,7 +446,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         name = self._normalize_name(cleaned_name)
         params = self._get_write_parameters(name, content)
 
-        if not hasattr(content, 'seekable') or content.seekable():
+        if is_seekable(content):
             content.seek(0, os.SEEK_SET)
         if (self.gzip and
                 params['ContentType'] in self.gzip_content_types and
