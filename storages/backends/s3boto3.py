@@ -460,7 +460,11 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
     def delete(self, name):
         name = self._normalize_name(self._clean_name(name))
-        self.bucket.Object(name).delete()
+        try:
+            if self.exists(name):
+                self.bucket.Object(name).delete()
+        except Exception as e:
+            print(e)
 
     def exists(self, name):
         name = self._normalize_name(self._clean_name(name))
