@@ -1,4 +1,5 @@
 import os
+import pathlib
 import posixpath
 
 from django.conf import settings
@@ -30,8 +31,14 @@ def setting(name, default=None):
 
 def clean_name(name):
     """
-    Cleans the name so that Windows style paths work
+    Normalize the name.
+
+    Includes cleaning up Windows style paths, ensuring an ending trailing slash,
+    and coercing from pathlib.Path.
     """
+    if isinstance(name, pathlib.Path):
+        name = str(name)
+
     # Normalize Windows style paths
     clean_name = posixpath.normpath(name).replace('\\', '/')
 
@@ -39,7 +46,7 @@ def clean_name(name):
     # a workaround here.
     if name.endswith('/') and not clean_name.endswith('/'):
         # Add a trailing slash as it was stripped.
-        clean_name = clean_name + '/'
+        clean_name += '/'
 
     # Given an empty string, os.path.normpath() will return ., which we don't want
     if clean_name == '.':
