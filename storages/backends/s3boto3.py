@@ -446,16 +446,24 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         return cleaned_name
 
     def delete(self, name):
-        name = self._normalize_name(clean_name(name))
-        self.bucket.Object(name).delete()
+        try:
+            name = self._normalize_name(clean_name(name))
+            self.bucket.Object(name).delete()
+        except ClientError as err:
+            if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+                # Not an error to delete something that does not exist
+                return
+
+            # Some other error was encountered. Re-raise it
+            raise
 
     def exists(self, name):
         name = self._normalize_name(clean_name(name))
         try:
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
-        except ClientError as error:
-            if error.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+        except ClientError as err:
+            if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 return False
 
             # Some other error was encountered. Re-raise it.
