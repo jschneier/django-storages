@@ -485,6 +485,24 @@ class S3Boto3StorageTests(TestCase):
         self.storage.bucket.Object.assert_called_with('path/to/file.txt')
         self.storage.bucket.Object.return_value.delete.assert_called_with()
 
+    def test_storage_delete_does_not_exist(self):
+        self.storage.bucket.Object('file.txt').delete.side_effect = ClientError(
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 404}},
+            'DeleteObject',
+        )
+        self.storage.delete('file.txt')
+        # No problem
+
+    def test_storage_delete_other_error_reraise(self):
+        self.storage.bucket.Object('file.txt').delete.side_effect = ClientError(
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 403}},
+            'DeleteObject',
+        )
+        with self.assertRaises(ClientError) as cm:
+            self.storage.delete('file.txt')
+
+        self.assertEqual(cm.exception.response['ResponseMetadata']['HTTPStatusCode'], 403)
+
     def test_storage_listdir_base(self):
         # Files:
         #   some/path/1.txt
