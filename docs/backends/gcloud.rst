@@ -204,6 +204,7 @@ Note: Default Google Compute Engine (GCE) Service accounts are
 The ``GS_EXPIRATION`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
 It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
+Note: The maximum value for this option is 7 days (604800 seconds) in version `v4` (See this `Github issue  <https://github.com/googleapis/python-storage/issues/456#issuecomment-856884993>`_)
 
 Usage
 -----
