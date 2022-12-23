@@ -14,7 +14,6 @@ from google.cloud.storage.blob import Blob
 from google.cloud.storage.retry import DEFAULT_RETRY
 
 from storages.backends import gcloud
-from tests.utils import NonSeekableContentFile
 
 
 class GCloudTestCase(TestCase):
@@ -417,9 +416,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(blob.cache_control, cache_control)
 
     def test_storage_save_gzip_twice(self):
-        """
-        Test saving the same file content twice with gzip enabled.
-        """
+        """Test saving the same file content twice with gzip enabled."""
         # Given
         self.storage.gzip = True
         name = 'test_storage_save.css'
@@ -435,7 +432,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(obj.content_encoding, 'gzip')
         obj.upload_from_file.assert_called_with(
             mock.ANY,
-            rewind=False,
+            rewind=True,
             retry=DEFAULT_RETRY,
             size=None,
             predefined_acl=None,
@@ -447,9 +444,7 @@ class GCloudStorageTests(GCloudTestCase):
         self.assertEqual(zfile.read(), b"I should be gzip'd")
 
     def test_compress_content_len(self):
-        """
-        Test that file returned by _compress_content() is readable.
-        """
+        """Test that file returned by _compress_content() is readable."""
         self.storage.gzip = True
         content = ContentFile("I should be gzip'd")
         content = self.storage._compress_content(content)
@@ -532,37 +527,11 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
             self.storage.save(name, content)
             blob.upload_from_file.assert_called_with(
                 mock.ANY,
-                rewind=False,
+                rewind=True,
                 retry=DEFAULT_RETRY,
                 size=None,
                 predefined_acl=None,
                 content_type='application/javascript'
-            )
-        finally:
-            patcher.stop()
-
-    @mock.patch('google.cloud.storage.blob.Blob._do_upload')
-    @mock.patch('google.auth.default', return_value=['foo', None])
-    def test_storage_save_gzipped_non_seekable(self, *args):
-        """
-        Test saving a gzipped file
-        """
-        name = 'test_storage_save.gz'
-        content = NonSeekableContentFile("I am gzip'd")
-
-        blob = Blob('x', None)
-        blob.upload_from_file = mock.MagicMock(side_effect=blob.upload_from_file)
-        patcher = mock.patch('google.cloud.storage.Bucket.get_blob', return_value=blob)
-        try:
-            patcher.start()
-            self.storage.save(name, content)
-            blob.upload_from_file.assert_called_with(
-                mock.ANY,
-                rewind=False,
-                retry=DEFAULT_RETRY,
-                size=11,
-                predefined_acl=None,
-                content_type=None
             )
         finally:
             patcher.stop()
@@ -587,7 +556,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
             obj = self.storage._bucket.get_blob()
             obj.upload_from_file.assert_called_with(
                 mock.ANY,
-                rewind=False,
+                rewind=True,
                 retry=DEFAULT_RETRY,
                 size=None,
                 predefined_acl=None,
