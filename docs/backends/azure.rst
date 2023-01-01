@@ -72,6 +72,7 @@ cache-control, content-type, content-encoding, content-language, and content-dis
 See https://docs.microsoft.com/en-us/rest/api/storageservices/set-blob-properties#remarks
 
 You can specify these parameters by::
+
     az_storage = AzureStorage()
     az_url = az_storage.url(blob_name, parameters={'content_type': 'text/html;'})
 
@@ -79,7 +80,7 @@ You can specify these parameters by::
 Settings
 ********
 
-The following settings should be set within the standard django
+The following settings should be set within the standard Django
 configuration file, usually `settings.py`.
 
 Set the default storage (i.e: for media files) and the static storage
