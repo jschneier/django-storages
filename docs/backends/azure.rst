@@ -1,7 +1,7 @@
 Azure Storage
 =============
 
-A custom storage system for Django using Windows Azure Storage backend.
+A custom storage system for Django using Microsoft Azure Storage backend.
 
 
 Notes
