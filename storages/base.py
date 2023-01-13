@@ -1,5 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
-from django.core.files.storage import Storage
+from django.core.files.storage import FileSystemStorage, Storage
 
 
 class BaseStorage(Storage):
@@ -22,3 +22,9 @@ class BaseStorage(Storage):
 
     def get_default_settings(self):
         return {}
+
+
+class FileSystemOverwriteStorage(FileSystemStorage):
+    def get_available_name(self, name, max_length=None):
+        self.delete(name)
+        return super().get_available_name(name, max_length)
