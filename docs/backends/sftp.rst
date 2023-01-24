@@ -3,6 +3,8 @@ SFTP
 
 Settings
 --------
+``STATICFILES_STORAGE`` (REQUIRED)
+    STATICFILES_STORAGE = 'storages.backends.sftpstorage.SFTPStorage'
 
 ``SFTP_STORAGE_HOST``
     The hostname where you want the files to be saved.
