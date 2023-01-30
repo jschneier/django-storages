@@ -58,8 +58,15 @@ Custom backend::
 
 Then on settings set::
 
+    # django < 4.2
     DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
     STATICFILES_STORAGE = 'custom_storage.custom_azure.PublicAzureStorage'
+
+    # django >= 4.2
+    STORAGES = {
+        "default": "storages.backends.azure_storage.AzureStorage",
+        "staticfiles": "custom_storage.custom_azure.PublicAzureStorage",
+    }
 
 +++++++++++++++++++++
 Private VS Public URL

@@ -18,15 +18,28 @@ Settings
 
 To upload your media files to S3 set::
 
+    # django < 4.2
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+    # django >= 4.2
+    STORAGES = {"default": "storages.backends.s3boto3.S3Boto3Storage"}
+
 
 To allow ``django-admin collectstatic`` to automatically put your static files in your bucket set the following in your settings.py::
 
+    # django < 4.2
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+
+    # django >= 4.2
+    STORAGES = {"staticfiles": "storages.backends.s3boto3.S3StaticStorage"}
 
 If you want to use something like `ManifestStaticFilesStorage`_ then you must instead use::
 
+    # django < 4.2
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
+
+    # django >= 4.2
+    STORAGES = {"staticfiles": "storages.backends.s3boto3.S3ManifestStaticStorage"}
 
 There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Boto3Storage``
 searches for them:
@@ -153,7 +166,8 @@ The following adjustments to settings are required:
 - Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` with ``AWS_S3_PROXIES``
 - If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
 - If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
-- Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
+- Update ``DEFAULT_FILE_STORAGE`` (``default`` key from ``STORAGES`` in django >= 4.2) and/or ``STATICFILES_STORAGE`` (``staticfiles`` key from ``STORAGES`` in
+  django >= 4.2) to ``storages.backends.s3boto3.S3Boto3Storage``
 
 Additionally, you must install ``boto3``. The minimum required version is 1.4.4
 although we always recommend the most recent.
@@ -289,7 +303,11 @@ Assume that you store the above class ``MediaStorage`` in a file called ``custom
 
 You can now use your custom storage class for default file storage in Django settings like below::
 
+    # django < 4.2
     DEFAULT_FILE_STORAGE = 'my_django_app.custom_storage.MediaStorage'
+
+    # django >= 4.2
+    STORAGES = {"default": "my_django_app.custom_storage.MediaStorage"}
 
 Or you may want to upload files to the bucket in some view that accepts file upload request::
 
