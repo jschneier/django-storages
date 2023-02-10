@@ -23,7 +23,9 @@ from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
 from storages.compress import CompressStorageMixin
 from storages.utils import check_location
+from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
+from storages.utils import is_seekable
 from storages.utils import lookup_env
 from storages.utils import safe_join
 from storages.utils import setting
@@ -405,20 +407,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         security_token = self.security_token or lookup_env(self.security_token_names)
         return security_token
 
-    def _clean_name(self, name):
-        """
-        Cleans the name so that Windows style paths work
-        """
-        # Normalize Windows style paths
-        clean_name = posixpath.normpath(name).replace('\\', '/')
-
-        # os.path.normpath() can strip trailing slashes so we implement
-        # a workaround here.
-        if name.endswith('/') and not clean_name.endswith('/'):
-            # Add a trailing slash as it was stripped.
-            clean_name += '/'
-        return clean_name
-
     def _normalize_name(self, name):
         """
         Normalizes the name so that paths like /path/to/ignored/../something.txt
@@ -431,7 +419,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             raise SuspiciousOperation("Attempted access to '%s' denied." % name)
 
     def _open(self, name, mode='rb'):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         try:
             f = S3Boto3StorageFile(name, mode, self)
         except ClientError as err:
@@ -441,11 +429,11 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         return f
 
     def _save(self, name, content):
-        cleaned_name = self._clean_name(name)
+        cleaned_name = clean_name(name)
         name = self._normalize_name(cleaned_name)
         params = self._get_write_parameters(name, content)
 
-        if not hasattr(content, 'seekable') or content.seekable():
+        if is_seekable(content):
             content.seek(0, os.SEEK_SET)
         if (self.gzip and
                 params['ContentType'] in self.gzip_content_types and
@@ -458,23 +446,31 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         return cleaned_name
 
     def delete(self, name):
-        name = self._normalize_name(self._clean_name(name))
-        self.bucket.Object(name).delete()
+        try:
+            name = self._normalize_name(clean_name(name))
+            self.bucket.Object(name).delete()
+        except ClientError as err:
+            if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+                # Not an error to delete something that does not exist
+                return
+
+            # Some other error was encountered. Re-raise it
+            raise
 
     def exists(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         try:
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
             return True
-        except ClientError as error:
-            if error.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+        except ClientError as err:
+            if err.response['ResponseMetadata']['HTTPStatusCode'] == 404:
                 return False
 
             # Some other error was encountered. Re-raise it.
             raise
 
     def listdir(self, name):
-        path = self._normalize_name(self._clean_name(name))
+        path = self._normalize_name(clean_name(name))
         # The path needs to end with a slash, but if the root is empty, leave it.
         if path and not path.endswith('/'):
             path += '/'
@@ -493,7 +489,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         return directories, files
 
     def size(self, name):
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         return self.bucket.Object(name).content_length
 
     def _get_write_parameters(self, name, content=None):
@@ -530,7 +526,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         Returns an (aware) datetime object containing the last modified time if
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         entry = self.bucket.Object(name)
         if setting('USE_TZ'):
             # boto3 returns TZ aware timestamps
@@ -568,7 +564,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
-        name = self._normalize_name(self._clean_name(name))
+        name = self._normalize_name(clean_name(name))
         params = parameters.copy() if parameters else {}
         if expire is None:
             expire = self.querystring_expire
@@ -597,7 +593,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
-        name = self._clean_name(name)
+        name = clean_name(name)
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)

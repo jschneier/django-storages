@@ -1,4 +1,5 @@
 import datetime
+import pathlib
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
@@ -16,11 +17,14 @@ class SettingTest(TestCase):
 
 class CleanNameTests(TestCase):
     def test_clean_name(self):
-        """
-        Test the base case of clean_name
-        """
+        """Test the base case of clean_name."""
         path = utils.clean_name("path/to/somewhere")
         self.assertEqual(path, "path/to/somewhere")
+
+    def test_clean_name_pathlib(self):
+        """Test for pathlib.Path handling."""
+        path = pathlib.Path("path/to/anywhere")
+        self.assertEqual(utils.clean_name(path), "path/to/anywhere")
 
     def test_clean_name_normalize(self):
         """
@@ -30,16 +34,12 @@ class CleanNameTests(TestCase):
         self.assertEqual(path, "path/somewhere")
 
     def test_clean_name_trailing_slash(self):
-        """
-        Test the clean_name when the path has a trailing slash
-        """
+        """Test the clean_name when the path has a trailing slash."""
         path = utils.clean_name("path/to/somewhere/")
         self.assertEqual(path, "path/to/somewhere/")
 
     def test_clean_name_windows(self):
-        """
-        Test the clean_name when the path has a trailing slash
-        """
+        """Test the clean_name when the path has a trailing slash."""
         path = utils.clean_name("path\\to\\somewhere")
         self.assertEqual(path, "path/to/somewhere")
 

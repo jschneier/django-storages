@@ -2,7 +2,6 @@
 # Aymeric Barantal (mric at chamal.fr) 2011
 #
 import io
-import os
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -10,6 +9,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
+
+from storages.utils import clean_name
 
 try:
     from libcloud.storage.providers import get_driver
@@ -61,15 +62,10 @@ class LibCloudStorage(Storage):
         """Helper to get bucket object (libcloud container)"""
         return self.driver.get_container(self.bucket)
 
-    def _clean_name(self, name):
-        """Clean name (windows directories)"""
-        return os.path.normpath(name).replace('\\', '/')
-
     def _get_object(self, name):
         """Get object by its name. Return None if object not found"""
-        clean_name = self._clean_name(name)
         try:
-            return self.driver.get_object(self.bucket, clean_name)
+            return self.driver.get_object(self.bucket, clean_name(name))
         except ObjectDoesNotExistError:
             return None
 
@@ -92,7 +88,7 @@ class LibCloudStorage(Storage):
         """
         container = self._get_bucket()
         objects = self.driver.list_container_objects(container)
-        path = self._clean_name(path)
+        path = clean_name(path)
         if not path.endswith('/'):
             path = "%s/" % path
         files = []

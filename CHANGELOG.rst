@@ -1,17 +1,45 @@
 django-storages CHANGELOG
 =========================
 
-UNRELEASED (XXXX-XX-XX)
-***********************
+1.13.2 (2022-12-23)
+*******************
+
+General
+-------
+
+- Add support for Python 3.11 (`#1196`_)
+- Add support for saving ``pathlib.Path`` names (`#1200`_)
+
+S3
+--
+
+- Catch 404 errors when calling ``delete()`` (`#1201`_)
+
+Azure
+-----
+
+- Use ``AZURE_CUSTOM_DOMAIN`` for retrieving blob URLs and storage URL for other operations (`#1176`_)
 
 Google Cloud
 ------------
 
 - Use ``DEFAULT_RETRY`` for all upload & delete operations (`#1156`_)
-- Do not ``rewind`` non-seekable files, fixing gzipping of content (`#1172`_)
+- Fix gzipping of content (`#1203`_)
+- Pass through kwargs to signed URL generator (`#1193`_)
 
+SFTP
+----
+
+- Improve write & memory performance when saving files (`#1194`_)
+
+.. _#1196: https://github.com/jschneier/django-storages/pull/1196
+.. _#1200: https://github.com/jschneier/django-storages/pull/1200
+.. _#1201: https://github.com/jschneier/django-storages/pull/1201
+.. _#1176: https://github.com/jschneier/django-storages/pull/1176
 .. _#1156: https://github.com/jschneier/django-storages/pull/1156
-.. _#1172: https://github.com/jschneier/django-storages/pull/1172
+.. _#1203: https://github.com/jschneier/django-storages/pull/1203
+.. _#1193: https://github.com/jschneier/django-storages/pull/1193
+.. _#1194: https://github.com/jschneier/django-storages/pull/1194
 
 1.13.1 (2022-08-06)
 *******************

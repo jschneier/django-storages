@@ -1,3 +1,5 @@
+import gzip
+import io
 import mimetypes
 import warnings
 from datetime import timedelta
@@ -11,7 +13,6 @@ from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
-from storages.compress import CompressStorageMixin
 from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
@@ -101,7 +102,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
 
 
 @deconstructible
-class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
+class GoogleCloudStorage(BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -173,6 +174,14 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
             raise FileNotFoundError('File does not exist: %s' % name)
         return file_object
 
+    def _compress_content(self, content):
+        content.seek(0)
+        zbuf = io.BytesIO()
+        with gzip.GzipFile(mode='wb', fileobj=zbuf, mtime=0.0) as zfile:
+            zfile.write(to_bytes(content.read()))
+        zbuf.seek(0)
+        return zbuf
+
     def _save(self, name, content):
         cleaned_name = clean_name(name)
         name = self._normalize_name(cleaned_name)
@@ -194,10 +203,9 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         for prop, val in blob_params.items():
             setattr(file_object.blob, prop, val)
 
-        rewind = not hasattr(content, 'seekable') or content.seekable()
         file_object.blob.upload_from_file(
             content,
-            rewind=rewind,
+            rewind=True,
             retry=DEFAULT_RETRY,
             size=getattr(content, 'size', None),
             **upload_params
@@ -297,11 +305,11 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
         created = blob.time_created
         return created if setting('USE_TZ') else timezone.make_naive(created)
 
-    def url(self, name):
+    def url(self, name, parameters=None):
         """
-        Return public url or a signed url for the Blob.
-        This DOES NOT check for existance of Blob - that makes codes too slow
-        for many use cases.
+        Return public URL or a signed URL for the Blob.
+
+        The existnce of blobs are not verified for public URLs, it makes the code too slow.
         """
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(name)
@@ -316,16 +324,19 @@ class GoogleCloudStorage(CompressStorageMixin, BaseStorage):
                 storage_base_url=self.custom_endpoint,
                 quoted_name=_quote(name, safe=b"/~"),
             )
-        elif not self.custom_endpoint:
-            return blob.generate_signed_url(
-                expiration=self.expiration, version="v4"
-            )
         else:
-            return blob.generate_signed_url(
-                bucket_bound_hostname=self.custom_endpoint,
-                expiration=self.expiration,
-                version="v4",
-            )
+            default_params = {
+                "bucket_bound_hostname": self.custom_endpoint,
+                "expiration": self.expiration,
+                "version": "v4",
+            }
+            params = parameters or {}
+
+            for key, value in default_params.items():
+                if value and key not in params:
+                    params[key] = value
+
+            return blob.generate_signed_url(**params)
 
     def get_available_name(self, name, max_length=None):
         name = clean_name(name)

@@ -30,34 +30,6 @@ class S3Boto3StorageTests(TestCase):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
-    def test_clean_name(self):
-        """
-        Test the base case of _clean_name
-        """
-        path = self.storage._clean_name("path/to/somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
-    def test_clean_name_normalize(self):
-        """
-        Test the normalization of _clean_name
-        """
-        path = self.storage._clean_name("path/to/../somewhere")
-        self.assertEqual(path, "path/somewhere")
-
-    def test_clean_name_trailing_slash(self):
-        """
-        Test the _clean_name when the path has a trailing slash
-        """
-        path = self.storage._clean_name("path/to/somewhere/")
-        self.assertEqual(path, "path/to/somewhere/")
-
-    def test_clean_name_windows(self):
-        """
-        Test the _clean_name when the path has a trailing slash
-        """
-        path = self.storage._clean_name("path\\to\\somewhere")
-        self.assertEqual(path, "path/to/somewhere")
-
     def test_s3_session(self):
         settings.AWS_S3_SESSION_PROFILE = "test_profile"
         with mock.patch('boto3.Session') as mock_session:
@@ -512,6 +484,24 @@ class S3Boto3StorageTests(TestCase):
         self.storage.delete("path/to/file.txt")
         self.storage.bucket.Object.assert_called_with('path/to/file.txt')
         self.storage.bucket.Object.return_value.delete.assert_called_with()
+
+    def test_storage_delete_does_not_exist(self):
+        self.storage.bucket.Object('file.txt').delete.side_effect = ClientError(
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 404}},
+            'DeleteObject',
+        )
+        self.storage.delete('file.txt')
+        # No problem
+
+    def test_storage_delete_other_error_reraise(self):
+        self.storage.bucket.Object('file.txt').delete.side_effect = ClientError(
+            {'Error': {}, 'ResponseMetadata': {'HTTPStatusCode': 403}},
+            'DeleteObject',
+        )
+        with self.assertRaises(ClientError) as cm:
+            self.storage.delete('file.txt')
+
+        self.assertEqual(cm.exception.response['ResponseMetadata']['HTTPStatusCode'], 403)
 
     def test_storage_listdir_base(self):
         # Files:
