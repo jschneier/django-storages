@@ -143,13 +143,17 @@ Libcloud providers ``default``::
     }
 
 
-``DEFAULT_FILE_STORAGE``
-~~~~~~~~~~~~~~~~~~~~~~~~
+``DEFAULT_FILE_STORAGE``, ``STORAGES``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want your Libcloud storage to be the default Django file store, you can
 set::
 
+    # django < 4.2
     DEFAULT_FILE_STORAGE = 'storages.backends.apache_libcloud.LibCloudStorage'
+
+    # django >= 4.2
+    STORAGES = {"default": "storages.backends.apache_libcloud.LibCloudStorage"}
 
 Your default Libcloud provider will be used as the file store.
 
