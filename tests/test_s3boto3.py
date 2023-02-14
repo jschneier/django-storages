@@ -1,7 +1,7 @@
+import datetime
 import gzip
 import pickle
 import threading
-from datetime import datetime
 from textwrap import dedent
 from unittest import mock
 from unittest import skipIf
@@ -14,7 +14,6 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test import override_settings
 from django.utils.timezone import is_aware
-from django.utils.timezone import utc
 
 from storages.backends import s3boto3
 from tests.utils import NonSeekableContentFile
@@ -593,7 +592,7 @@ class S3Boto3StorageTests(TestCase):
 
     def _test_storage_mtime(self, use_tz):
         obj = self.storage.bucket.Object.return_value
-        obj.last_modified = datetime.now(utc)
+        obj.last_modified = datetime.datetime.now(datetime.timezone.utc)
 
         name = 'file.txt'
         self.assertFalse(
@@ -679,7 +678,7 @@ class S3Boto3StorageTests(TestCase):
 
             self.storage.querystring_auth = True
             with mock.patch('storages.backends.s3boto3.datetime') as mock_datetime:
-                mock_datetime.utcnow.return_value = datetime.utcfromtimestamp(0)
+                mock_datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(0)
                 self.assertEqual(self.storage.url(filename), signed_url)
 
     def test_generated_url_is_encoded(self):
