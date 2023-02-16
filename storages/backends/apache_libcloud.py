@@ -63,23 +63,23 @@ class LibCloudStorage(Storage):
         return self.driver.get_container(self.bucket)
 
     def _get_object(self, name):
-        """Get object by its name. Return None if object not found"""
-        try:
-            return self.driver.get_object(self.bucket, clean_name(name))
-        except ObjectDoesNotExistError:
-            return None
+        """Get object by its name. ObjectDoesNotExistError wii be raised if object not found"""
+        return self.driver.get_object(self.bucket, clean_name(name))
 
     def delete(self, name):
         """Delete object on remote"""
-        obj = self._get_object(name)
-        if obj:
+        try:
+            obj = self._get_object(name)
             return self.driver.delete_object(obj)
-        else:
-            raise Exception('Object to delete does not exists')
+        except ObjectDoesNotExistError:
+            pass
 
     def exists(self, name):
-        obj = self._get_object(name)
-        return bool(obj)
+        try:
+            _ = self._get_object(name)
+        except ObjectDoesNotExistError:
+            return False
+        return True
 
     def listdir(self, path='/'):
         """Lists the contents of the specified path,
@@ -148,7 +148,10 @@ class LibCloudStorage(Storage):
         return remote_file
 
     def _read(self, name):
-        obj = self._get_object(name)
+        try:
+            obj = self._get_object(name)
+        except ObjectDoesNotExistError as e:
+            raise FileNotFoundError(str(e))
         # TOFIX : we should be able to read chunk by chunk
         return next(self.driver.download_object_as_stream(obj, obj.size))
 
