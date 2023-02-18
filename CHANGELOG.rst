@@ -7,7 +7,7 @@ X.YY.Z (UNRELEASED)
 Google Cloud
 ------------
 
-- **Breaking**: Remove support for deprecated ``GS_CACHE_CONTROL`` (`#1220`_)
+- **Breaking**: Support for the deprecated ``GS_CACHE_CONTROL`` has been removed. Please set the ``cache_control`` parameter of ``GS_OBJECT_PARAMETERS`` instead. (`#1220`_)
 
 .. _#1220: https://github.com/jschneier/django-storages/pull/1196
 
