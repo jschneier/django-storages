@@ -406,14 +406,13 @@ class GCloudStorageTests(GCloudTestCase):
         data = 'This is some test content.'
         filename = 'cache_control_file.txt'
         content = ContentFile(data)
-        cache_control = 'public, max-age=604800'
 
-        self.storage.cache_control = cache_control
-        self.storage.save(filename, content)
-
-        bucket = self.storage.client.bucket(self.bucket_name)
-        blob = bucket.get_blob(filename)
-        self.assertEqual(blob.cache_control, cache_control)
+        with override_settings(GS_OBJECT_PARAMETERS={'cache_control': 'public, max-age=604800'}):
+            self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
+            self.storage.save(filename, content)
+            bucket = self.storage.client.bucket(self.bucket_name)
+            blob = bucket.get_blob(filename)
+        self.assertEqual(blob.cache_control, 'public, max-age=604800')
 
     def test_storage_save_gzip_twice(self):
         """Test saving the same file content twice with gzip enabled."""

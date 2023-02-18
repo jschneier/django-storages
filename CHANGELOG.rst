@@ -1,6 +1,16 @@
 django-storages CHANGELOG
 =========================
 
+X.YY.Z (UNRELEASED)
+*******************
+
+Google Cloud
+------------
+
+- **Breaking**: Remove support for deprecated ``GS_CACHE_CONTROL`` (`#1220`_)
+
+.. _#1220: https://github.com/jschneier/django-storages/pull/1196
+
 1.13.2 (2022-12-23)
 *******************
 
