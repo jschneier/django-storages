@@ -1,7 +1,6 @@
 import gzip
 import io
 import mimetypes
-import warnings
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -130,7 +129,6 @@ class GoogleCloudStorage(BaseStorage):
                 'image/svg+xml',
             )),
             "file_overwrite": setting('GS_FILE_OVERWRITE', True),
-            "cache_control": setting('GS_CACHE_CONTROL'),
             "object_parameters": setting('GS_OBJECT_PARAMETERS', {}),
             # The max amount of memory a returned file can take up before being
             # rolled over into a temporary file on disk. Default is 0: Do not
@@ -218,15 +216,6 @@ class GoogleCloudStorage(BaseStorage):
         Returns GS_OBJECT_PARAMETRS by default. See the docs for all possible options.
         """
         object_parameters = self.object_parameters.copy()
-
-        if 'cache_control' not in object_parameters and self.cache_control:
-            warnings.warn(
-                'The GS_CACHE_CONTROL setting is deprecated. Use GS_OBJECT_PARAMETERS to set any '
-                'writable blob property or override GoogleCloudStorage.get_object_parameters to '
-                'vary the parameters per object.', DeprecationWarning
-            )
-            object_parameters['cache_control'] = self.cache_control
-
         return object_parameters
 
     def delete(self, name):
