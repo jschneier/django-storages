@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'django-storages'
-copyright = '2011-2023, David Larlet, et. al.'
+copyright = '2011-2023, Josh Schneier, David Larlet, et. al.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,7 +179,7 @@ htmlhelp_basename = 'django-storagesdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'django-storages.tex', 'django-storages Documentation',
-   'David Larlet, et. al.', 'manual'),
+   'Josh Schneier, David Larlet, et. al.', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -212,7 +212,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'django-storages', 'django-storages Documentation',
-     ['David Larlet, et. al.'], 1)
+     ['Josh Schneier, David Larlet, et. al.'], 1)
 ]
 
 
@@ -220,9 +220,9 @@ man_pages = [
 
 # Bibliographic Dublin Core info.
 epub_title = 'django-storages'
-epub_author = 'David Larlet, et. al.'
-epub_publisher = 'David Larlet, et. al.'
-epub_copyright = '2011-2023, David Larlet, et. al.'
+epub_author = 'Josh Schneier, David Larlet, et. al.'
+epub_publisher = 'Josh Schneier, David Larlet, et. al.'
+epub_copyright = '2011-2023, Josh Schneier, David Larlet, et. al.'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
