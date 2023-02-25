@@ -168,12 +168,12 @@ If you need to use multiple storages that are served via CloudFront, pass the
 CloudFront Signed Urls
 ^^^^^^^^^^^^^^^^^^^^^^
 If you want django-storages to generate Signed Cloudfront Urls, you can do so by following these steps:
-        
+
 - modify `settings.py` to include::
 
     AWS_CLOUDFRONT_KEY = os.environ.get('AWS_CLOUDFRONT_KEY', None).encode('ascii')
     AWS_CLOUDFRONT_KEY_ID = os.environ.get('AWS_CLOUDFRONT_KEY_ID', None)
-    
+
 - Generate a CloudFront Key Pair as specified in the `AWS Doc to create  CloudFront key pairs`_.
 
 - Updated ENV vars with the corresponding values::
@@ -188,6 +188,12 @@ If you want django-storages to generate Signed Cloudfront Urls, you can do so by
 django-storages will now generate `signed cloudfront urls`_
 
 .. _signed cloudfront urls: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html
+
+.. note::
+   You must install one of `cryptography`_ or `rsa`_ to use signed URLs.
+
+.. _cryptography: https://pypi.org/project/cryptography/
+.. _rsa: https://pypi.org/project/rsa/
 
 IAM Policy
 ----------
