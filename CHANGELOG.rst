@@ -9,7 +9,13 @@ Google Cloud
 
 - **Breaking**: Support for the deprecated ``GS_CACHE_CONTROL`` has been removed. Please set the ``cache_control`` parameter of ``GS_OBJECT_PARAMETERS`` instead. (`#1220`_)
 
-.. _#1220: https://github.com/jschneier/django-storages/pull/1196
+Libcloud
+--------
+
+- Reading a file that does not exist will now raise ``FileNotFoundError`` (`#1191`_)
+
+.. _#1220: https://github.com/jschneier/django-storages/pull/1220
+.. _#1191: https://github.com/jschneier/django-storages/pull/1191
 
 1.13.2 (2022-12-23)
 *******************
