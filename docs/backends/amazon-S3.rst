@@ -7,9 +7,6 @@ Usage
 There is only one supported backend for interacting with Amazon's S3,
 ``S3Boto3Storage``, based on the boto3 library.
 
-The legacy ``S3BotoStorage`` backend was removed in version 1.9. To continue getting new features you must upgrade
-to the ``S3Boto3Storage`` backend by following the :ref:`migration instructions <migrating-boto-to-boto3>`.
-
 The minimum required version of ``boto3`` is 1.4.4 although we always recommend
 the most recent.
 
@@ -147,32 +144,6 @@ searches for them:
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
 .. _ManifestStaticFilesStorage: https://docs.djangoproject.com/en/3.1/ref/contrib/staticfiles/#manifeststaticfilesstorage
-
-.. _migrating-boto-to-boto3:
-
-Migrating from Boto to Boto3
-----------------------------
-
-Migration from the boto-based to boto3-based backend should be straightforward and painless.
-
-The following adjustments to settings are required:
-
-- Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
-  names as in the following example: ``cache-control`` becomes ``CacheControl``.
-- Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
-- If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE`` to ``virtual``
-- Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
-- Extract the region name from ``AWS_S3_HOST`` and set ``AWS_S3_REGION_NAME``
-- Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` with ``AWS_S3_PROXIES``
-- If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
-- If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
-- Update ``DEFAULT_FILE_STORAGE`` (``default`` key from ``STORAGES`` in django >= 4.2) and/or ``STATICFILES_STORAGE`` (``staticfiles`` key from ``STORAGES`` in
-  django >= 4.2) to ``storages.backends.s3boto3.S3Boto3Storage``
-
-Additionally, you must install ``boto3``. The minimum required version is 1.4.4
-although we always recommend the most recent.
-
-Please open an issue on the GitHub repo if any further issues are encountered or steps were omitted.
 
 CloudFront
 ----------
