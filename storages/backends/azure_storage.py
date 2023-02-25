@@ -1,4 +1,5 @@
 import mimetypes
+import re
 from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
@@ -128,6 +129,9 @@ class AzureStorage(BaseStorage):
         self._custom_client = None
         self._user_delegation_key = None
         self._user_delegation_key_expiry = datetime.utcnow()
+        if self.connection_string and (not self.account_name or not self.account_key):
+            self.account_name = re.search(r'AccountName=(\w+);', self.connection_string)[1]
+            self.account_key = re.search(r'AccountKey=(.*);', self.connection_string)[1]
 
     def get_default_settings(self):
         return {
