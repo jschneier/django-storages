@@ -570,6 +570,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         split_url = split_url._replace(query='&'.join(joined_qs))
         return split_url.geturl()
 
+    def _get_expiration_for_cloudfront(self, expire):
+        return datetime.utcnow() + timedelta(seconds=expire)
+
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
@@ -586,7 +589,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             )
 
             if self.querystring_auth and self.cloudfront_signer:
-                expiration = datetime.utcnow() + timedelta(seconds=expire)
+                expiration = self._get_expiration_for_cloudfront(expire)
                 return self.cloudfront_signer.generate_presigned_url(url, date_less_than=expiration)
 
             return url
