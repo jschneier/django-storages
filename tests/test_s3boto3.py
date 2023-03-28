@@ -767,6 +767,19 @@ class S3Boto3StorageTests(TestCase):
         storage = s3boto3.S3Boto3Storage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
 
+    def test_open_file(self):
+        filename = "file_to_open.txt"
+
+        file = self.storage.open(filename, "w")
+        file.close()
+
+        file.open()
+        self.assertEqual(file._mode, "w")
+        file.close()
+
+        file.open("r")
+        self.assertEqual(file._mode, "r")
+        file.close()
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):

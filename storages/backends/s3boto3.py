@@ -105,8 +105,10 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
     order to properly write the file to S3. Be sure to close the file
     in your application.
     """
-
     def __init__(self, name, mode, storage, buffer_size=None):
+        self._initialize(name, mode, storage, buffer_size)
+
+    def _initialize(self, name, mode, storage, buffer_size=None):
         if 'r' in mode and 'w' in mode:
             raise ValueError("Can't combine 'r' and 'w' in mode.")
         self._storage = storage
@@ -223,6 +225,18 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
                 )
             else:
                 raise
+
+    def open(self, mode=None):
+        if self._file and not self._file.closed:
+            # keeping it consistent with django default file behaviour
+            self.seek(0)
+        elif not mode:
+            self._initialize(self.name, self._mode, self._storage, self.buffer_size)
+        elif mode != self._mode:
+            self._initialize(self.name, mode, self._storage, self.buffer_size)
+        else:
+            raise ValueError("The file cannot be reopened.")
+        return self
 
     def close(self):
         if self._is_dirty:
