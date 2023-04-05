@@ -19,7 +19,7 @@ To upload your media files to S3 set::
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
     # django >= 4.2
-    STORAGES = {"default": "storages.backends.s3boto3.S3Boto3Storage"}
+    STORAGES = {"default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"}}
 
 
 To allow ``django-admin collectstatic`` to automatically put your static files in your bucket set the following in your settings.py::
@@ -28,7 +28,7 @@ To allow ``django-admin collectstatic`` to automatically put your static files i
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 
     # django >= 4.2
-    STORAGES = {"staticfiles": "storages.backends.s3boto3.S3StaticStorage"}
+    STORAGES = {"staticfiles": {"BACKEND": "storages.backends.s3boto3.S3StaticStorage"}}
 
 If you want to use something like `ManifestStaticFilesStorage`_ then you must instead use::
 
@@ -36,7 +36,7 @@ If you want to use something like `ManifestStaticFilesStorage`_ then you must in
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
 
     # django >= 4.2
-    STORAGES = {"staticfiles": "storages.backends.s3boto3.S3ManifestStaticStorage"}
+    STORAGES = {"staticfiles": {"BACKEND": "storages.backends.s3boto3.S3ManifestStaticStorage"}}
 
 There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Boto3Storage``
 searches for them:
