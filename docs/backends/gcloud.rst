@@ -46,7 +46,7 @@ Set the default storage and bucket name in your settings.py file
     DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 
     # django >= 4.2
-    STORAGES = {"default": "storages.backends.gcloud.GoogleCloudStorage"}
+    STORAGES = {"default": {"BACKEND": "storages.backends.gcloud.GoogleCloudStorage"}}
 
     GS_BUCKET_NAME = 'YOUR_BUCKET_NAME_GOES_HERE'
 
