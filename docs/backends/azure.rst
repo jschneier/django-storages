@@ -64,8 +64,8 @@ Then on settings set::
 
     # django >= 4.2
     STORAGES = {
-        "default": "storages.backends.azure_storage.AzureStorage",
-        "staticfiles": "custom_storage.custom_azure.PublicAzureStorage",
+        "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+        "staticfiles": {"BACKEND": "custom_storage.custom_azure.PublicAzureStorage"},
     }
 
 +++++++++++++++++++++
