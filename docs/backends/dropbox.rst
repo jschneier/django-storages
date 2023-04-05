@@ -18,7 +18,7 @@ To use DropBoxStorage set::
     DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
 
     # django >= 4.2
-    STORAGES = {"default": "storages.backends.dropbox.DropBoxStorage"}
+    STORAGES = {"default": {"BACKEND": "storages.backends.dropbox.DropBoxStorage"}}
 
 Two methods of authenticating are supported:
 
