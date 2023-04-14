@@ -25,12 +25,26 @@ hasn't been released yet) then the magic incantation you are looking for is:
 
   pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
 
-Once that is done set ``DEFAULT_FILE_STORAGE`` to the backend of your choice.
+Once that is done, if using Django 4.1 or earlier, set ``DEFAULT_FILE_STORAGE`` to the backend of your choice.
 If, for example, you want to use the boto3 backend you would set:
 
 .. code-block:: python
 
   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+For Django 4.2 or later, set the ``default`` value in ``STORAGES`` to the backend of your choice. For example:
+
+.. code-block:: python
+
+  STORAGES = {
+      'default': {
+          'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+      },
+      'staticfiles': {
+          # Leave whatever setting you already have here, e.g.:
+          'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+      }
+  }
 
 
 If you are using the ``FileSystemStorage`` as your storage management class in your models ``FileField`` fields, remove them

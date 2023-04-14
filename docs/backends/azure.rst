@@ -64,8 +64,8 @@ Then on settings set::
 
     # django >= 4.2
     STORAGES = {
-        "default": "storages.backends.azure_storage.AzureStorage",
-        "staticfiles": "custom_storage.custom_azure.PublicAzureStorage",
+        "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+        "staticfiles": {"BACKEND": "custom_storage.custom_azure.PublicAzureStorage"},
     }
 
 +++++++++++++++++++++
@@ -93,8 +93,15 @@ configuration file, usually `settings.py`.
 Set the default storage (i.e: for media files) and the static storage
 (i.e: fo static files) to use the azure backend::
 
+    # django < 4.2
     DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
     STATICFILES_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+
+    # django >= 4.2
+    STORAGES = {
+        "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+        "staticfiles": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+    }
 
 The following settings are available:
 

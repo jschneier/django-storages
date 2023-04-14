@@ -14,7 +14,7 @@ To use FtpStorage set::
     DEFAULT_FILE_STORAGE = 'storages.backends.ftp.FTPStorage'
 
     # django >= 4.2
-    STORAGES = {"default": "storages.backends.ftp.FTPStorage"}
+    STORAGES = {"default": {"BACKEND": "storages.backends.ftp.FTPStorage"}}
 
 ``FTP_STORAGE_LOCATION``
     URL of the server that holds the files. Example ``'ftp://<user>:<pass>@<host>:<port>'``
