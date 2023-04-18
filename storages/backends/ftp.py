@@ -46,7 +46,7 @@ class FTPStorage(Storage):
                                        " settings.FTP_STORAGE_LOCATION'.")
         self.location = location
         self.encoding = encoding or setting('FTP_STORAGE_ENCODING') or 'latin-1'
-        base_url = base_url or settings.MEDIA_URL
+        base_url = base_url or setting('BASE_URL') or settings.MEDIA_URL
         self._config = self._decode_location(location)
         self._base_url = base_url
         self._connection = None
