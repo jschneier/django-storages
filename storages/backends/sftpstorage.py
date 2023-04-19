@@ -17,12 +17,13 @@ from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
+from storages.time import TimeStorageMixin
 from storages.utils import is_seekable
 from storages.utils import setting
 
 
 @deconstructible
-class SFTPStorage(BaseStorage):
+class SFTPStorage(TimeStorageMixin, BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
         self._host = self.host
@@ -174,12 +175,12 @@ class SFTPStorage(BaseStorage):
         remote_path = self._remote_path(name)
         return self.sftp.stat(remote_path).st_size
 
-    def accessed_time(self, name):
+    def _accessed_time(self, name: str) -> datetime:
         remote_path = self._remote_path(name)
         utime = self.sftp.stat(remote_path).st_atime
         return datetime.fromtimestamp(utime)
 
-    def modified_time(self, name):
+    def _modified_time(self, name: str) -> datetime:
         remote_path = self._remote_path(name)
         utime = self.sftp.stat(remote_path).st_mtime
         return datetime.fromtimestamp(utime)

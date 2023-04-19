@@ -13,7 +13,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test import override_settings
-from django.utils.timezone import is_aware
 
 from storages.backends import s3boto3
 from tests.utils import NonSeekableContentFile
@@ -585,29 +584,10 @@ class S3Boto3StorageTests(TestCase):
         self.assertEqual(self.storage.size(name), obj.content_length)
 
     def test_storage_mtime(self):
-        # Test both USE_TZ cases
-        for use_tz in (True, False):
-            with self.settings(USE_TZ=use_tz):
-                self._test_storage_mtime(use_tz)
-
-    def _test_storage_mtime(self, use_tz):
         obj = self.storage.bucket.Object.return_value
         obj.last_modified = datetime.datetime.now(datetime.timezone.utc)
-
         name = 'file.txt'
-        self.assertFalse(
-            is_aware(self.storage.modified_time(name)),
-            'Naive datetime object expected from modified_time()'
-        )
-
-        self.assertIs(
-            settings.USE_TZ,
-            is_aware(self.storage.get_modified_time(name)),
-            '{} datetime object expected from get_modified_time() when USE_TZ={}'.format(
-                ('Naive', 'Aware')[settings.USE_TZ],
-                settings.USE_TZ
-            )
-        )
+        self.assertEqual(self.storage._modified_time(name), obj.last_modified)
 
     def test_storage_url(self):
         name = 'test_storage_size.txt'

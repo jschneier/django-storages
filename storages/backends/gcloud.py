@@ -1,17 +1,19 @@
 import gzip
 import io
 import mimetypes
+from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
-from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
+from storages.time import TimeStorageMixin
 from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
@@ -101,7 +103,9 @@ class GoogleCloudFile(CompressedFileMixin, File):
 
 
 @deconstructible
-class GoogleCloudStorage(BaseStorage):
+class GoogleCloudStorage(TimeStorageMixin, BaseStorage):
+    _default_timezone = timezone.utc
+
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -273,26 +277,15 @@ class GoogleCloudStorage(BaseStorage):
         blob = self._get_blob(name)
         return blob.size
 
-    def modified_time(self, name):
+    def _modified_time(self, name: str) -> datetime:
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(name)
-        return timezone.make_naive(blob.updated)
+        return blob.updated
 
-    def get_modified_time(self, name):
+    def _created_time(self, name: str) -> datetime:
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(name)
-        updated = blob.updated
-        return updated if setting('USE_TZ') else timezone.make_naive(updated)
-
-    def get_created_time(self, name):
-        """
-        Return the creation time (as a datetime) of the file specified by name.
-        The datetime will be timezone-aware if USE_TZ=True.
-        """
-        name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(name)
-        created = blob.time_created
-        return created if setting('USE_TZ') else timezone.make_naive(created)
+        return blob.time_created
 
     def url(self, name, parameters=None):
         """

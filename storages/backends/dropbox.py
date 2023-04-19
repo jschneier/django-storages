@@ -12,6 +12,8 @@
 # DROPBOX_OAUTH2_REFRESH_TOKEN = 'YourOauthRefreshToken'
 
 
+from datetime import datetime
+from datetime import timezone
 from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
@@ -28,6 +30,7 @@ from dropbox.files import FolderMetadata
 from dropbox.files import UploadSessionCursor
 from dropbox.files import WriteMode
 
+from storages.time import TimeStorageMixin
 from storages.utils import get_available_overwrite_name
 from storages.utils import setting
 
@@ -71,7 +74,7 @@ class DropBoxFile(File):
 
 
 @deconstructible
-class DropBoxStorage(Storage):
+class DropBoxStorage(TimeStorageMixin, Storage):
     """DropBox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
@@ -82,6 +85,8 @@ class DropBoxStorage(Storage):
     write_mode = setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE)
 
     CHUNK_SIZE = 4 * 1024 * 1024
+
+    _default_timezone = timezone.utc
 
     def __init__(
         self,
@@ -146,11 +151,11 @@ class DropBoxStorage(Storage):
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.size
 
-    def modified_time(self, name):
+    def _modified_time(self, name: str) -> datetime:
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.server_modified
 
-    def accessed_time(self, name):
+    def _accessed_time(self, name: str) -> datetime:
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.client_modified
 

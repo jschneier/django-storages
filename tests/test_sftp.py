@@ -126,14 +126,14 @@ class SFTPStorageTest(TestCase):
         'stat.return_value.st_atime': 1469674684.000000,
     })
     def test_accessed_time(self, mock_sftp):
-        self.assertEqual(self.storage.accessed_time('foo'),
+        self.assertEqual(self.storage._accessed_time('foo'),
                          datetime(2016, 7, 27, 21, 58, 4))
 
     @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
         'stat.return_value.st_mtime': 1469674684.000000,
     })
     def test_modified_time(self, mock_sftp):
-        self.assertEqual(self.storage.modified_time('foo'),
+        self.assertEqual(self.storage._modified_time('foo'),
                          datetime(2016, 7, 27, 21, 58, 4))
 
     def test_url(self):

@@ -2,6 +2,7 @@ import mimetypes
 import re
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
@@ -12,10 +13,10 @@ from azure.storage.blob import ContentSettings
 from azure.storage.blob import generate_blob_sas
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
-from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
+from storages.time import TimeStorageMixin
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
 from storages.utils import safe_join
@@ -120,7 +121,9 @@ _AZURE_NAME_MAX_LEN = 1024
 
 
 @deconstructible
-class AzureStorage(BaseStorage):
+class AzureStorage(TimeStorageMixin, BaseStorage):
+    _default_timezone = timezone.utc
+
     def __init__(self, **settings):
         super().__init__(**settings)
         self._service_client = None
@@ -353,30 +356,10 @@ class AzureStorage(BaseStorage):
         """
         return self.object_parameters.copy()
 
-    def get_modified_time(self, name):
-        """
-        Returns an (aware) datetime object containing the last modified time if
-        USE_TZ is True, otherwise returns a naive datetime in the local timezone.
-        """
+    def _modified_time(self, name: str) -> datetime:
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
         properties = blob_client.get_blob_properties(timeout=self.timeout)
-        if not setting('USE_TZ', False):
-            return timezone.make_naive(properties.last_modified)
-
-        tz = timezone.get_current_timezone()
-        if timezone.is_naive(properties.last_modified):
-            return timezone.make_aware(properties.last_modified, tz)
-
-        # `last_modified` is in UTC time_zone, we
-        # must convert it to settings time_zone
-        return properties.last_modified.astimezone(tz)
-
-    def modified_time(self, name):
-        """Returns a naive datetime object containing the last modified time."""
-        mtime = self.get_modified_time(name)
-        if timezone.is_naive(mtime):
-            return mtime
-        return timezone.make_naive(mtime)
+        return properties.last_modified
 
     def list_all(self, path=''):
         """Return all files for a given path"""
