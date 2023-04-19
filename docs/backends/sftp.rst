@@ -4,6 +4,20 @@ SFTP
 Settings
 --------
 
+Set the default storage (i.e: for media files) and the static storage (i.e: for
+static files) to use the sftp backend::
+
+    # django < 4.2
+    DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
+    STATICFILES_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
+
+    # django >= 4.2
+    STORAGES = {
+        "default": {"BACKEND": "storages.backends.sftpstorage.SFTPStorage"},
+        "staticfiles": {"BACKEND": "storages.backends.sftpstorage.SFTPStorage"},
+    }
+
+
 ``SFTP_STORAGE_HOST``
     The hostname where you want the files to be saved.
 
