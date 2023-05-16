@@ -306,6 +306,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         return {
             'access_key': setting('AWS_S3_ACCESS_KEY_ID', setting('AWS_ACCESS_KEY_ID')),
             'secret_key': setting('AWS_S3_SECRET_ACCESS_KEY', setting('AWS_SECRET_ACCESS_KEY')),
+            'security_token': setting('AWS_SESSION_TOKEN', setting('AWS_SECURITY_TOKEN')),
             'session_profile': setting('AWS_S3_SESSION_PROFILE'),
             'file_overwrite': setting('AWS_S3_FILE_OVERWRITE', True),
             'object_parameters': setting('AWS_S3_OBJECT_PARAMETERS', {}),
