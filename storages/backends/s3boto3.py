@@ -26,7 +26,6 @@ from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
 from storages.utils import is_seekable
-from storages.utils import lookup_env
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
@@ -252,12 +251,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
 
-    # used for looking up the access and secret key from env vars
-    access_key_names = ['AWS_S3_ACCESS_KEY_ID', 'AWS_ACCESS_KEY_ID']
-    secret_key_names = ['AWS_S3_SECRET_ACCESS_KEY', 'AWS_SECRET_ACCESS_KEY']
-    security_token_names = ['AWS_SESSION_TOKEN', 'AWS_SECURITY_TOKEN']
-    security_token = None
-
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -265,9 +258,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
 
         self._bucket = None
         self._connections = threading.local()
-
-        self.access_key, self.secret_key = self._get_access_keys()
-        self.security_token = self._get_security_token()
 
         if not self.config:
             self.config = Config(
@@ -389,24 +379,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         if self._bucket is None:
             self._bucket = self.connection.Bucket(self.bucket_name)
         return self._bucket
-
-    def _get_access_keys(self):
-        """
-        Gets the access keys to use when accessing S3. If none is
-        provided in the settings then get them from the environment
-        variables.
-        """
-        access_key = self.access_key or lookup_env(self.access_key_names)
-        secret_key = self.secret_key or lookup_env(self.secret_key_names)
-        return access_key, secret_key
-
-    def _get_security_token(self):
-        """
-        Gets the security token to use when accessing S3. Get it from
-        the environment variables.
-        """
-        security_token = self.security_token or lookup_env(self.security_token_names)
-        return security_token
 
     def _normalize_name(self, name):
         """
