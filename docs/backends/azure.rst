@@ -91,7 +91,7 @@ The following settings should be set within the standard Django
 configuration file, usually `settings.py`.
 
 Set the default storage (i.e: for media files) and the static storage
-(i.e: fo static files) to use the azure backend::
+(i.e: for static files) to use the Azure backend::
 
     # django < 4.2
     DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
@@ -155,7 +155,7 @@ The following settings are available:
 
 ``AZURE_ENDPOINT_SUFFIX``
 
-    Defaults to ``core.windows.net``. Use ``core.chinacloudapi.cn`` for Azure.cn accounts.
+    Defaults to ``core.windows.net``. Use ``core.chinacloudapi.cn`` for azure.cn accounts.
 
 ``AZURE_CUSTOM_DOMAIN``
 
