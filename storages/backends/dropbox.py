@@ -35,11 +35,14 @@ _DEFAULT_TIMEOUT = 100
 _DEFAULT_MODE = 'add'
 
 
-class DropBoxStorageException(Exception):
+class DropboxStorageException(Exception):
     pass
 
 
-class DropBoxFile(File):
+DropBoxStorageException = DropboxStorageException
+
+
+class DropboxFile(File):
     def __init__(self, name, storage):
         self.name = name
         self._storage = storage
@@ -57,7 +60,7 @@ class DropBoxFile(File):
                     copyfileobj(file_content, self._file)
             else:
                 # JIC the exception isn't catched by the dropbox client
-                raise DropBoxStorageException(
+                raise DropboxStorageException(
                     "Dropbox server returned a {} response when accessing {}"
                     .format(response.status_code, self.name)
                 )
@@ -70,9 +73,12 @@ class DropBoxFile(File):
     file = property(_get_file, _set_file)
 
 
+DropBoxFile = DropboxFile
+
+
 @deconstructible
-class DropBoxStorage(Storage):
-    """DropBox Storage class for Django pluggable storage system."""
+class DropboxStorage(Storage):
+    """Dropbox Storage class for Django pluggable storage system."""
     location = setting('DROPBOX_ROOT_PATH', '/')
     oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
     app_key = setting('DROPBOX_APP_KEY')
@@ -162,7 +168,7 @@ class DropBoxStorage(Storage):
             return None
 
     def _open(self, name, mode='rb'):
-        remote_file = DropBoxFile(self._full_path(name), self)
+        remote_file = DropboxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
@@ -203,3 +209,6 @@ class DropBoxStorage(Storage):
         if self.write_mode == 'overwrite':
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
+
+
+DropBoxStorage = DropboxStorage

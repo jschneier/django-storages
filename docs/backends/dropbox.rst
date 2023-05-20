@@ -12,13 +12,13 @@ which can be done for you automatically by doing::
 Settings
 --------
 
-To use DropBoxStorage set::
+To use DropboxStorage set::
 
     # django < 4.2
-    DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
+    DEFAULT_FILE_STORAGE = "storages.backends.dropbox.DropboxStorage"
 
     # django >= 4.2
-    STORAGES = {"default": {"BACKEND": "storages.backends.dropbox.DropBoxStorage"}}
+    STORAGES = {"default": {"BACKEND": "storages.backends.dropbox.DropboxStorage"}}
 
 Two methods of authenticating are supported:
 
@@ -43,14 +43,14 @@ Please set the following variables accordingly:
 
 The refresh token can be obtained using the `commandline-oauth.py`_ example from the `Dropbox SDK for Python`_.
 
-``DROPBOX_ROOT_PATH`` (optional, default ``'/'``)
+``DROPBOX_ROOT_PATH`` (optional, default ``"/"``)
    Path which will prefix all uploaded files. Must begin with a ``/``.
 
 ``DROPBOX_TIMEOUT`` (optional, default ``100``)
    Timeout in seconds for requests to the API. If ``None``, the client will wait forever.
    The default value matches the SDK at the time of this writing.
 
-``DROPBOX_WRITE_MODE`` (optional, default ``'add'``)
+``DROPBOX_WRITE_MODE`` (optional, default ``"add"``)
    Sets the Dropbox WriteMode strategy. Read more in the `official docs`_.
 
 Obtain the refresh token manually
