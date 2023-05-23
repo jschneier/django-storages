@@ -131,7 +131,7 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
     @property
     def size(self):
         return self.obj.content_length
-    
+
     @property
     def closed(self):
         return not self._file or self._file.closed
