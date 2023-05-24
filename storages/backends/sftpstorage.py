@@ -15,6 +15,7 @@ from urllib.parse import urljoin
 import paramiko
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
+from paramiko.util import ClosingContextManager
 
 from storages.base import BaseStorage
 from storages.utils import is_seekable
@@ -22,7 +23,7 @@ from storages.utils import setting
 
 
 @deconstructible
-class SFTPStorage(BaseStorage):
+class SFTPStorage(ClosingContextManager, BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
         self._host = self.host
@@ -35,6 +36,7 @@ class SFTPStorage(BaseStorage):
         self._known_host_file = self.known_host_file
         self._root_path = self.root_path
         self._base_url = self.base_url
+        self._ssh = None
         self._sftp = None
 
     def get_default_settings(self):
@@ -80,6 +82,11 @@ class SFTPStorage(BaseStorage):
 
         if self._ssh.get_transport():
             self._sftp = self._ssh.open_sftp()
+
+    def close(self):
+        if self._ssh is None:
+            return
+        self._ssh.close()
 
     @property
     def sftp(self):
