@@ -18,7 +18,7 @@ The ``ORACLE_NAMESPACE`` value can be found on the bucket details page
 
 
 References
-==========
+----------
 
 - `Customer Secret Key`_
 - `Amazon S3 Compatibility API docs`_
