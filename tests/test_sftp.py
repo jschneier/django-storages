@@ -40,6 +40,18 @@ class SFTPStorageTest(TestCase):
         self.storage._connect()
         self.assertEqual('foo', mock_ssh.return_value.connect.call_args[0][0])
 
+    @patch('paramiko.SSHClient')
+    def test_close_unopened(self, mock_ssh):
+        with self.storage:
+            pass
+        mock_ssh.return_value.close.assert_not_called()
+
+    @patch('paramiko.SSHClient')
+    def test_close_opened(self, mock_ssh):
+        with self.storage as storage:
+            storage._connect()
+        mock_ssh.return_value.close.assert_called_once_with()
+
     def test_open(self):
         file_ = self.storage._open('foo')
         self.assertIsInstance(file_, sftpstorage.SFTPStorageFile)

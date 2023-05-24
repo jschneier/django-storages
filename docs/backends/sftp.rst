@@ -71,3 +71,18 @@ static files) to use the sftp backend::
 .. _`paramiko SSHClient.connect() documentation`: http://docs.paramiko.org/en/latest/api/client.html#paramiko.client.SSHClient.connect
 
 .. _`Python os.chmod documentation`: http://docs.python.org/library/os.html#os.chmod
+
+
+Standalone Use
+--------------
+
+If you intend to construct a storage instance not through Django but directly,
+use the storage instance as a context manager to make sure the underlying SSH
+connection is closed after use and no longer consumes resources.
+
+.. code-block:: python
+
+    from storages.backends.sftpstorage import SFTPStorage
+
+    with SFTPStorage(...) as sftp:
+        sftp.listdir("")
