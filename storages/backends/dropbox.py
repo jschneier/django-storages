@@ -1,17 +1,8 @@
 # Dropbox storage class for Django pluggable storage system.
 # Author: Anthony Monthe <anthony.monthe@gmail.com>
 # License: BSD
-#
-# Usage:
-#
-# Add below to settings.py:
-# DROPBOX_ROOT_PATH = '/dir/'
-# DROPBOX_OAUTH2_TOKEN = 'YourOauthToken'
-# DROPBOX_APP_KEY = 'YourAppKey'
-# DROPBOX_APP_SECRET = 'YourAppSecret``
-# DROPBOX_OAUTH2_REFRESH_TOKEN = 'YourOauthRefreshToken'
 
-
+import warnings
 from datetime import datetime
 from datetime import timezone
 from io import BytesIO
@@ -20,7 +11,6 @@ from tempfile import SpooledTemporaryFile
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils._os import safe_join
 from django.utils.deconstruct import deconstructible
 from dropbox import Dropbox
@@ -30,6 +20,7 @@ from dropbox.files import FolderMetadata
 from dropbox.files import UploadSessionCursor
 from dropbox.files import WriteMode
 
+from storages.base import BaseStorage
 from storages.time import TimeStorageMixin
 from storages.utils import get_available_overwrite_name
 from storages.utils import setting
@@ -38,11 +29,14 @@ _DEFAULT_TIMEOUT = 100
 _DEFAULT_MODE = 'add'
 
 
-class DropBoxStorageException(Exception):
+class DropboxStorageException(Exception):
     pass
 
 
-class DropBoxFile(File):
+DropBoxStorageException = DropboxStorageException
+
+
+class DropboxFile(File):
     def __init__(self, name, storage):
         self.name = name
         self._storage = storage
@@ -60,7 +54,7 @@ class DropBoxFile(File):
                     copyfileobj(file_content, self._file)
             else:
                 # JIC the exception isn't catched by the dropbox client
-                raise DropBoxStorageException(
+                raise DropboxStorageException(
                     "Dropbox server returned a {} response when accessing {}"
                     .format(response.status_code, self.name)
                 )
@@ -73,33 +67,21 @@ class DropBoxFile(File):
     file = property(_get_file, _set_file)
 
 
-@deconstructible
-class DropBoxStorage(TimeStorageMixin, Storage):
-    """DropBox Storage class for Django pluggable storage system."""
-    location = setting('DROPBOX_ROOT_PATH', '/')
-    oauth2_access_token = setting('DROPBOX_OAUTH2_TOKEN')
-    app_key = setting('DROPBOX_APP_KEY')
-    app_secret = setting('DROPBOX_APP_SECRET')
-    oauth2_refresh_token = setting('DROPBOX_OAUTH2_REFRESH_TOKEN')
-    timeout = setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT)
-    write_mode = setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE)
+DropBoxFile = DropboxFile
 
+
+@deconstructible
+class DropboxStorage(TimeStorageMixin, BaseStorage):
+    """Dropbox Storage class for Django pluggable storage system."""
     CHUNK_SIZE = 4 * 1024 * 1024
 
     _default_timezone = timezone.utc
 
-    def __init__(
-        self,
-        oauth2_access_token=oauth2_access_token,
-        root_path=location,
-        timeout=timeout,
-        write_mode=write_mode,
-        app_key=app_key,
-        app_secret=app_secret,
-        oauth2_refresh_token=oauth2_refresh_token,
-    ):
-        if oauth2_access_token is None and not all(
-            [app_key, app_secret, oauth2_refresh_token]
+    def __init__(self, oauth2_access_token=None, **settings):
+        super().__init__(oauth2_access_token=oauth2_access_token, **settings)
+
+        if self.oauth2_access_token is None and not all(
+            [self.app_key, self.app_secret, self.oauth2_refresh_token]
         ):
             raise ImproperlyConfigured(
                 "You must configure an auth token at"
@@ -108,15 +90,31 @@ class DropBoxStorage(TimeStorageMixin, Storage):
                 "'setting.DROPBOX_APP_SECRET' "
                 "and 'setting.DROPBOX_OAUTH2_REFRESH_TOKEN'."
             )
-        self.root_path = root_path
-        self.write_mode = write_mode
         self.client = Dropbox(
-            oauth2_access_token,
-            app_key=app_key,
-            app_secret=app_secret,
-            oauth2_refresh_token=oauth2_refresh_token,
-            timeout=timeout,
+            self.oauth2_access_token,
+            app_key=self.app_key,
+            app_secret=self.app_secret,
+            oauth2_refresh_token=self.oauth2_refresh_token,
+            timeout=self.timeout,
         )
+
+        # Backwards compat
+        if hasattr(self, 'location'):
+            warnings.warn(
+                "Setting `root_path` with name `location` is deprecated and will be removed in a future version of "
+                "django-storages. Please update the name from `location` to `root_path`", DeprecationWarning)
+            self.root_path = self.location
+
+    def get_default_settings(self):
+        return {
+            "root_path": setting('DROPBOX_ROOT_PATH', '/'),
+            "oauth2_access_token": setting('DROPBOX_OAUTH2_TOKEN'),
+            "app_key": setting('DROPBOX_APP_KEY'),
+            "app_secret": setting('DROPBOX_APP_SECRET'),
+            "oauth2_refresh_token": setting('DROPBOX_OAUTH2_REFRESH_TOKEN'),
+            "timeout":  setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT),
+            "write_mode": setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE),
+        }
 
     def _full_path(self, name):
         if name == '/':
@@ -167,7 +165,7 @@ class DropBoxStorage(TimeStorageMixin, Storage):
             return None
 
     def _open(self, name, mode='rb'):
-        remote_file = DropBoxFile(self._full_path(name), self)
+        remote_file = DropboxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
@@ -208,3 +206,6 @@ class DropBoxStorage(TimeStorageMixin, Storage):
         if self.write_mode == 'overwrite':
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
+
+
+DropBoxStorage = DropboxStorage

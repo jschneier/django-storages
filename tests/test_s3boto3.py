@@ -767,3 +767,24 @@ class S3ManifestStaticStorageTests(TestCase):
 
     def test_save(self):
         self.storage.save('x.txt', ContentFile(b'abc'))
+
+
+class S3Boto3StorageFileTests(TestCase):
+    def setUp(self) -> None:
+        self.storage = s3boto3.S3Boto3Storage()
+        self.storage._connections.connection = mock.MagicMock()
+
+    def test_closed(self):
+        f = s3boto3.S3Boto3StorageFile('test', 'wb', self.storage)
+
+        with self.subTest("is True after init"):
+            self.assertTrue(f.closed)
+
+        with self.subTest("is False after file access"):
+            # Ensure _get_file has been called
+            f.file
+            self.assertFalse(f.closed)
+
+        with self.subTest("is True after close"):
+            f.close()
+            self.assertTrue(f.closed)
