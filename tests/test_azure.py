@@ -423,7 +423,7 @@ class AzureStorageTest(TestCase):
         client_mock = mock.MagicMock()
         client_mock.get_blob_properties.return_value = props
         self.storage._client.get_blob_client.return_value = client_mock
-        time = self.storage.modified_time("name")
+        time = self.storage._modified_time("name")
         self.assertEqual(accepted_time, time)
 
     def test_override_settings(self):

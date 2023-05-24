@@ -5,6 +5,7 @@ import tempfile
 import threading
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from tempfile import SpooledTemporaryFile
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
@@ -16,12 +17,11 @@ from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri
-from django.utils.timezone import is_naive
-from django.utils.timezone import make_naive
 
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
 from storages.compress import CompressStorageMixin
+from storages.time import TimeStorageMixin
 from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
@@ -243,7 +243,7 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
 
 
 @deconstructible
-class S3Boto3Storage(CompressStorageMixin, BaseStorage):
+class S3Boto3Storage(TimeStorageMixin, CompressStorageMixin, BaseStorage):
     """
     Amazon Simple Storage Service using Boto3
 
@@ -254,6 +254,8 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
     default_content_type = 'application/octet-stream'
     # If config provided in init, signature_version and addressing_style settings/args are ignored.
     config = None
+
+    _default_timezone = timezone.utc
 
     def __init__(self, **settings):
         super().__init__(**settings)
@@ -498,25 +500,10 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         """
         return self.object_parameters.copy()
 
-    def get_modified_time(self, name):
-        """
-        Returns an (aware) datetime object containing the last modified time if
-        USE_TZ is True, otherwise returns a naive datetime in the local timezone.
-        """
+    def _modified_time(self, name: str) -> datetime:
         name = self._normalize_name(clean_name(name))
         entry = self.bucket.Object(name)
-        if setting('USE_TZ'):
-            # boto3 returns TZ aware timestamps
-            return entry.last_modified
-        else:
-            return make_naive(entry.last_modified)
-
-    def modified_time(self, name):
-        """Returns a naive datetime object containing the last modified time."""
-        # If USE_TZ=False then get_modified_time will return a naive datetime
-        # so we just return that, else we have to localize and strip the tz
-        mtime = self.get_modified_time(name)
-        return mtime if is_naive(mtime) else make_naive(mtime)
+        return entry.last_modified
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we

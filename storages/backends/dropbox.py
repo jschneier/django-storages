@@ -3,6 +3,8 @@
 # License: BSD
 
 import warnings
+from datetime import datetime
+from datetime import timezone
 from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
@@ -19,6 +21,7 @@ from dropbox.files import UploadSessionCursor
 from dropbox.files import WriteMode
 
 from storages.base import BaseStorage
+from storages.time import TimeStorageMixin
 from storages.utils import get_available_overwrite_name
 from storages.utils import setting
 
@@ -68,9 +71,11 @@ DropBoxFile = DropboxFile
 
 
 @deconstructible
-class DropboxStorage(BaseStorage):
+class DropboxStorage(TimeStorageMixin, BaseStorage):
     """Dropbox Storage class for Django pluggable storage system."""
     CHUNK_SIZE = 4 * 1024 * 1024
+
+    _default_timezone = timezone.utc
 
     def __init__(self, oauth2_access_token=None, **settings):
         super().__init__(oauth2_access_token=oauth2_access_token, **settings)
@@ -144,11 +149,11 @@ class DropboxStorage(BaseStorage):
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.size
 
-    def modified_time(self, name):
+    def _modified_time(self, name: str) -> datetime:
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.server_modified
 
-    def accessed_time(self, name):
+    def _accessed_time(self, name: str) -> datetime:
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.client_modified
 

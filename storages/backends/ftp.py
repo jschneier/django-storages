@@ -27,6 +27,7 @@ from django.core.files.base import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 
+from storages.time import TimeStorageMixin
 from storages.utils import setting
 
 
@@ -35,7 +36,7 @@ class FTPStorageException(Exception):
 
 
 @deconstructible
-class FTPStorage(Storage):
+class FTPStorage(TimeStorageMixin, Storage):
     """FTP Storage class for Django pluggable storage system."""
 
     def __init__(self, location=None, base_url=None, encoding=None):
@@ -181,7 +182,7 @@ class FTPStorage(Storage):
         except ftplib.all_errors:
             raise FTPStorageException('Error getting listing for %s' % path)
 
-    def modified_time(self, name):
+    def _modified_time(self, name: str) -> datetime:
         self._start_connection()
         resp = self._connection.sendcmd('MDTM ' + name)
         if resp[:3] == '213':
