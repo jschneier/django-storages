@@ -27,7 +27,6 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -142,7 +141,7 @@ ignore = [
   "B904",
   "PGH004",
  ]
-target-version = "py37"
+target-version = "py38"
 
 [tool.ruff.isort]
 force-single-line = true
