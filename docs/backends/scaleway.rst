@@ -11,12 +11,11 @@ Scaleway Object storage implements the S3 protocol. To use it follow the instruc
 
 With the settings above in place, with django storages set as DEFAULT_FILE_STORAGE, if you wrote a file like so:
 
-```python
-from django.core.files.storage import default_storage
-file = default_storage.open("my_chosen_file.txt", "w")
-file.write("storage contents")
-file.close()
-```
+
+    from django.core.files.storage import default_storage
+    file = default_storage.open("my_chosen_file.txt", "w")
+    file.write("storage contents")
+    file.close()
 
 If would be written to the following address:
 
