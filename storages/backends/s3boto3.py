@@ -473,6 +473,10 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         params = {}
 
         _type, encoding = mimetypes.guess_type(name)
+        # override the mimetypes guess for .gz, see #917
+        if str(name).endswith('.gz'):
+            _type = 'application/gzip'
+            encoding = None
         content_type = getattr(content, 'content_type', None)
         content_type = content_type or _type or self.default_content_type
 
