@@ -26,6 +26,9 @@ class CleanNameTests(TestCase):
         path = pathlib.Path("path/to/anywhere")
         self.assertEqual(utils.clean_name(path), "path/to/anywhere")
 
+        path = pathlib.PurePath("path/to/anywhere")
+        self.assertEqual(utils.clean_name(path), "path/to/anywhere")
+
     def test_clean_name_normalize(self):
         """
         Test the normalization of clean_name
