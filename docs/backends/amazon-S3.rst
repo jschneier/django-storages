@@ -284,7 +284,7 @@ You can now use your custom storage class for default file storage in Django set
     DEFAULT_FILE_STORAGE = 'my_django_app.custom_storage.MediaStorage'
 
     # django >= 4.2
-    STORAGES = {"default": "my_django_app.custom_storage.MediaStorage"}
+    STORAGES = {"default": {"BACKEND": "my_django_app.custom_storage.MediaStorage"}}
 
 Or you may want to upload files to the bucket in some view that accepts file upload request::
 
