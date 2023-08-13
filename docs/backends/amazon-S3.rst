@@ -364,6 +364,71 @@ So your bucket file can be organized like as below::
     | │   ├── app.js
     | │   ├── app.css
     | │   └── ...
+    
+You could also pass different characteristics to different buckets::
+
+    from storages.backends.s3boto3 import S3Boto3Storage
+    from django.utils.deconstruct import deconstructible
+
+    @deconstructible
+    class StaticStorage(S3Boto3Storage):
+
+        bucket_name = my-app-public-bucket
+        location = static
+
+    s3_static_storage = StaticStorage()
+
+
+    @deconstructible
+    class MediaStorage(S3Boto3Storage):
+
+        bucket_name = my-app-public-bucket
+        location = media
+
+    s3_media_storage = MediaStorage()
+
+
+    @deconstructible
+    class PrivStorage(S3Boto3Storage):
+
+        custom_domain = None
+        signature_version = 's3v4'
+        bucket_name = my-app-private-bucket
+        location = media
+
+    s3_priv_storage = PrivStorage()
+
+The above setup would use two buckets, one that could use an ``AWS_S3_CUSTOM_DOMAIN`` specified in your settings for static files in one folder and media files in another folder of the same bucket, and a separate private bucket that would ignore the custom domain setting and use signed S3 urls for private media files in a separate bucket.
+
+The resulting hierarchy would look like::
+
+    | my-app-public-bucket
+    | ├── media
+    | │   ├── public_video.mp4
+    | │   ├── public_file.pdf
+    | │   └── ...
+    | ├── static
+    | │   ├── app.js
+    | │   ├── app.css
+    | │   └── ...
+    | my-app-private-bucket
+    | ├── media
+    | │   ├── private_video.mp4
+    | │   ├── private_file.pdf
+    | │   └── ...
+    
+The function variables in the ``custom_storage.py`` in this above example can be imported and used as storage targets in models. For instance, perhaps you have installed a media library that provides an abstract media model class, and you want the media files you upload to be private, but their thumbnail images to be in your public bucket with your other public images and static files::
+
+    from django.db import models
+    from custom_storages import s3_priv_storage, s3_media_storage
+    from a_media_addon.models import AbstractMedia
+
+    class CustomMedia(AbstractMedia):
+
+        file = models.FileField(storage=s3_priv_storage, verbose_name=_('file'))
+        thumbnail = models.FileField(storage=s3_media_storage, blank=True, verbose_name=_('thumbnail'))
+        
+The above model would upload its media ``file`` to the private bucket and the ``thumbnail`` to the public bucket, in both cases using ``media`` as the folder location, as specified in the respective storage classes in ``custom_storages.py``.
 
 
 Model
