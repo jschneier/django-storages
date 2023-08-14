@@ -256,6 +256,9 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
     config = None
 
     def __init__(self, **settings):
+        cloudfront_key_id = settings.pop("cloudfront_key_id", None)
+        cloudfront_key = settings.pop("cloudfront_key", None)
+
         super().__init__(**settings)
 
         check_location(self)
@@ -270,6 +273,9 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
                 proxies=self.proxies,
             )
         self._transfer_config = TransferConfig(use_threads=self.use_threads)
+
+        if cloudfront_key_id and cloudfront_key:
+            self.cloudfront_signer = self.get_cloudfront_signer(cloudfront_key_id, cloudfront_key)
 
     def get_cloudfront_signer(self, key_id, key):
         return _cloud_front_signer_from_pem(key_id, key)
