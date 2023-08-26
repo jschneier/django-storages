@@ -3,6 +3,7 @@ import os
 import posixpath
 import tempfile
 import threading
+import warnings
 from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
@@ -145,7 +146,7 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.obj.download_fileobj(self._file, Config=self._storage._transfer_config)
+                self.obj.download_fileobj(self._file, Config=self._storage.transfer_config)
                 self._file.seek(0)
             if self._storage.gzip and self.obj.content_encoding == 'gzip':
                 self._file = self._decompress_file(mode=self._mode, file=self._file)
@@ -269,7 +270,16 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
                 signature_version=self.signature_version,
                 proxies=self.proxies,
             )
-        self._transfer_config = TransferConfig(use_threads=self.use_threads)
+
+        if self.use_threads is False:
+            warnings.warn(
+                "The AWS_S3_USE_THREADS setting is deprecated. Use "
+                "AWS_S3_TRANSFER_CONFIG to customize any of the "
+                "boto.s3.transfer.TransferConfig parameters.", DeprecationWarning
+            )
+
+        if self.transfer_config is None:
+            self.transfer_config = TransferConfig(use_threads=self.use_threads)
 
     def get_cloudfront_signer(self, key_id, key):
         return _cloud_front_signer_from_pem(key_id, key)
@@ -330,6 +340,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             'max_memory_size': setting('AWS_S3_MAX_MEMORY_SIZE', 0),
             'default_acl': setting('AWS_DEFAULT_ACL', None),
             'use_threads': setting('AWS_S3_USE_THREADS', True),
+            'transfer_config': setting('AWS_S3_TRANSFER_CONFIG', None),
         }
 
     def __getstate__(self):
@@ -419,7 +430,7 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             params['ContentEncoding'] = 'gzip'
 
         obj = self.bucket.Object(name)
-        obj.upload_fileobj(content, ExtraArgs=params, Config=self._transfer_config)
+        obj.upload_fileobj(content, ExtraArgs=params, Config=self.transfer_config)
         return cleaned_name
 
     def delete(self, name):
