@@ -197,9 +197,11 @@ class DropboxRootPathTest(TestCase):
     @mock.patch('dropbox.Dropbox.files_upload', return_value='foo')
     @mock.patch('dropbox.Dropbox.files_get_metadata', return_value=None)
     def test_saves(self, *args):
-        self.storage = dropbox.DropboxStorage('foo', root_path='/bar')
-        name = self.storage.save('xyz', File(io.BytesIO(b'abc'), 'def'))
-        self.assertEqual(name, 'xyz')
+        self.storage = dropbox.DropboxStorage('foo', root_path='/app.qoo.foo/')
+        for filename in ['xyz', 'quark']:
+            with self.subTest(filename=filename):
+                name = self.storage.save(filename, File(io.BytesIO(b'abc'), 'def'))
+                self.assertEqual(name, filename)
 
     def test_suspicious(self, *args):
         self.storage = dropbox.DropboxStorage('foo', root_path='/bar')
