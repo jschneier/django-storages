@@ -34,9 +34,9 @@ def clean_name(name):
     Normalize the name.
 
     Includes cleaning up Windows style paths, ensuring an ending trailing slash,
-    and coercing from pathlib.Path.
+    and coercing from pathlib.PurePath.
     """
-    if isinstance(name, pathlib.Path):
+    if isinstance(name, pathlib.PurePath):
         name = str(name)
 
     # Normalize Windows style paths
