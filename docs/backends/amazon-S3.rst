@@ -134,6 +134,11 @@ searches for them:
   support the legacy ``s3`` (also known as ``v2``) version. You can check to see
   if your region is one of them in the `S3 region list`_.
 
+``AWS_S3_TRANSFER_CONFIG`` (optional, default is ``None``)
+
+  Set this to customize the transfer config options such as disabling threads for ``gevent`` compatibility;
+  See the `Boto3 docs for TransferConfig` for more info.
+
 .. note::
 
   The signature versions are not backwards compatible so be careful about url endpoints if making this change
@@ -143,6 +148,7 @@ searches for them:
 .. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
+.. _Boto3 docs for TransferConfig: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
 .. _ManifestStaticFilesStorage: https://docs.djangoproject.com/en/3.1/ref/contrib/staticfiles/#manifeststaticfilesstorage
 
 CloudFront

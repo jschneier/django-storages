@@ -7,6 +7,7 @@ from unittest import mock
 from unittest import skipIf
 from urllib.parse import urlparse
 
+import boto3.s3.transfer
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -96,7 +97,7 @@ class S3Boto3StorageTests(TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_storage_save_non_seekable(self):
@@ -114,7 +115,7 @@ class S3Boto3StorageTests(TestCase):
             ExtraArgs={
                 'ContentType': 'text/plain',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_storage_save_with_default_acl(self):
@@ -134,7 +135,7 @@ class S3Boto3StorageTests(TestCase):
                 'ContentType': 'text/plain',
                 'ACL': 'private',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_storage_object_parameters_not_overwritten_by_default(self):
@@ -155,7 +156,7 @@ class S3Boto3StorageTests(TestCase):
                 'ContentType': 'text/plain',
                 'ACL': 'private',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_content_type(self):
@@ -174,7 +175,7 @@ class S3Boto3StorageTests(TestCase):
             ExtraArgs={
                 'ContentType': 'image/jpeg',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_storage_save_gzipped(self):
@@ -191,7 +192,7 @@ class S3Boto3StorageTests(TestCase):
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_storage_save_gzipped_non_seekable(self):
@@ -208,7 +209,7 @@ class S3Boto3StorageTests(TestCase):
                 'ContentType': 'application/octet-stream',
                 'ContentEncoding': 'gzip',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
 
     def test_storage_save_gzip(self):
@@ -226,7 +227,7 @@ class S3Boto3StorageTests(TestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
@@ -254,7 +255,7 @@ class S3Boto3StorageTests(TestCase):
                 'ContentType': 'text/css',
                 'ContentEncoding': 'gzip',
             },
-            Config=self.storage._transfer_config
+            Config=self.storage.transfer_config
         )
         args, kwargs = obj.upload_fileobj.call_args
         content = args[0]
@@ -766,6 +767,20 @@ class S3Boto3StorageTests(TestCase):
         self.assertEqual(storage.location, 'foo1')
         storage = s3boto3.S3Boto3Storage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
+
+    def test_use_threads_false(self):
+        with override_settings(AWS_S3_USE_THREADS=False):
+            storage = s3boto3.S3Boto3Storage()
+            self.assertFalse(storage.transfer_config.use_threads)
+
+    def test_transfer_config(self):
+        storage = s3boto3.S3Boto3Storage()
+        self.assertTrue(storage.transfer_config.use_threads)
+
+        transfer_config = boto3.s3.transfer.TransferConfig(use_threads=False)
+        with override_settings(AWS_S3_TRANSFER_CONFIG=transfer_config):
+            storage = s3boto3.S3Boto3Storage()
+            self.assertFalse(storage.transfer_config.use_threads)
 
 
 class S3StaticStorageTests(TestCase):
