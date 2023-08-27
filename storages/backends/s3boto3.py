@@ -148,8 +148,8 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
                 self._is_dirty = False
                 self.obj.download_fileobj(self._file, Config=self._storage.transfer_config)
                 self._file.seek(0)
-            if self._storage.gzip and self.obj.content_encoding == 'gzip':
-                self._file = self._decompress_file(mode=self._mode, file=self._file)
+                if self._storage.gzip and self.obj.content_encoding == 'gzip':
+                    self._file = self._decompress_file(mode=self._mode, file=self._file)
         return self._file
 
     def _set_file(self, value):
