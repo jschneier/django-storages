@@ -481,17 +481,16 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
         return self.bucket.Object(name).content_length
 
     def _get_write_parameters(self, name, content=None):
-        params = {}
+        params = self.get_object_parameters(name)
 
-        _type, encoding = mimetypes.guess_type(name)
-        content_type = getattr(content, 'content_type', None)
-        content_type = content_type or _type or self.default_content_type
+        if 'ContentType' not in params:
+            _type, encoding = mimetypes.guess_type(name)
+            content_type = getattr(content, 'content_type', None)
+            content_type = content_type or _type or self.default_content_type
 
-        params['ContentType'] = content_type
-        if encoding:
-            params['ContentEncoding'] = encoding
-
-        params.update(self.get_object_parameters(name))
+            params['ContentType'] = content_type
+            if encoding:
+                params['ContentEncoding'] = encoding
 
         if 'ACL' not in params and self.default_acl:
             params['ACL'] = self.default_acl
