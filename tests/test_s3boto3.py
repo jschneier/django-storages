@@ -195,6 +195,25 @@ class S3Boto3StorageTests(TestCase):
             Config=self.storage.transfer_config
         )
 
+    def test_content_type_set_explicitly(self):
+        name = "test_file.gz"
+        content = ContentFile("data")
+
+        def get_object_parameters(name):
+            return {"ContentType": "application/gzip"}
+
+        self.storage.get_object_parameters = get_object_parameters
+        self.storage.save(name, content)
+
+        obj = self.storage.bucket.Object.return_value
+        obj.upload_fileobj.assert_called_with(
+            content,
+            ExtraArgs={
+                "ContentType": "application/gzip",
+            },
+            Config=self.storage.transfer_config
+        )
+
     def test_storage_save_gzipped_non_seekable(self):
         """
         Test saving a gzipped file
