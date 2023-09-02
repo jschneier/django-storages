@@ -1,5 +1,6 @@
 import datetime
 import gzip
+import io
 import pickle
 import threading
 from textwrap import dedent
@@ -299,6 +300,25 @@ class S3Boto3StorageTests(TestCase):
         content_str = file.read()
         self.assertEqual(content_str, "")
         file.close()
+
+    def test_storage_open_readlines(self):
+        """
+        Test readlines with file opened in "r" and "rb" modes
+        """
+        name = 'test_open_readlines_string.txt'
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2")
+            file = self.storage.open(name, "r")
+            file._file = temp_file
+
+            content_lines = file.readlines()
+            self.assertEqual(content_lines, ["line1\n", "line2"])
+
+            temp_file.seek(0)
+            file = self.storage.open(name, "rb")
+            file._file = temp_file
+            content_lines = file.readlines()
+            self.assertEqual(content_lines, [b"line1\n", b"line2"])
 
     def test_storage_open_write(self):
         """
