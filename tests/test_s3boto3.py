@@ -295,8 +295,10 @@ class S3Boto3StorageTests(TestCase):
         Test opening a file in "r" mode (ie reading as string, not bytes)
         """
         name = 'test_open_read_string.txt'
-        content_str = self.storage.open(name, "r").read()
+        file = self.storage.open(name, "r")
+        content_str = file.read()
         self.assertEqual(content_str, "")
+        file.close()
 
     def test_storage_open_write(self):
         """
@@ -348,6 +350,7 @@ class S3Boto3StorageTests(TestCase):
         obj.key = name
         bytes_written = file.write(content)
         self.assertEqual(len(content), bytes_written)
+        file.close()
 
     def test_storage_open_no_write(self):
         """
