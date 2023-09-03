@@ -1,14 +1,15 @@
 Amazon S3
 =========
 
-Usage
-*****
+This backend implements the Django File Storage API for Amazon Web Services's (AWS) Simple Storage Service (S3).
 
-There is only one supported backend for interacting with Amazon's S3,
-``S3Boto3Storage``, based on the boto3 library.
+Installation
+------------
 
-The minimum required version of ``boto3`` is 1.4.4 although we always recommend
-the most recent.
+The backend is based on the boto3 library which must be installed; the minimum required version is 1.4.4 although
+we always recommend the most recent. Either add it to your requirements or use the optional ``s3`` extra e.g::
+
+  pip install django-storages[s3]
 
 Settings
 --------
