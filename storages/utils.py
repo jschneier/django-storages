@@ -155,3 +155,6 @@ class ReadBytesWrapper(FileProxyMixin):
 
     def close(self):
         self.file.close()
+
+    def readable(self):
+        return True
