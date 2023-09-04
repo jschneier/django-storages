@@ -8,6 +8,6 @@ Backblaze B2 implements an `S3 Compatible API <https://www.backblaze.com/b2/docs
 #. Create an `application key <https://www.backblaze.com/b2/docs/application_keys.html>`_. Best practice is to limit access to the bucket you just created.
 #. Follow the instructions in the :doc:`Amazon S3 docs <amazon-S3>` with the following exceptions:
 
-   * Set ``AWS_S3_REGION_NAME`` to your Backblaze B2 region, for example, ``us-west-004``
-   * Set ``AWS_S3_ENDPOINT_URL`` to ``https://s3.${AWS_S3_REGION_NAME}.backblazeb2.com``
-   * Set the values of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` to the application key id and application key you created in step 2.
+   * Set ``region_name`` to your Backblaze B2 region, for example, ``us-west-004``
+   * Set ``endpoint_url`` to ``https://s3.${AWS_S3_REGION_NAME}.backblazeb2.com``
+   * Set the values of ``access_key`` and ``secret_key`` to the application key id and application key you created in step 2.
