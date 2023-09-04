@@ -252,21 +252,6 @@ class GCloudStorageTests(GCloudTestCase):
 
         self.assertRaises(NotFound, self.storage.size, self.filename)
 
-    def test_modified_time(self):
-        naive_date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
-        aware_date = timezone.make_aware(naive_date, datetime.timezone.utc)
-
-        self.storage._bucket = mock.MagicMock()
-        blob = mock.MagicMock()
-        blob.updated = aware_date
-        self.storage._bucket.get_blob.return_value = blob
-
-        with self.settings(TIME_ZONE='UTC'):
-            mt = self.storage.modified_time(self.filename)
-            self.assertTrue(timezone.is_naive(mt))
-            self.assertEqual(mt, naive_date)
-            self.storage._bucket.get_blob.assert_called_with(self.filename)
-
     def test_get_modified_time(self):
         naive_date = datetime.datetime(2017, 1, 2, 3, 4, 5, 678)
         aware_date = timezone.make_aware(naive_date, datetime.timezone.utc)
@@ -310,12 +295,6 @@ class GCloudStorageTests(GCloudTestCase):
             self.assertTrue(timezone.is_aware(mt))
             self.assertEqual(mt, aware_date)
             self.storage._bucket.get_blob.assert_called_with(self.filename)
-
-    def test_modified_time_no_file(self):
-        self.storage._bucket = mock.MagicMock()
-        self.storage._bucket.get_blob.return_value = None
-
-        self.assertRaises(NotFound, self.storage.modified_time, self.filename)
 
     def test_url_public_object(self):
         url = 'https://example.com/mah-bukkit/{}'.format(self.filename)

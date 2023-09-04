@@ -641,11 +641,6 @@ class S3Boto3StorageTests(TestCase):
         obj.last_modified = datetime.datetime.now(datetime.timezone.utc)
 
         name = 'file.txt'
-        self.assertFalse(
-            is_aware(self.storage.modified_time(name)),
-            'Naive datetime object expected from modified_time()'
-        )
-
         self.assertIs(
             settings.USE_TZ,
             is_aware(self.storage.get_modified_time(name)),
