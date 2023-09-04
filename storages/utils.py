@@ -152,3 +152,6 @@ class ReadBytesWrapper(FileProxyMixin):
         if not isinstance(content, bytes):
             content = content.encode(self._encoding)
         return content
+
+    def close(self):
+        self.file.close()
