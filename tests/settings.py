@@ -10,3 +10,6 @@ DATABASES = {
 SECRET_KEY = 'hailthesunshine'
 
 USE_TZ = True
+
+# the following test settings are required for moto to work.
+AWS_STORAGE_BUCKET_NAME = "test-bucket"
