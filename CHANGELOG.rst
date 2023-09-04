@@ -1,21 +1,92 @@
 django-storages CHANGELOG
 =========================
 
-X.YY.Z (UNRELEASED)
+1.14 (2023-09-04)
 *******************
+
+General
+-------
+
+- **Breaking**: Drop support for Django 4.0 (`#1235`_)
+- Add support for saving ``pathlib.PurePath`` names (`#1278`_)
+- Add support for Django 4.2 (`#1236`_)
+
+Azure
+-----
+
+- Set ``account_(name|key)`` from ``connection_string`` if not provided (`#1225`_)
+
+Dropbox
+-------
+
+- **Deprecated** The name ``DropboxStorage.location`` has been deprecated, please rename to ``DropboxStorage.root_path``, a future version will
+  remove support for the old name. (`#1251`_)
+- Storage and related names with a captialized B have been changed to no longer have one e.g ``DropboxStorage`` has now replaced
+  ``DropBoxStorage``. Aliases have been added so no change is necessary at this time. A future version might deprecate the old names. (`#1250`_)
+- ``DropboxStorage`` now conforms to the ``BaseStorage`` interface (`#1251`_)
+- Fix name mangling when saving with certain complex root paths (`#1279`_)
+
+FTP
+---
+
+- Use setting ``BASE_URL`` if it is defined (`#1238`_)
 
 Google Cloud
 ------------
 
-- **Breaking**: Support for the deprecated ``GS_CACHE_CONTROL`` has been removed. Please set the ``cache_control`` parameter of ``GS_OBJECT_PARAMETERS`` instead. (`#1220`_)
+- **Breaking**: Support for the deprecated ``GS_CACHE_CONTROL`` has been removed. Please set the ``cache_control`` parameter of
+  ``GS_OBJECT_PARAMETERS`` instead. (`#1220`_)
 
 Libcloud
 --------
 
 - Reading a file that does not exist will now raise ``FileNotFoundError`` (`#1191`_)
 
+SFTP
+----
+
+- Add closing context manager for standalone usage to ensure connections are cleaned up (`#1253`_)
+
+S3
+--
+
+- **Deprecated** ``AWS_S3_USE_THREADS`` has been deprecated in favor of ``AWS_S3_TRANSFER_CONFIG`` (`#1280`_)
+- **Important** The namespace of this backend has changed from ``S3Boto3`` to ``S3``. There are no current plans
+  to deprecate and remove the old namespace but please update if you can. All paths, imports, and classes that previously
+  referred to ``s3boto`` are not ``s3``. E.g ``S3Boto3Storage`` has been changed to ``S3Storage`` and ``S3Boto3StorageFile``
+  has been changed to ``S3File``. (`#1289`_). Additionally the install extra is now ``s3`` (`#1284`_)
+- Add setting ``AWS_S3_TRANSFER_CONFIG`` to customize any of the ``TransferConfig`` properties (`#1280`_)
+- Enable passing ``security_token`` to constructor (`#1246`_)
+- Do not overwrite a returned ``ContentType`` from ``get_object_parameters`` (`#1281`)
+- Add support for setting ``cloudfront_key_id`` and ``cloudfront_key`` via Django 4.2's ``OPTIONS`` (`#1274`_)
+- Fix ``S3File.closed`` (`#1249`_)
+- Fix opening new files in write mode with ``S3File`` (`#1282`_)
+- Fix ``S3File`` not respecting mode on ``readlines`` (`#1000`_)
+- Fix saving files with string content (`#911`_)
+- Fix retrieving files with SSE-C enabled (`#1286`_)
+
+.. _#1280: https://github.com/jschneier/django-storages/pull/1280
+.. _#1289: https://github.com/jschneier/django-storages/pull/1289
+.. _#1284: https://github.com/jschneier/django-storages/pull/1284
+.. _#1274: https://github.com/jschneier/django-storages/pull/1274
+.. _#1281: https://github.com/jschneier/django-storages/pull/1281
+.. _#1282: https://github.com/jschneier/django-storages/pull/1282
+.. _#1279: https://github.com/jschneier/django-storages/pull/1279
+.. _#1278: https://github.com/jschneier/django-storages/pull/1278
+.. _#1235: https://github.com/jschneier/django-storages/pull/1235
+.. _#1236: https://github.com/jschneier/django-storages/pull/1236
+.. _#1225: https://github.com/jschneier/django-storages/pull/1225
+.. _#1251: https://github.com/jschneier/django-storages/pull/1251
+.. _#1250: https://github.com/jschneier/django-storages/pull/1250
+.. _#1238: https://github.com/jschneier/django-storages/pull/1238
 .. _#1220: https://github.com/jschneier/django-storages/pull/1220
 .. _#1191: https://github.com/jschneier/django-storages/pull/1191
+.. _#1253: https://github.com/jschneier/django-storages/pull/1253
+.. _#1246: https://github.com/jschneier/django-storages/pull/1246
+.. _#1249: https://github.com/jschneier/django-storages/pull/1249
+.. _#1000: https://github.com/jschneier/django-storages/pull/1000
+.. _#911: https://github.com/jschneier/django-storages/pull/911
+.. _#1286: https://github.com/jschneier/django-storages/pull/1286
 
 1.13.2 (2022-12-23)
 *******************
@@ -513,7 +584,7 @@ Azure
 
 - Pare down the required packages in ``extra_requires`` when installing the ``azure`` extra to only
   ``azure-storage-blob`` (`#680`_, `#684`_)
-- Fix compatability with ``generate_blob_shared_access_signature`` updated signature (`#705`_, `#723`_)
+- Fix compatibility with ``generate_blob_shared_access_signature`` updated signature (`#705`_, `#723`_)
 - Fetching a file now uses the configured timeout rather than hardcoding one (`#727`_)
 - Add support for configuring all blobservice options: ``AZURE_ENDPOINT_SUFFIX``,
   ``AZURE_CUSTOM_DOMAIN``, ``AZURE_CONNECTION_STRING``, ``AZURE_TOKEN_CREDENTIAL``.
@@ -572,7 +643,7 @@ SFTP
 
 - Fix off-by-1 error in ``get_available_name`` whenever ``file_overwrite`` or ``overwrite_files`` is ``True`` (`#588`_, `#589`_)
 - Change ``S3Boto3Storage.listdir()`` to use ``list_objects`` instead of ``list_objects_v2`` to restore
-  compatability with services implementing the S3 protocol that do not yet support the new method (`#586`_, `#590`_)
+  compatibility with services implementing the S3 protocol that do not yet support the new method (`#586`_, `#590`_)
 
 .. _#588: https://github.com/jschneier/django-storages/issues/588
 .. _#589: https://github.com/jschneier/django-storages/pull/589
@@ -747,7 +818,7 @@ SFTP
 ******************
 
 * Revert default ``AWS_S3_SIGNATURE_VERSION`` to V2 to restore backwards
-  compatability in ``S3Boto3``. It's recommended that all new projects set
+  compatibility in ``S3Boto3``. It's recommended that all new projects set
   this to be ``'s3v4'``. (`#344`_)
 
 .. _#344: https://github.com/jschneier/django-storages/pull/344
