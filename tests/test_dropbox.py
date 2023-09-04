@@ -115,18 +115,6 @@ class DropboxTest(TestCase):
         size = self.storage.size('foo')
         self.assertEqual(size, FILE_METADATA_MOCK.size)
 
-    @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_METADATA_MOCK)
-    def test_modified_time(self, *args):
-        mtime = self.storage.modified_time('foo')
-        self.assertEqual(mtime, FILE_DATE)
-
-    @mock.patch('dropbox.Dropbox.files_get_metadata',
-                return_value=FILE_METADATA_MOCK)
-    def test_accessed_time(self, *args):
-        mtime = self.storage.accessed_time('foo')
-        self.assertEqual(mtime, FILE_DATE)
-
     def test_open(self, *args):
         obj = self.storage._open('foo')
         self.assertIsInstance(obj, File)

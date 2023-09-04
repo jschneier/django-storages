@@ -2,7 +2,6 @@ import io
 import os
 import socket
 import stat
-from datetime import datetime
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -133,20 +132,6 @@ class SFTPStorageTest(TestCase):
     })
     def test_size(self, mock_sftp):
         self.assertEqual(self.storage.size('foo'), 42)
-
-    @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.return_value.st_atime': 1469674684.000000,
-    })
-    def test_accessed_time(self, mock_sftp):
-        self.assertEqual(self.storage.accessed_time('foo'),
-                         datetime(2016, 7, 27, 21, 58, 4))
-
-    @patch('storages.backends.sftpstorage.SFTPStorage.sftp', **{
-        'stat.return_value.st_mtime': 1469674684.000000,
-    })
-    def test_modified_time(self, mock_sftp):
-        self.assertEqual(self.storage.modified_time('foo'),
-                         datetime(2016, 7, 27, 21, 58, 4))
 
     def test_url(self):
         self.assertEqual(self.storage.url('foo'), '/media/foo')

@@ -17,7 +17,6 @@ from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri
-from django.utils.timezone import is_naive
 from django.utils.timezone import make_naive
 
 from storages.base import BaseStorage
@@ -549,13 +548,6 @@ class S3Boto3Storage(CompressStorageMixin, BaseStorage):
             return entry.last_modified
         else:
             return make_naive(entry.last_modified)
-
-    def modified_time(self, name):
-        """Returns a naive datetime object containing the last modified time."""
-        # If USE_TZ=False then get_modified_time will return a naive datetime
-        # so we just return that, else we have to localize and strip the tz
-        mtime = self.get_modified_time(name)
-        return mtime if is_naive(mtime) else make_naive(mtime)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead we

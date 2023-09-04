@@ -273,11 +273,6 @@ class GoogleCloudStorage(BaseStorage):
         blob = self._get_blob(name)
         return blob.size
 
-    def modified_time(self, name):
-        name = self._normalize_name(clean_name(name))
-        blob = self._get_blob(name)
-        return timezone.make_naive(blob.updated)
-
     def get_modified_time(self, name):
         name = self._normalize_name(clean_name(name))
         blob = self._get_blob(name)

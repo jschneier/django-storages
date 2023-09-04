@@ -371,13 +371,6 @@ class AzureStorage(BaseStorage):
         # must convert it to settings time_zone
         return properties.last_modified.astimezone(tz)
 
-    def modified_time(self, name):
-        """Returns a naive datetime object containing the last modified time."""
-        mtime = self.get_modified_time(name)
-        if timezone.is_naive(mtime):
-            return mtime
-        return timezone.make_naive(mtime)
-
     def list_all(self, path=''):
         """Return all files for a given path"""
         if path:

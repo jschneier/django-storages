@@ -416,16 +416,6 @@ class AzureStorageTest(TestCase):
         self.storage._client.get_blob_client.return_value = client_mock
         self.assertEqual(12, self.storage.size("name"))
 
-    def test_last_modified_of_file(self):
-        props = BlobProperties()
-        accepted_time = datetime.datetime(2017, 5, 11, 8, 52, 4)
-        props.last_modified = accepted_time
-        client_mock = mock.MagicMock()
-        client_mock.get_blob_properties.return_value = props
-        self.storage._client.get_blob_client.return_value = client_mock
-        time = self.storage.modified_time("name")
-        self.assertEqual(accepted_time, time)
-
     def test_override_settings(self):
         with override_settings(AZURE_CONTAINER='foo1'):
             storage = azure_storage.AzureStorage()

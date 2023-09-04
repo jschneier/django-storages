@@ -9,7 +9,6 @@ import io
 import os
 import posixpath
 import stat
-from datetime import datetime
 from urllib.parse import urljoin
 
 import paramiko
@@ -180,16 +179,6 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
     def size(self, name):
         remote_path = self._remote_path(name)
         return self.sftp.stat(remote_path).st_size
-
-    def accessed_time(self, name):
-        remote_path = self._remote_path(name)
-        utime = self.sftp.stat(remote_path).st_atime
-        return datetime.fromtimestamp(utime)
-
-    def modified_time(self, name):
-        remote_path = self._remote_path(name)
-        utime = self.sftp.stat(remote_path).st_mtime
-        return datetime.fromtimestamp(utime)
 
     def url(self, name):
         if self._base_url is None:

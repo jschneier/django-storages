@@ -1,5 +1,4 @@
 import io
-from datetime import datetime
 from unittest.mock import patch
 
 from django.core.exceptions import ImproperlyConfigured
@@ -143,18 +142,6 @@ class FTPTest(TestCase):
     })
     def test_save(self, mock_ftp):
         self.storage._save('foo', File(io.BytesIO(b'foo'), 'foo'))
-
-    @patch('ftplib.FTP', **{'return_value.sendcmd.return_value': '213 20160727094506'})
-    def test_modified_time(self, mock_ftp):
-        self.storage._start_connection()
-        modif_date = self.storage.modified_time('foo')
-        self.assertEqual(modif_date, datetime(2016, 7, 27, 9, 45, 6))
-
-    @patch('ftplib.FTP', **{'return_value.sendcmd.return_value': '500'})
-    def test_modified_time_error(self, mock_ftp):
-        self.storage._start_connection()
-        with self.assertRaises(ftp.FTPStorageException):
-            self.storage.modified_time('foo')
 
     @patch('ftplib.FTP', **{'return_value.retrlines': list_retrlines})
     def test_listdir(self, mock_retrlines):

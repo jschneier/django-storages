@@ -150,14 +150,6 @@ class DropboxStorage(BaseStorage):
         metadata = self.client.files_get_metadata(self._full_path(name))
         return metadata.size
 
-    def modified_time(self, name):
-        metadata = self.client.files_get_metadata(self._full_path(name))
-        return metadata.server_modified
-
-    def accessed_time(self, name):
-        metadata = self.client.files_get_metadata(self._full_path(name))
-        return metadata.client_modified
-
     def url(self, name):
         try:
             media = self.client.files_get_temporary_link(self._full_path(name))
