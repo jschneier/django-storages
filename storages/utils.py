@@ -5,6 +5,7 @@ import posixpath
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import SuspiciousFileOperation
+from django.core.files.utils import FileProxyMixin
 from django.utils.encoding import force_bytes
 
 
@@ -127,7 +128,7 @@ def is_seekable(file_object):
     return not hasattr(file_object, 'seekable') or file_object.seekable()
 
 
-class ReadBytesWrapper:
+class ReadBytesWrapper(FileProxyMixin):
     """
     A wrapper for a file-like object, that makes read() always returns bytes.
     """
@@ -138,20 +139,16 @@ class ReadBytesWrapper:
             If not provided will default to file.encoding, of if that's not available,
             to utf-8.
         """
-        self._file = file
-        self.encoding = (
+        self.file = file
+        self._encoding = (
             encoding
             or getattr(file, "encoding", None)
             or "utf-8"
         )
 
     def read(self, *args, **kwargs):
-        content = self._file.read(*args, **kwargs)
+        content = self.file.read(*args, **kwargs)
 
         if not isinstance(content, bytes):
-            return content.encode(self.encoding)
-        else:
-            return content
-
-    def seek(self, *args, **kwargs):
-        return self._file.seek(*args, **kwargs)
+            content = content.encode(self._encoding)
+        return content

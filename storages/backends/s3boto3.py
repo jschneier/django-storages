@@ -23,11 +23,11 @@ from django.utils.timezone import make_naive
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
 from storages.compress import CompressStorageMixin
+from storages.utils import ReadBytesWrapper
 from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
 from storages.utils import is_seekable
-from storages.utils import ReadBytesWrapper
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
