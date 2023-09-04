@@ -854,6 +854,19 @@ class S3Boto3StorageFileTests(TestCase):
         self.storage = s3boto3.S3Boto3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
+    def test_loading_ssec(self):
+        params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
+        self.storage.get_object_parameters = lambda name: params
+
+        filtered = {"SSECustomerKey": "xyz"}
+        f = s3boto3.S3Boto3StorageFile('test', 'r', self.storage)
+        f.obj.load.assert_called_once_with(**filtered)
+
+        f.file
+        f.obj.download_fileobj.assert_called_once_with(
+            mock.ANY, ExtraArgs=filtered, Config=self.storage.transfer_config
+        )
+
     def test_closed(self):
         f = s3boto3.S3Boto3StorageFile('test', 'wb', self.storage)
 
