@@ -34,6 +34,7 @@ from storages.utils import to_bytes
 
 try:
     import boto3.session
+    import s3transfer.constants
     from boto3.s3.transfer import TransferConfig
     from botocore.client import Config
     from botocore.exceptions import ClientError
@@ -88,6 +89,13 @@ else:
             'Supported backends are packages: cryptography and rsa.')
 
 
+def _filter_download_params(params):
+    return {
+        key: value for (key, value) in params.items()
+        if key in s3transfer.constants.ALLOWED_DOWNLOAD_ARGS
+    }
+
+
 @deconstructible
 class S3Boto3StorageFile(CompressedFileMixin, File):
     """
@@ -117,7 +125,8 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
         self.obj = storage.bucket.Object(name)
         if 'w' not in mode:
             # Force early RAII-style exception if object does not exist
-            self.obj.load()
+            params = _filter_download_params(self._storage.get_object_parameters(self.name))
+            self.obj.load(**params)
         self._is_dirty = False
         self._raw_bytes_written = 0
         self._file = None
@@ -147,7 +156,12 @@ class S3Boto3StorageFile(CompressedFileMixin, File):
             )
             if 'r' in self._mode:
                 self._is_dirty = False
-                self.obj.download_fileobj(self._file, Config=self._storage.transfer_config)
+                params = _filter_download_params(self._storage.get_object_parameters(self.name))
+                self.obj.download_fileobj(
+                    self._file,
+                    ExtraArgs=params,
+                    Config=self._storage.transfer_config
+                )
                 self._file.seek(0)
                 if self._storage.gzip and self.obj.content_encoding == 'gzip':
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
