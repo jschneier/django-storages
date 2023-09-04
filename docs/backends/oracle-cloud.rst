@@ -5,12 +5,12 @@ Oracle cloud provides S3 compatible object storage. To use it follow the instruc
 configurations on settings.py
 
 - Create a `Customer Secret Key`_
-- Use generated key as ``AWS_SECRET_ACCESS_KEY``
-- And the value in the *Access Key* column as ``AWS_ACCESS_KEY_ID``
-- Set ``AWS_STORAGE_BUCKET_NAME`` with your bucket name
-- Set ``AWS_S3_REGION_NAME`` with the current region
+- Use generated key as ``secret_key``
+- And the value in the *Access Key* column as ``access_key``
+- Set ``bucket_name`` with your bucket name
+- Set ``region_name`` with the current region
 
-And last but most importantly set the ``AWS_S3_ENDPOINT_URL`` with:
+And last but most importantly set the ``endpoint_url`` with:
 
     ``https://{ORACLE_NAMESPACE}.compat.objectstorage.{ORACLE_REGION}.oraclecloud.com``
 
