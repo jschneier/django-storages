@@ -20,24 +20,24 @@ from django.test import override_settings
 from django.utils.timezone import is_aware
 from moto import mock_s3
 
-from storages.backends import s3boto3
+from storages.backends import s3
 from tests.utils import NonSeekableContentFile
 
 
-class S3ManifestStaticStorageTestStorage(s3boto3.S3ManifestStaticStorage):
+class S3ManifestStaticStorageTestStorage(s3.S3ManifestStaticStorage):
     def read_manifest(self):
         return None
 
 
-class S3Boto3StorageTests(TestCase):
+class S3StorageTests(TestCase):
     def setUp(self):
-        self.storage = s3boto3.S3Boto3Storage()
+        self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
     def test_s3_session(self):
         with override_settings(AWS_S3_SESSION_PROFILE="test_profile"):
             with mock.patch('boto3.Session') as mock_session:
-                storage = s3boto3.S3Boto3Storage()
+                storage = s3.S3Storage()
                 _ = storage.connection
                 mock_session.assert_called_once_with(profile_name="test_profile")
 
@@ -711,14 +711,14 @@ class S3Boto3StorageTests(TestCase):
         self.storage.custom_domain = "mock.cloudfront.net"
 
         for pem_to_signer in (
-                s3boto3._use_cryptography_signer(),
-                s3boto3._use_rsa_signer()):
+                s3._use_cryptography_signer(),
+                s3._use_rsa_signer()):
             self.storage.cloudfront_signer = pem_to_signer(key_id, pem)
             self.storage.querystring_auth = False
             self.assertEqual(self.storage.url(filename), url)
 
             self.storage.querystring_auth = True
-            with mock.patch('storages.backends.s3boto3.datetime') as mock_datetime:
+            with mock.patch('storages.backends.s3.datetime') as mock_datetime:
                 mock_datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(0)
                 self.assertEqual(self.storage.url(filename), signed_url)
 
@@ -775,57 +775,57 @@ class S3Boto3StorageTests(TestCase):
 
     def test_location_leading_slash(self):
         msg = (
-            "S3Boto3Storage.location cannot begin with a leading slash. "
+            "S3Storage.location cannot begin with a leading slash. "
             "Found '/'. Use '' instead."
         )
         with self.assertRaises(ImproperlyConfigured, msg=msg):
-            s3boto3.S3Boto3Storage(location='/')
+            s3.S3Storage(location='/')
 
     def test_override_settings(self):
         with override_settings(AWS_LOCATION='foo1'):
-            storage = s3boto3.S3Boto3Storage()
+            storage = s3.S3Storage()
             self.assertEqual(storage.location, 'foo1')
         with override_settings(AWS_LOCATION='foo2'):
-            storage = s3boto3.S3Boto3Storage()
+            storage = s3.S3Storage()
             self.assertEqual(storage.location, 'foo2')
 
     def test_override_class_variable(self):
-        class MyStorage1(s3boto3.S3Boto3Storage):
+        class MyStorage1(s3.S3Storage):
             location = 'foo1'
 
         storage = MyStorage1()
         self.assertEqual(storage.location, 'foo1')
 
-        class MyStorage2(s3boto3.S3Boto3Storage):
+        class MyStorage2(s3.S3Storage):
             location = 'foo2'
 
         storage = MyStorage2()
         self.assertEqual(storage.location, 'foo2')
 
     def test_override_init_argument(self):
-        storage = s3boto3.S3Boto3Storage(location='foo1')
+        storage = s3.S3Storage(location='foo1')
         self.assertEqual(storage.location, 'foo1')
-        storage = s3boto3.S3Boto3Storage(location='foo2')
+        storage = s3.S3Storage(location='foo2')
         self.assertEqual(storage.location, 'foo2')
 
     def test_use_threads_false(self):
         with override_settings(AWS_S3_USE_THREADS=False):
-            storage = s3boto3.S3Boto3Storage()
+            storage = s3.S3Storage()
             self.assertFalse(storage.transfer_config.use_threads)
 
     def test_transfer_config(self):
-        storage = s3boto3.S3Boto3Storage()
+        storage = s3.S3Storage()
         self.assertTrue(storage.transfer_config.use_threads)
 
         transfer_config = boto3.s3.transfer.TransferConfig(use_threads=False)
         with override_settings(AWS_S3_TRANSFER_CONFIG=transfer_config):
-            storage = s3boto3.S3Boto3Storage()
+            storage = s3.S3Storage()
             self.assertFalse(storage.transfer_config.use_threads)
 
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):
-        self.storage = s3boto3.S3StaticStorage()
+        self.storage = s3.S3StaticStorage()
         self.storage._connections.connection = mock.MagicMock()
 
     def test_querystring_auth(self):
@@ -844,9 +844,9 @@ class S3ManifestStaticStorageTests(TestCase):
         self.storage.save('x.txt', ContentFile(b'abc'))
 
 
-class S3Boto3StorageFileTests(TestCase):
+class S3FileTests(TestCase):
     def setUp(self) -> None:
-        self.storage = s3boto3.S3Boto3Storage()
+        self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
     def test_loading_ssec(self):
@@ -854,7 +854,7 @@ class S3Boto3StorageFileTests(TestCase):
         self.storage.get_object_parameters = lambda name: params
 
         filtered = {"SSECustomerKey": "xyz"}
-        f = s3boto3.S3Boto3StorageFile('test', 'r', self.storage)
+        f = s3.S3File('test', 'r', self.storage)
         f.obj.load.assert_called_once_with(**filtered)
 
         f.file
@@ -863,7 +863,7 @@ class S3Boto3StorageFileTests(TestCase):
         )
 
     def test_closed(self):
-        f = s3boto3.S3Boto3StorageFile('test', 'wb', self.storage)
+        f = s3.S3File('test', 'wb', self.storage)
 
         with self.subTest("is True after init"):
             self.assertTrue(f.closed)
@@ -879,7 +879,7 @@ class S3Boto3StorageFileTests(TestCase):
 
 
 @mock_s3
-class S3Boto3StorageTestsWithMoto(TestCase):
+class S3StorageTestsWithMoto(TestCase):
     """
     Using mock_s3 as a class decorator automatically decorates methods,
     but NOT classmethods or staticmethods.
@@ -888,7 +888,7 @@ class S3Boto3StorageTestsWithMoto(TestCase):
     def setUp(cls):
         super().setUp()
 
-        cls.storage = s3boto3.S3Boto3Storage()
+        cls.storage = s3.S3Storage()
         cls.bucket = cls.storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
         cls.bucket.create()
 
@@ -961,5 +961,13 @@ class S3Boto3StorageTestsWithMoto(TestCase):
         self.assertEqual(b"data", s3_object_fetched['Body'].read())
         self.assertEqual(
             s3_object_fetched["ContentType"],
-            s3boto3.S3Boto3Storage.default_content_type,
+            s3.S3Storage.default_content_type,
         )
+
+
+class TestBackwardsNames(TestCase):
+    def test_importing(self):
+        from storages.backends.s3boto3 import S3Boto3Storage  # noqa
+        from storages.backends.s3boto3 import S3Boto3StorageFile  # noqa
+        from storages.backends.s3boto3 import S3ManifestStaticStorage  # noqa
+        from storages.backends.s3boto3 import S3StaticStorage  # noqa

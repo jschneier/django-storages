@@ -22,7 +22,7 @@ because the settings were global, now you pass them under the key ``OPTIONS``. F
 
   STORAGES = {
       "default": {
-          "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+          "BACKEND": "storages.backends.s3.S3Storage",
           "OPTIONS": {
             ...your_options_here
           },
@@ -31,12 +31,12 @@ because the settings were global, now you pass them under the key ``OPTIONS``. F
 
 On Django < 4.2 you'd instead define::
 
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    DEFAULT_FILE_STORAGE = "storages.backends.s3.S3Storage"
 
 To put static files on S3 via ``collectstatic`` on Django >= 4.2 you'd include the ``staticfiles`` key (at the same level as
 ``default`` above inside of the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
 
-    STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
+    STATICFILES_STORAGE = "storages.backends.s3.S3Storage"
 
 The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
 well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
@@ -44,7 +44,7 @@ well as the global value. Given the significant improvements provided by the new
 Authentication Settings
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Boto3Storage``
+There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Storage``
 searches for them:
 
 #. ``session_profile`` or ``AWS_S3_SESSION_PROFILE``
@@ -68,7 +68,7 @@ Settings
   Default: ``{}``
 
   Use this to set parameters on all objects. To set these on a per-object
-  basis, subclass the backend and override ``S3Boto3Storage.get_object_parameters``.
+  basis, subclass the backend and override ``S3Storage.get_object_parameters``.
 
   To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_; an incomplete list includes: ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
