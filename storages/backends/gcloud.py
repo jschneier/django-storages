@@ -83,7 +83,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
         return super().read(num_bytes)
 
     def write(self, content):
-        if 'w' not in self._mode:
+        if 'w' not in self._mode and 'r+' not in self._mode:
             raise AttributeError("File was not opened in write mode.")
         self._is_dirty = True
         return super().write(to_bytes(content))
