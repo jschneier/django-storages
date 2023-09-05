@@ -496,8 +496,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         paginator = self.connection.meta.client.get_paginator('list_objects')
         pages = paginator.paginate(Bucket=self.bucket_name, Delimiter='/', Prefix=path)
         for page in pages:
-            for entry in page.get('CommonPrefixes', ()):
-                directories.append(posixpath.relpath(entry['Prefix'], path))
+            directories += [posixpath.relpath(entry['Prefix'], path) for entry in page.get('CommonPrefixes', ())]
             for entry in page.get('Contents', ()):
                 key = entry['Key']
                 if key != path:
