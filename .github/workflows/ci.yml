@@ -69,6 +69,6 @@ jobs:
 
       - name: Quality tests
         env:
-          TOXENV: flake8
+          TOXENV: ruff
         run: |
           tox

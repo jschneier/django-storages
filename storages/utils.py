@@ -71,7 +71,7 @@ def safe_join(base, *paths):
     """
     base_path = base
     base_path = base_path.rstrip('/')
-    paths = [p for p in paths]
+    paths = list(paths)
 
     final_path = base_path + '/'
     for path in paths:

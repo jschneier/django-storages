@@ -765,7 +765,7 @@ class S3StorageTests(TestCase):
         def thread_storage_connection():
             connections.append(self.storage.connection)
 
-        for x in range(2):
+        for _x in range(2):
             t = threading.Thread(target=thread_storage_connection)
             t.start()
             t.join()

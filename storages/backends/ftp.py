@@ -120,7 +120,6 @@ class FTPStorage(Storage):
                         'Cannot create directory chain %s' % path
                     )
         self._connection.cwd(pwd)
-        return
 
     def _put_file(self, name, content):
         # Connection must be open!
