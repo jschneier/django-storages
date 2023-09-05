@@ -19,7 +19,7 @@ Azure
 Dropbox
 -------
 
-- **Deprecated** The name ``DropboxStorage.location`` has been deprecated, please rename to ``DropboxStorage.root_path``, a future version will
+- **Deprecated:** The name ``DropboxStorage.location`` has been deprecated, please rename to ``DropboxStorage.root_path``, a future version will
   remove support for the old name. (`#1251`_)
 - Storage and related names with a captialized B have been changed to no longer have one e.g ``DropboxStorage`` has now replaced
   ``DropBoxStorage``. Aliases have been added so no change is necessary at this time. A future version might deprecate the old names. (`#1250`_)
@@ -50,14 +50,14 @@ SFTP
 S3
 --
 
-- **Deprecated** ``AWS_S3_USE_THREADS`` has been deprecated in favor of ``AWS_S3_TRANSFER_CONFIG`` (`#1280`_)
-- **Important** The namespace of this backend has changed from ``S3Boto3`` to ``S3``. There are no current plans
+- **Deprecated:** ``AWS_S3_USE_THREADS`` has been deprecated in favor of ``AWS_S3_TRANSFER_CONFIG`` (`#1280`_)
+- **Important:** The namespace of this backend has changed from ``S3Boto3`` to ``S3``. There are no current plans
   to deprecate and remove the old namespace but please update if you can. All paths, imports, and classes that previously
-  referred to ``s3boto`` are not ``s3``. E.g ``S3Boto3Storage`` has been changed to ``S3Storage`` and ``S3Boto3StorageFile``
+  referred to ``s3boto`` are now ``s3``. E.g ``S3Boto3Storage`` has been changed to ``S3Storage`` and ``S3Boto3StorageFile``
   has been changed to ``S3File``. (`#1289`_). Additionally the install extra is now ``s3`` (`#1284`_)
-- Add setting ``AWS_S3_TRANSFER_CONFIG`` to customize any of the ``TransferConfig`` properties (`#1280`_)
+- Add setting ``transfer_config/AWS_S3_TRANSFER_CONFIG`` to customize any of the ``TransferConfig`` properties (`#1280`_)
 - Enable passing ``security_token`` to constructor (`#1246`_)
-- Do not overwrite a returned ``ContentType`` from ``get_object_parameters`` (`#1281`)
+- Do not overwrite a returned ``ContentType`` from ``get_object_parameters`` (`#1281`_)
 - Add support for setting ``cloudfront_key_id`` and ``cloudfront_key`` via Django 4.2's ``OPTIONS`` (`#1274`_)
 - Fix ``S3File.closed`` (`#1249`_)
 - Fix opening new files in write mode with ``S3File`` (`#1282`_)
