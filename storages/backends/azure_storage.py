@@ -22,6 +22,20 @@ from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
 
+try:
+    from django_guid import get_guid
+except ImportError:
+    def get_guid():
+        return None
+
+
+def _make_headers():
+    headers = {}
+    correlation_id = get_guid()
+    if correlation_id is not None:
+        headers["x-ms-client-request-id"] = correlation_id
+    return headers
+
 
 @deconstructible
 class AzureStorageFile(File):
@@ -45,7 +59,9 @@ class AzureStorageFile(File):
 
         if 'r' in self._mode or 'a' in self._mode:
             download_stream = self._storage.client.download_blob(
-                self._path, timeout=self._storage.timeout)
+                self._path,
+                timeout=self._storage.timeout,
+                headers=_make_headers())
             download_stream.readinto(file)
         if 'r' in self._mode:
             file.seek(0)
@@ -270,13 +286,14 @@ class AzureStorage(BaseStorage):
         try:
             self.client.delete_blob(
                 self._get_valid_path(name),
-                timeout=self.timeout)
+                timeout=self.timeout,
+                headers=_make_headers())
         except ResourceNotFoundError:
             pass
 
     def size(self, name):
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
-        properties = blob_client.get_blob_properties(timeout=self.timeout)
+        properties = blob_client.get_blob_properties(timeout=self.timeout, headers=_make_headers())
         return properties.size
 
     def _save(self, name, content):
@@ -295,7 +312,8 @@ class AzureStorage(BaseStorage):
             content_settings=ContentSettings(**params),
             max_concurrency=self.upload_max_conn,
             timeout=self.timeout,
-            overwrite=self.overwrite_files)
+            overwrite=self.overwrite_files,
+            headers=_make_headers())
         return cleaned_name
 
     def _expire_at(self, expire):
@@ -359,7 +377,7 @@ class AzureStorage(BaseStorage):
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
-        properties = blob_client.get_blob_properties(timeout=self.timeout)
+        properties = blob_client.get_blob_properties(timeout=self.timeout, headers=_make_headers())
         if not setting('USE_TZ', False):
             return timezone.make_naive(properties.last_modified)
 
@@ -382,7 +400,8 @@ class AzureStorage(BaseStorage):
             blob.name
             for blob in self.client.list_blobs(
                 name_starts_with=path,
-                timeout=self.timeout)]
+                timeout=self.timeout,
+                headers=_make_headers())]
 
     def listdir(self, path=''):
         """
