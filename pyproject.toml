@@ -3,10 +3,81 @@
 # verbose regular expressions by Black.  Use [ ] to denote a significant space
 # character.
 
-# When switching from ruff.toml to pyproject.toml, use the section names that
-# start with [tool.ruff
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61.2",
+]
 
-# [tool.ruff]
+[project]
+name = "django-storages"
+description = "Support for many storage backends in Django"
+license = {text = "BSD-3-Clause"}
+authors = [{name = "Josh Schneier", email = "josh.schneier@gmail.com"}]
+requires-python = ">=3.7"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Web Environment",
+  "Framework :: Django",
+  "Framework :: Django :: 3.2",
+  "Framework :: Django :: 4.1",
+  "Framework :: Django :: 4.2",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dynamic = [
+  "readme",
+  "version",
+]
+dependencies = [
+  "Django>=3.2",
+]
+[project.optional-dependencies]
+azure = [
+  "azure-storage-blob>=12",
+]
+boto3 = [
+  "boto3>=1.4.4",
+]
+dropbox = [
+  "dropbox>=7.2.1",
+]
+google = [
+  "google-cloud-storage>=1.27",
+]
+libcloud = [
+  "apache-libcloud",
+]
+s3 = [
+  "boto3>=1.4.4",
+]
+sftp = [
+  "paramiko>=1.15",
+]
+[project.urls]
+Homepage = "https://github.com/jschneier/django-storages"
+
+[tool.setuptools]
+zip-safe = false
+packages = [
+    "storages",
+    "storages.backends",
+]
+include-package-data = false
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.rst", "CHANGELOG.rst"]}
+version = {attr = "storages.__version__"}
+
+[tool.ruff]
 select = [
   "AIR",    # Airflow
   "ASYNC",  # flake8-async
@@ -74,17 +145,14 @@ ignore = [
 line-length = 119
 target-version = "py37"
 
-[isort]
-# [tool.ruff.isort]
+[tool.ruff.isort]
 force-single-line = true
 known-first-party = ["storages"]
 
-[per-file-ignores]
-# [tool.ruff.per-file-ignores]
+[tool.ruff.per-file-ignores]
 "docs/conf.py" = ["E402", "INP001"]
 "storages/backends/ftp.py" = ["PERF203"]
 "tests/test_s3.py" = ["B018"]
 
-[pylint]
-# [tool.ruff.pylint]
+[tool.ruff.pylint]
 allow-magic-value-types = ["int", "str"]
