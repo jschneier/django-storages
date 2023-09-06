@@ -118,7 +118,8 @@ class AzureStorageTest(TestCase):
             # Django 2.2.21 added this security fix:
             # https://docs.djangoproject.com/en/3.2/releases/2.2.21/#cve-2021-31542-potential-directory-traversal-via-uploaded-files
             # It raises SuspiciousOperation before we get to our ValueError.
-            # The fix wasn't applied to 3.0 (no longer in support), but was applied to 3.1 & 3.2.
+            # The fix wasn't applied to 3.0 (no longer in support), but was applied to
+            # 3.1 & 3.2.
             self.assertRaises(ValueError, self.storage.get_available_name, "")
             self.assertRaises(ValueError, self.storage.get_available_name, "/")
             self.assertRaises(ValueError, self.storage.get_available_name, ".")

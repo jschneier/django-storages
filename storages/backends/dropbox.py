@@ -103,8 +103,9 @@ class DropboxStorage(BaseStorage):
         # Backwards compat
         if hasattr(self, "location"):
             warnings.warn(
-                "Setting `root_path` with name `location` is deprecated and will be removed in a future version of "
-                "django-storages. Please update the name from `location` to `root_path`",
+                "Setting `root_path` with name `location` is deprecated and will be "
+                "removed in a future version of django-storages. Please update the "
+                "name from `location` to `root_path`",
                 DeprecationWarning,
             )
             self.root_path = self.location
@@ -173,8 +174,9 @@ class DropboxStorage(BaseStorage):
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
-        # .save() validates the filename isn't absolute but Dropbox requires an absolute filename.
-        # Work with the absolute name internally but strip it off before passing up-the-chain.
+        # .save() validates the filename isn't absolute but Dropbox requires an
+        # absolute filename.  Work with the absolute name internally but strip it
+        # off before passing up-the-chain.
         return removeprefix(self.root_path, name).lstrip("/")
 
     def _chunked_upload(self, content, dest_path):

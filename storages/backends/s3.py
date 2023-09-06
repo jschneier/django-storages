@@ -226,11 +226,12 @@ class S3File(CompressedFileMixin, File):
 
     def _create_empty_on_close(self):
         """
-        Attempt to create an empty file for this key when this File is closed if no bytes
-        have been written and no object already exists on S3 for this key.
+        Attempt to create an empty file for this key when this File is closed if no
+        bytes have been written and no object already exists on S3 for this key.
 
-        This behavior is meant to mimic the behavior of Django's builtin FileSystemStorage,
-        where files are always created after they are opened in write mode:
+        This behavior is meant to mimic the behavior of Django's builtin
+        FileSystemStorage, where files are always created after they are opened in
+        write mode:
 
             f = storage.open('file.txt', mode='w')
             f.close()
@@ -274,7 +275,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     """
 
     default_content_type = "application/octet-stream"
-    # If config provided in init, signature_version and addressing_style settings/args are ignored.
+    # If config provided in init, signature_version and addressing_style settings/args
+    # are ignored.
     config = None
 
     def __init__(self, **settings):
@@ -570,12 +572,15 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             return make_naive(entry.last_modified)
 
     def _strip_signing_parameters(self, url):
-        # Boto3 does not currently support generating URLs that are unsigned. Instead we
-        # take the signed URLs and strip any querystring params related to signing and expiration.
-        # Note that this may end up with URLs that are still invalid, especially if params are
-        # passed in that only work with signed URLs, e.g. response header params.
-        # The code attempts to strip all query parameters that match names of known parameters
-        # from v2 and v4 signatures, regardless of the actual signature version used.
+        # Boto3 does not currently support generating URLs that are unsigned. Instead
+        # we take the signed URLs and strip any querystring params related to signing
+        # and expiration.
+        # Note that this may end up with URLs that are still invalid, especially if
+        # params are passed in that only work with signed URLs, e.g. response header
+        # params.
+        # The code attempts to strip all query parameters that match names of known
+        # parameters from v2 and v4 signatures, regardless of the actual signature
+        # version used.
         split_url = urlsplit(url)
         qs = parse_qsl(split_url.query, keep_blank_values=True)
         blacklist = {
@@ -591,8 +596,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "signature",
         }
         filtered_qs = ((key, val) for key, val in qs if key.lower() not in blacklist)
-        # Note: Parameters that did not have a value in the original query string will have
-        # an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=
+        # Note: Parameters that did not have a value in the original query string will
+        # have an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=
         joined_qs = ("=".join(keyval) for keyval in filtered_qs)
         split_url = split_url._replace(query="&".join(joined_qs))
         return split_url.geturl()

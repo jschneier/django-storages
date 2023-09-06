@@ -64,7 +64,8 @@ class LibCloudStorage(Storage):
         return self.driver.get_container(self.bucket)
 
     def _get_object(self, name):
-        """Get object by its name. ObjectDoesNotExistError wii be raised if object not found"""
+        """Get object by its name. ObjectDoesNotExistError will be raised if object not
+        found"""
         return self.driver.get_object(self.bucket, clean_name(name))
 
     def delete(self, name):

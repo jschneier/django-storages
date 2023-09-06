@@ -300,7 +300,8 @@ class GoogleCloudStorage(BaseStorage):
         """
         Return public URL or a signed URL for the Blob.
 
-        The existnce of blobs are not verified for public URLs, it makes the code too slow.
+        The existnce of blobs are not verified for public URLs, it makes the code too
+        slow.
         """
         name = self._normalize_name(clean_name(name))
         blob = self.bucket.blob(name)

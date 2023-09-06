@@ -661,9 +661,9 @@ class S3StorageTests(TestCase):
         self.assertIs(
             settings.USE_TZ,
             is_aware(self.storage.get_modified_time(name)),
-            "{} datetime object expected from get_modified_time() when USE_TZ={}".format(
-                ("Naive", "Aware")[settings.USE_TZ], settings.USE_TZ
-            ),
+            (
+                "{} datetime object expected from get_modified_time() when USE_TZ={}"
+            ).format(("Naive", "Aware")[settings.USE_TZ], settings.USE_TZ),
         )
 
     def test_storage_url(self):
