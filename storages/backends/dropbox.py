@@ -23,7 +23,7 @@ from storages.utils import get_available_overwrite_name
 from storages.utils import setting
 
 _DEFAULT_TIMEOUT = 100
-_DEFAULT_MODE = 'add'
+_DEFAULT_MODE = "add"
 
 
 class DropboxStorageException(Exception):
@@ -35,7 +35,7 @@ DropBoxStorageException = DropboxStorageException
 
 def removeprefix(prefix, name):
     if name.startswith(prefix):
-        name = name[len(prefix):]
+        name = name[len(prefix) :]
     return name
 
 
@@ -50,16 +50,16 @@ class DropboxFile(File):
             self._file = SpooledTemporaryFile()
             # As dropbox==9.3.0, the client returns a tuple
             # (dropbox.files.FileMetadata, requests.models.Response)
-            file_metadata, response = \
-                self._storage.client.files_download(self.name)
+            file_metadata, response = self._storage.client.files_download(self.name)
             if response.status_code == 200:
                 with BytesIO(response.content) as file_content:
                     copyfileobj(file_content, self._file)
             else:
                 # JIC the exception isn't catched by the dropbox client
                 raise DropboxStorageException(
-                    "Dropbox server returned a {} response when accessing {}"
-                    .format(response.status_code, self.name)
+                    "Dropbox server returned a {} response when accessing {}".format(
+                        response.status_code, self.name
+                    )
                 )
             self._file.seek(0)
         return self._file
@@ -76,6 +76,7 @@ DropBoxFile = DropboxFile
 @deconstructible
 class DropboxStorage(BaseStorage):
     """Dropbox Storage class for Django pluggable storage system."""
+
     CHUNK_SIZE = 4 * 1024 * 1024
 
     def __init__(self, oauth2_access_token=None, **settings):
@@ -100,27 +101,29 @@ class DropboxStorage(BaseStorage):
         )
 
         # Backwards compat
-        if hasattr(self, 'location'):
+        if hasattr(self, "location"):
             warnings.warn(
                 "Setting `root_path` with name `location` is deprecated and will be removed in a future version of "
-                "django-storages. Please update the name from `location` to `root_path`", DeprecationWarning)
+                "django-storages. Please update the name from `location` to `root_path`",
+                DeprecationWarning,
+            )
             self.root_path = self.location
 
     def get_default_settings(self):
         return {
-            "root_path": setting('DROPBOX_ROOT_PATH', '/'),
-            "oauth2_access_token": setting('DROPBOX_OAUTH2_TOKEN'),
-            "app_key": setting('DROPBOX_APP_KEY'),
-            "app_secret": setting('DROPBOX_APP_SECRET'),
-            "oauth2_refresh_token": setting('DROPBOX_OAUTH2_REFRESH_TOKEN'),
-            "timeout":  setting('DROPBOX_TIMEOUT', _DEFAULT_TIMEOUT),
-            "write_mode": setting('DROPBOX_WRITE_MODE', _DEFAULT_MODE),
+            "root_path": setting("DROPBOX_ROOT_PATH", "/"),
+            "oauth2_access_token": setting("DROPBOX_OAUTH2_TOKEN"),
+            "app_key": setting("DROPBOX_APP_KEY"),
+            "app_secret": setting("DROPBOX_APP_SECRET"),
+            "oauth2_refresh_token": setting("DROPBOX_OAUTH2_REFRESH_TOKEN"),
+            "timeout": setting("DROPBOX_TIMEOUT", _DEFAULT_TIMEOUT),
+            "write_mode": setting("DROPBOX_WRITE_MODE", _DEFAULT_MODE),
         }
 
     def _full_path(self, name):
-        if name == '/':
-            name = ''
-        return safe_join(self.root_path, name).replace('\\', '/')
+        if name == "/":
+            name = ""
+        return safe_join(self.root_path, name).replace("\\", "/")
 
     def delete(self, name):
         self.client.files_delete(self._full_path(name))
@@ -135,8 +138,8 @@ class DropboxStorage(BaseStorage):
         directories, files = [], []
         full_path = self._full_path(path)
 
-        if full_path == '/':
-            full_path = ''
+        if full_path == "/":
+            full_path = ""
 
         metadata = self.client.files_list_folder(full_path)
         for entry in metadata.entries:
@@ -157,28 +160,29 @@ class DropboxStorage(BaseStorage):
         except ApiError:
             return None
 
-    def _open(self, name, mode='rb'):
+    def _open(self, name, mode="rb"):
         remote_file = DropboxFile(self._full_path(name), self)
         return remote_file
 
     def _save(self, name, content):
         content.open()
         if content.size <= self.CHUNK_SIZE:
-            self.client.files_upload(content.read(), self._full_path(name), mode=WriteMode(self.write_mode))
+            self.client.files_upload(
+                content.read(), self._full_path(name), mode=WriteMode(self.write_mode)
+            )
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
         # .save() validates the filename isn't absolute but Dropbox requires an absolute filename.
         # Work with the absolute name internally but strip it off before passing up-the-chain.
-        return removeprefix(self.root_path, name).lstrip('/')
+        return removeprefix(self.root_path, name).lstrip("/")
 
     def _chunked_upload(self, content, dest_path):
         upload_session = self.client.files_upload_session_start(
             content.read(self.CHUNK_SIZE)
         )
         cursor = UploadSessionCursor(
-            session_id=upload_session.session_id,
-            offset=content.tell()
+            session_id=upload_session.session_id, offset=content.tell()
         )
         commit = CommitInfo(path=dest_path, mode=WriteMode(self.write_mode))
 
@@ -196,7 +200,7 @@ class DropboxStorage(BaseStorage):
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
         name = self._full_path(name)
-        if self.write_mode == 'overwrite':
+        if self.write_mode == "overwrite":
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
 
