@@ -8,6 +8,8 @@ General
 -------
 
 - **Breaking**: Drop support for Django 4.0 (`#1235`_)
+- **Breaking**: The long deprecated & removed (from Django) ``(modified|created|accessed)_time`` methods have been
+  removed from the various storages, please replace with the ``get_(modified|created|accessed)_time`` methods
 - Add support for saving ``pathlib.PurePath`` names (`#1278`_)
 - Add support for Django 4.2 (`#1236`_)
 
