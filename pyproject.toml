@@ -142,7 +142,6 @@ ignore = [
   "B904",
   "PGH004",
  ]
-line-length = 119
 target-version = "py37"
 
 [tool.ruff.isort]
