@@ -275,17 +275,23 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     """
 
     default_content_type = "application/octet-stream"
-    # If config provided in init, signature_version and addressing_style settings/args
-    # are ignored.
+    # If config provided in subclass, signature_version and addressing_style
+    # settings/args are ignored.
     config = None
 
     def __init__(self, **settings):
-        cloudfront_key_id = settings.pop("cloudfront_key_id", None)
-        cloudfront_key = settings.pop("cloudfront_key", None)
+        self.cloudfront_signer = settings.pop("cloudfront_signer", None)
 
         super().__init__(**settings)
 
         check_location(self)
+
+        if (self.access_key or self.secret_key) and self.session_profile:
+            raise ImproperlyConfigured(
+                "AWS_S3_SESSION_PROFILE/session_profile should not be provided with "
+                "AWS_S3_ACCESS_KEY_ID/access_key and "
+                "AWS_S3_SECRET_ACCESS_KEY/secret_key"
+            )
 
         self._bucket = None
         self._connections = threading.local()
@@ -308,39 +314,21 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         if self.transfer_config is None:
             self.transfer_config = TransferConfig(use_threads=self.use_threads)
 
-        if cloudfront_key_id and cloudfront_key:
-            self.cloudfront_signer = self.get_cloudfront_signer(
-                cloudfront_key_id, cloudfront_key
-            )
+        if not self.cloudfront_signer:
+            if self.cloudfront_key_id and self.cloudfront_key:
+                self.cloudfront_signer = self.get_cloudfront_signer(
+                    self.cloudfront_key_id, self.cloudfront_key
+                )
+            elif bool(self.cloudfront_key_id) ^ bool(self.cloudfront_key):
+                raise ImproperlyConfigured(
+                    "Both AWS_CLOUDFRONT_KEY_ID/cloudfront_key_id and "
+                    "AWS_CLOUDFRONT_KEY/cloudfront_key must be provided together."
+                )
 
     def get_cloudfront_signer(self, key_id, key):
         return _cloud_front_signer_from_pem(key_id, key)
 
     def get_default_settings(self):
-        cloudfront_key_id = setting("AWS_CLOUDFRONT_KEY_ID")
-        cloudfront_key = setting("AWS_CLOUDFRONT_KEY")
-        if bool(cloudfront_key_id) ^ bool(cloudfront_key):
-            raise ImproperlyConfigured(
-                "Both AWS_CLOUDFRONT_KEY_ID and AWS_CLOUDFRONT_KEY must be "
-                "provided together."
-            )
-
-        if cloudfront_key_id:
-            cloudfront_signer = self.get_cloudfront_signer(
-                cloudfront_key_id, cloudfront_key
-            )
-        else:
-            cloudfront_signer = None
-
-        s3_access_key_id = setting("AWS_S3_ACCESS_KEY_ID")
-        s3_secret_access_key = setting("AWS_S3_SECRET_ACCESS_KEY")
-        s3_session_profile = setting("AWS_S3_SESSION_PROFILE")
-        if (s3_access_key_id or s3_secret_access_key) and s3_session_profile:
-            raise ImproperlyConfigured(
-                "AWS_S3_SESSION_PROFILE should not be provided with "
-                "AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY"
-            )
-
         return {
             "access_key": setting("AWS_S3_ACCESS_KEY_ID", setting("AWS_ACCESS_KEY_ID")),
             "secret_key": setting(
@@ -358,7 +346,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "signature_version": setting("AWS_S3_SIGNATURE_VERSION"),
             "location": setting("AWS_LOCATION", ""),
             "custom_domain": setting("AWS_S3_CUSTOM_DOMAIN"),
-            "cloudfront_signer": cloudfront_signer,
+            "cloudfront_key_id": setting("AWS_CLOUDFRONT_KEY_ID"),
+            "cloudfront_key": setting("AWS_CLOUDFRONT_KEY"),
             "addressing_style": setting("AWS_S3_ADDRESSING_STYLE"),
             "file_name_charset": setting("AWS_S3_FILE_NAME_CHARSET", "utf-8"),
             "gzip": setting("AWS_IS_GZIPPED", False),
