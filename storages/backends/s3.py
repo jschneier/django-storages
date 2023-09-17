@@ -6,7 +6,6 @@ import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta
-from tempfile import SpooledTemporaryFile
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
 from urllib.parse import urlsplit
@@ -153,7 +152,7 @@ class S3File(CompressedFileMixin, File):
 
     def _get_file(self):
         if self._file is None:
-            self._file = SpooledTemporaryFile(
+            self._file = tempfile.SpooledTemporaryFile(
                 max_size=self._storage.max_memory_size,
                 suffix=".S3File",
                 dir=setting("FILE_UPLOAD_TEMP_DIR"),
@@ -478,7 +477,14 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             params["ContentEncoding"] = "gzip"
 
         obj = self.bucket.Object(name)
-        obj.upload_fileobj(content, ExtraArgs=params, Config=self.transfer_config)
+
+        # Workaround file being closed errantly see: https://github.com/boto/s3transfer/issues/80
+        original_close = content.close
+        content.close = lambda: None
+        try:
+            obj.upload_fileobj(content, ExtraArgs=params, Config=self.transfer_config)
+        finally:
+            content.close = original_close
         return cleaned_name
 
     def delete(self, name):
@@ -649,14 +655,4 @@ class S3StaticStorage(S3Storage):
 
 
 class S3ManifestStaticStorage(ManifestFilesMixin, S3StaticStorage):
-    """Copy the file before saving for compatibility with ManifestFilesMixin
-    which does not play nicely with boto3 automatically closing the file.
-
-    See: https://github.com/boto/s3transfer/issues/80#issuecomment-562356142
-    """
-
-    def _save(self, name, content):
-        content.seek(0)
-        with tempfile.SpooledTemporaryFile() as tmp:
-            tmp.write(content.read())
-            return super()._save(name, tmp)
+    """Add ManifestFilesMixin with S3StaticStorage."""
