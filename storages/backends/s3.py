@@ -251,8 +251,9 @@ class S3File(CompressedFileMixin, File):
 
     def close(self):
         if self._is_dirty:
-            self._flush_write_buffer()
-            self._multipart.complete(MultipartUpload={"Parts": self._parts})
+            if self._multipart is not None:
+                self._flush_write_buffer()
+                self._multipart.complete(MultipartUpload={"Parts": self._parts})
         else:
             if self._multipart is not None:
                 self._multipart.abort()
