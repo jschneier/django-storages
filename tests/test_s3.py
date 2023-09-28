@@ -647,6 +647,17 @@ class S3StorageTests(TestCase):
         name = "file.txt"
         self.assertEqual(self.storage.size(name), obj.content_length)
 
+    def test_storage_size_not_exists(self):
+        self.storage.bucket.Object.side_effect = ClientError(
+            {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 404}},
+            "HeadObject",
+        )
+        name = "file.txt"
+        with self.assertRaisesMessage(
+            FileNotFoundError, "File does not exist: file.txt"
+        ):
+            self.storage.size(name)
+
     def test_storage_mtime(self):
         # Test both USE_TZ cases
         for use_tz in (True, False):
