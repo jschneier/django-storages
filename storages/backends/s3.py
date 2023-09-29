@@ -535,7 +535,12 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def size(self, name):
         name = self._normalize_name(clean_name(name))
-        return self.bucket.Object(name).content_length
+        try:
+            return self.bucket.Object(name).content_length
+        except ClientError as err:
+            if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
+                raise FileNotFoundError("File does not exist: %s" % name)
+            raise  # Let it bubble up if it was some other error
 
     def _get_write_parameters(self, name, content=None):
         params = self.get_object_parameters(name)
