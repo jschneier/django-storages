@@ -132,6 +132,7 @@ class S3File(CompressedFileMixin, File):
             self.obj.load(**params)
         self._is_dirty = False
         self._raw_bytes_written = 0
+        self._closed = False
         self._file = None
         self._multipart = None
         self._parts = None
@@ -148,7 +149,7 @@ class S3File(CompressedFileMixin, File):
 
     @property
     def closed(self):
-        return not self._file or self._file.closed
+        return self._closed
 
     def _get_file(self):
         if self._file is None:
@@ -168,6 +169,7 @@ class S3File(CompressedFileMixin, File):
                 self._file.seek(0)
                 if self._storage.gzip and self.obj.content_encoding == "gzip":
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
+            self._closed = False
         return self._file
 
     def _set_file(self, value):
@@ -262,6 +264,7 @@ class S3File(CompressedFileMixin, File):
         if self._file is not None:
             self._file.close()
             self._file = None
+        self._closed = True
 
 
 @deconstructible
