@@ -1,6 +1,30 @@
 django-storages CHANGELOG
 =========================
 
+1.14.1 (2023-09-29)
+*******************
+
+Azure
+-----
+
+- Do not require both ``AccountName`` and ``AccountKey`` in ``connection_string`` (`#1312`_)
+
+S3
+--
+
+- Work around boto3 closing the uploaded file (`#1303`_)
+- Fix crash when cleaning up during aborted connection of ``S3File.write`` (`#1304`_)
+- Raise ``FileNotFoundError`` when attempting to read the ``size`` of a non-existent file (`#1309`_)
+- Move auth & CloudFront signer validation to init (`#1302`_)
+- Raise ``ImproperlyConfigured`` if no ``bucket_name`` is set (`#1313`_)
+
+.. _#1303: https://github.com/jschneier/django-storages/pull/1303
+.. _#1304: https://github.com/jschneier/django-storages/pull/1304
+.. _#1309: https://github.com/jschneier/django-storages/pull/1309
+.. _#1302: https://github.com/jschneier/django-storages/pull/1302
+.. _#1313: https://github.com/jschneier/django-storages/pull/1313
+.. _#1312: https://github.com/jschneier/django-storages/pull/1312
+
 1.14 (2023-09-04)
 *******************
 
