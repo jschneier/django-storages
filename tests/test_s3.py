@@ -861,6 +861,101 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage()
             self.assertFalse(storage.transfer_config.use_threads)
 
+    def test_cloudfront_config(self):
+        # Valid configs
+        storage = s3.S3Storage()
+        self.assertIsNone(storage.cloudfront_signer)
+
+        key_id = "test-id"
+        pem = dedent(
+            """\
+            -----BEGIN RSA PRIVATE KEY-----
+            MIICWwIBAAKBgQCXVuwcMk+JmVSKuQ1K4dZx4Z1dEcRQgTlqvhAyljIpttXlZh2/
+            fD3GkJCiqfwEmo+cdNK/LFzRj/CX8Wz1z1lH2USONpG6sAkotkatCbejiItDu5y6
+            janGJHfuWXu6B/o9gwZylU1gIsePY3lLNk+r9QhXUO4jXw6zLJftVwKPhQIDAQAB
+            AoGAbpkRV9HUmoQ5al+uPSkp5HOy4s8XHpYxdbaMc8ubwSxiyJCF8OhE5RXE/Xso
+            N90UUox1b0xmUKfWddPzgvgTD/Ub7D6Ukf+nVWDX60tWgNxICAUHptGL3tWweaAy
+            H+0+vZ0TzvTt9r00vW0FzO7F8X9/Rs1ntDRLtF3RCCxdq0kCQQDHFu+t811lCvy/
+            67rMEKGvNsNNSTrzOrNr3PqUrCnOrzKazjFVjsKv5VzI/U+rXGYKWJsMpuCFiHZ3
+            DILUC09TAkEAwpm2S6MN6pzn9eY6pmhOxZ+GQGGRUkKZfC1GDxaRSRb8sKTjptYw
+            WSemJSxiDzdj3Po2hF0lbhkpJgUq6xnCxwJAZgHHfn5CLSJrDD7Q7/vZi/foK3JJ
+            BRTfl3Wa4pAvv5meuRjKyEakVBGV79lyd5+ZHNX3Y40hXunjoO3FHrZIxwJAdRzu
+            waxahrRxQOKSr20c4wAzWnGddIUSO9I/VHs/al5EKsbBHrnOlQkwizSfuwqZtfZ7
+            csNf8FeCFRiNELoLJwJAZxWBE2+8J9VW9AQ0SE7j4FyM/B8FvRhF5PLAAsw/OxHO
+            SxiFP7Ptdac1tm5H5zOqaqSHWphI19HNNilXKmxuCA==
+            -----END RSA PRIVATE KEY-----"""
+        ).encode("ascii")
+
+        with override_settings(AWS_CLOUDFRONT_KEY_ID=key_id, AWS_CLOUDFRONT_KEY=pem):
+            storage = s3.S3Storage()
+            self.assertIsNotNone(storage.cloudfront_signer)
+
+        storage = s3.S3Storage(cloudfront_key_id=key_id, cloudfront_key=pem)
+        self.assertIsNotNone(storage.cloudfront_signer)
+
+        cloudfront_signer = storage.get_cloudfront_signer(key_id, pem)
+        storage = s3.S3Storage(cloudfront_signer=cloudfront_signer)
+        self.assertIsNotNone(storage.cloudfront_signer)
+
+        with override_settings(AWS_CLOUDFRONT_KEY_ID=key_id):
+            storage = s3.S3Storage(cloudfront_key=pem)
+            self.assertIsNotNone(storage.cloudfront_signer)
+
+        # Invalid configs
+        msg = (
+            "Both AWS_CLOUDFRONT_KEY_ID/cloudfront_key_id and "
+            "AWS_CLOUDFRONT_KEY/cloudfront_key must be provided together."
+        )
+        with override_settings(AWS_CLOUDFRONT_KEY_ID=key_id):
+            with self.assertRaisesMessage(ImproperlyConfigured, msg):
+                storage = s3.S3Storage()
+
+        with override_settings(AWS_CLOUDFRONT_KEY=pem):
+            with self.assertRaisesMessage(ImproperlyConfigured, msg):
+                storage = s3.S3Storage()
+
+        with self.assertRaisesMessage(ImproperlyConfigured, msg):
+            storage = s3.S3Storage(cloudfront_key_id=key_id)
+
+        with self.assertRaisesMessage(ImproperlyConfigured, msg):
+            storage = s3.S3Storage(cloudfront_key=pem)
+
+    def test_auth_config(self):
+        # Valid configs
+        with override_settings(
+            AWS_S3_ACCESS_KEY_ID="foo", AWS_S3_SECRET_ACCESS_KEY="boo"
+        ):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.access_key, "foo")
+            self.assertEqual(storage.secret_key, "boo")
+
+        with override_settings(AWS_ACCESS_KEY_ID="foo", AWS_SECRET_ACCESS_KEY="boo"):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.access_key, "foo")
+            self.assertEqual(storage.secret_key, "boo")
+
+        storage = s3.S3Storage(access_key="foo", secret_key="boo")
+        self.assertEqual(storage.access_key, "foo")
+        self.assertEqual(storage.secret_key, "boo")
+
+        # Invalid configs
+        msg = (
+            "AWS_S3_SESSION_PROFILE/session_profile should not be provided with "
+            "AWS_S3_ACCESS_KEY_ID/access_key and AWS_S3_SECRET_ACCESS_KEY/secret_key"
+        )
+        with override_settings(
+            AWS_ACCESS_KEY_ID="foo",
+            AWS_SECRET_ACCESS_KEY="boo",
+            AWS_S3_SESSION_PROFILE="moo",
+        ):
+            with self.assertRaisesMessage(ImproperlyConfigured, msg):
+                storage = s3.S3Storage()
+
+        with self.assertRaisesMessage(ImproperlyConfigured, msg):
+            storage = s3.S3Storage(
+                access_key="foo", secret_key="boo", session_profile="moo"
+            )
+
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):
