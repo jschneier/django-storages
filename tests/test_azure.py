@@ -292,6 +292,13 @@ class AzureStorageTest(TestCase):
                 "https://test.blob.core.windows.net", credential="foo_cred"
             )
 
+    def test_connection_string_can_have_missing(self):
+        storage = azure_storage.AzureStorage(
+            connection_string="AccountKey=abc;Foobar=xyz;"
+        )
+        self.assertEqual(storage.account_key, "abc")
+        self.assertIsNone(storage.account_name)
+
     def test_container_client_params_connection_string(self):
         storage = azure_storage.AzureStorage()
         storage.account_name = self.account_name

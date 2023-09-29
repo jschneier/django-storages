@@ -1,10 +1,10 @@
 import mimetypes
-import re
 from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
 from azure.core.exceptions import ResourceNotFoundError
+from azure.core.utils import parse_connection_string
 from azure.storage.blob import BlobClient
 from azure.storage.blob import BlobSasPermissions
 from azure.storage.blob import BlobServiceClient
@@ -124,10 +124,13 @@ class AzureStorage(BaseStorage):
         self._user_delegation_key = None
         self._user_delegation_key_expiry = datetime.utcnow()
         if self.connection_string and (not self.account_name or not self.account_key):
-            self.account_name = re.search(
-                r"AccountName=(\w+);", self.connection_string
-            )[1]
-            self.account_key = re.search(r"AccountKey=(.*);", self.connection_string)[1]
+            parsed = parse_connection_string(
+                self.connection_string, case_sensitive_keys=True
+            )
+            if not self.account_name and "AccountName" in parsed:
+                self.account_name = parsed["AccountName"]
+            if not self.account_key and "AccountKey" in parsed:
+                self.account_key = parsed["AccountKey"]
 
     def get_default_settings(self):
         return {
