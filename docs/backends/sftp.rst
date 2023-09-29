@@ -31,7 +31,7 @@ On Django < 4.2 you'd instead define::
     DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
 
 To put static files on SFTP via ``collectstatic`` on Django >= 4.2 you'd include the ``staticfiles`` key (at the same level as
-``default`` above inside of the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
+``default``) in the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
 
     STATICFILES_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
 
