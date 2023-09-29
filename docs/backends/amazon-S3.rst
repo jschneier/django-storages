@@ -34,7 +34,7 @@ On Django < 4.2 you'd instead define::
     DEFAULT_FILE_STORAGE = "storages.backends.s3.S3Storage"
 
 To put static files on S3 via ``collectstatic`` on Django >= 4.2 you'd include the ``staticfiles`` key (at the same level as
-``default`` above inside of the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
+``default``) in the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
 
     STATICFILES_STORAGE = "storages.backends.s3.S3Storage"
 
@@ -176,7 +176,7 @@ Settings
   Default: ``None``
 
   Set this to customize the transfer config options such as disabling threads for ``gevent`` compatibility;
-  See the `Boto3 docs for TransferConfig` for more info.
+  See the `Boto3 docs for TransferConfig`_ for more info.
 
 
 ``custom_domain`` or ``AWS_S3_CUSTOM_DOMAIN``
