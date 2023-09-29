@@ -904,17 +904,21 @@ class S3FileTests(TestCase):
     def test_closed(self):
         f = s3.S3File("test", "wb", self.storage)
 
-        with self.subTest("is True after init"):
-            self.assertTrue(f.closed)
+        with self.subTest("after init"):
+            self.assertFalse(f.closed)
 
-        with self.subTest("is False after file access"):
+        with self.subTest("after file access"):
             # Ensure _get_file has been called
             f.file
             self.assertFalse(f.closed)
 
-        with self.subTest("is True after close"):
+        with self.subTest("after close"):
             f.close()
             self.assertTrue(f.closed)
+
+        with self.subTest("reopening"):
+            f.file
+            self.assertFalse(f.closed)
 
 
 @mock_s3
