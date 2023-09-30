@@ -42,6 +42,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 azure = [
+  "azure-core>=1.13",
   "azure-storage-blob>=12",
 ]
 boto3 = [
