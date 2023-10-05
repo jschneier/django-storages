@@ -19,5 +19,5 @@ With the settings above in place, with django storages set as DEFAULT_FILE_STORA
 
 If would be written to the following address:
 
-https://my-chosen-bucket.s3.nl-ams.scw.cloud/my-chosen-bucket/my_chosen_file.txt
+https://s3.nl-ams.scw.cloud/my-chosen-bucket/my_chosen_file.txt
 
