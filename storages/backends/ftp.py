@@ -6,11 +6,13 @@
 # Usage:
 #
 # Add below to settings.py:
-# FTP_STORAGE_LOCATION = '[a]ftp://<user>:<pass>@<host>:<port>/[path]'
+# FTP_STORAGE_LOCATION = '[a]ftp[s]://<user>:<pass>@<host>:<port>/[path]'
 #
 # In models.py you can write:
 # from FTPStorage import FTPStorage
 # fs = FTPStorage()
+# For a TLS configuration, you must use it below:
+# fs = FTPStorage(secure=True)
 # class FTPTest(models.Model):
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
@@ -37,7 +39,7 @@ class FTPStorageException(Exception):
 class FTPStorage(Storage):
     """FTP Storage class for Django pluggable storage system."""
 
-    def __init__(self, location=None, base_url=None, encoding=None):
+    def __init__(self, location=None, base_url=None, encoding=None, secure=False):
         location = location or setting("FTP_STORAGE_LOCATION")
         if location is None:
             raise ImproperlyConfigured(
@@ -51,13 +53,14 @@ class FTPStorage(Storage):
         self._config = self._decode_location(location)
         self._base_url = base_url
         self._connection = None
+        self._secure = secure
 
     def _decode_location(self, location):
         """Return splitted configuration data from location."""
         splitted_url = urlparse(location)
         config = {}
 
-        if splitted_url.scheme not in ("ftp", "aftp"):
+        if splitted_url.scheme not in ("ftp", "aftp", "ftps"):
             raise ImproperlyConfigured("FTPStorage works only with FTP protocol!")
         if splitted_url.hostname == "":
             raise ImproperlyConfigured("You must at least provide hostname!")
@@ -84,11 +87,13 @@ class FTPStorage(Storage):
 
         # Real reconnect
         if self._connection is None:
-            ftp = ftplib.FTP()
+            ftp = ftplib.FTP_TLS() if self._secure else ftplib.FTP()
             ftp.encoding = self.encoding
             try:
                 ftp.connect(self._config["host"], self._config["port"])
                 ftp.login(self._config["user"], self._config["passwd"])
+                if self._secure:
+                    ftp.prot_p()
                 if self._config["active"]:
                     ftp.set_pasv(False)
                 if self._config["path"] != "":
