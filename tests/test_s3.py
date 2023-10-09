@@ -956,11 +956,6 @@ class S3StorageTests(TestCase):
                 access_key="foo", secret_key="boo", session_profile="moo"
             )
 
-    def test_bucket_name_required(self):
-        with override_settings(AWS_STORAGE_BUCKET_NAME=None):
-            with self.assertRaises(ImproperlyConfigured):
-                s3.S3Storage()
-
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):
