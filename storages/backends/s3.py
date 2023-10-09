@@ -130,18 +130,32 @@ class S3File(CompressedFileMixin, File):
                 self._storage.get_object_parameters(self.name)
             )
             self.obj.load(**params)
-        self._is_dirty = False
-        self._raw_bytes_written = 0
         self._closed = False
         self._file = None
-        self._multipart = None
         self._parts = None
         # 5 MB is the minimum part size (if there is more than one part).
         # Amazon allows up to 10,000 parts.  The default supports uploads
         # up to roughly 50 GB.  Increase the part size to accommodate
         # for files larger than this.
         self.buffer_size = buffer_size or setting("AWS_S3_FILE_BUFFER_SIZE", 5242880)
+        self._reset_file_properties()
+
+    def _reset_file_properties(self):
+        self._multipart = None
+        self._raw_bytes_written = 0
         self._write_counter = 0
+        self._is_dirty = False
+
+    def open(self, mode=None):
+        if self._file is not None and not self.closed:
+            self.seek(0)  # Mirror Django's behavior
+        elif mode and mode != self._mode:
+            raise ValueError("Cannot reopen file with a new mode.")
+
+        # Accessing the file will functionally re-open it
+        self.file  # noqa: B018
+
+        return self
 
     @property
     def size(self):
@@ -264,6 +278,8 @@ class S3File(CompressedFileMixin, File):
         if self._file is not None:
             self._file.close()
             self._file = None
+
+        self._reset_file_properties()
         self._closed = True
 
 
