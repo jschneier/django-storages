@@ -979,6 +979,8 @@ class S3ManifestStaticStorageTests(TestCase):
 
 
 class S3FileTests(TestCase):
+    # Remove the override_settings after Python3.7 is dropped
+    @override_settings(AWS_S3_OBJECT_PARAMETERS={"ContentType": "text/html"})
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
@@ -1014,6 +1016,21 @@ class S3FileTests(TestCase):
         with self.subTest("reopening"):
             f.file
             self.assertFalse(f.closed)
+
+    def test_reopening(self):
+        f = s3.S3File("test", "wb", self.storage)
+
+        with f.open() as fp:
+            fp.write(b"xyz")
+
+        with f.open() as fp:
+            fp.write(b"xyz")
+
+        # Properties are reset
+        self.assertEqual(f._write_counter, 0)
+        self.assertEqual(f._raw_bytes_written, 0)
+        self.assertFalse(f._is_dirty)
+        self.assertIsNone(f._multipart)
 
 
 @mock_s3
