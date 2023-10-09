@@ -1,6 +1,18 @@
 django-storages CHANGELOG
 =========================
 
+1.14.2 (2023-10-08)
+*******************
+
+S3
+--
+
+- Fix re-opening of ``S3File`` (`#1321`_)
+- Revert raising ``ImproperlyConfigured`` when no ``bucket_name`` is set (`#1322`_)
+
+.. _#1321: https://github.com/jschneier/django-storages/pull/1321
+.. _#1322: https://github.com/jschneier/django-storages/pull/1322
+
 1.14.1 (2023-09-29)
 *******************
 
