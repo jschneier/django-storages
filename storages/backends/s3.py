@@ -288,8 +288,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         super().__init__(**settings)
 
         check_location(self)
-        if not self.bucket_name:
-            raise ImproperlyConfigured("Setting a bucket name is required.")
 
         if (self.access_key or self.secret_key) and self.session_profile:
             raise ImproperlyConfigured(
