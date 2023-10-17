@@ -250,18 +250,7 @@ class FTPTLSTest(TestCase):
     def setUp(self):
         self.storage = ftp.FTPStorage(location=URL_TLS)
 
-    def test_init_no_location(self):
-        with self.assertRaises(ImproperlyConfigured):
-            ftp.FTPStorage()
-
-    @patch("storages.backends.ftp.setting", return_value=URL_TLS)
-    def test_init_location_from_setting(self, mock_setting):
-        storage = ftp.FTPStorage()
-        self.assertTrue(mock_setting.called)
-        self.assertEqual(storage.location, URL_TLS)
-
     def test_decode_location(self):
-        config = self.storage._decode_location(URL_TLS)
         wanted_config = {
             "passwd": "b@r",
             "host": "localhost",
@@ -271,22 +260,10 @@ class FTPTLSTest(TestCase):
             "port": 2121,
             "secure": True
         }
-        self.assertEqual(config, wanted_config)
-
-    def test_decode_location_error(self):
-        with self.assertRaises(ImproperlyConfigured):
-            self.storage._decode_location("foo")
-        with self.assertRaises(ImproperlyConfigured):
-            self.storage._decode_location("http://foo.pt")
-        # TODO: Cannot not provide a port
-        # with self.assertRaises(ImproperlyConfigured):
-        #     self.storage._decode_location('ftp://')
+        self.assertEqual(self.storage._config, wanted_config)
 
     @patch("ftplib.FTP_TLS")
-    def test_start_connection(self, mock_ftp):
+    def test_start_connection_calls_prot_p(self, mock_ftp):
         self.storage._start_connection()
-        self.assertIsNotNone(self.storage._connection)
-        # Start active
-        storage = ftp.FTPStorage(location=URL_TLS)
-        storage._start_connection()
+        self.storage._connection.prot_p.assert_called_once()
 
