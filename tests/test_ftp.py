@@ -51,7 +51,7 @@ class FTPTest(TestCase):
             "active": False,
             "path": "/",
             "port": 2121,
-            "secure": False
+            "secure": False,
         }
         self.assertEqual(config, wanted_config)
         # Test active FTP
@@ -63,7 +63,7 @@ class FTPTest(TestCase):
             "active": True,
             "path": "/",
             "port": 2121,
-            "secure": False
+            "secure": False,
         }
         self.assertEqual(config, wanted_config)
 
@@ -258,7 +258,7 @@ class FTPTLSTest(TestCase):
             "active": False,
             "path": "/",
             "port": 2121,
-            "secure": True
+            "secure": True,
         }
         self.assertEqual(self.storage._config, wanted_config)
 
@@ -266,4 +266,3 @@ class FTPTLSTest(TestCase):
     def test_start_connection_calls_prot_p(self, mock_ftp):
         self.storage._start_connection()
         self.storage._connection.prot_p.assert_called_once()
-
