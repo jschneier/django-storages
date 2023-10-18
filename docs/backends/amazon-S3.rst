@@ -186,11 +186,48 @@ Settings
   Set this to specify a custom domain for constructed URLs.
 
   .. note::
-     You'll have to configure CloudFront to use the bucket as an origin for this to work.
+     You'll have to configure CloudFront to use the bucket as an origin for this to
+     work.
+
+     If your CloudFront config restricts viewer access you will also need to provide
+     ``cloudfront_key`` / ``AWS_CLOUDFRONT_KEY`` and ``cloudfront_key_id`` /
+     ``AWS_CLOUDFRONT_KEY_ID``; See those settings and
+     :ref:`cloudfront-signed-url-header` for more info.
+
+     If you have more than one storage with different viewer access permissions, you
+     can provide ``cloudfront_signer=None`` to disable signing on one or more
+     storages.
 
   .. warning::
 
     Django’s STATIC_URL must end in a slash and this must not. It is best to set this variable independently of STATIC_URL.
+
+``cloudfront_key`` or ``AWS_CLOUDFRONT_KEY``
+
+  Default: ``None``
+
+  A private PEM encoded key to use in a ``boto3`` ``CloudFrontSigner``; See
+  :ref:`cloudfront-signed-url-header` for more info.
+
+``cloudfront_key_id`` or ``AWS_CLOUDFRONT_KEY_ID``
+
+  Default: ``None``
+
+  The AWS key ID for the private key provided with ``cloudfront_key`` /
+  ``AWS_CLOUDFRONT_KEY``; See :ref:`cloudfront-signed-url-header` for more info.
+
+``cloudfront_signer``
+
+  Default: omitted
+
+  By default the ``cloudfront_signer`` is generated based on the CloudFront key and ID
+  provided. If both are provided URLs will be signed and will work for distributions
+  with restricted viewer access, but if neither are provided then URLs will not be
+  signed and will work for distributions with unrestricted viewer access.
+
+  If you require a custom CloudFront signer you may pass a ``boto3``
+  ``CloudFrontSigner`` instance that can sign URLs, and to disable signing you may pass
+  ``None``.
 
 ``signature_version`` or ``AWS_S3_SIGNATURE_VERSION``
 

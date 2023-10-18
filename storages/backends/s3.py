@@ -299,7 +299,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     config = None
 
     def __init__(self, **settings):
-        self.cloudfront_signer = settings.pop("cloudfront_signer", None)
+        omitted = object()
+        self.cloudfront_signer = settings.pop("cloudfront_signer", omitted)
 
         super().__init__(**settings)
 
@@ -333,7 +334,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         if self.transfer_config is None:
             self.transfer_config = TransferConfig(use_threads=self.use_threads)
 
-        if not self.cloudfront_signer:
+        if self.cloudfront_signer is omitted:
             if self.cloudfront_key_id and self.cloudfront_key:
                 self.cloudfront_signer = self.get_cloudfront_signer(
                     self.cloudfront_key_id, self.cloudfront_key
@@ -343,6 +344,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                     "Both AWS_CLOUDFRONT_KEY_ID/cloudfront_key_id and "
                     "AWS_CLOUDFRONT_KEY/cloudfront_key must be provided together."
                 )
+            else:
+                self.cloudfront_signer = None
 
     def get_cloudfront_signer(self, key_id, key):
         return _cloud_front_signer_from_pem(key_id, key)
