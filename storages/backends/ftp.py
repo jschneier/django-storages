@@ -6,11 +6,12 @@
 # Usage:
 #
 # Add below to settings.py:
-# FTP_STORAGE_LOCATION = '[a]ftp://<user>:<pass>@<host>:<port>/[path]'
+# FTP_STORAGE_LOCATION = '[a]ftp[s]://<user>:<pass>@<host>:<port>/[path]'
 #
 # In models.py you can write:
 # from FTPStorage import FTPStorage
 # fs = FTPStorage()
+# For a TLS configuration, you must use 'ftps' protocol
 # class FTPTest(models.Model):
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
@@ -57,7 +58,7 @@ class FTPStorage(Storage):
         splitted_url = urlparse(location)
         config = {}
 
-        if splitted_url.scheme not in ("ftp", "aftp"):
+        if splitted_url.scheme not in ("ftp", "aftp", "ftps"):
             raise ImproperlyConfigured("FTPStorage works only with FTP protocol!")
         if splitted_url.hostname == "":
             raise ImproperlyConfigured("You must at least provide hostname!")
@@ -66,6 +67,12 @@ class FTPStorage(Storage):
             config["active"] = True
         else:
             config["active"] = False
+
+        if splitted_url.scheme == "ftps":
+            config["secure"] = True
+        else:
+            config["secure"] = False
+
         config["path"] = splitted_url.path
         config["host"] = splitted_url.hostname
         config["user"] = splitted_url.username
@@ -84,11 +91,13 @@ class FTPStorage(Storage):
 
         # Real reconnect
         if self._connection is None:
-            ftp = ftplib.FTP()
+            ftp = ftplib.FTP_TLS() if self._config["secure"] else ftplib.FTP()
             ftp.encoding = self.encoding
             try:
                 ftp.connect(self._config["host"], self._config["port"])
                 ftp.login(self._config["user"], self._config["passwd"])
+                if self._config["secure"]:
+                    ftp.prot_p()
                 if self._config["active"]:
                     ftp.set_pasv(False)
                 if self._config["path"] != "":

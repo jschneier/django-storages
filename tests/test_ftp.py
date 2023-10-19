@@ -14,6 +14,9 @@ PORT = 2121
 URL = "ftp://{user}:{passwd}@{host}:{port}/".format(
     user=USER, passwd=PASSWORD, host=HOST, port=PORT
 )
+URL_TLS = "ftps://{user}:{passwd}@{host}:{port}/".format(
+    user=USER, passwd=PASSWORD, host=HOST, port=PORT
+)
 
 LIST_FIXTURE = """drwxr-xr-x   2 ftp      nogroup      4096 Jul 27 09:46 dir
 -rw-r--r--   1 ftp      nogroup      1024 Jul 27 09:45 fi
@@ -48,6 +51,7 @@ class FTPTest(TestCase):
             "active": False,
             "path": "/",
             "port": 2121,
+            "secure": False,
         }
         self.assertEqual(config, wanted_config)
         # Test active FTP
@@ -59,6 +63,7 @@ class FTPTest(TestCase):
             "active": True,
             "path": "/",
             "port": 2121,
+            "secure": False,
         }
         self.assertEqual(config, wanted_config)
 
@@ -239,3 +244,25 @@ class FTPStorageFileTest(TestCase):
         file_.is_dirty = True
         file_.read()
         file_.close()
+
+
+class FTPTLSTest(TestCase):
+    def setUp(self):
+        self.storage = ftp.FTPStorage(location=URL_TLS)
+
+    def test_decode_location(self):
+        wanted_config = {
+            "passwd": "b@r",
+            "host": "localhost",
+            "user": "foo",
+            "active": False,
+            "path": "/",
+            "port": 2121,
+            "secure": True,
+        }
+        self.assertEqual(self.storage._config, wanted_config)
+
+    @patch("ftplib.FTP_TLS")
+    def test_start_connection_calls_prot_p(self, mock_ftp):
+        self.storage._start_connection()
+        self.storage._connection.prot_p.assert_called_once()
