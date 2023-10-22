@@ -11,16 +11,20 @@ USER = "foo"
 PASSWORD = "b@r"
 HOST = "localhost"
 PORT = 2121
-URL = "ftp://{user}:{passwd}@{host}:{port}/".format(
-    user=USER, passwd=PASSWORD, host=HOST, port=PORT
-)
-URL_TLS = "ftps://{user}:{passwd}@{host}:{port}/".format(
-    user=USER, passwd=PASSWORD, host=HOST, port=PORT
-)
 
 LIST_FIXTURE = """drwxr-xr-x   2 ftp      nogroup      4096 Jul 27 09:46 dir
 -rw-r--r--   1 ftp      nogroup      1024 Jul 27 09:45 fi
 -rw-r--r--   1 ftp      nogroup      2048 Jul 27 09:50 fi2"""
+
+
+def geturl(scheme="ftp", pwd=PASSWORD):
+    return URL_TEMPLATE.format(
+        scheme=scheme, user=USER, passwd=pwd, host=HOST, port=PORT
+    )
+
+
+URL_TEMPLATE = "{scheme}://{user}:{passwd}@{host}:{port}/"
+URL = geturl()
 
 
 def list_retrlines(cmd, func):
@@ -72,9 +76,9 @@ class FTPTest(TestCase):
             self.storage._decode_location("foo")
         with self.assertRaises(ImproperlyConfigured):
             self.storage._decode_location("http://foo.pt")
-        # TODO: Cannot not provide a port
-        # with self.assertRaises(ImproperlyConfigured):
-        #     self.storage._decode_location('ftp://')
+
+    def test_decode_location_urlchars_password(self):
+        self.storage._decode_location(geturl(pwd="b#r"))
 
     @patch("ftplib.FTP")
     def test_start_connection(self, mock_ftp):
@@ -248,7 +252,7 @@ class FTPStorageFileTest(TestCase):
 
 class FTPTLSTest(TestCase):
     def setUp(self):
-        self.storage = ftp.FTPStorage(location=URL_TLS)
+        self.storage = ftp.FTPStorage(location=geturl(scheme="ftps"))
 
     def test_decode_location(self):
         wanted_config = {

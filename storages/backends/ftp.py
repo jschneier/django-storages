@@ -18,8 +18,8 @@
 import ftplib
 import io
 import os
-from urllib.parse import urljoin
-from urllib.parse import urlparse
+import re
+import urllib.parse
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -55,29 +55,28 @@ class FTPStorage(Storage):
 
     def _decode_location(self, location):
         """Return splitted configuration data from location."""
-        splitted_url = urlparse(location)
+        splitted_url = re.search(
+            r"^(?P<scheme>.+)://(?P<user>.+):(?P<passwd>.+)@"
+            r"(?P<host>.+):(?P<port>\d+)/(?P<path>.*)$",
+            location,
+        )
+
+        if splitted_url is None:
+            raise ImproperlyConfigured("Improperly formatted location URL")
+        if splitted_url["scheme"] not in ("ftp", "aftp", "ftps"):
+            raise ImproperlyConfigured("Only ftp, aftp, ftps schemes supported")
+        if splitted_url["host"] == "":
+            raise ImproperlyConfigured("You must at least provide host!")
+
         config = {}
+        config["active"] = splitted_url["scheme"] == "aftp"
+        config["secure"] = splitted_url["scheme"] == "ftps"
 
-        if splitted_url.scheme not in ("ftp", "aftp", "ftps"):
-            raise ImproperlyConfigured("FTPStorage works only with FTP protocol!")
-        if splitted_url.hostname == "":
-            raise ImproperlyConfigured("You must at least provide hostname!")
-
-        if splitted_url.scheme == "aftp":
-            config["active"] = True
-        else:
-            config["active"] = False
-
-        if splitted_url.scheme == "ftps":
-            config["secure"] = True
-        else:
-            config["secure"] = False
-
-        config["path"] = splitted_url.path
-        config["host"] = splitted_url.hostname
-        config["user"] = splitted_url.username
-        config["passwd"] = splitted_url.password
-        config["port"] = int(splitted_url.port)
+        config["path"] = splitted_url["path"] or "/"
+        config["host"] = splitted_url["host"]
+        config["user"] = splitted_url["user"]
+        config["passwd"] = splitted_url["passwd"]
+        config["port"] = int(splitted_url["port"])
 
         return config
 
@@ -235,7 +234,7 @@ class FTPStorage(Storage):
     def url(self, name):
         if self._base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urljoin(self._base_url, name).replace("\\", "/")
+        return urllib.parse.urljoin(self._base_url, name).replace("\\", "/")
 
 
 class FTPStorageFile(File):
