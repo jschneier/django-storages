@@ -109,6 +109,17 @@ def check_location(storage):
         )
 
 
+def lookup_env(names):
+    """
+    Look up for names in environment. Returns the first element
+    found.
+    """
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+
+
 def get_available_overwrite_name(name, max_length):
     if max_length is None or len(name) <= max_length:
         return name

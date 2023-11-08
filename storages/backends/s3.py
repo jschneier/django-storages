@@ -26,6 +26,7 @@ from storages.utils import check_location
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
 from storages.utils import is_seekable
+from storages.utils import lookup_env
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
@@ -352,14 +353,26 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def get_default_settings(self):
         return {
-            "access_key": setting("AWS_S3_ACCESS_KEY_ID", setting("AWS_ACCESS_KEY_ID")),
+            "access_key": setting(
+                "AWS_S3_ACCESS_KEY_ID",
+                setting(
+                    "AWS_ACCESS_KEY_ID",
+                    lookup_env(["AWS_S3_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"]),
+                ),
+            ),
             "secret_key": setting(
-                "AWS_S3_SECRET_ACCESS_KEY", setting("AWS_SECRET_ACCESS_KEY")
+                "AWS_S3_SECRET_ACCESS_KEY",
+                setting(
+                    "AWS_SECRET_ACCESS_KEY",
+                    lookup_env(["AWS_S3_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"]),
+                ),
             ),
             "security_token": setting(
                 "AWS_SESSION_TOKEN", setting("AWS_SECURITY_TOKEN")
             ),
-            "session_profile": setting("AWS_S3_SESSION_PROFILE"),
+            "session_profile": setting(
+                "AWS_S3_SESSION_PROFILE", lookup_env(["AWS_S3_SESSION_PROFILE"])
+            ),
             "file_overwrite": setting("AWS_S3_FILE_OVERWRITE", True),
             "object_parameters": setting("AWS_S3_OBJECT_PARAMETERS", {}),
             "bucket_name": setting("AWS_STORAGE_BUCKET_NAME"),
