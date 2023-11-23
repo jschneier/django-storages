@@ -894,6 +894,12 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage(cloudfront_signer=None)
             self.assertIsNone(storage.cloudfront_signer)
 
+            # allow disabling cloudfront signing in subclass
+            class Storage(s3.S3Storage):
+                cloudfront_signer = None
+
+            self.assertIsNone(Storage().cloudfront_signer)
+
         storage = s3.S3Storage(cloudfront_key_id=key_id, cloudfront_key=pem)
         self.assertIsNotNone(storage.cloudfront_signer)
 

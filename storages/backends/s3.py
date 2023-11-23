@@ -300,7 +300,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def __init__(self, **settings):
         omitted = object()
-        self.cloudfront_signer = settings.pop("cloudfront_signer", omitted)
+        if not hasattr(self, "cloudfront_signer"):
+            self.cloudfront_signer = settings.pop("cloudfront_signer", omitted)
 
         super().__init__(**settings)
 
