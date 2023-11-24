@@ -1,6 +1,7 @@
 import datetime
 import gzip
 import io
+import os
 import pickle
 import threading
 from textwrap import dedent
@@ -940,6 +941,21 @@ class S3StorageTests(TestCase):
             self.assertEqual(storage.secret_key, "boo")
 
         with override_settings(AWS_ACCESS_KEY_ID="foo", AWS_SECRET_ACCESS_KEY="boo"):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.access_key, "foo")
+            self.assertEqual(storage.secret_key, "boo")
+
+        with mock.patch.dict(
+            os.environ,
+            {"AWS_S3_ACCESS_KEY_ID": "foo", "AWS_S3_SECRET_ACCESS_KEY": "boo"},
+        ):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.access_key, "foo")
+            self.assertEqual(storage.secret_key, "boo")
+
+        with mock.patch.dict(
+            os.environ, {"AWS_ACCESS_KEY_ID": "foo", "AWS_SECRET_ACCESS_KEY": "boo"}
+        ):
             storage = s3.S3Storage()
             self.assertEqual(storage.access_key, "foo")
             self.assertEqual(storage.secret_key, "boo")
