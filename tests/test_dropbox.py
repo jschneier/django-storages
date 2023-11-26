@@ -1,6 +1,14 @@
 import io
+import sys
 from datetime import datetime
+from unittest import SkipTest
 from unittest import mock
+
+if sys.version_info >= (3, 12, 0):
+    raise SkipTest(
+        "dropbox library does not support Python 3.12+. "
+        "Skipping all tests in test_dropbox.py"
+    )
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import SuspiciousFileOperation
