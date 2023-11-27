@@ -54,7 +54,7 @@ dropbox = [
   "dropbox>=7.2.1; python_version<'3.12'",
 ]
 google = [
-  "google-cloud-storage>=1.27",
+  "google-cloud-storage>=2.13",
 ]
 libcloud = [
   "apache-libcloud",
