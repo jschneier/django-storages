@@ -1,4 +1,5 @@
 import gzip
+import logging
 import io
 import mimetypes
 from datetime import timedelta
@@ -20,6 +21,8 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
+    from google import auth
+    from google.auth.transport import requests
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
@@ -34,6 +37,7 @@ except ImportError:
 
 CONTENT_ENCODING = "content_encoding"
 CONTENT_TYPE = "content_type"
+_LOGGER = logging.getLogger(__name__)
 
 
 class GoogleCloudFile(CompressedFileMixin, File):
@@ -142,12 +146,19 @@ class GoogleCloudStorage(BaseStorage):
             # roll over.
             "max_memory_size": setting("GS_MAX_MEMORY_SIZE", 0),
             "blob_chunk_size": setting("GS_BLOB_CHUNK_SIZE"),
+            "sa_email": setting("GS_SA_SIGNING_EMAIL")
         }
 
     @property
     def client(self):
+        credentials, project_id = auth.default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
+        credentials.refresh(requests.Request())
+        if not hasattr(credentials, "service_account_email"):
+            credentials.service_account_email = self.sa_email
+        _LOGGER.debug(f"Signing email: {credentials.service_account_email}")
+        self.credentials = credentials
         if self._client is None:
-            self._client = Client(project=self.project_id, credentials=self.credentials)
+            self._client = Client(project=project_id, credentials=self.credentials)
         return self._client
 
     @property
@@ -318,19 +329,20 @@ class GoogleCloudStorage(BaseStorage):
                 storage_base_url=self.custom_endpoint,
                 quoted_name=_quote(name, safe=b"/~"),
             )
+        elif not self.custom_endpoint:
+            return blob.generate_signed_url(**self.signed_url_extra())
         else:
-            default_params = {
-                "bucket_bound_hostname": self.custom_endpoint,
-                "expiration": self.expiration,
-                "version": "v4",
-            }
-            params = parameters or {}
+            return blob.generate_signed_url(
+                api_access_endpoint=self.custom_endpoint,
+                **self.signed_url_extra()
+            )
 
-            for key, value in default_params.items():
-                if value and key not in params:
-                    params[key] = value
-
-            return blob.generate_signed_url(**params)
+    def signed_url_extra(self):
+        return {
+            "service_account_email": self.credentials.service_account_email,
+            "access_token": self.credentials.token,
+            "credentials": self.credentials,
+        }
 
     def get_available_name(self, name, max_length=None):
         name = clean_name(name)
