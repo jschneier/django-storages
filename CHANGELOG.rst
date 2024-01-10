@@ -19,6 +19,11 @@ Azure
 - Add ``mode`` kwarg to ``.url()`` to support creation of signed URLs for upload (`#1414`_)
 - Fix fetching user delegation key when custom domain is enabled (`#1418`_)
 
+SFTP
+----
+
+- Add implementations of ``get_(modified|accessed)_time`` (`#1347`_)
+
 .. _#1399: https://github.com/jschneier/django-storages/pull/1399
 .. _#1381: https://github.com/jschneier/django-storages/pull/1381
 .. _#1402: https://github.com/jschneier/django-storages/pull/1402
@@ -26,6 +31,7 @@ Azure
 .. _#1414: https://github.com/jschneier/django-storages/pull/1414
 .. _#1417: https://github.com/jschneier/django-storages/pull/1417
 .. _#1418: https://github.com/jschneier/django-storages/pull/1418
+.. _#1347: https://github.com/jschneier/django-storages/pull/1347
 
 
 1.14.3 (2024-05-04)
