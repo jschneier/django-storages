@@ -305,11 +305,25 @@ class S3StorageTests(TestCase):
         self.assertEqual(content_str, "")
         file.close()
 
+    def test_storage_open_read_with_newlines(self):
+        """
+        Test opening a file in "r" mode with various newline characters
+        """
+        name = "test_storage_open_read_with_newlines.txt"
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\r\nmore\rtext\n")
+            temp_file.seek(0)
+            file = self.storage.open(name, "r")
+            file._file = temp_file
+            content_str = file.read()
+            file.close()
+        self.assertEqual(content_str, "line1\nline2\nmore\ntext\n")
+
     def test_storage_open_readlines(self):
         """
         Test readlines with file opened in "r" and "rb" modes
         """
-        name = "test_open_readlines_string.txt"
+        name = "test_storage_open_readlines.txt"
         with io.BytesIO() as temp_file:
             temp_file.write(b"line1\nline2")
             file = self.storage.open(name, "r")
@@ -323,6 +337,19 @@ class S3StorageTests(TestCase):
             file._file = temp_file
             content_lines = file.readlines()
             self.assertEqual(content_lines, [b"line1\n", b"line2"])
+
+    def test_storage_open_readlines_with_newlines(self):
+        """
+        Test readlines with file opened in "r" mode with various newline characters
+        """
+        name = "test_storage_open_readlines_with_newlines.txt"
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\r\nmore\rtext")
+            file = self.storage.open(name, "r")
+            file._file = temp_file
+
+            content_lines = file.readlines()
+            self.assertEqual(content_lines, ['line1\n', 'line2\n', 'more\n', 'text'])
 
     def test_storage_open_write(self):
         """
