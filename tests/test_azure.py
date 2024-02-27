@@ -502,3 +502,13 @@ class AzureStorageTest(TestCase):
                 "https://foo_name.blob.core.windows.net",
                 credential={"account_name": "foo_name", "account_key": "foo_key"},
             )
+
+    def test_missing_file_handling(self):
+        client_mock = mock.MagicMock()
+        client_mock.exists.side_effect = [True, False]
+        self.storage._client.get_blob_client.return_value = client_mock
+
+        file_that_exists = self.storage._open('file-that-exists')
+        self.assertIsInstance(file_that_exists, azure_storage.AzureStorageFile)
+
+        self.assertRaises(FileNotFoundError, self.storage._open, 'file-that-does-not-exist')
