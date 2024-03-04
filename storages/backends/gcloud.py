@@ -138,9 +138,10 @@ class GoogleCloudStorage(BaseStorage):
             "file_overwrite": setting("GS_FILE_OVERWRITE", True),
             "object_parameters": setting("GS_OBJECT_PARAMETERS", {}),
             # The max amount of memory a returned file can take up before being
-            # rolled over into a temporary file on disk. Default is 0: Do not
-            # roll over.
-            "max_memory_size": setting("GS_MAX_MEMORY_SIZE", 0),
+            # rolled over into a temporary file on disk.
+            "max_memory_size": setting(
+                "GS_MAX_MEMORY_SIZE", setting("FILE_UPLOAD_MAX_MEMORY_SIZE")
+            ),
             "blob_chunk_size": setting("GS_BLOB_CHUNK_SIZE"),
         }
 
