@@ -120,6 +120,11 @@ Settings
 
   Sets the Dropbox WriteMode strategy. Read more in the `official docs`_.
 
+``max_memory_size`` size ``DROPBOX_MAX_MEMORY_SIZE``
+
+  Default: ``FILE_UPLOAD_MAX_MEMORY_SIZE``
+
+  Maximum memory used by a downloaded file before dumping it to disk in bytes.
 
 .. _`tutorial`: https://www.dropbox.com/developers/documentation/python#tutorial
 .. _`Dropbox SDK for Python`: https://www.dropbox.com/developers/documentation/python#tutorial
