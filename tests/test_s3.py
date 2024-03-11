@@ -19,7 +19,7 @@ from django.core.files.base import File
 from django.test import TestCase
 from django.test import override_settings
 from django.utils.timezone import is_aware
-from moto import mock_aws
+from moto import mock_s3
 
 from storages.backends import s3
 from tests.utils import NonSeekableContentFile
@@ -1040,10 +1040,10 @@ class S3FileTests(TestCase):
         self.assertIsNone(f._multipart)
 
 
-@mock_aws
+@mock_s3
 class S3StorageTestsWithMoto(TestCase):
     """
-    Using mock_aws as a class decorator automatically decorates methods,
+    Using mock_s3 as a class decorator automatically decorates methods,
     but NOT classmethods or staticmethods.
     """
 
