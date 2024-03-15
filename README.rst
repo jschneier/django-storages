@@ -71,7 +71,6 @@ Contributing
 #. Bug me until I can merge your pull request.
 
 Please don't update the library version in CHANGELOG.rst or ``storages/__init__.py``, the maintainer will do that on release.
-If you're the first to update the CHANGELOG in this release cycle, just put the version as ``XXXX-XX-XX``.
 
 History
 =======
