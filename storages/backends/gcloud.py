@@ -39,7 +39,7 @@ CONTENT_TYPE = "content_type"
 class GoogleCloudFile(CompressedFileMixin, File):
     def __init__(self, name, mode, storage):
         self.name = name
-        self.mime_type = mimetypes.guess_type(name)[0]
+        self.mime_type, self.mime_encoding = mimetypes.guess_type(name)
         self._mode = mode
         self._storage = storage
         self.blob = storage.bucket.get_blob(name, chunk_size=storage.blob_chunk_size)
@@ -190,8 +190,11 @@ class GoogleCloudStorage(BaseStorage):
         content.name = cleaned_name
         file_object = GoogleCloudFile(name, "rw", self)
 
-        upload_params = {}
         blob_params = self.get_object_parameters(name)
+        if file_object.mime_encoding and CONTENT_ENCODING not in blob_params:
+            blob_params[CONTENT_ENCODING] = file_object.mime_encoding
+
+        upload_params = {}
         upload_params["predefined_acl"] = blob_params.pop("acl", self.default_acl)
         upload_params[CONTENT_TYPE] = blob_params.pop(
             CONTENT_TYPE, file_object.mime_type
