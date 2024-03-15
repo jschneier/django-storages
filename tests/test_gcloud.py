@@ -21,17 +21,15 @@ class GCloudTestCase(TestCase):
         self.bucket_name = "test_bucket"
         self.filename = "test_file.txt"
         self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
-
-
-class GCloudStorageTests(GCloudTestCase):
-    def setUp(self):
-        super().setUp()
         self.client_patcher = mock.patch("storages.backends.gcloud.Client")
         self.client_patcher.start()
 
     def tearDown(self):
+        super().tearDown()
         self.client_patcher.stop()
 
+
+class GCloudStorageTests(GCloudTestCase):
     def test_open_read(self):
         """
         Test opening a file and reading from it
@@ -507,7 +505,6 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         self.storage.gzip = True
 
     @mock.patch("google.cloud.storage.blob.Blob._do_upload")
-    @mock.patch("google.auth.default", return_value=["foo", None])
     def test_storage_save_gzipped(self, *args):
         """
         Test saving a gzipped file
@@ -521,11 +518,12 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         try:
             patcher.start()
             self.storage.save(name, content)
-            blob.upload_from_file.assert_called_with(
+            obj = self.storage._bucket.get_blob()
+            obj.upload_from_file.assert_called_with(
                 mock.ANY,
                 rewind=True,
                 retry=DEFAULT_RETRY,
-                size=None,
+                size=11,
                 predefined_acl=None,
                 content_type="application/javascript",
             )
@@ -533,12 +531,10 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
             patcher.stop()
 
     @mock.patch("google.cloud.storage.blob.Blob._do_upload")
-    @mock.patch("google.auth.default", return_value=["foo", None])
     def test_storage_save_gzip(self, *args):
         """
         Test saving a file with gzip enabled.
         """
-        self.storage.gzip = True
         name = "test_storage_save.css"
         content = ContentFile("I should be gzip'd")
 
