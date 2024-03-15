@@ -49,7 +49,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             "gid": setting("SFTP_STORAGE_GID"),
             "known_host_file": setting("SFTP_KNOWN_HOST_FILE"),
             "root_path": setting("SFTP_STORAGE_ROOT", ""),
-            "base_url": setting("MEDIA_URL"),
+            "base_url": setting("SFTP_BASE_URL") or setting("MEDIA_URL"),
         }
 
     def _connect(self):
@@ -118,9 +118,12 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         """Create directory, recursing up to create parent dirs if
         necessary."""
         parent = posixpath.dirname(path)
-        if not self.exists(parent):
+
+        if parent and not self.exists(parent):
             self._mkdir(parent)
-        self.sftp.mkdir(path)
+
+        if not self.exists(path):
+            self.sftp.mkdir(path)
 
         if self._dir_mode is not None:
             self.sftp.chmod(path, self._dir_mode)
@@ -133,6 +136,8 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         if is_seekable(content):
             content.seek(0, os.SEEK_SET)
         path = self._remote_path(name)
+
+        # make parent(s)
         dirname = posixpath.dirname(path)
         if not self.exists(dirname):
             self._mkdir(dirname)
@@ -153,8 +158,11 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             pass
 
     def exists(self, name):
+        if not name:
+            return True
+
         try:
-            self.sftp.stat(self._remote_path(name))
+            self.sftp.stat(name)
             return True
         except FileNotFoundError:
             return False
