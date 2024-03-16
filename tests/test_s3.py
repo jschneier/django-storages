@@ -642,14 +642,16 @@ class S3StorageTests(TestCase):
         self.assertEqual(files, [])
 
     def test_storage_size(self):
-        obj = self.storage.bucket.Object.return_value
-        obj.content_length = 4098
+        self.storage.connection.meta.client.head_object.return_value = {
+            "ContentLength": 4098,
+            "LastModified": datetime.datetime.utcnow(),
+        }
 
         name = "file.txt"
-        self.assertEqual(self.storage.size(name), obj.content_length)
+        self.assertEqual(self.storage.size(name), 4098)
 
     def test_storage_size_not_exists(self):
-        self.storage.bucket.Object.side_effect = ClientError(
+        self.storage.connection.meta.client.head_object.side_effect = ClientError(
             {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 404}},
             "HeadObject",
         )
@@ -666,8 +668,10 @@ class S3StorageTests(TestCase):
                 self._test_storage_mtime(use_tz)
 
     def _test_storage_mtime(self, use_tz):
-        obj = self.storage.bucket.Object.return_value
-        obj.last_modified = datetime.datetime.now(datetime.timezone.utc)
+        self.storage.connection.meta.client.head_object.return_value = {
+            "ContentLength": 4098,
+            "LastModified": datetime.datetime.now(datetime.timezone.utc),
+        }
 
         name = "file.txt"
         self.assertIs(
@@ -981,6 +985,65 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage(
                 access_key="foo", secret_key="boo", session_profile="moo"
             )
+
+    def test_open_should_evict_from_cache(self):
+        self._setup_test_data_to_cache()
+        self.assertTrue(self.storage.exists("file.txt"))
+        self.assertIsNotNone(self.storage._get_from_cache("file.txt"))
+        with self.storage.open("file.txt") as _:
+            self.assertIsNone(self.storage._get_from_cache("file.txt"))
+        self.assertIsNone(self.storage._get_from_cache("file.txt"))
+
+    def test_save_should_evict_from_cache(self):
+        self._setup_test_data_to_cache()
+        self.assertTrue(self.storage.exists("file.txt"))
+        self.assertIsNotNone(self.storage._get_from_cache("file.txt"))
+        self.storage.save("file.txt", ContentFile(b"abc"))
+        self.assertIsNone(self.storage._get_from_cache("file.txt"))
+
+    def test_delete_should_evict_from_cache(self):
+        self._setup_test_data_to_cache()
+        self.assertTrue(self.storage.exists("file.txt"))
+        self.assertIsNotNone(self.storage._get_from_cache("file.txt"))
+        self.storage.delete("file.txt")
+        self.assertIsNone(self.storage._get_from_cache("file.txt"))
+
+    def test_exists_should_use_cached_value(self):
+        self._setup_test_data_to_cache()
+        self.assertTrue(self.storage.exists("file.txt"))
+        self.assertTrue(self.storage.exists("file.txt"))
+
+    def test_size_should_use_cached_value(self):
+        self._setup_test_data_to_cache()
+        self.assertEqual(self.storage.size("file.txt"), 123)
+        self.assertEqual(self.storage.size("file.txt"), 123)
+
+    def test_get_modified_time_should_use_cached_value(self):
+        self._setup_test_data_to_cache()
+        modified_at = datetime.datetime(2021, 1, 1, 0, 0, 0)
+        self.assertEqual(self.storage.get_modified_time("file.txt"), modified_at)
+        self.assertEqual(self.storage.get_modified_time("file.txt"), modified_at)
+
+    def test_get_modified_time_not_exists(self):
+        self.storage.connection.meta.client.head_object.side_effect = ClientError(
+            {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 404}},
+            "HeadObject",
+        )
+        with self.assertRaisesMessage(
+            FileNotFoundError, "File does not exist: file.txt"
+        ):
+            self.storage.get_modified_time("file.txt")
+
+    def _setup_test_data_to_cache(self):
+        mock_connection = mock.MagicMock()
+        self.storage._connections.connection = mock_connection
+        mock_connection.meta.client.head_object.side_effect = [
+            {
+                "ContentLength": 123,
+                "LastModified": datetime.datetime(2021, 1, 1, 0, 0, 0),
+            },
+            Exception("Should not be called"),
+        ]
 
 
 class S3StaticStorageTests(TestCase):

@@ -3,6 +3,7 @@ import os
 import posixpath
 import tempfile
 import threading
+import typing
 import warnings
 from datetime import datetime
 from datetime import timedelta
@@ -10,6 +11,7 @@ from urllib.parse import parse_qsl
 from urllib.parse import urlencode
 from urllib.parse import urlsplit
 
+from cachetools import LRUCache
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import SuspiciousOperation
@@ -96,6 +98,12 @@ def _filter_download_params(params):
         for (key, value) in params.items()
         if key in s3transfer.constants.ALLOWED_DOWNLOAD_ARGS
     }
+
+
+# Use named tuple to make it clear what the values are
+class _S3Meta(typing.NamedTuple):
+    content_length: int
+    last_modified: datetime
 
 
 @deconstructible
@@ -317,6 +325,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         self._bucket = None
         self._connections = threading.local()
+        # Even a small cache can be very helpful in reducing the number of
+        # requests to S3 and increasing the speed for example collectstatic command
+        self._cache = LRUCache(maxsize=32)
 
         if not self.config:
             self.config = Config(
@@ -474,6 +485,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def _open(self, name, mode="rb"):
         name = self._normalize_name(clean_name(name))
+        # Remove cached metadata since writing will alter it
+        self._evict_from_cache(name)
         try:
             f = S3File(name, mode, self)
         except ClientError as err:
@@ -485,6 +498,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def _save(self, name, content):
         cleaned_name = clean_name(name)
         name = self._normalize_name(cleaned_name)
+        # Remove cached metadata since writing will alter it
+        self._evict_from_cache(name)
         params = self._get_write_parameters(name, content)
 
         if is_seekable(content):
@@ -516,6 +531,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def delete(self, name):
         try:
             name = self._normalize_name(clean_name(name))
+            # Remove cached metadata since the key will be deleted
+            self._evict_from_cache(name)
             self.bucket.Object(name).delete()
         except ClientError as err:
             if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
@@ -527,15 +544,11 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def exists(self, name):
         name = self._normalize_name(clean_name(name))
-        try:
-            self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
+        key_meta = self._get_from_cache(name)  # type: _S3Meta
+        if key_meta:
             return True
-        except ClientError as err:
-            if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
-                return False
-
-            # Some other error was encountered. Re-raise it.
-            raise
+        key_meta = self._fetch_to_cache(name)
+        return key_meta is not None
 
     def listdir(self, name):
         path = self._normalize_name(clean_name(name))
@@ -560,12 +573,14 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def size(self, name):
         name = self._normalize_name(clean_name(name))
-        try:
-            return self.bucket.Object(name).content_length
-        except ClientError as err:
-            if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
-                raise FileNotFoundError("File does not exist: %s" % name)
-            raise  # Let it bubble up if it was some other error
+        key_meta = self._get_from_cache(name)  # type: _S3Meta
+        if key_meta:
+            # return the size from the cache
+            return key_meta.content_length
+        key_meta = self._fetch_to_cache(name)
+        if key_meta:
+            return key_meta.content_length
+        raise FileNotFoundError("File does not exist: %s" % name)
 
     def _get_write_parameters(self, name, content=None):
         params = self.get_object_parameters(name)
@@ -601,12 +616,20 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
         name = self._normalize_name(clean_name(name))
-        entry = self.bucket.Object(name)
+        key_meta = self._get_from_cache(name)  # type: _S3Meta
+        if key_meta:
+            # use the cached last modified time
+            last_modified = key_meta.last_modified
+        else:
+            key_meta = self._fetch_to_cache(name)
+            if not key_meta:
+                raise FileNotFoundError("File does not exist: %s" % name)
+            last_modified = key_meta.last_modified
         if setting("USE_TZ"):
             # boto3 returns TZ aware timestamps
-            return entry.last_modified
+            return last_modified
         else:
-            return make_naive(entry.last_modified)
+            return make_naive(last_modified)
 
     def _strip_signing_parameters(self, url):
         # Boto3 does not currently support generating URLs that are unsigned. Instead
@@ -677,6 +700,29 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
+
+    def _add_to_cache(self, name, value):
+        content_length = value["ContentLength"]
+        last_modified = value["LastModified"]
+        self._cache[name] = _S3Meta(content_length, last_modified)
+
+    def _evict_from_cache(self, name):
+        self._cache.pop(name, None)
+
+    def _get_from_cache(self, name):
+        return self._cache.get(name, None)
+
+    def _fetch_to_cache(self, name):
+        try:
+            key_meta = self.connection.meta.client.head_object(
+                Bucket=self.bucket_name, Key=name
+            )
+            self._add_to_cache(name, key_meta)
+            return self._get_from_cache(name)
+        except ClientError as err:
+            if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
+                return None
+            raise
 
 
 class S3StaticStorage(S3Storage):
