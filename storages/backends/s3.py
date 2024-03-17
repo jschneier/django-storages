@@ -325,9 +325,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         self._bucket = None
         self._connections = threading.local()
-        # Even a small cache can be very helpful in reducing the number of
-        # requests to S3 and increasing the speed for example collectstatic command
-        self._cache = LRUCache(maxsize=32)
 
         if not self.config:
             self.config = Config(
@@ -700,6 +697,16 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
+
+    @property
+    def _cache(self):
+        cache = getattr(self, "__cache", None)
+        if cache is None:
+            # Even a small cache can be very helpful in reducing the number of
+            # requests to S3 and increasing the speed for example collectstatic command
+            self.__cache = LRUCache(maxsize=32)
+            cache = self.__cache
+        return cache
 
     def _add_to_cache(self, name, value):
         content_length = value["ContentLength"]
