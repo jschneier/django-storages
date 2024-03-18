@@ -49,7 +49,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             "gid": setting("SFTP_STORAGE_GID"),
             "known_host_file": setting("SFTP_KNOWN_HOST_FILE"),
             "root_path": setting("SFTP_STORAGE_ROOT", ""),
-            "base_url": setting("MEDIA_URL"),
+            "base_url": setting("SFTP_BASE_URL") or setting("MEDIA_URL"),
         }
 
     def _connect(self):
