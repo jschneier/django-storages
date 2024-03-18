@@ -117,7 +117,7 @@ Settings
 
   Absolute path of know host file, if it isn't set ``"~/.ssh/known_hosts"`` will be used.
 
-``base_url``
+``base_url`` or ``SFTP_BASE_URL``
 
   Default: Django ``MEDIA_URL`` setting
 
