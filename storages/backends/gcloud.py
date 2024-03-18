@@ -20,6 +20,8 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
+    from google import auth
+    from google.auth.transport import requests
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
@@ -142,12 +144,18 @@ class GoogleCloudStorage(BaseStorage):
             # roll over.
             "max_memory_size": setting("GS_MAX_MEMORY_SIZE", 0),
             "blob_chunk_size": setting("GS_BLOB_CHUNK_SIZE"),
+            "sa_email": setting("GS_SA_SIGNING_EMAIL")
         }
 
     @property
     def client(self):
         if self._client is None:
-            self._client = Client(project=self.project_id, credentials=self.credentials)
+            project_id, credentials = self.project_id, self.credentials
+            if project_id is None and credentials is None:
+                credentials, project_id = auth.default(scopes=['https://www.googleapis.com/auth/cloud-platform'])
+                if not hasattr(credentials, "service_account_email"):
+                    credentials.service_account_email = self.sa_email
+            self._client = Client(project=project_id, credentials=credentials)
         return self._client
 
     @property
@@ -322,17 +330,14 @@ class GoogleCloudStorage(BaseStorage):
                 quoted_name=_quote(name, safe=b"/~"),
             )
         else:
-            default_params = {
-                "bucket_bound_hostname": self.custom_endpoint,
+            params = {
+                "service_account_email": self.credentials.service_account_email,
+                "access_token": self.credentials.token,
+                "credentials": self.credentials,
                 "expiration": self.expiration,
-                "version": "v4",
             }
-            params = parameters or {}
-
-            for key, value in default_params.items():
-                if value and key not in params:
-                    params[key] = value
-
+            if self.custom_endpoint:
+                params["api_access_endpoint"] = self.custom_endpoint
             return blob.generate_signed_url(**params)
 
     def get_available_name(self, name, max_length=None):

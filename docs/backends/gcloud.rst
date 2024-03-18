@@ -61,6 +61,7 @@ For development use cases, or other instances outside Google infrastructure:
 
 Alternatively, you can use the setting ``credentials`` or ``GS_CREDENTIALS`` as described below.
 
+It is also now possible to use workload identity by providing the service account via ``GS_SA_SIGNING_EMAIL``.
 
 Settings
 ~~~~~~~~
@@ -219,3 +220,12 @@ Settings
   It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
   Note: The maximum value for this option is 7 days (604800 seconds) in version `v4` (See this `Github issue  <https://github.com/googleapis/python-storage/issues/456#issuecomment-856884993>`_)
+
+``sa_email`` or ``GS_SA_SIGNING_EMAIL``
+
+  default: ``''``
+
+  This is the signing email if it is not fetched from the credentials. Or if you wish to sign the signed urls with a different service_account.
+
+  As above please note that, Default Google Compute Engine (GCE) Service accounts are
+  `unable to sign urls <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
