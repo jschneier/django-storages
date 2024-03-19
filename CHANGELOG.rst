@@ -1,6 +1,17 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED
+**********
+
+Filesystem
+----------
+
+Add new ``FileSystemOverwriteStorage`` backend - similar to Django's existing filesystem storage,
+but overwrites existing files instead of always saving with unique names. (`#1252`_)
+
+.. _#1252: https://github.com/jschneier/django-storages/pull/1252
+
 1.14.2 (2023-10-08)
 *******************
 
