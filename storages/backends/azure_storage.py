@@ -40,7 +40,7 @@ class AzureStorageFile(File):
         file = SpooledTemporaryFile(
             max_size=self._storage.max_memory_size,
             suffix=".AzureStorageFile",
-            dir=setting("FILE_UPLOAD_TEMP_DIR", None),
+            dir=setting("FILE_UPLOAD_TEMP_DIR"),
         )
 
         if "r" in self._mode or "a" in self._mode:
@@ -141,7 +141,9 @@ class AzureStorage(BaseStorage):
             "azure_ssl": setting("AZURE_SSL", True),
             "upload_max_conn": setting("AZURE_UPLOAD_MAX_CONN", 2),
             "timeout": setting("AZURE_CONNECTION_TIMEOUT_SECS", 20),
-            "max_memory_size": setting("AZURE_BLOB_MAX_MEMORY_SIZE", 2 * 1024 * 1024),
+            "max_memory_size": setting(
+                "AZURE_BLOB_MAX_MEMORY_SIZE", setting("FILE_UPLOAD_MAX_MEMORY_SIZE")
+            ),
             "expiration_secs": setting("AZURE_URL_EXPIRATION_SECS"),
             "overwrite_files": setting("AZURE_OVERWRITE_FILES", False),
             "location": setting("AZURE_LOCATION", ""),

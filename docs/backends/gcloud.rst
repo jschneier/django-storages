@@ -147,10 +147,10 @@ Settings
 
 ``max_memory_size`` or ``GS_MAX_MEMORY_SIZE``
 
-  default: ``0`` i.e do not rollover
+  default: ``FILE_UPLOAD_MAX_MEMORY_SIZE``
 
   The maximum amount of memory a returned file can take up (in bytes) before being
-  rolled over into a temporary file on disk. Default is 0: Do not roll over.
+  rolled over into a temporary file on disk.
 
 ``blob_chunk_size`` or ``GS_BLOB_CHUNK_SIZE``
 

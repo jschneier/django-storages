@@ -403,7 +403,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "region_name": setting("AWS_S3_REGION_NAME"),
             "use_ssl": setting("AWS_S3_USE_SSL", True),
             "verify": setting("AWS_S3_VERIFY", None),
-            "max_memory_size": setting("AWS_S3_MAX_MEMORY_SIZE", 0),
+            "max_memory_size": setting(
+                "AWS_S3_MAX_MEMORY_SIZE", setting("FILE_UPLOAD_MAX_MEMORY_SIZE")
+            ),
             "default_acl": setting("AWS_DEFAULT_ACL", None),
             "use_threads": setting("AWS_S3_USE_THREADS", True),
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
