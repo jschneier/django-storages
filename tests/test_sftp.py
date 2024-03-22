@@ -16,7 +16,7 @@ from tests.utils import NonSeekableContentFile
 
 class SFTPStorageTest(TestCase):
     def setUp(self):
-        self.storage = sftpstorage.SFTPStorage(host="foo")
+        self.storage = sftpstorage.SFTPStorage(host="foo", root_path="root")
 
     def test_init(self):
         pass
@@ -95,13 +95,18 @@ class SFTPStorageTest(TestCase):
     )
     def test_save_in_subdir(self, mock_sftp):
         self.storage._save("bar/foo", File(io.BytesIO(b"foo"), "foo"))
-        self.assertEqual(mock_sftp.mkdir.call_args_list[0][0], ("bar",))
+        self.assertEqual(mock_sftp.stat.call_args_list[0][0], ("root/bar",))
+        self.assertEqual(mock_sftp.mkdir.call_args_list[0][0], ("root/bar",))
         self.assertTrue(mock_sftp.putfo.called)
 
     @patch("storages.backends.sftpstorage.SFTPStorage.sftp")
     def test_delete(self, mock_sftp):
         self.storage.delete("foo")
-        self.assertEqual(mock_sftp.remove.call_args_list[0][0], ("foo",))
+        self.assertEqual(mock_sftp.remove.call_args_list[0][0], ("root/foo",))
+
+    @patch("storages.backends.sftpstorage.SFTPStorage.sftp")
+    def test_path_exists(self, mock_sftp):
+        self.assertTrue(self.storage._path_exists("root/foo"))
 
     @patch("storages.backends.sftpstorage.SFTPStorage.sftp")
     def test_exists(self, mock_sftp):
@@ -113,6 +118,13 @@ class SFTPStorageTest(TestCase):
     )
     def test_not_exists(self, mock_sftp):
         self.assertFalse(self.storage.exists("foo"))
+
+    @patch(
+        "storages.backends.sftpstorage.SFTPStorage.sftp",
+        **{"stat.side_effect": FileNotFoundError()},
+    )
+    def test_not_path_exists(self, mock_sftp):
+        self.assertFalse(self.storage._path_exists("root/foo"))
 
     @patch(
         "storages.backends.sftpstorage.SFTPStorage.sftp",
