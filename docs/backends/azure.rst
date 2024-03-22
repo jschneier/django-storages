@@ -57,7 +57,7 @@ Using Managed Identity
 `Azure Managed Identity <https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview>`_ is an authentication method that allows you to authenticate to Azure services without storing credentials in your code.
 Managed Identity is the recommended mechanism for password-less authentication to Azure Storage Accounts from other Azure services like App Services, Functions, Container Apps, and VMs.
 
-To use Managed Identity you will need to configure a System Assigned Managed Identity or a User Assigned Managed Identity for your app service. Then you can use the `DefaultAzureCredential <https://learn.microsoft.com/python/api/overview/azure/identity-readme?view=azure-python#defaultazurecredential`_ class from the Azure SDK to authenticate. 
+To use Managed Identity you will need to configure a System Assigned Managed Identity or a User Assigned Managed Identity for your app service. Then you can use the `DefaultAzureCredential <https://learn.microsoft.com/python/api/overview/azure/identity-readme?view=azure-python#defaultazurecredential>`_ class from the Azure SDK to authenticate. 
 This class will automatically try all the available authentication methods in the order of precedence. ``DefaultAzureCredential`` will also use environment variables for local development, or VS Code Azure Login if available.
 
 This `guide <https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python?tabs=managed-identity%2Croles-azure-portal%2Csign-in-azure-cli&pivots=blob-storage-quickstart-scratch#authenticate-to-azure-and-authorize-access-to-blob-data>`_ contains more information on assigning roles to Storage Accounts.
