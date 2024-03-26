@@ -191,6 +191,34 @@ Settings
   The Azure Storage API version to use. Default value is the most recent service version that is compatible with the current SDK.
   Setting to an older version may result in reduced feature compatibility.
 
+Using with Azurite (previously Azure Storage Emulator)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Azurite is a local emulator for Azure Storage accounts that emulates the API for Azure Blob storage and enables local testing and development without an Azure account, free of charge.
+
+To use the Azure Storage Emulator, you download and install it from the `Azurite page <https://learn.microsoft.com/azure/storage/common/storage-use-azurite>`_.
+
+Copy the default `connection string <https://learn.microsoft.com/azure/storage/common/storage-use-azurite?tabs=visual-studio-code%2Cblob-storage#http-connection-strings>`_ and set it in your settings::
+
+  STORAGES = {
+      "default": {
+          "BACKEND": "storages.backends.azure_storage.AzureStorage",
+          "OPTIONS": {
+              "connection_string": "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;",
+              "azure_container": "media",
+          },
+      },
+      "staticfiles": {
+          "BACKEND": "storages.backends.azure_storage.AzureStorage",
+          "OPTIONS": {
+              "connection_string": "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;",
+              "azure_container": "static",
+          },
+      },
+  }
+
+Django Storages will not create containers if they don't exist, so you will need to create any storage containers using the Azurite CLI or the Azure Storage Explorer.
+
 Additional Notes
 ----------------
 
