@@ -67,7 +67,8 @@ Before using Managed Identity, you will need to install the Azure Identity packa
   pip install azure-identity
 
 After creating the containers in the Azure Storage Account, you can configure Managed Identity in Django settings. 
-Import ``DefaultAzureCredential`` from ``azure.identity`` to use it for the ``token_credential`` property:
+Import ``DefaultAzureCredential`` from ``azure.identity`` to use it for the ``token_credential`` property::
+
 
   from azure.identity import DefaultAzureCredential
 
