@@ -104,6 +104,13 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         remote_path = self._remote_path(name)
         return self.sftp.open(remote_path, "rb")
 
+    def _exists(self, path):
+        try:
+            self.sftp.stat(path)
+            return True
+        except FileNotFoundError:
+            return False
+
     def _chown(self, path, uid=None, gid=None):
         """Set uid and/or gid for file at path."""
         # Paramiko's chown requires both uid and gid, so look them up first if
@@ -118,7 +125,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         """Create directory, recursing up to create parent dirs if
         necessary."""
         parent = posixpath.dirname(path)
-        if not self.exists(parent):
+        if not self._exists(parent):
             self._mkdir(parent)
         self.sftp.mkdir(path)
 
@@ -134,7 +141,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             content.seek(0, os.SEEK_SET)
         path = self._remote_path(name)
         dirname = posixpath.dirname(path)
-        if not self.exists(dirname):
+        if not self._exists(dirname):
             self._mkdir(dirname)
 
         self.sftp.putfo(content, path)
@@ -153,11 +160,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             pass
 
     def exists(self, name):
-        try:
-            self.sftp.stat(self._remote_path(name))
-            return True
-        except FileNotFoundError:
-            return False
+        return self._exists(self._remote_path(name))
 
     def _isdir_attr(self, item):
         # Return whether an item in sftp.listdir_attr results is a directory
