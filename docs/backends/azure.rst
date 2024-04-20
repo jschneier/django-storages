@@ -123,9 +123,9 @@ Settings
 
   Global connection timeout in seconds.
 
-``max_memory`` size ``AZURE_BLOB_MAX_MEMORY_SIZE``
+``max_memory_size`` size ``AZURE_BLOB_MAX_MEMORY_SIZE``
 
-  Default: ``2*1024*1024`` i.e ``2MB``
+  Default: ``FILE_UPLOAD_MAX_MEMORY_SIZE``
 
   Maximum memory used by a downloaded file before dumping it to disk in bytes.
 
