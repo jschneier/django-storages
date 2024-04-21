@@ -10,5 +10,6 @@ backend for some of the most popular.
    :glob:
 
    backblaze-B2
+   cloudflare-r2
    digital-ocean-spaces
    oracle-cloud
