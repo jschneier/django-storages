@@ -1,3 +1,4 @@
+import io
 import mimetypes
 import os
 import posixpath
@@ -123,7 +124,6 @@ class S3File(CompressedFileMixin, File):
         self._storage = storage
         self.name = name[len(self._storage.location) :].lstrip("/")
         self._mode = mode
-        self._force_mode = (lambda b: b) if "b" in mode else (lambda b: b.decode())
         self.obj = storage.bucket.Object(name)
         if "w" not in mode:
             # Force early RAII-style exception if object does not exist
@@ -184,6 +184,8 @@ class S3File(CompressedFileMixin, File):
                 self._file.seek(0)
                 if self._storage.gzip and self.obj.content_encoding == "gzip":
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
+                elif "b" not in self._mode:
+                    self._file = io.TextIOWrapper(self._file._file, encoding="utf-8")
             self._closed = False
         return self._file
 
@@ -195,12 +197,12 @@ class S3File(CompressedFileMixin, File):
     def read(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super().read(*args, **kwargs))
+        return super().read(*args, **kwargs)
 
     def readline(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super().readline(*args, **kwargs))
+        return super().readline(*args, **kwargs)
 
     def readlines(self):
         return list(self)
