@@ -4,10 +4,17 @@ django-storages
 django-storages is a collection of custom storage backends for Django.
 
 .. toctree::
-   :maxdepth: 1
-   :glob:
+   :maxdepth: 2
+   :titlesonly:
 
-   backends/*
+   backends/amazon-S3
+   backends/apache_libcloud
+   backends/azure
+   backends/dropbox
+   backends/ftp
+   backends/gcloud
+   backends/sftp
+   backends/s3_compatible/index
 
 Installation
 ************
