@@ -1,20 +1,21 @@
 Oracle Cloud
 =============
 
-Oracle cloud provides S3 compatible object storage. To use it follow the instructions in the :doc:`Amazon S3 docs <amazon-S3>` on how to configure *DEFAULT_FILE_STORAGE* and *STATICFILES_STORAGE* and set the following
-configurations on settings.py
+Oracle Cloud provides an S3 compatible object storage. To use it: the instructions in the :doc:`Amazon S3 docs <../amazon-S3>` replacing:
 
-- Create a `Customer Secret Key`_
-- Use generated key as ``secret_key``
-- And the value in the *Access Key* column as ``access_key``
-- Set ``bucket_name`` with your bucket name
-- Set ``region_name`` with the current region
+#. Create a `Customer Secret Key`_
+#. Create a bucket
 
-And last but most importantly set the ``endpoint_url`` with:
+Then follow the instructions in the :doc:`Amazon S3 docs <../amazon-S3>` documentation replacing:
 
-    ``https://{ORACLE_NAMESPACE}.compat.objectstorage.{ORACLE_REGION}.oraclecloud.com``
+- ``secret_key`` with the value previously generated
+- ``access_key`` with the value in the **Access Key** column
+- ``bucket_name`` with the bucket name
+- ``region_name`` with the current region
+- ``endpoint_url`` with ``https://{ORACLE_NAMESPACE}.compat.objectstorage.{ORACLE_REGION}.oraclecloud.com``
 
-The ``ORACLE_NAMESPACE`` value can be found on the bucket details page
+.. note::
+   The ``ORACLE_NAMESPACE`` value can be found on the bucket details page
 
 
 References
