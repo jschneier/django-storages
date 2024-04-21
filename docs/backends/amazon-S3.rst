@@ -91,7 +91,7 @@ Settings
 
 ``max_memory_size`` or ``AWS_S3_MAX_MEMORY_SIZE``
 
-  Default: ``FILE_UPLOAD_MAX_MEMORY_SIZE``
+  Default: ``0`` i.e do not roll over
 
   The maximum amount of memory (in bytes) a file can take up before being rolled over
   into a temporary file on disk.

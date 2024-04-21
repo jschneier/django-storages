@@ -47,11 +47,7 @@ class DropboxFile(File):
 
     def _get_file(self):
         if self._file is None:
-            self._file = SpooledTemporaryFile(
-                max_size=self._storage.max_memory_size,
-                suffix=".DropboxFile",
-                dir=setting("FILE_UPLOAD_TEMP_DIR"),
-            )
+            self._file = SpooledTemporaryFile()
             # As dropbox==9.3.0, the client returns a tuple
             # (dropbox.files.FileMetadata, requests.models.Response)
             file_metadata, response = self._storage.client.files_download(self.name)
@@ -123,9 +119,6 @@ class DropboxStorage(BaseStorage):
             "oauth2_refresh_token": setting("DROPBOX_OAUTH2_REFRESH_TOKEN"),
             "timeout": setting("DROPBOX_TIMEOUT", _DEFAULT_TIMEOUT),
             "write_mode": setting("DROPBOX_WRITE_MODE", _DEFAULT_MODE),
-            "max_memory_size": setting(
-                "DROPBOX_MAX_MEMORY_SIZE", setting("FILE_UPLOAD_MAX_MEMORY_SIZE")
-            ),
         }
 
     def _full_path(self, name):
