@@ -403,9 +403,3 @@ class AzureStorage(BaseStorage):
             else:
                 files.append(n)
         return list(dirs), files
-
-    def get_name_max_len(self):
-        max_len = _AZURE_NAME_MAX_LEN - len(self._get_valid_path("foo")) - len("foo")
-        if not self.overwrite_files:
-            max_len -= len("_1234567")
-        return max_len
