@@ -169,8 +169,8 @@ class DropboxFileTest(TestCase):
         return_value=(FILE_METADATA_MOCK, RESPONSE_200_MOCK),
     )
     def test_read(self, *args):
-        file = self.storage._open("foo.txt")
-        self.assertEqual(file.read(), b"bar")
+        with self.storage.open("foo.txt") as file:
+            self.assertEqual(file.read(), b"bar")
 
     @mock.patch(
         "dropbox.Dropbox.files_download",
@@ -178,8 +178,8 @@ class DropboxFileTest(TestCase):
     )
     def test_server_bad_response(self, *args):
         with self.assertRaises(dropbox.DropboxStorageException):
-            file = self.storage._open("foo.txt")
-            file.read()
+            with self.storage.open("foo.txt") as file:
+                file.read()
 
 
 @mock.patch("dropbox.Dropbox.files_list_folder", return_value=FILES_EMPTY_MOCK)

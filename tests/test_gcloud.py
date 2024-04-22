@@ -36,23 +36,27 @@ class GCloudStorageTests(GCloudTestCase):
         """
         data = b"This is some test read data."
 
-        f = self.storage.open(self.filename)
-        self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, chunk_size=None)
+        with self.storage.open(self.filename) as f:
+            self.storage._client.bucket.assert_called_with(self.bucket_name)
+            self.storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=None
+            )
 
-        f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
-        self.assertEqual(f.read(), data)
+            f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+            self.assertEqual(f.read(), data)
 
     def test_open_read_num_bytes(self):
         data = b"This is some test read data."
         num_bytes = 10
 
-        f = self.storage.open(self.filename)
-        self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, chunk_size=None)
+        with self.storage.open(self.filename) as f:
+            self.storage._client.bucket.assert_called_with(self.bucket_name)
+            self.storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=None
+            )
 
-        f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
-        self.assertEqual(f.read(num_bytes), data[0:num_bytes])
+            f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+            self.assertEqual(f.read(num_bytes), data[0:num_bytes])
 
     def test_open_read_nonexistent(self):
         self.storage._bucket = mock.MagicMock()
