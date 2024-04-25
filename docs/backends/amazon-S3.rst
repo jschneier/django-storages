@@ -233,13 +233,9 @@ Settings
 
   Default: ``None``
 
-  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned
-  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned
-  urls, explicitly set this to ``s3v4``.
-
-  Set this to use an alternate version such as ``s3``. Note that only certain regions
-  support the legacy ``s3`` (also known as ``v2``) version. You can check to see
-  if your region is one of them in the `S3 region list`_.
+  The default signature version is ``s3v4``. Set this to ``s3`` to use the legacy
+  signing scheme (aka ``v2``). Note that only certain regions support that version.
+  You can check to see if your region is one of them in the `S3 region list`_.
 
   .. warning::
 
