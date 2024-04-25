@@ -35,7 +35,7 @@ try:
     import boto3.session
     import s3transfer.constants
     from boto3.s3.transfer import TransferConfig
-    from botocore.client import Config
+    from botocore.config import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
 except ImportError as e:
@@ -318,8 +318,17 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         self._bucket = None
         self._connections = threading.local()
 
-        if not self.config:
-            self.config = Config(
+        if self.config is not None:
+            warnings.warn(
+                "The 'config' class property is deprecated and will be "
+                "removed in a future version. Use AWS_S3_CLIENT_CONFIG "
+                "to customize any of the botocore.config.Config parameters.",
+                DeprecationWarning,
+            )
+            self.client_config = self.config
+
+        if self.client_config is None:
+            self.client_config = Config(
                 s3={"addressing_style": self.addressing_style},
                 signature_version=self.signature_version,
                 proxies=self.proxies,
@@ -407,6 +416,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "default_acl": setting("AWS_DEFAULT_ACL", None),
             "use_threads": setting("AWS_S3_USE_THREADS", True),
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
+            "client_config": setting("AWS_S3_CLIENT_CONFIG", None),
         }
 
     def __getstate__(self):
@@ -430,7 +440,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,
-                config=self.config,
+                config=self.client_config,
                 verify=self.verify,
             )
         return self._connections.connection

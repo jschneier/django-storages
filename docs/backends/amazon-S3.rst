@@ -242,12 +242,25 @@ Settings
     The signature versions are not backwards compatible so be careful about url endpoints if making this change
     for legacy projects.
 
+``client_config`` or ``AWS_S3_CLIENT_CONFIG``
+
+  Default: ``None``
+
+  An instance of ``botocore.config.Config`` to do advanced configuration of the client such as
+  ``max_pool_connections``. See all options in the `Botocore docs`_.
+
+  .. note::
+
+    Setting this overrides the settings for ``addressing_style``, ``signature_version`` and
+    ``proxies``. Include them as arguments to your ``botocore.config.Config`` class if you need them.
+
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 .. _S3 region list: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_region
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
 .. _Boto3 docs for TransferConfig: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
 .. _ManifestStaticFilesStorage: https://docs.djangoproject.com/en/3.1/ref/contrib/staticfiles/#manifeststaticfilesstorage
+.. _Botocore docs: https://botocore.amazonaws.com/v1/documentation/api/latest/reference/config.html#botocore.config.Config
 
 .. _cloudfront-signed-url-header:
 

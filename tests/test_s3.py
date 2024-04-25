@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import boto3
 import boto3.s3.transfer
+from botocore.config import Config as ClientConfig
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -41,6 +42,18 @@ class S3StorageTests(TestCase):
                 storage = s3.S3Storage()
                 _ = storage.connection
                 mock_session.assert_called_once_with(profile_name="test_profile")
+
+    def test_client_config(self):
+        with override_settings(
+            AWS_S3_CLIENT_CONFIG=ClientConfig(max_pool_connections=30)
+        ):
+            storage = s3.S3Storage()
+            with mock.patch("boto3.Session.resource") as mock_resource:
+                _ = storage.connection
+                mock_resource.assert_called_once()
+                self.assertEqual(
+                    30, mock_resource.call_args[1]["config"].max_pool_connections
+                )
 
     def test_pickle_with_bucket(self):
         """
