@@ -657,7 +657,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             expire = self.querystring_expire
 
         if self.custom_domain:
-            url = "{}//{}/{}{}".format(
+            url = "{}://{}/{}{}".format(
                 self.url_protocol,
                 self.custom_domain,
                 filepath_to_uri(name),
