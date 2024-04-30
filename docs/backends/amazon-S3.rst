@@ -108,6 +108,9 @@ Settings
 
   The protocol to use when constructing a custom domain, ``custom_domain`` must be ``True`` for this to have any effect.
 
+  .. note::
+    Must end in a ``:``
+
 ``file_overwrite`` or ``AWS_S3_FILE_OVERWRITE``
 
   Default: ``True``
