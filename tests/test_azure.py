@@ -508,7 +508,7 @@ class AzureStorageTest(TestCase):
         client_mock.exists.side_effect = [True, False]
         self.storage._client.get_blob_client.return_value = client_mock
 
-        file_that_exists = self.storage.open('file-that-exists')
-        self.assertIsInstance(file_that_exists, azure_storage.AzureStorageFile)
+        with self.storage.open('file-that-exists') as file_that_exists:
+            self.assertIsInstance(file_that_exists, azure_storage.AzureStorageFile)
 
         self.assertRaises(FileNotFoundError, self.storage.open, 'file-that-does-not-exist')
