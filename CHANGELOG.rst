@@ -12,6 +12,8 @@ General
 S3
 --
 
+- **Deprecated**: The ``config`` class property has been deprecated in favor of the ``client_config`` setting,
+  a future version will remove support for the property.
 - Fix disabling CloudFront signing with class variables (`#1334`_)
 - Fix ``AWS_S3_*`` environment variables lookup (`#1336`_)
 - Add ``client_config/AWS_S3_CLIENT_CONFIG`` to configure advanced ``botocore`` settings (`#1386`_)
