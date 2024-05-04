@@ -33,6 +33,7 @@ FTP
 - Add support for FTP TLS via ``ftps`` URLs (`#1320`_)
 - Add support for passwords with urlchars (`#1329`_)
 
+.. _#1331: https://github.com/jschneier/django-storages/pull/1331
 .. _#1386: https://github.com/jschneier/django-storages/pull/1386
 .. _#1372: https://github.com/jschneier/django-storages/pull/1372
 .. _#1334: https://github.com/jschneier/django-storages/pull/1334
