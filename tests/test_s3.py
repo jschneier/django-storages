@@ -981,7 +981,7 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage(
                 access_key="foo", secret_key="boo", session_profile="moo"
             )
-    
+
     def test_security_token(self):
         with override_settings(AWS_SESSION_TOKEN="baz"):
             storage = s3.S3Storage()
