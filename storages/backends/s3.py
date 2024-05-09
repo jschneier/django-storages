@@ -185,7 +185,16 @@ class S3File(CompressedFileMixin, File):
                 if self._storage.gzip and self.obj.content_encoding == "gzip":
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
                 elif "b" not in self._mode:
-                    self._file = io.TextIOWrapper(self._file._file, encoding="utf-8")
+                    if hasattr(self._file, "readable"):
+                        # For versions > Python 3.10 compatibility
+                        # See SpooledTemporaryFile changes in 3.11 (https://docs.python.org/3/library/tempfile.html)
+                        # Now fully implements the io.BufferedIOBase and io.TextIOBase abstract base classes allowing the file
+                        # to be readable in the mode that it was specified (without accessing the underlying _file object).
+                        # In this case, we need to wrap the file in a TextIOWrapper to ensure that the file is read as a text file.
+                        self._file = io.TextIOWrapper(self._file, encoding="utf-8")
+                    else:
+                        # For versions <= Python 3.10 compatibility
+                        self._file = io.TextIOWrapper(self._file._file, encoding="utf-8")
             self._closed = False
         return self._file
 
