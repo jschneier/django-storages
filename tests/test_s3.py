@@ -982,6 +982,29 @@ class S3StorageTests(TestCase):
                 access_key="foo", secret_key="boo", session_profile="moo"
             )
 
+    def test_security_token(self):
+        with override_settings(AWS_SESSION_TOKEN="baz"):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.security_token, "baz")
+
+        with override_settings(AWS_SECURITY_TOKEN="baz"):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.security_token, "baz")
+
+        with mock.patch.dict(
+            os.environ,
+            {"AWS_SESSION_TOKEN": "baz"},
+        ):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.security_token, "baz")
+
+        with mock.patch.dict(
+            os.environ,
+            {"AWS_SECURITY_TOKEN": "baz"},
+        ):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.security_token, "baz")
+
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):

@@ -378,7 +378,11 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 ),
             ),
             "security_token": setting(
-                "AWS_SESSION_TOKEN", setting("AWS_SECURITY_TOKEN")
+                "AWS_SESSION_TOKEN",
+                setting(
+                    "AWS_SECURITY_TOKEN",
+                    lookup_env(["AWS_SESSION_TOKEN", "AWS_SECURITY_TOKEN"]),
+                ),
             ),
             "session_profile": setting(
                 "AWS_S3_SESSION_PROFILE", lookup_env(["AWS_S3_SESSION_PROFILE"])
