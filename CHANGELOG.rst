@@ -1,6 +1,19 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED
+**********
+
+S3
+--
+
+- Pull ``AWS_SESSION_TOKEN`` from the environment (`#1399`_)
+- Fix newline handling for text mode files (`#1381`_)
+
+.. _#1399: https://github.com/jschneier/django-storages/pull/1399
+.. _#1381: https://github.com/jschneier/django-storages/pull/1381
+
+
 1.14.3 (2024-05-04)
 *******************
 
