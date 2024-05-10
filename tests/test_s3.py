@@ -317,23 +317,6 @@ class S3StorageTests(TestCase):
             content_str = file.read()
             self.assertEqual(content_str, "")
 
-    def test_storage_open_readlines(self):
-        """
-        Test readlines with file opened in "r" and "rb" modes
-        """
-        name = "test_open_readlines_string.txt"
-        with io.BytesIO() as temp_file:
-            temp_file.write(b"line1\nline2")
-            with self.storage.open(name, "r") as f1:
-                f1._file = temp_file
-                content_lines = f1.readlines()
-                self.assertEqual(content_lines, ["line1\n", "line2"])
-                temp_file.seek(0)
-                with self.storage.open(name, "rb") as f2:
-                    f2._file = temp_file
-                    content_lines = f2.readlines()
-                    self.assertEqual(content_lines, [b"line1\n", b"line2"])
-
     def test_storage_open_write(self):
         """
         Test opening a file in write mode
@@ -348,7 +331,7 @@ class S3StorageTests(TestCase):
             "ACL": "public-read",
         }
 
-        with self.storage.open(name, "w") as file:
+        with self.storage.open(name, "wb") as file:
             self.storage.bucket.Object.assert_called_with(name)
             obj = self.storage.bucket.Object.return_value
             # Set the name of the mock object
@@ -398,7 +381,7 @@ class S3StorageTests(TestCase):
             "StorageClass": "REDUCED_REDUNDANCY",
         }
 
-        with self.storage.open(name, "w"):
+        with self.storage.open(name, "wb"):
             self.storage.bucket.Object.assert_called_with(name)
             obj = self.storage.bucket.Object.return_value
             obj.load.side_effect = ClientError(
@@ -429,7 +412,7 @@ class S3StorageTests(TestCase):
             "StorageClass": "REDUCED_REDUNDANCY",
         }
 
-        with self.storage.open(name, "w"):
+        with self.storage.open(name, "wb"):
             self.storage.bucket.Object.assert_called_with(name)
             obj = self.storage.bucket.Object.return_value
 
@@ -451,7 +434,7 @@ class S3StorageTests(TestCase):
             "StorageClass": "REDUCED_REDUNDANCY",
         }
 
-        with self.storage.open(name, "w") as file:
+        with self.storage.open(name, "wb") as file:
             self.storage.bucket.Object.assert_called_with(name)
             obj = self.storage.bucket.Object.return_value
             # Set the name of the mock object
@@ -1166,6 +1149,41 @@ class S3StorageTestsWithMoto(TestCase):
             s3_object_fetched["ContentType"],
             s3.S3Storage.default_content_type,
         )
+
+    def test_storage_open_reading_with_newlines(self):
+        """Test file reading with "r" and "rb" and various newline characters."""
+        name = "test_storage_open_read_with_newlines.txt"
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\r\nmore\rtext\n")
+            self.storage.save(name, temp_file)
+            file = self.storage.open(name, "r")
+            content_str = file.read()
+            file.close()
+        self.assertEqual(content_str, "line1\nline2\nmore\ntext\n")
+
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\r\nmore\rtext\n")
+            self.storage.save(name, temp_file)
+            file = self.storage.open(name, "rb")
+            content_str = file.read()
+            file.close()
+        self.assertEqual(content_str, b"line1\nline2\r\nmore\rtext\n")
+
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\r\nmore\rtext")
+            self.storage.save(name, temp_file)
+            file = self.storage.open(name, "r")
+            content_lines = file.readlines()
+            file.close()
+        self.assertEqual(content_lines, ["line1\n", "line2\n", "more\n", "text"])
+
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\r\nmore\rtext")
+            self.storage.save(name, temp_file)
+            file = self.storage.open(name, "rb")
+            content_lines = file.readlines()
+            file.close()
+        self.assertEqual(content_lines, [b"line1\n", b"line2\r\n", b"more\r", b"text"])
 
 
 class TestBackwardsNames(TestCase):

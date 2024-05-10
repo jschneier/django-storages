@@ -1,3 +1,4 @@
+import io
 import mimetypes
 import os
 import posixpath
@@ -123,7 +124,6 @@ class S3File(CompressedFileMixin, File):
         self._storage = storage
         self.name = name[len(self._storage.location) :].lstrip("/")
         self._mode = mode
-        self._force_mode = (lambda b: b) if "b" in mode else (lambda b: b.decode())
         self.obj = storage.bucket.Object(name)
         if "w" not in mode:
             # Force early RAII-style exception if object does not exist
@@ -184,6 +184,19 @@ class S3File(CompressedFileMixin, File):
                 self._file.seek(0)
                 if self._storage.gzip and self.obj.content_encoding == "gzip":
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
+                elif "b" not in self._mode:
+                    if hasattr(self._file, "readable"):
+                        # For versions > Python 3.10 compatibility
+                        # See SpooledTemporaryFile changes in 3.11 (https://docs.python.org/3/library/tempfile.html) # noqa: E501
+                        # Now fully implements the io.BufferedIOBase and io.TextIOBase abstract base classes allowing the file # noqa: E501
+                        # to be readable in the mode that it was specified (without accessing the underlying _file object). # noqa: E501
+                        # In this case, we need to wrap the file in a TextIOWrapper to ensure that the file is read as a text file. # noqa: E501
+                        self._file = io.TextIOWrapper(self._file, encoding="utf-8")
+                    else:
+                        # For versions <= Python 3.10 compatibility
+                        self._file = io.TextIOWrapper(
+                            self._file._file, encoding="utf-8"
+                        )
             self._closed = False
         return self._file
 
@@ -195,12 +208,12 @@ class S3File(CompressedFileMixin, File):
     def read(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super().read(*args, **kwargs))
+        return super().read(*args, **kwargs)
 
     def readline(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super().readline(*args, **kwargs))
+        return super().readline(*args, **kwargs)
 
     def readlines(self):
         return list(self)
