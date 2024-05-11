@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import boto3
 import boto3.s3.transfer
+import botocore
 from botocore.config import Config as ClientConfig
 from botocore.exceptions import ClientError
 from django.conf import settings
@@ -35,25 +36,37 @@ class S3StorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
+        self.storage._unsigned_connections.connection = mock.MagicMock()
 
-    def test_s3_session(self):
+    @mock.patch("boto3.Session")
+    def test_s3_session(self, session):
         with override_settings(AWS_S3_SESSION_PROFILE="test_profile"):
-            with mock.patch("boto3.Session") as mock_session:
-                storage = s3.S3Storage()
-                _ = storage.connection
-                mock_session.assert_called_once_with(profile_name="test_profile")
+            storage = s3.S3Storage()
+            _ = storage.connection
+            session.assert_called_once_with(profile_name="test_profile")
 
-    def test_client_config(self):
+    @mock.patch("boto3.Session.resource")
+    def test_client_config(self, resource):
         with override_settings(
             AWS_S3_CLIENT_CONFIG=ClientConfig(max_pool_connections=30)
         ):
             storage = s3.S3Storage()
-            with mock.patch("boto3.Session.resource") as mock_resource:
-                _ = storage.connection
-                mock_resource.assert_called_once()
-                self.assertEqual(
-                    30, mock_resource.call_args[1]["config"].max_pool_connections
-                )
+            _ = storage.connection
+            resource.assert_called_once()
+            self.assertEqual(30, resource.call_args[1]["config"].max_pool_connections)
+
+    @mock.patch("boto3.Session.resource")
+    def test_connection_unsiged(self, resource):
+        with override_settings(AWS_S3_ADDRESSING_STYLE="virtual"):
+            storage = s3.S3Storage()
+            _ = storage.unsigned_connection
+            resource.assert_called_once()
+            self.assertEqual(
+                botocore.UNSIGNED, resource.call_args[1]["config"].signature_version
+            )
+            self.assertEqual(
+                "virtual", resource.call_args[1]["config"].s3["addressing_style"]
+            )
 
     def test_pickle_with_bucket(self):
         """
@@ -664,10 +677,10 @@ class S3StorageTests(TestCase):
     def test_storage_url(self):
         name = "test_storage_size.txt"
         url = "http://aws.amazon.com/%s" % name
-        self.storage.bucket.meta.client.generate_presigned_url.return_value = url
+        self.storage.connection.meta.client.generate_presigned_url.return_value = url
         self.storage.bucket.name = "bucket"
         self.assertEqual(self.storage.url(name), url)
-        self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
+        self.storage.connection.meta.client.generate_presigned_url.assert_called_with(
             "get_object",
             Params={"Bucket": self.storage.bucket.name, "Key": name},
             ExpiresIn=self.storage.querystring_expire,
@@ -675,9 +688,8 @@ class S3StorageTests(TestCase):
         )
 
         custom_expire = 123
-
         self.assertEqual(self.storage.url(name, expire=custom_expire), url)
-        self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
+        self.storage.connection.meta.client.generate_presigned_url.assert_called_with(
             "get_object",
             Params={"Bucket": self.storage.bucket.name, "Key": name},
             ExpiresIn=custom_expire,
@@ -685,16 +697,21 @@ class S3StorageTests(TestCase):
         )
 
         custom_method = "HEAD"
-
         self.assertEqual(self.storage.url(name, http_method=custom_method), url)
-        self.storage.bucket.meta.client.generate_presigned_url.assert_called_with(
+        self.storage.connection.meta.client.generate_presigned_url.assert_called_with(
             "get_object",
             Params={"Bucket": self.storage.bucket.name, "Key": name},
             ExpiresIn=self.storage.querystring_expire,
             HttpMethod=custom_method,
         )
 
-    def test_storage_url_custom_domain_signed_urls(self):
+    def test_url_unsigned(self):
+        self.storage.querystring_auth = False
+        self.storage.url("test_name")
+        self.storage.unsigned_connection.meta.client.generate_presigned_url.assert_called_once()
+
+    @mock.patch("storages.backends.s3.datetime")
+    def test_storage_url_custom_domain_signed_urls(self, dt):
         key_id = "test-key"
         filename = "file.txt"
         pem = dedent(
@@ -732,11 +749,8 @@ class S3StorageTests(TestCase):
             self.assertEqual(self.storage.url(filename), url)
 
             self.storage.querystring_auth = True
-            with mock.patch("storages.backends.s3.datetime") as mock_datetime:
-                mock_datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(
-                    0
-                )
-                self.assertEqual(self.storage.url(filename), signed_url)
+            dt.utcnow.return_value = datetime.datetime.utcfromtimestamp(0)
+            self.assertEqual(self.storage.url(filename), signed_url)
 
     def test_generated_url_is_encoded(self):
         self.storage.custom_domain = "mock.cloudfront.net"
@@ -765,21 +779,6 @@ class S3StorageTests(TestCase):
         parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path, "/filename.mp4")
         self.assertEqual(parsed_url.query, "version=10")
-
-    def test_strip_signing_parameters(self):
-        expected = "http://bucket.s3-aws-region.amazonaws.com/foo/bar"
-        self.assertEqual(
-            self.storage._strip_signing_parameters(
-                "%s?X-Amz-Date=12345678&X-Amz-Signature=Signature" % expected
-            ),
-            expected,
-        )
-        self.assertEqual(
-            self.storage._strip_signing_parameters(
-                "%s?expires=12345678&signature=Signature" % expected
-            ),
-            expected,
-        )
 
     @skipIf(threading is None, "Test requires threading")
     def test_connection_threading(self):

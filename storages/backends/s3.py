@@ -7,9 +7,7 @@ import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta
-from urllib.parse import parse_qsl
 from urllib.parse import urlencode
-from urllib.parse import urlsplit
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured
@@ -34,6 +32,7 @@ from storages.utils import to_bytes
 
 try:
     import boto3.session
+    import botocore
     import s3transfer.constants
     from boto3.s3.transfer import TransferConfig
     from botocore.config import Config
@@ -330,6 +329,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         self._bucket = None
         self._connections = threading.local()
+        self._unsigned_connections = threading.local()
 
         if self.config is not None:
             warnings.warn(
@@ -439,11 +439,13 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def __getstate__(self):
         state = self.__dict__.copy()
         state.pop("_connections", None)
+        state.pop("_unsigned_connections", None)
         state.pop("_bucket", None)
         return state
 
     def __setstate__(self, state):
         state["_connections"] = threading.local()
+        state["_unsigned_connections"] = threading.local()
         state["_bucket"] = None
         self.__dict__ = state
 
@@ -461,6 +463,24 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 verify=self.verify,
             )
         return self._connections.connection
+
+    @property
+    def unsigned_connection(self):
+        unsigned_connection = getattr(self._unsigned_connections, "connection", None)
+        if unsigned_connection is None:
+            session = self._create_session()
+            config = self.client_config.merge(
+                Config(signature_version=botocore.UNSIGNED)
+            )
+            self._unsigned_connections.connection = session.resource(
+                "s3",
+                region_name=self.region_name,
+                use_ssl=self.use_ssl,
+                endpoint_url=self.endpoint_url,
+                config=config,
+                verify=self.verify,
+            )
+        return self._unsigned_connections.connection
 
     def _create_session(self):
         """
@@ -635,37 +655,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         else:
             return make_naive(entry.last_modified)
 
-    def _strip_signing_parameters(self, url):
-        # Boto3 does not currently support generating URLs that are unsigned. Instead
-        # we take the signed URLs and strip any querystring params related to signing
-        # and expiration.
-        # Note that this may end up with URLs that are still invalid, especially if
-        # params are passed in that only work with signed URLs, e.g. response header
-        # params.
-        # The code attempts to strip all query parameters that match names of known
-        # parameters from v2 and v4 signatures, regardless of the actual signature
-        # version used.
-        split_url = urlsplit(url)
-        qs = parse_qsl(split_url.query, keep_blank_values=True)
-        blacklist = {
-            "x-amz-algorithm",
-            "x-amz-credential",
-            "x-amz-date",
-            "x-amz-expires",
-            "x-amz-signedheaders",
-            "x-amz-signature",
-            "x-amz-security-token",
-            "awsaccesskeyid",
-            "expires",
-            "signature",
-        }
-        filtered_qs = ((key, val) for key, val in qs if key.lower() not in blacklist)
-        # Note: Parameters that did not have a value in the original query string will
-        # have an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=
-        joined_qs = ("=".join(keyval) for keyval in filtered_qs)
-        split_url = split_url._replace(query="&".join(joined_qs))
-        return split_url.geturl()
-
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
@@ -691,12 +680,14 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         params["Bucket"] = self.bucket.name
         params["Key"] = name
-        url = self.bucket.meta.client.generate_presigned_url(
+
+        connection = (
+            self.connection if self.querystring_auth else self.unsigned_connection
+        )
+        url = connection.meta.client.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
         )
-        if self.querystring_auth:
-            return url
-        return self._strip_signing_parameters(url)
+        return url
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
