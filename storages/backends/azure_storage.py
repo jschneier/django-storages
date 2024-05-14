@@ -268,6 +268,15 @@ class AzureStorage(BaseStorage):
         return super().get_available_name(name, max_length)
 
     def exists(self, name):
+        if not name:
+            try:
+                self.service_client.get_container_client(
+                    self.azure_container
+                )
+                return True
+            except:
+                return False
+
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
         return blob_client.exists()
 
@@ -390,16 +399,9 @@ class AzureStorage(BaseStorage):
 
     def listdir(self, path=""):
         """
-        Return directories and files for a given path.
-        Leave the path empty to list the root.
-        Order of dirs and files is undefined.
+        Return all files for a given path.
+        Given that Azure can't return paths it only returns files.
+        Works great for our little adventure.
         """
-        files = []
-        dirs = set()
-        for name in self.list_all(path):
-            n = name[len(path) :]
-            if "/" in n:
-                dirs.add(n.split("/", 1)[0])
-            else:
-                files.append(n)
-        return list(dirs), files
+        
+        return [], self.list_all(path)
