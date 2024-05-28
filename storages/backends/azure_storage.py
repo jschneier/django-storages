@@ -269,13 +269,7 @@ class AzureStorage(BaseStorage):
 
     def exists(self, name):
         if not name:
-            try:
-                self.service_client.get_container_client(
-                    self.azure_container
-                )
-                return True
-            except:
-                return False
+            return True
 
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
         return blob_client.exists()

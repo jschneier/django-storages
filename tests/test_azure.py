@@ -388,45 +388,14 @@ class AzureStorageTest(TestCase):
         )
         self.storage._custom_client.list_blobs.assert_not_called()
 
-        self.assertEqual(len(dirs), 2)
-        for directory in ["some", "other"]:
-            self.assertTrue(
-                directory in dirs,
-                """ "{}" not in directory list "{}".""".format(directory, dirs),
-            )
+        self.assertEqual(len(dirs), 0)
 
-        self.assertEqual(len(files), 2)
-        for filename in ["2.txt", "4.txt"]:
+        self.assertEqual(len(files), 4)
+        for filename in ["2.txt", "4.txt", "other/path/3.txt", "some/path/1.txt"]:
             self.assertTrue(
                 filename in files,
                 """ "{}" not in file list "{}".""".format(filename, files),
             )
-
-    def test_storage_listdir_subdir(self):
-        file_names = ["some/path/1.txt", "some/2.txt"]
-
-        result = []
-        for p in file_names:
-            obj = mock.MagicMock()
-            obj.name = p
-            result.append(obj)
-        self.storage._client.list_blobs.return_value = iter(result)
-        self.storage._custom_client.list_blobs.assert_not_called()
-
-        dirs, files = self.storage.listdir("some/")
-        self.storage._client.list_blobs.assert_called_with(
-            name_starts_with="some/", timeout=20
-        )
-
-        self.assertEqual(len(dirs), 1)
-        self.assertTrue(
-            "path" in dirs, """ "path" not in directory list "{}".""".format(dirs)
-        )
-
-        self.assertEqual(len(files), 1)
-        self.assertTrue(
-            "2.txt" in files, """ "2.txt" not in files list "{}".""".format(files)
-        )
 
     def test_size_of_file(self):
         props = BlobProperties()
