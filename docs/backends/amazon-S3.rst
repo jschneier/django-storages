@@ -48,10 +48,12 @@ There are several different methods for specifying the AWS credentials used to c
 searches for them:
 
 #. ``session_profile`` or ``AWS_S3_SESSION_PROFILE``
-#. ``access_key`` or ``AWS_S3_ACCESS_KEY_ID`` or ``AWS_S3_SECRET_ACCESS_KEY``
-#. ``secret_key`` or ``AWS_ACCESS_KEY_ID`` or ``AWS_SECRET_ACCESS_KEY``
+#. ``access_key`` or ``AWS_S3_ACCESS_KEY_ID`` or ``AWS_ACCESS_KEY_ID``
+#. ``secret_key`` or ``AWS_S3_SECRET_ACCESS_KEY`` or ``AWS_SECRET_ACCESS_KEY``
+#. ``security_token`` or ``AWS_SESSION_TOKEN`` or ``AWS_SECURITY_TOKEN``
 #. The environment variables AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY
 #. The environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+#. The environment variables AWS_SESSION_TOKEN and AWS_SECURITY_TOKEN
 #. Use Boto3's default session
 
 Settings
@@ -107,6 +109,9 @@ Settings
   Default: ``https:``
 
   The protocol to use when constructing a custom domain, ``custom_domain`` must be ``True`` for this to have any effect.
+
+  .. note::
+    Must end in a ``:``
 
 ``file_overwrite`` or ``AWS_S3_FILE_OVERWRITE``
 
@@ -233,18 +238,26 @@ Settings
 
   Default: ``None``
 
-  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned
-  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned
-  urls, explicitly set this to ``s3v4``.
-
-  Set this to use an alternate version such as ``s3``. Note that only certain regions
-  support the legacy ``s3`` (also known as ``v2``) version. You can check to see
-  if your region is one of them in the `S3 region list`_.
+  The default signature version is ``s3v4``. Set this to ``s3`` to use the legacy
+  signing scheme (aka ``v2``). Note that only certain regions support that version.
+  You can check to see if your region is one of them in the `S3 region list`_.
 
   .. warning::
 
     The signature versions are not backwards compatible so be careful about url endpoints if making this change
     for legacy projects.
+
+``client_config`` or ``AWS_S3_CLIENT_CONFIG``
+
+  Default: ``None``
+
+  An instance of ``botocore.config.Config`` to do advanced configuration of the client such as
+  ``max_pool_connections``. See all options in the `Botocore docs`_.
+
+  .. note::
+
+    Setting this overrides the settings for ``addressing_style``, ``signature_version`` and
+    ``proxies``. Include them as arguments to your ``botocore.config.Config`` class if you need them.
 
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 .. _S3 region list: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_region
@@ -252,6 +265,7 @@ Settings
 .. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
 .. _Boto3 docs for TransferConfig: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
 .. _ManifestStaticFilesStorage: https://docs.djangoproject.com/en/3.1/ref/contrib/staticfiles/#manifeststaticfilesstorage
+.. _Botocore docs: https://botocore.amazonaws.com/v1/documentation/api/latest/reference/config.html#botocore.config.Config
 
 .. _cloudfront-signed-url-header:
 

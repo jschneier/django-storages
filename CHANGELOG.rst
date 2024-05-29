@@ -1,6 +1,65 @@
 django-storages CHANGELOG
 =========================
 
+UNRELEASED
+**********
+
+S3
+--
+
+- Pull ``AWS_SESSION_TOKEN`` from the environment (`#1399`_)
+- Fix newline handling for text mode files (`#1381`_)
+- Do not sign URLs when ``querystring_auth=False`` e.g public buckets or static files (`#1402`_)
+
+.. _#1399: https://github.com/jschneier/django-storages/pull/1399
+.. _#1381: https://github.com/jschneier/django-storages/pull/1381
+.. _#1402: https://github.com/jschneier/django-storages/pull/1402
+
+
+1.14.3 (2024-05-04)
+*******************
+
+General
+-------
+
+- Add support for Django 5.0 and Python 3.12 (`#1331`_)
+
+S3
+--
+
+- **Deprecated**: The ``config`` class property has been deprecated in favor of the ``client_config`` setting,
+  a future version will remove support for the property.
+- Fix disabling CloudFront signing with class variables (`#1334`_)
+- Fix ``AWS_S3_*`` environment variables lookup (`#1336`_)
+- Add ``client_config/AWS_S3_CLIENT_CONFIG`` to configure advanced ``botocore`` settings (`#1386`_)
+
+Google Cloud
+------------
+
+- Fix re-gzipping already gzipped files (`#1366`_)
+
+SFTP
+----
+
+- Add ``SFTP_BASE_URL`` setting (`#1368`_)
+- Fix saving files when ``SFTP_STORAGE_ROOT`` is set (`#1372`_)
+
+FTP
+---
+
+- Add support for FTP TLS via ``ftps`` URLs (`#1320`_)
+- Add support for passwords with urlchars (`#1329`_)
+
+.. _#1331: https://github.com/jschneier/django-storages/pull/1331
+.. _#1386: https://github.com/jschneier/django-storages/pull/1386
+.. _#1372: https://github.com/jschneier/django-storages/pull/1372
+.. _#1334: https://github.com/jschneier/django-storages/pull/1334
+.. _#1336: https://github.com/jschneier/django-storages/pull/1336
+.. _#1366: https://github.com/jschneier/django-storages/pull/1366
+.. _#1368: https://github.com/jschneier/django-storages/pull/1368
+.. _#1320: https://github.com/jschneier/django-storages/pull/1320
+.. _#1329: https://github.com/jschneier/django-storages/pull/1329
+
 1.14.2 (2023-10-08)
 *******************
 

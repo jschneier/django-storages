@@ -21,40 +21,42 @@ class GCloudTestCase(TestCase):
         self.bucket_name = "test_bucket"
         self.filename = "test_file.txt"
         self.storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
-
-
-class GCloudStorageTests(GCloudTestCase):
-    def setUp(self):
-        super().setUp()
         self.client_patcher = mock.patch("storages.backends.gcloud.Client")
         self.client_patcher.start()
 
     def tearDown(self):
+        super().tearDown()
         self.client_patcher.stop()
 
+
+class GCloudStorageTests(GCloudTestCase):
     def test_open_read(self):
         """
         Test opening a file and reading from it
         """
         data = b"This is some test read data."
 
-        f = self.storage.open(self.filename)
-        self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, chunk_size=None)
+        with self.storage.open(self.filename) as f:
+            self.storage._client.bucket.assert_called_with(self.bucket_name)
+            self.storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=None
+            )
 
-        f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
-        self.assertEqual(f.read(), data)
+            f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+            self.assertEqual(f.read(), data)
 
     def test_open_read_num_bytes(self):
         data = b"This is some test read data."
         num_bytes = 10
 
-        f = self.storage.open(self.filename)
-        self.storage._client.bucket.assert_called_with(self.bucket_name)
-        self.storage._bucket.get_blob.assert_called_with(self.filename, chunk_size=None)
+        with self.storage.open(self.filename) as f:
+            self.storage._client.bucket.assert_called_with(self.bucket_name)
+            self.storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=None
+            )
 
-        f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
-        self.assertEqual(f.read(num_bytes), data[0:num_bytes])
+            f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+            self.assertEqual(f.read(num_bytes), data[0:num_bytes])
 
     def test_open_read_nonexistent(self):
         self.storage._bucket = mock.MagicMock()
@@ -507,7 +509,6 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         self.storage.gzip = True
 
     @mock.patch("google.cloud.storage.blob.Blob._do_upload")
-    @mock.patch("google.auth.default", return_value=["foo", None])
     def test_storage_save_gzipped(self, *args):
         """
         Test saving a gzipped file
@@ -521,11 +522,12 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         try:
             patcher.start()
             self.storage.save(name, content)
-            blob.upload_from_file.assert_called_with(
+            obj = self.storage._bucket.get_blob()
+            obj.upload_from_file.assert_called_with(
                 mock.ANY,
                 rewind=True,
                 retry=DEFAULT_RETRY,
-                size=None,
+                size=11,
                 predefined_acl=None,
                 content_type="application/javascript",
             )
@@ -533,12 +535,10 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
             patcher.stop()
 
     @mock.patch("google.cloud.storage.blob.Blob._do_upload")
-    @mock.patch("google.auth.default", return_value=["foo", None])
     def test_storage_save_gzip(self, *args):
         """
         Test saving a file with gzip enabled.
         """
-        self.storage.gzip = True
         name = "test_storage_save.css"
         content = ContentFile("I should be gzip'd")
 

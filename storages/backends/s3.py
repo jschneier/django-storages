@@ -1,3 +1,4 @@
+import io
 import mimetypes
 import os
 import posixpath
@@ -6,9 +7,7 @@ import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta
-from urllib.parse import parse_qsl
 from urllib.parse import urlencode
-from urllib.parse import urlsplit
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
 from django.core.exceptions import ImproperlyConfigured
@@ -33,9 +32,10 @@ from storages.utils import to_bytes
 
 try:
     import boto3.session
+    import botocore
     import s3transfer.constants
     from boto3.s3.transfer import TransferConfig
-    from botocore.client import Config
+    from botocore.config import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
 except ImportError as e:
@@ -123,7 +123,6 @@ class S3File(CompressedFileMixin, File):
         self._storage = storage
         self.name = name[len(self._storage.location) :].lstrip("/")
         self._mode = mode
-        self._force_mode = (lambda b: b) if "b" in mode else (lambda b: b.decode())
         self.obj = storage.bucket.Object(name)
         if "w" not in mode:
             # Force early RAII-style exception if object does not exist
@@ -184,6 +183,19 @@ class S3File(CompressedFileMixin, File):
                 self._file.seek(0)
                 if self._storage.gzip and self.obj.content_encoding == "gzip":
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
+                elif "b" not in self._mode:
+                    if hasattr(self._file, "readable"):
+                        # For versions > Python 3.10 compatibility
+                        # See SpooledTemporaryFile changes in 3.11 (https://docs.python.org/3/library/tempfile.html) # noqa: E501
+                        # Now fully implements the io.BufferedIOBase and io.TextIOBase abstract base classes allowing the file # noqa: E501
+                        # to be readable in the mode that it was specified (without accessing the underlying _file object). # noqa: E501
+                        # In this case, we need to wrap the file in a TextIOWrapper to ensure that the file is read as a text file. # noqa: E501
+                        self._file = io.TextIOWrapper(self._file, encoding="utf-8")
+                    else:
+                        # For versions <= Python 3.10 compatibility
+                        self._file = io.TextIOWrapper(
+                            self._file._file, encoding="utf-8"
+                        )
             self._closed = False
         return self._file
 
@@ -195,12 +207,12 @@ class S3File(CompressedFileMixin, File):
     def read(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super().read(*args, **kwargs))
+        return super().read(*args, **kwargs)
 
     def readline(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
-        return self._force_mode(super().readline(*args, **kwargs))
+        return super().readline(*args, **kwargs)
 
     def readlines(self):
         return list(self)
@@ -317,9 +329,19 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         self._bucket = None
         self._connections = threading.local()
+        self._unsigned_connections = threading.local()
 
-        if not self.config:
-            self.config = Config(
+        if self.config is not None:
+            warnings.warn(
+                "The 'config' class property is deprecated and will be "
+                "removed in a future version. Use AWS_S3_CLIENT_CONFIG "
+                "to customize any of the botocore.config.Config parameters.",
+                DeprecationWarning,
+            )
+            self.client_config = self.config
+
+        if self.client_config is None:
+            self.client_config = Config(
                 s3={"addressing_style": self.addressing_style},
                 signature_version=self.signature_version,
                 proxies=self.proxies,
@@ -369,7 +391,11 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 ),
             ),
             "security_token": setting(
-                "AWS_SESSION_TOKEN", setting("AWS_SECURITY_TOKEN")
+                "AWS_SESSION_TOKEN",
+                setting(
+                    "AWS_SECURITY_TOKEN",
+                    lookup_env(["AWS_SESSION_TOKEN", "AWS_SECURITY_TOKEN"]),
+                ),
             ),
             "session_profile": setting(
                 "AWS_S3_SESSION_PROFILE", lookup_env(["AWS_S3_SESSION_PROFILE"])
@@ -407,16 +433,19 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "default_acl": setting("AWS_DEFAULT_ACL", None),
             "use_threads": setting("AWS_S3_USE_THREADS", True),
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
+            "client_config": setting("AWS_S3_CLIENT_CONFIG", None),
         }
 
     def __getstate__(self):
         state = self.__dict__.copy()
         state.pop("_connections", None)
+        state.pop("_unsigned_connections", None)
         state.pop("_bucket", None)
         return state
 
     def __setstate__(self, state):
         state["_connections"] = threading.local()
+        state["_unsigned_connections"] = threading.local()
         state["_bucket"] = None
         self.__dict__ = state
 
@@ -430,10 +459,28 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 region_name=self.region_name,
                 use_ssl=self.use_ssl,
                 endpoint_url=self.endpoint_url,
-                config=self.config,
+                config=self.client_config,
                 verify=self.verify,
             )
         return self._connections.connection
+
+    @property
+    def unsigned_connection(self):
+        unsigned_connection = getattr(self._unsigned_connections, "connection", None)
+        if unsigned_connection is None:
+            session = self._create_session()
+            config = self.client_config.merge(
+                Config(signature_version=botocore.UNSIGNED)
+            )
+            self._unsigned_connections.connection = session.resource(
+                "s3",
+                region_name=self.region_name,
+                use_ssl=self.use_ssl,
+                endpoint_url=self.endpoint_url,
+                config=config,
+                verify=self.verify,
+            )
+        return self._unsigned_connections.connection
 
     def _create_session(self):
         """
@@ -608,37 +655,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         else:
             return make_naive(entry.last_modified)
 
-    def _strip_signing_parameters(self, url):
-        # Boto3 does not currently support generating URLs that are unsigned. Instead
-        # we take the signed URLs and strip any querystring params related to signing
-        # and expiration.
-        # Note that this may end up with URLs that are still invalid, especially if
-        # params are passed in that only work with signed URLs, e.g. response header
-        # params.
-        # The code attempts to strip all query parameters that match names of known
-        # parameters from v2 and v4 signatures, regardless of the actual signature
-        # version used.
-        split_url = urlsplit(url)
-        qs = parse_qsl(split_url.query, keep_blank_values=True)
-        blacklist = {
-            "x-amz-algorithm",
-            "x-amz-credential",
-            "x-amz-date",
-            "x-amz-expires",
-            "x-amz-signedheaders",
-            "x-amz-signature",
-            "x-amz-security-token",
-            "awsaccesskeyid",
-            "expires",
-            "signature",
-        }
-        filtered_qs = ((key, val) for key, val in qs if key.lower() not in blacklist)
-        # Note: Parameters that did not have a value in the original query string will
-        # have an '=' sign appended to it, e.g ?foo&bar becomes ?foo=&bar=
-        joined_qs = ("=".join(keyval) for keyval in filtered_qs)
-        split_url = split_url._replace(query="&".join(joined_qs))
-        return split_url.geturl()
-
     def url(self, name, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
@@ -664,12 +680,14 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         params["Bucket"] = self.bucket.name
         params["Key"] = name
-        url = self.bucket.meta.client.generate_presigned_url(
+
+        connection = (
+            self.connection if self.querystring_auth else self.unsigned_connection
+        )
+        url = connection.meta.client.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
         )
-        if self.querystring_auth:
-            return url
-        return self._strip_signing_parameters(url)
+        return url
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""

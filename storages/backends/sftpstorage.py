@@ -49,7 +49,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             "gid": setting("SFTP_STORAGE_GID"),
             "known_host_file": setting("SFTP_KNOWN_HOST_FILE"),
             "root_path": setting("SFTP_STORAGE_ROOT", ""),
-            "base_url": setting("MEDIA_URL"),
+            "base_url": setting("SFTP_BASE_URL") or setting("MEDIA_URL"),
         }
 
     def _connect(self):
@@ -118,7 +118,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         """Create directory, recursing up to create parent dirs if
         necessary."""
         parent = posixpath.dirname(path)
-        if not self.exists(parent):
+        if not self._path_exists(parent):
             self._mkdir(parent)
         self.sftp.mkdir(path)
 
@@ -134,7 +134,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             content.seek(0, os.SEEK_SET)
         path = self._remote_path(name)
         dirname = posixpath.dirname(path)
-        if not self.exists(dirname):
+        if not self._path_exists(dirname):
             self._mkdir(dirname)
 
         self.sftp.putfo(content, path)
@@ -152,12 +152,22 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         except OSError:
             pass
 
-    def exists(self, name):
+    def _path_exists(self, path):
+        """Determines whether a file existis in the sftp storage given its
+        absolute path."""
         try:
-            self.sftp.stat(self._remote_path(name))
+            self.sftp.stat(path)
             return True
         except FileNotFoundError:
             return False
+
+    def exists(self, name):
+        """Determines whether a file exists within the root folder of the SFTP storage
+        (as set by `SFTP_STORAGE_ROOT`). This method differs from `._path_exists()`
+        in that the provided `name` is assumed to be the relative path of the file
+        within the root folder.
+        """
+        return self._path_exists(self._remote_path(name))
 
     def _isdir_attr(self, item):
         # Return whether an item in sftp.listdir_attr results is a directory
