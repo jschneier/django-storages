@@ -397,5 +397,5 @@ class AzureStorage(BaseStorage):
         Given that Azure can't return paths it only returns files.
         Works great for our little adventure.
         """
-        
+
         return [], self.list_all(path)
