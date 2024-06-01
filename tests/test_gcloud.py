@@ -361,7 +361,7 @@ class GCloudStorageTests(GCloudTestCase):
             expiration=timedelta(seconds=3600), version="v4"
         )
 
-    def test_custom_endpoint(self):
+    def test_custom_endpoint_with_parameters(self):
         self.storage.custom_endpoint = "https://example.com"
 
         self.storage.default_acl = "publicRead"
@@ -377,11 +377,13 @@ class GCloudStorageTests(GCloudTestCase):
         type(blob.bucket).name = mock.PropertyMock(return_value=bucket_name)
         blob.generate_signed_url = generate_signed_url
         self.storage._bucket.blob.return_value = blob
-        self.storage.url(self.filename)
+        parameters = {"version": "v2", "method": "POST"}
+        self.storage.url(self.filename, parameters=parameters)
         blob.generate_signed_url.assert_called_with(
             bucket_bound_hostname=self.storage.custom_endpoint,
             expiration=timedelta(seconds=86400),
-            version="v4",
+            method="POST",
+            version="v2",
         )
 
     def test_get_available_name(self):
