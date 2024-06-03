@@ -255,6 +255,8 @@ class AzureStorage(BaseStorage):
         return _get_valid_path(self._normalize_name(clean_name(name)))
 
     def _open(self, name, mode="rb"):
+        if not self.exists(name):
+            raise FileNotFoundError('File does not exist: %s' % name)
         return AzureStorageFile(name, mode, self)
 
     def get_available_name(self, name, max_length=_AZURE_NAME_MAX_LEN):
