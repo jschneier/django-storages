@@ -167,7 +167,7 @@ class AzureStorageTest(TestCase):
         with mock.patch("storages.backends.azure_storage.datetime") as d_mocked:
             d_mocked.utcnow.return_value = fixed_time
             self.assertEqual(
-                self.storage.url("some blob", 100),
+                self.storage.url("some blob", expire=100, mode="w"),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
             )
             generate_blob_sas_mocked.assert_called_once_with(
