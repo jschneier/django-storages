@@ -164,7 +164,9 @@ class AzureStorageTest(TestCase):
         fixed_time = make_aware(
             datetime.datetime(2016, 11, 6, 4), datetime.timezone.utc
         )
+
         with mock.patch("storages.backends.azure_storage.datetime") as d_mocked:
+            # Implicit read permission
             d_mocked.utcnow.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", 100),
@@ -179,6 +181,26 @@ class AzureStorageTest(TestCase):
                 permission=mock.ANY,
                 expiry=fixed_time + timedelta(seconds=100),
             )
+            called_args, called_kwargs = generate_blob_sas_mocked.call_args
+            self.assertEqual(str(called_kwargs["permission"]), "r")
+
+            # Explicit write permission
+            d_mocked.utcnow.return_value = fixed_time
+            self.assertEqual(
+                self.storage.url("some blob", expire=100, mode="w"),
+                "https://ret_foo.blob.core.windows.net/test/some%20blob",
+            )
+            generate_blob_sas_mocked.assert_called_with(
+                self.account_name,
+                self.container_name,
+                "some blob",
+                account_key=self.account_key,
+                user_delegation_key=None,
+                permission=mock.ANY,
+                expiry=fixed_time + timedelta(seconds=100),
+            )
+            called_args, called_kwargs = generate_blob_sas_mocked.call_args
+            self.assertEqual(str(called_kwargs["permission"]), "w")
 
     @mock.patch("storages.backends.azure_storage.generate_blob_sas")
     def test_url_expire_user_delegation_key(self, generate_blob_sas_mocked):
