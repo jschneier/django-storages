@@ -15,11 +15,13 @@ Azure
 -----
 
 - Fix ``collectstatic --clear`` (`#1403`_)
+- Add ``mode`` kwarg to ``.url()`` to support creation of signed URLs for upload (`#1414`_)
 
 .. _#1399: https://github.com/jschneier/django-storages/pull/1399
 .. _#1381: https://github.com/jschneier/django-storages/pull/1381
 .. _#1402: https://github.com/jschneier/django-storages/pull/1402
 .. _#1403: https://github.com/jschneier/django-storages/pull/1403
+.. _#1414: https://github.com/jschneier/django-storages/pull/1414
 
 
 1.14.3 (2024-05-04)
