@@ -311,6 +311,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     # settings/args are ignored.
     config = None
 
+    _signers = {}
+
     def __init__(self, **settings):
         omitted = object()
         if not hasattr(self, "cloudfront_signer"):
@@ -372,7 +374,10 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 self.cloudfront_signer = None
 
     def get_cloudfront_signer(self, key_id, key):
-        return _cloud_front_signer_from_pem(key_id, key)
+        cache_key = f"{key_id}:{key}"
+        if cache_key not in self.__class__._signers:
+            self._signers[cache_key] = _cloud_front_signer_from_pem(key_id, key)
+        return self.__class__._signers[cache_key]
 
     def get_default_settings(self):
         return {
