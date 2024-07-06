@@ -44,6 +44,12 @@ Settings
 
   Format as a url like ``"{scheme}://{user}:{passwd}@{host}:{port}/"``. Supports both FTP and FTPS connections via scheme.
 
+``allow_overwrite`` or ``FTP_ALLOW_OVERWRITE``
+
+  default: ``False``
+
+  Set to ``True`` to overwrite files instead of appending additional characters.
+
 ``encoding`` or ``FTP_STORAGE_ENCODING``
 
   default: ``latin-1``
