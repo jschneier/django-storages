@@ -2,6 +2,8 @@ import mimetypes
 from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 from azure.core.exceptions import ResourceNotFoundError
 from azure.core.utils import parse_connection_string
@@ -118,9 +120,7 @@ class AzureStorage(BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
         self._service_client = None
-        self._custom_service_client = None
         self._client = None
-        self._custom_client = None
         self._user_delegation_key = None
         self._user_delegation_key_expiry = datetime.utcnow()
         if self.connection_string and (not self.account_name or not self.account_key):
@@ -155,18 +155,11 @@ class AzureStorage(BaseStorage):
             "api_version": setting("AZURE_API_VERSION", None),
         }
 
-    def _get_service_client(self, use_custom_domain):
+    def _get_service_client(self):
         if self.connection_string is not None:
             return BlobServiceClient.from_connection_string(self.connection_string)
 
-        account_domain = (
-            self.custom_domain
-            if self.custom_domain and use_custom_domain
-            else "{}.blob.{}".format(
-                self.account_name,
-                self.endpoint_suffix,
-            )
-        )
+        account_domain = "{}.blob.{}".format(self.account_name, self.endpoint_suffix)
         account_url = "{}://{}".format(self.azure_protocol, account_domain)
 
         credential = None
@@ -187,16 +180,8 @@ class AzureStorage(BaseStorage):
     @property
     def service_client(self):
         if self._service_client is None:
-            self._service_client = self._get_service_client(use_custom_domain=False)
+            self._service_client = self._get_service_client()
         return self._service_client
-
-    @property
-    def custom_service_client(self):
-        if self._custom_service_client is None:
-            self._custom_service_client = self._get_service_client(
-                use_custom_domain=True
-            )
-        return self._custom_service_client
 
     @property
     def client(self):
@@ -205,14 +190,6 @@ class AzureStorage(BaseStorage):
                 self.azure_container
             )
         return self._client
-
-    @property
-    def custom_client(self):
-        if self._custom_client is None:
-            self._custom_client = self.custom_service_client.get_container_client(
-                self.azure_container
-            )
-        return self._custom_client
 
     def get_user_delegation_key(self, expiry):
         # We'll only be able to get a user delegation key if we've authenticated with a
@@ -228,10 +205,8 @@ class AzureStorage(BaseStorage):
         ):
             now = datetime.utcnow()
             key_expiry_time = now + timedelta(days=7)
-            self._user_delegation_key = (
-                self.custom_service_client.get_user_delegation_key(
-                    key_start_time=now, key_expiry_time=key_expiry_time
-                )
+            self._user_delegation_key = self.service_client.get_user_delegation_key(
+                key_start_time=now, key_expiry_time=key_expiry_time
             )
             self._user_delegation_key_expiry = key_expiry_time
 
@@ -333,7 +308,15 @@ class AzureStorage(BaseStorage):
             )
             credential = sas_token
 
-        container_blob_url = self.custom_client.get_blob_client(name).url
+        container_blob_url = self.client.get_blob_client(name).url
+
+        if self.custom_domain:
+            # Replace the account name with the custom domain
+            parsed_url = urlparse(container_blob_url)
+            container_blob_url = urlunparse(
+                parsed_url._replace(netloc=self.custom_domain)
+            )
+
         return BlobClient.from_blob_url(container_blob_url, credential=credential).url
 
     def _get_content_settings_parameters(self, name, content=None):
