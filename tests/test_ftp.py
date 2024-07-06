@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.test import TestCase
+from django.test import override_settings
 
 from storages.backends import ftp
 
@@ -79,6 +80,16 @@ class FTPTest(TestCase):
 
     def test_decode_location_urlchars_password(self):
         self.storage._decode_location(geturl(pwd="b#r"))
+
+    @override_settings(FTP_STORAGE_LOCATION=URL)
+    def test_override_settings(self):
+        storage = ftp.FTPStorage()
+        self.assertEqual(storage.encoding, "latin-1")
+        with override_settings(FTP_STORAGE_ENCODING="utf-8"):
+            storage = ftp.FTPStorage()
+            self.assertEqual(storage.encoding, "utf-8")
+        storage = ftp.FTPStorage(encoding="utf-8")
+        self.assertEqual(storage.encoding, "utf-8")
 
     @patch("ftplib.FTP")
     def test_start_connection(self, mock_ftp):
@@ -208,7 +219,7 @@ class FTPTest(TestCase):
 
     def test_url(self):
         with self.assertRaises(ValueError):
-            self.storage._base_url = None
+            self.storage.base_url = None
             self.storage.url("foo")
         self.storage = ftp.FTPStorage(location=URL, base_url="http://foo.bar/")
         self.assertEqual("http://foo.bar/foo", self.storage.url("foo"))
