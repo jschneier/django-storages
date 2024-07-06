@@ -13,3 +13,4 @@ backend for some of the most popular.
    cloudflare-r2
    digital-ocean-spaces
    oracle-cloud
+   scaleway
