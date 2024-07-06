@@ -19,7 +19,6 @@ from dropbox.files import UploadSessionCursor
 from dropbox.files import WriteMode
 
 from storages.base import BaseStorage
-from storages.utils import get_available_overwrite_name
 from storages.utils import setting
 
 _DEFAULT_TIMEOUT = 100
@@ -130,6 +129,9 @@ class DropboxStorage(BaseStorage):
         self.client.files_delete(self._full_path(name))
 
     def exists(self, name):
+        if self.write_mode == "overwrite":
+            return False
+
         try:
             return bool(self.client.files_get_metadata(self._full_path(name)))
         except ApiError:
@@ -198,13 +200,6 @@ class DropboxStorage(BaseStorage):
                     content.read(self.CHUNK_SIZE), cursor
                 )
                 cursor.offset = content.tell()
-
-    def get_available_name(self, name, max_length=None):
-        """Overwrite existing file with the same name."""
-        name = self._full_path(name)
-        if self.write_mode == "overwrite":
-            return get_available_overwrite_name(name, max_length)
-        return super().get_available_name(name, max_length)
 
 
 DropBoxStorage = DropboxStorage
