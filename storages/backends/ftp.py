@@ -53,6 +53,7 @@ class FTPStorage(BaseStorage):
             "location": setting("FTP_STORAGE_LOCATION"),
             "encoding": setting("FTP_STORAGE_ENCODING", "latin-1"),
             "base_url": setting("BASE_URL", settings.MEDIA_URL),
+            "allow_overwrite": setting("FTP_ALLOW_OVERWRITE", False),
         }
 
     def _decode_location(self, location):
@@ -207,6 +208,9 @@ class FTPStorage(BaseStorage):
             raise FTPStorageException("Error when removing %s" % name)
 
     def exists(self, name):
+        if self.allow_overwrite:
+            return False
+
         self._start_connection()
         try:
             nlst = self._connection.nlst(os.path.dirname(name) + "/")

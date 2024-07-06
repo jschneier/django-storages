@@ -196,6 +196,12 @@ class FTPTest(TestCase):
         with self.assertRaises(ftp.FTPStorageException):
             self.storage.exists("foo")
 
+    @patch("ftplib.FTP", **{"return_value.nlst.return_value": ["foo", "foo2"]})
+    def test_exists_overwrite(self, mock_ftp):
+        with override_settings(FTP_ALLOW_OVERWRITE=True):
+            storage = ftp.FTPStorage(location=URL)
+            self.assertFalse(storage.exists("foo"))
+
     @patch(
         "ftplib.FTP",
         **{

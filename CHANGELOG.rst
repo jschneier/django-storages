@@ -33,6 +33,7 @@ FTP
 ---
 
 - Conform to ``BaseStorage`` interface (`#1423`_)
+- Add ``FTP_ALLOW_OVERWRITE`` setting (`#1424`_)
 
 .. _#1399: https://github.com/jschneier/django-storages/pull/1399
 .. _#1381: https://github.com/jschneier/django-storages/pull/1381
@@ -44,6 +45,7 @@ FTP
 .. _#1347: https://github.com/jschneier/django-storages/pull/1347
 .. _#1421: https://github.com/jschneier/django-storages/pull/1421
 .. _#1423: https://github.com/jschneier/django-storages/pull/1423
+.. _#1424: https://github.com/jschneier/django-storages/pull/1424
 
 
 1.14.3 (2024-05-04)
