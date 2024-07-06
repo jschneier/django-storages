@@ -496,6 +496,7 @@ class S3StorageTests(TestCase):
         )
 
     def test_storage_exists(self):
+        self.storage.file_overwrite = False
         self.assertTrue(self.storage.exists("file.txt"))
         self.storage.connection.meta.client.head_object.assert_called_with(
             Bucket=self.storage.bucket_name,
@@ -503,6 +504,7 @@ class S3StorageTests(TestCase):
         )
 
     def test_storage_exists_false(self):
+        self.storage.file_overwrite = False
         self.storage.connection.meta.client.head_object.side_effect = ClientError(
             {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 404}},
             "HeadObject",
@@ -514,6 +516,7 @@ class S3StorageTests(TestCase):
         )
 
     def test_storage_exists_other_error_reraise(self):
+        self.storage.file_overwrite = False
         self.storage.connection.meta.client.head_object.side_effect = ClientError(
             {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 403}},
             "HeadObject",
@@ -524,6 +527,10 @@ class S3StorageTests(TestCase):
         self.assertEqual(
             cm.exception.response["ResponseMetadata"]["HTTPStatusCode"], 403
         )
+
+    def test_storage_exists_overwrite(self):
+        self.storage.file_overwrite = True
+        self.assertFalse(self.storage.exists("foo"))
 
     def test_storage_delete(self):
         self.storage.delete("path/to/file.txt")

@@ -167,6 +167,7 @@ class GCloudStorageTests(GCloudTestCase):
         )
 
     def test_exists(self):
+        self.storage.file_overwrite = False
         self.storage._bucket = mock.MagicMock()
         self.assertTrue(self.storage.exists(self.filename))
         self.storage._bucket.get_blob.assert_called_with(self.filename)
@@ -185,6 +186,10 @@ class GCloudStorageTests(GCloudTestCase):
     def test_exists_bucket(self):
         # exists('') should return True if the bucket exists
         self.assertTrue(self.storage.exists(""))
+
+    def test_exists_file_overwrite(self):
+        self.storage.file_overwrite = True
+        self.assertFalse(self.storage.exists(self.filename))
 
     def test_listdir(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
