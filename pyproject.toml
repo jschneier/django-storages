@@ -51,7 +51,7 @@ boto3 = [
   "boto3>=1.4.4",
 ]
 dropbox = [
-  "dropbox>=7.2.1; python_version<'3.12'",
+  "dropbox>=7.2.1",
 ]
 google = [
   "google-cloud-storage>=1.27",
