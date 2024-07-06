@@ -4,17 +4,16 @@
 #
 # Modeled on the FTP storage by Rafal Jonca <jonca.rafal@gmail.com>
 
+import datetime
 import getpass
 import io
 import os
 import posixpath
 import stat
-from datetime import datetime
 from urllib.parse import urljoin
 
 import paramiko
 from django.core.files.base import File
-from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 from paramiko.util import ClosingContextManager
 
@@ -192,17 +191,20 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         remote_path = self._remote_path(name)
         return self.sftp.stat(remote_path).st_size
 
+    # From Django
+    def _datetime_from_timestamp(self, ts):
+        tz = datetime.timezone.utc if setting("USE_TZ") else None
+        return datetime.datetime.fromtimestamp(ts, tz=tz)
+
     def get_accessed_time(self, name):
         remote_path = self._remote_path(name)
         utime = self.sftp.stat(remote_path).st_atime
-        ts = datetime.fromtimestamp(utime)
-        return timezone.make_aware(ts) if setting("USE_TZ") else ts
+        return self._datetime_from_timestamp(utime)
 
     def get_modified_time(self, name):
         remote_path = self._remote_path(name)
         utime = self.sftp.stat(remote_path).st_mtime
-        ts = datetime.fromtimestamp(utime)
-        return timezone.make_aware(ts) if setting("USE_TZ") else ts
+        return self._datetime_from_timestamp(utime)
 
     def url(self, name):
         if self._base_url is None:

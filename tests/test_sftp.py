@@ -167,6 +167,17 @@ class SFTPStorageTest(TestCase):
             self.storage._base_url = None
             self.storage.url("foo")
 
+    @patch(
+        "storages.backends.sftpstorage.SFTPStorage.sftp",
+        **{
+            "stat.return_value.st_mtime": 1720287559,
+            "stat.return_value.st_atime": 1720287559,
+        },
+    )
+    def test_times(self, mock_sftp):
+        self.storage.get_modified_time("foo")
+        self.storage.get_accessed_time("foo")
+
     @patch("paramiko.transport.Transport", **{"is_active.side_effect": (True, False)})
     @patch("storages.backends.sftpstorage.SFTPStorage._connect")
     def test_sftp(self, connect, transport):
