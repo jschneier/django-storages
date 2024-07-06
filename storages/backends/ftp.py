@@ -24,9 +24,9 @@ import urllib.parse
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
-from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
 
+from storages.base import BaseStorage
 from storages.utils import setting
 
 
@@ -35,23 +35,25 @@ class FTPStorageException(Exception):
 
 
 @deconstructible
-class FTPStorage(Storage):
+class FTPStorage(BaseStorage):
     """FTP Storage class for Django pluggable storage system."""
 
-    def __init__(self, location=None, base_url=None, encoding=None):
-        location = location or setting("FTP_STORAGE_LOCATION")
-        if location is None:
+    def __init__(self, **settings):
+        super().__init__(**settings)
+        if self.location is None:
             raise ImproperlyConfigured(
-                "You must set a location at "
-                "instanciation or at "
-                " settings.FTP_STORAGE_LOCATION'."
+                "You must set a location at instantiation "
+                "or at settings.FTP_STORAGE_LOCATION."
             )
-        self.location = location
-        self.encoding = encoding or setting("FTP_STORAGE_ENCODING") or "latin-1"
-        base_url = base_url or setting("BASE_URL") or settings.MEDIA_URL
-        self._config = self._decode_location(location)
-        self._base_url = base_url
+        self._config = self._decode_location(self.location)
         self._connection = None
+
+    def get_default_settings(self):
+        return {
+            "location": setting("FTP_STORAGE_LOCATION"),
+            "encoding": setting("FTP_STORAGE_ENCODING", "latin-1"),
+            "base_url": setting("BASE_URL", settings.MEDIA_URL),
+        }
 
     def _decode_location(self, location):
         """Return splitted configuration data from location."""
@@ -232,9 +234,9 @@ class FTPStorage(Storage):
             return 0
 
     def url(self, name):
-        if self._base_url is None:
+        if self.base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urllib.parse.urljoin(self._base_url, name).replace("\\", "/")
+        return urllib.parse.urljoin(self.base_url, name).replace("\\", "/")
 
 
 class FTPStorageFile(File):

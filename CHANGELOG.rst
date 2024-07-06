@@ -29,6 +29,11 @@ Dropbox
 
 - Add support for Python 3.12 (`#1421`_)
 
+FTP
+---
+
+- Conform to ``BaseStorage`` interface (`#1423`_)
+
 .. _#1399: https://github.com/jschneier/django-storages/pull/1399
 .. _#1381: https://github.com/jschneier/django-storages/pull/1381
 .. _#1402: https://github.com/jschneier/django-storages/pull/1402
@@ -38,6 +43,7 @@ Dropbox
 .. _#1418: https://github.com/jschneier/django-storages/pull/1418
 .. _#1347: https://github.com/jschneier/django-storages/pull/1347
 .. _#1421: https://github.com/jschneier/django-storages/pull/1421
+.. _#1423: https://github.com/jschneier/django-storages/pull/1423
 
 
 1.14.3 (2024-05-04)
