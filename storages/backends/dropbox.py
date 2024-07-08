@@ -32,12 +32,6 @@ class DropboxStorageException(Exception):
 DropBoxStorageException = DropboxStorageException
 
 
-def removeprefix(prefix, name):
-    if name.startswith(prefix):
-        name = name[len(prefix) :]
-    return name
-
-
 class DropboxFile(File):
     def __init__(self, name, storage):
         self.name = name
@@ -176,10 +170,7 @@ class DropboxStorage(BaseStorage):
         else:
             self._chunked_upload(content, self._full_path(name))
         content.close()
-        # .save() validates the filename isn't absolute but Dropbox requires an
-        # absolute filename.  Work with the absolute name internally but strip it
-        # off before passing up-the-chain.
-        return removeprefix(self.root_path, name).lstrip("/")
+        return name
 
     def _chunked_upload(self, content, dest_path):
         upload_session = self.client.files_upload_session_start(
