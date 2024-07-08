@@ -20,6 +20,9 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
+    from google import auth
+    from google.auth.transport import requests
+    from google.auth.credentials import TokenState
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
@@ -141,11 +144,20 @@ class GoogleCloudStorage(BaseStorage):
             # roll over.
             "max_memory_size": setting("GS_MAX_MEMORY_SIZE", 0),
             "blob_chunk_size": setting("GS_BLOB_CHUNK_SIZE"),
+            "sa_email": setting("GS_SA_EMAIL")
         }
 
     @property
     def client(self):
         if self._client is None:
+            if self.project_id is None or self.credentials is None:
+                self.credentials, self.project_id = auth.default(
+                    scopes=['https://www.googleapis.com/auth/cloud-platform']
+                )
+                if not self.credentials.token_state == TokenState.FRESH:
+                    self.credentials.refresh(requests.Request())
+                if not hasattr(self.credentials, "service_account_email") and self.sa_email:
+                    self.credentials.service_account_email = self.sa_email
             self._client = Client(project=self.project_id, credentials=self.credentials)
         return self._client
 
@@ -320,12 +332,15 @@ class GoogleCloudStorage(BaseStorage):
                 quoted_name=_quote(name, safe=b"/~"),
             )
         else:
+            params = parameters or {}
             default_params = {
                 "bucket_bound_hostname": self.custom_endpoint,
                 "expiration": self.expiration,
-                "version": "v4",
+                "version": "v4"
             }
-            params = parameters or {}
+            if hasattr(self.credentials, "service_account_email"):
+                default_params["access_token"] = self.credentials.token
+                default_params["service_account_email"] = self.credentials.service_account_email
 
             for key, value in default_params.items():
                 if value and key not in params:
