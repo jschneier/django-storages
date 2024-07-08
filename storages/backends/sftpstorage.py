@@ -26,16 +26,6 @@ from storages.utils import setting
 class SFTPStorage(ClosingContextManager, BaseStorage):
     def __init__(self, **settings):
         super().__init__(**settings)
-        self._host = self.host
-        self._params = self.params
-        self._interactive = self.interactive
-        self._file_mode = self.file_mode
-        self._dir_mode = self.dir_mode
-        self._uid = self.uid
-        self._gid = self.gid
-        self._known_host_file = self.known_host_file
-        self._root_path = self.root_path
-        self._base_url = self.base_url
         self._ssh = None
         self._sftp = None
 
@@ -56,7 +46,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
     def _connect(self):
         self._ssh = paramiko.SSHClient()
 
-        known_host_file = self._known_host_file or os.path.expanduser(
+        known_host_file = self.known_host_file or os.path.expanduser(
             os.path.join("~", ".ssh", "known_hosts")
         )
 
@@ -67,15 +57,15 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            self._ssh.connect(self._host, **self._params)
+            self._ssh.connect(self.host, **self.params)
         except paramiko.AuthenticationException as e:
-            if self._interactive and "password" not in self._params:
+            if self.interactive and "password" not in self.params:
                 # If authentication has failed, and we haven't already tried
                 # username/password, and configuration allows it, then try
                 # again with username/password.
-                if "username" not in self._params:
-                    self._params["username"] = getpass.getuser()
-                self._params["password"] = getpass.getpass()
+                if "username" not in self.params:
+                    self.params["username"] = getpass.getuser()
+                self.params["password"] = getpass.getpass()
                 self._connect()
             else:
                 raise paramiko.AuthenticationException(e)
@@ -96,7 +86,7 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         return self._sftp
 
     def _remote_path(self, name):
-        return posixpath.join(self._root_path, name)
+        return posixpath.join(self.root_path, name)
 
     def _open(self, name, mode="rb"):
         return SFTPStorageFile(name, self, mode)
@@ -123,11 +113,11 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
             self._mkdir(parent)
         self.sftp.mkdir(path)
 
-        if self._dir_mode is not None:
-            self.sftp.chmod(path, self._dir_mode)
+        if self.dir_mode is not None:
+            self.sftp.chmod(path, self.dir_mode)
 
-        if self._uid or self._gid:
-            self._chown(path, uid=self._uid, gid=self._gid)
+        if self.uid or self.gid:
+            self._chown(path, uid=self.uid, gid=self.gid)
 
     def _save(self, name, content):
         """Save file via SFTP."""
@@ -141,10 +131,10 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         self.sftp.putfo(content, path)
 
         # set file permissions if configured
-        if self._file_mode is not None:
-            self.sftp.chmod(path, self._file_mode)
-        if self._uid or self._gid:
-            self._chown(path, uid=self._uid, gid=self._gid)
+        if self.file_mode is not None:
+            self.sftp.chmod(path, self.file_mode)
+        if self.uid or self.gid:
+            self._chown(path, uid=self.uid, gid=self.gid)
         return name
 
     def delete(self, name):
@@ -207,9 +197,9 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
         return self._datetime_from_timestamp(utime)
 
     def url(self, name):
-        if self._base_url is None:
+        if self.base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urljoin(self._base_url, name).replace("\\", "/")
+        return urljoin(self.base_url, name).replace("\\", "/")
 
 
 class SFTPStorageFile(File):
