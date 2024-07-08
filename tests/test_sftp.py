@@ -23,7 +23,7 @@ class SFTPStorageTest(TestCase):
 
     @patch("paramiko.SSHClient")
     def test_no_known_hosts_file(self, mock_ssh):
-        self.storage._known_host_file = "not_existed_file"
+        self.storage.known_host_file = "not_existed_file"
         self.storage._connect()
         self.assertEqual("foo", mock_ssh.return_value.connect.call_args[0][0])
 
@@ -160,11 +160,11 @@ class SFTPStorageTest(TestCase):
     def test_url(self):
         self.assertEqual(self.storage.url("foo"), "/media/foo")
         # Test custom
-        self.storage._base_url = "http://bar.pt/"
+        self.storage.base_url = "http://bar.pt/"
         self.assertEqual(self.storage.url("foo"), "http://bar.pt/foo")
         # Test error
         with self.assertRaises(ValueError):
-            self.storage._base_url = None
+            self.storage.base_url = None
             self.storage.url("foo")
 
     @patch(
@@ -197,29 +197,29 @@ class SFTPStorageTest(TestCase):
     def test_override_settings(self):
         with override_settings(SFTP_STORAGE_ROOT="foo1"):
             storage = sftpstorage.SFTPStorage()
-            self.assertEqual(storage._root_path, "foo1")
+            self.assertEqual(storage.root_path, "foo1")
         with override_settings(SFTP_STORAGE_ROOT="foo2"):
             storage = sftpstorage.SFTPStorage()
-            self.assertEqual(storage._root_path, "foo2")
+            self.assertEqual(storage.root_path, "foo2")
 
     def test_override_class_variable(self):
         class MyStorage1(sftpstorage.SFTPStorage):
             root_path = "foo1"
 
         storage = MyStorage1()
-        self.assertEqual(storage._root_path, "foo1")
+        self.assertEqual(storage.root_path, "foo1")
 
         class MyStorage2(sftpstorage.SFTPStorage):
             root_path = "foo2"
 
         storage = MyStorage2()
-        self.assertEqual(storage._root_path, "foo2")
+        self.assertEqual(storage.root_path, "foo2")
 
     def test_override_init_argument(self):
         storage = sftpstorage.SFTPStorage(root_path="foo1")
-        self.assertEqual(storage._root_path, "foo1")
+        self.assertEqual(storage.root_path, "foo1")
         storage = sftpstorage.SFTPStorage(root_path="foo2")
-        self.assertEqual(storage._root_path, "foo2")
+        self.assertEqual(storage.root_path, "foo2")
 
 
 class SFTPStorageFileTest(TestCase):
