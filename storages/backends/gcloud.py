@@ -144,7 +144,10 @@ class GoogleCloudStorage(BaseStorage):
             # roll over.
             "max_memory_size": setting("GS_MAX_MEMORY_SIZE", 0),
             "blob_chunk_size": setting("GS_BLOB_CHUNK_SIZE"),
-            "sa_email": setting("GS_SA_EMAIL")
+            # use in cases where service account key isn't available in env
+            # in such cases, sign blob api is REQUIRED for signing data
+            "iam_sign_blob": setting("GS_IAM_SIGN_BLOB", False),
+            "sa_email": setting("GS_SA_EMAIL"),
         }
 
     @property
@@ -154,10 +157,7 @@ class GoogleCloudStorage(BaseStorage):
                 self.credentials, self.project_id = auth.default(
                     scopes=['https://www.googleapis.com/auth/cloud-platform']
                 )
-                if not hasattr(self.credentials, "service_account_email") and self.sa_email:
-                    self.credentials.service_account_email = self.sa_email
             self._client = Client(project=self.project_id, credentials=self.credentials)
-
         if self.credentials and self.credentials.token_state != TokenState.FRESH:
             self.credentials.refresh(requests.Request())
         return self._client
@@ -339,9 +339,19 @@ class GoogleCloudStorage(BaseStorage):
                 "expiration": self.expiration,
                 "version": "v4",
             }
-            if hasattr(self.credentials, "service_account_email"):
+            
+            if self.iam_sign_blob:
+                if not hasattr(self.credentials, "service_account_email") and not self.sa_email:
+                    raise AttributeError(
+                        "Sign Blob API requires service_account_email to be available "
+                        "through ADC or setting `sa_email`"
+                    )
+                if hasattr(self.credentials, "service_account_email"):
+                    default_params["service_account_email"] = self.credentials.service_account_email
+                # sa_email has the final say of which service_account_email to be used for signing if provided
+                if self.sa_email:
+                    default_params["service_account_email"] = self.sa_email
                 default_params["access_token"] = self.credentials.token
-                default_params["service_account_email"] = self.credentials.service_account_email
 
             for key, value in default_params.items():
                 if value and key not in params:

@@ -53,28 +53,20 @@ In most cases, the default service accounts are not sufficient to read/write and
 #. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
 #. Ensure this service account is associated to the type of compute being used (Google Compute Engine (GCE), Google Kubernetes Engine (GKE), Google Cloud Run (GCR), etc)
 
-For development use cases, or other instances outside Google infrastructure:
-
-#. Create the key and download ``your-project-XXXXX.json`` file.
-#. Ensure the key is mounted/available to your running Django app.
-#. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
-
-**Note Regarding Authentication**
-
-There is currently a limitation in the GCS client for Python which by default requires a service account private key file to be
-present when generating signed urls. **This is important to realize**. The service account private key is unavailable when running on a compute service.
-Compute Services (App Engine, Cloud Run, Cloud Functions, Compute Engine...) fetch access tokens from a metadata service.
-Those services do not have access to the service account private key. That means you must use one of the IAM sign functions (SignBlob, SignJwt)
-to have Google sign using their managed private key. This means, you can't directly sign data. You must use the Cloud IAM API to do signing.
+**Note:** There is currently a limitation in the GCS client for Python which by default requires a service account private key file to be
+present when generating signed urls. The service account private key is unavailable when running on a compute service.
+Compute Services (App Engine, Cloud Run, Cloud Functions, Compute Engine...) fetch `access tokens from the metadata server <https://cloud.google.com/docs/authentication/application-default-credentials>`__ .
+These services do not have access to the service account private key. This means that when trying to sign data in these services,
+you **MUST** use one of the Cloud IAM sign functions (SignBlob, SignJwt) to sign data and directly signing data isn't possible by any means.
 
 Luckily this can be worked around by passing `service_account_email` and `access_token` to the generate_signed_url function.
 When both of those args are provided, generate_signed_url will use the IAM SignBlob API to sign the url and no private key file is needed.
 
-Google also now recommends avoiding service account json key files as they are insecure, risky and hard to manage. This avoids the need for that
-when developing locally.
+Last resort you can still use the service account key file for authentication (not recommended by Google):
 
-`GS_SA_EMAIL` will be what is what provided to generate_signed_url param: service_account_email. Note, this service account will need credentials to
-sign and download/upload files as necessary. Read more `here <https://cloud.google.com/storage/docs/access-control/signing-urls-with-helpers>`__
+#. Create the key and download ``your-project-XXXXX.json`` file.
+#. Ensure the key is mounted/available to your running Django app.
+#. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
 
 Alternatively, you can use the setting ``credentials`` or ``GS_CREDENTIALS`` as described below.
 
@@ -237,11 +229,20 @@ Settings
 
   Note: The maximum value for this option is 7 days (604800 seconds) in version `v4` (See this `Github issue  <https://github.com/googleapis/python-storage/issues/456#issuecomment-856884993>`_)
 
+``iam_sign_blob`` or ``GS_IAM_SIGN_BLOB``
+
+  default: ``False``
+
+  Signing urls requires a service account key file to be present in the env or IAM SignBlob/JWT API call
+  through a service account email and access_token. Certain GCP services (ex: Compute services) don't have access to the key file in the env.
+  This setting needs to be `True` when running on such services as they fetch access tokens from metadata server instead of having key files
+  If using `v4` of generate_signed_url, `google-cloud-storage>=v1.36.1 <https://github.com/googleapis/python-storage/releases/tag/v1.36.1>`_ is required .
+
 ``sa_email`` or ``GS_SA_EMAIL``
 
   default: ``None``
 
-  This is the service account email to be used for signing the url. Signing urls requires a service account key file to be present in the env or IAM SignBlob/JWT API call
-  through a provided service account email. Compute services (App Engine, Cloud Run, Cloud Functions, Compute Engine...) for example don't have access to the key file in the env.
-  Providing, sa_email, will use the IAM API in order to sign the URL thus avoiding the need for a private service account json key file. If using `v4` of generate_signed_url,
-  `google-cloud-storage>=v1.36.1 <https://github.com/googleapis/python-storage/releases/tag/v1.36.1>`_ is required .
+  The service account email to use for signing url. If a service account is being used for authentication (attached to your service),
+  this setting doesn't need to be provided unless you want to use another service account than the one attached to your service for signing urls.
+  Can be used in local development env as well to sign using sa_email instead of the user credentials or keeping a insecure service account key file
+  If using `v4` of generate_signed_url, `google-cloud-storage>=v1.36.1 <https://github.com/googleapis/python-storage/releases/tag/v1.36.1>`_ is required .
