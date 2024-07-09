@@ -154,11 +154,12 @@ class GoogleCloudStorage(BaseStorage):
                 self.credentials, self.project_id = auth.default(
                     scopes=['https://www.googleapis.com/auth/cloud-platform']
                 )
-                if not self.credentials.token_state == TokenState.FRESH:
-                    self.credentials.refresh(requests.Request())
                 if not hasattr(self.credentials, "service_account_email") and self.sa_email:
                     self.credentials.service_account_email = self.sa_email
             self._client = Client(project=self.project_id, credentials=self.credentials)
+
+        if self.credentials and self.credentials.token_state != TokenState.FRESH:
+            self.credentials.refresh(requests.Request())
         return self._client
 
     @property
@@ -336,7 +337,7 @@ class GoogleCloudStorage(BaseStorage):
             default_params = {
                 "bucket_bound_hostname": self.custom_endpoint,
                 "expiration": self.expiration,
-                "version": "v4"
+                "version": "v4",
             }
             if hasattr(self.credentials, "service_account_email"):
                 default_params["access_token"] = self.credentials.token
