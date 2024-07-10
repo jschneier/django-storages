@@ -57,7 +57,7 @@ In most cases, the default service accounts are not sufficient to read/write and
 present when generating signed urls. The service account private key is unavailable when running on a compute service.
 Compute Services (App Engine, Cloud Run, Cloud Functions, Compute Engine...) fetch `access tokens from the metadata server <https://cloud.google.com/docs/authentication/application-default-credentials>`__ .
 These services do not have access to the service account private key. This means that when trying to sign data in these services,
-you **MUST** use one of the Cloud IAM sign functions (SignBlob, SignJwt) to sign data and directly signing data isn't possible by any means.
+you **MUST** use Cloud IAM sign function (SignBlob) to sign data and directly signing data isn't possible by any means.
 
 Luckily this can be worked around by passing `service_account_email` and `access_token` to the generate_signed_url function.
 When both of those args are provided, generate_signed_url will use the IAM SignBlob API to sign the url and no private key file is needed.
@@ -233,7 +233,7 @@ Settings
 
   default: ``False``
 
-  Signing urls requires a service account key file to be present in the env or IAM SignBlob/JWT API call
+  Signing urls requires a service account key file to be present in the env or IAM SignBlob API call
   through a service account email and access_token. Certain GCP services (ex: Compute services) don't have access to the key file in the env.
   This setting needs to be `True` when running on such services as they fetch access tokens from metadata server instead of having key files
   If using `v4` of generate_signed_url, `google-cloud-storage>=v1.36.1 <https://github.com/googleapis/python-storage/releases/tag/v1.36.1>`_ is required .

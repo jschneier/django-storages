@@ -333,13 +333,13 @@ class GoogleCloudStorage(BaseStorage):
                 quoted_name=_quote(name, safe=b"/~"),
             )
         else:
-            params = parameters or {}
             default_params = {
                 "bucket_bound_hostname": self.custom_endpoint,
                 "expiration": self.expiration,
                 "version": "v4",
             }
-            
+            params = parameters or {}
+
             if self.iam_sign_blob:
                 if not hasattr(self.credentials, "service_account_email") and not self.sa_email:
                     raise AttributeError(
