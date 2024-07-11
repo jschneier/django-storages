@@ -185,9 +185,21 @@ Settings
 
   This is a Python ``dict`` and the possible parameters are: ``content_type``, ``content_encoding``, ``content_language``, ``content_disposition``, ``cache_control``, and ``content_md5``.
 
+``client_options`` or ``AZURE_CLIENT_OPTIONS``
+
+  Default: ``{}``
+
+  A dict of kwarg options to send to the ``BlobServiceClient``. A partial list of options can be found
+  `in the client docs <https://learn.microsoft.com/en-us/python/api/azure-storage-blob/azure.storage.blob.blobserviceclient?view=azure-python#keyword-only-parameters>`__.
+
+  Additionally, this setting can be used to configure the client retry settings. To see how follow the
+  `Python retry docs <https://learn.microsoft.com/en-us/azure/storage/blobs/storage-retry-policy-python>`__.
+
 ``api_version`` or ``AZURE_API_VERSION``
 
   Default: ``None``
+
+  **Note: This option is deprecated. Use client_options/AZURE_CLIENT_OPTIONS instead.**
 
   The Azure Storage API version to use. Default value is the most recent service version that is compatible with the current SDK.
   Setting to an older version may result in reduced feature compatibility.
