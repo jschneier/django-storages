@@ -154,7 +154,7 @@ class LibCloudStorage(Storage):
         except ObjectDoesNotExistError as e:
             raise FileNotFoundError(str(e))
         # TOFIX : we should be able to read chunk by chunk
-        return next(self.driver.download_object_as_stream(obj, obj.size))
+        return next(self.driver.download_object_as_stream(obj, int(obj.size)))
 
     def _save(self, name, file):
         self.driver.upload_object_via_stream(iter(file), self._get_bucket(), name)
