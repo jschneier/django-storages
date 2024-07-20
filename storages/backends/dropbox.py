@@ -2,7 +2,6 @@
 # Author: Anthony Monthe <anthony.monthe@gmail.com>
 # License: BSD
 
-import warnings
 from io import BytesIO
 from shutil import copyfileobj
 from tempfile import SpooledTemporaryFile
@@ -79,11 +78,9 @@ class DropboxStorage(BaseStorage):
             [self.app_key, self.app_secret, self.oauth2_refresh_token]
         ):
             raise ImproperlyConfigured(
-                "You must configure an auth token at"
-                "'settings.DROPBOX_OAUTH2_TOKEN' or "
-                "'setting.DROPBOX_APP_KEY', "
-                "'setting.DROPBOX_APP_SECRET' "
-                "and 'setting.DROPBOX_OAUTH2_REFRESH_TOKEN'."
+                "You must configure an auth token at 'settings.DROPBOX_OAUTH2_TOKEN' "
+                "or 'setting.DROPBOX_APP_KEY', 'setting.DROPBOX_APP_SECRET' and "
+                "'setting.DROPBOX_OAUTH2_REFRESH_TOKEN'."
             )
         self.client = Dropbox(
             self.oauth2_access_token,
@@ -92,16 +89,7 @@ class DropboxStorage(BaseStorage):
             oauth2_refresh_token=self.oauth2_refresh_token,
             timeout=self.timeout,
         )
-
-        # Backwards compat
-        if hasattr(self, "location"):
-            warnings.warn(
-                "Setting `root_path` with name `location` is deprecated and will be "
-                "removed in a future version of django-storages. Please update the "
-                "name from `location` to `root_path`",
-                DeprecationWarning,
-            )
-            self.root_path = self.location
+        self.location = self.root_path
 
     def get_default_settings(self):
         return {
@@ -117,7 +105,7 @@ class DropboxStorage(BaseStorage):
     def _full_path(self, name):
         if name == "/":
             name = ""
-        return safe_join(self.root_path, name).replace("\\", "/")
+        return safe_join(self.location, name).replace("\\", "/")
 
     def delete(self, name):
         self.client.files_delete(self._full_path(name))
