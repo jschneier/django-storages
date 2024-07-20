@@ -158,7 +158,6 @@ class GoogleCloudStorage(BaseStorage):
                     scopes=['https://www.googleapis.com/auth/cloud-platform']
                 )
             self._client = Client(project=self.project_id, credentials=self.credentials)
-
         return self._client
 
     @property
