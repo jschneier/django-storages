@@ -153,13 +153,7 @@ class GoogleCloudStorage(BaseStorage):
     @property
     def client(self):
         if self._client is None:
-            if self.project_id is None or self.credentials is None:
-                self.credentials, self.project_id = auth.default(
-                    scopes=['https://www.googleapis.com/auth/cloud-platform']
-                )
             self._client = Client(project=self.project_id, credentials=self.credentials)
-        if self.credentials and self.credentials.token_state != TokenState.FRESH:
-            self.credentials.refresh(requests.Request())
         return self._client
 
     @property
@@ -341,17 +335,9 @@ class GoogleCloudStorage(BaseStorage):
             params = parameters or {}
 
             if self.iam_sign_blob:
-                if not hasattr(self.credentials, "service_account_email") and not self.sa_email:
-                    raise AttributeError(
-                        "Sign Blob API requires service_account_email to be available "
-                        "through ADC or setting `sa_email`"
-                    )
-                if hasattr(self.credentials, "service_account_email"):
-                    default_params["service_account_email"] = self.credentials.service_account_email
-                # sa_email has the final say of which service_account_email to be used for signing if provided
-                if self.sa_email:
-                    default_params["service_account_email"] = self.sa_email
-                default_params["access_token"] = self.credentials.token
+                service_account_email, access_token = self._get_iam_sign_blob_params()
+                default_params["service_account_email"] = service_account_email
+                default_params["access_token"] = access_token
 
             for key, value in default_params.items():
                 if value and key not in params:
@@ -364,3 +350,27 @@ class GoogleCloudStorage(BaseStorage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
+    
+    def _get_iam_sign_blob_params(self):
+        credentials, _ = auth.default(
+            scopes=['https://www.googleapis.com/auth/cloud-platform']
+        )
+        if credentials and credentials.token_state != TokenState.FRESH:
+            credentials.refresh(requests.Request())
+
+        try:
+            service_account_email = credentials.service_account_email
+        except AttributeError:
+            service_account_email = None
+
+        # sa_email has the final say of which service_account_email to be used for signing if provided
+        if self.sa_email:
+            service_account_email = self.sa_email
+
+        if not service_account_email:
+            raise AttributeError(
+                "Sign Blob API requires service_account_email to be available "
+                "through ADC or setting `sa_email`"
+            )
+
+        return service_account_email, credentials.token

@@ -61,6 +61,8 @@ you **MUST** use Cloud IAM sign function (SignBlob) to sign data and directly si
 
 Luckily this can be worked around by passing `service_account_email` and `access_token` to the generate_signed_url function.
 When both of those args are provided, generate_signed_url will use the IAM SignBlob API to sign the url and no private key file is needed.
+In order to enable this, use setting `iam_blob_sign` and the optional `sa_email` (if providing a service account email different than the one attached
+to GCP Environment).
 
 Last resort you can still use the service account key file for authentication (not recommended by Google):
 
