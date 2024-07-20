@@ -153,7 +153,12 @@ class GoogleCloudStorage(BaseStorage):
     @property
     def client(self):
         if self._client is None:
+            if self.iam_sign_blob and not self.credentials:
+                self.credentials, self.project_id = auth.default(
+                    scopes=['https://www.googleapis.com/auth/cloud-platform']
+                )
             self._client = Client(project=self.project_id, credentials=self.credentials)
+
         return self._client
 
     @property
@@ -352,14 +357,11 @@ class GoogleCloudStorage(BaseStorage):
         return super().get_available_name(name, max_length)
     
     def _get_iam_sign_blob_params(self):
-        credentials, _ = auth.default(
-            scopes=['https://www.googleapis.com/auth/cloud-platform']
-        )
-        if credentials and credentials.token_state != TokenState.FRESH:
-            credentials.refresh(requests.Request())
+        if self.credentials.token_state != TokenState.FRESH:
+            self.credentials.refresh(requests.Request())
 
         try:
-            service_account_email = credentials.service_account_email
+            service_account_email = self.credentials.service_account_email
         except AttributeError:
             service_account_email = None
 
@@ -373,4 +375,4 @@ class GoogleCloudStorage(BaseStorage):
                 "through ADC or setting `sa_email`"
             )
 
-        return service_account_email, credentials.token
+        return service_account_email, self.credentials.token
