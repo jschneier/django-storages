@@ -367,3 +367,14 @@ class AzureStorageTest(TestCase):
         self.assertEqual(storage.azure_container, "foo1")
         storage = azure_storage.AzureStorage(azure_container="foo2")
         self.assertEqual(storage.azure_container, "foo2")
+
+    @mock.patch("storages.backends.azure_storage.BlobServiceClient", autospec=True)
+    def test_client_settings(self, bsc):
+        with override_settings(AZURE_CLIENT_OPTIONS={"api_version": "1.3"}):
+            storage = azure_storage.AzureStorage(account_name="test")
+            client_mock = mock.MagicMock()
+            bsc.return_value.get_container_client.return_value = client_mock
+            self.assertEqual(storage.client, client_mock)
+            bsc.assert_called_once_with(
+                "https://test.blob.core.windows.net", credential=None, api_version="1.3"
+            )

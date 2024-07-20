@@ -1,6 +1,19 @@
 django-storages CHANGELOG
 =========================
 
+X.YY.Z (UNRELEASED)
+*******************
+
+Azure
+-----
+
+- **Deprecated**: The setting ``AZURE_API_VERSION/api_version`` setting is deprecated in favor of
+  the new ``AZURE_CLIENT_OPTIONS`` setting. A future version will remove support for this setting.
+- Add ``AZURE_CLIENT_OPTIONS`` settings to enable customization of all ``BlobServiceClient`` parameters
+  such as ``api_version`` and all ``retry*`` options. (`#1432`_)
+
+.. _#1432: https://github.com/jschneier/django-storages/pull/1432
+
 1.14.4 (2024-07-09)
 *******************
 

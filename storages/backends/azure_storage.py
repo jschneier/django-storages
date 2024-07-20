@@ -1,4 +1,5 @@
 import mimetypes
+import warnings
 from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
@@ -152,6 +153,7 @@ class AzureStorage(BaseStorage):
             "connection_string": setting("AZURE_CONNECTION_STRING"),
             "token_credential": setting("AZURE_TOKEN_CREDENTIAL"),
             "api_version": setting("AZURE_API_VERSION", None),
+            "client_options": setting("AZURE_CLIENT_OPTIONS", {}),
         }
 
     def _get_service_client(self):
@@ -171,8 +173,15 @@ class AzureStorage(BaseStorage):
             credential = self.sas_token
         elif self.token_credential:
             credential = self.token_credential
-        options = {}
+
+        options = self.client_options
         if self.api_version:
+            warnings.warn(
+                "The AZURE_API_VERSION/api_version setting is deprecated "
+                "and will be removed in a future version. Use AZURE_CLIENT_OPTIONS "
+                "to customize any of the BlobServiceClient kwargs.",
+                DeprecationWarning,
+            )
             options["api_version"] = self.api_version
         return BlobServiceClient(account_url, credential=credential, **options)
 
