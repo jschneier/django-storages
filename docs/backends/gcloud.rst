@@ -237,8 +237,7 @@ Settings
 
   Signing urls requires a service account key file to be present in the env or IAM SignBlob API call
   through a service account email and access_token. Certain GCP services (ex: Compute services) don't have access to the key file in the env.
-  This setting needs to be `True` when running on such services as they fetch access tokens from metadata server instead of having key files
-  If using `v4` of generate_signed_url, `google-cloud-storage>=v1.36.1 <https://github.com/googleapis/python-storage/releases/tag/v1.36.1>`_ is required .
+  This setting needs to be `True` when running on such services as they fetch access tokens from metadata server instead of having key files.
 
 ``sa_email`` or ``GS_SA_EMAIL``
 
@@ -246,5 +245,4 @@ Settings
 
   The service account email to use for signing url. If a service account is being used for authentication (attached to your service),
   this setting doesn't need to be provided unless you want to use another service account than the one attached to your service for signing urls.
-  Can be used in local development env as well to sign using sa_email instead of the user credentials or keeping a insecure service account key file
-  If using `v4` of generate_signed_url, `google-cloud-storage>=v1.36.1 <https://github.com/googleapis/python-storage/releases/tag/v1.36.1>`_ is required .
+  Can be used in local development env as well to sign using sa_email instead of the user credentials or keeping a insecure service account key file.
