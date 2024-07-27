@@ -213,7 +213,7 @@ class FTPStorage(BaseStorage):
 
         self._start_connection()
         try:
-            nlst = self._connection.nlst(os.path.dirname(name) + "/")
+            nlst = self._connection.nlst(os.path.dirname(name))
             if name in nlst or os.path.basename(name) in nlst:
                 return True
             else:
