@@ -547,7 +547,7 @@ class GCloudStorageTests(GCloudTestCase):
             storage._bucket = mock.MagicMock()
             storage.credentials = mock.MagicMock()
             # simulating adc service account email
-            storage.credentials.service_account_email = "adc_service_account_email@gmail.com"
+            storage.credentials.service_account_email = "service@gmail.com"
             # simulating access token
             storage.credentials.token = "1234"
             blob = mock.MagicMock()
@@ -570,7 +570,7 @@ class GCloudStorageTests(GCloudTestCase):
             storage._bucket = mock.MagicMock()
             storage.credentials = mock.MagicMock()
             # simulating adc service account email
-            storage.credentials.service_account_email = "adc_service_account_email@gmail.com"
+            storage.credentials.service_account_email = "service@gmail.com"
             # simulating access token
             storage.credentials.token = "1234"
             blob = mock.MagicMock()

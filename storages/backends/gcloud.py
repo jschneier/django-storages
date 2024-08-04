@@ -21,8 +21,8 @@ from storages.utils import to_bytes
 
 try:
     from google import auth
-    from google.auth.transport import requests
     from google.auth.credentials import TokenState
+    from google.auth.transport import requests
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
@@ -364,7 +364,7 @@ class GoogleCloudStorage(BaseStorage):
         except AttributeError:
             service_account_email = None
 
-        # sa_email has the final say of which service_account_email to be used for signing if provided
+        # sa_email has final say of service_account used to sign url if provided
         if self.sa_email:
             service_account_email = self.sa_email
 
