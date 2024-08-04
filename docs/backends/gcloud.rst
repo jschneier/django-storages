@@ -52,8 +52,10 @@ In most cases, the default service accounts are not sufficient to read/write and
 #. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 #. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
 #. Ensure this service account is associated to the type of compute being used (Google Compute Engine (GCE), Google Kubernetes Engine (GKE), Google Cloud Run (GCR), etc)
+#. If your django app only handles ``publicRead`` storage objects then, above steps are all that is required
+#. If your django app handles signed (expiring) urls, then read through the options in the ``Settings for Signed Urls`` section
 
-For development use cases, or other instances outside Google infrastructure:
+Last resort you can still use the service account key file for authentication (not recommended by Google):
 
 #. Create the key and download ``your-project-XXXXX.json`` file.
 #. Ensure the key is mounted/available to your running Django app.
@@ -61,6 +63,29 @@ For development use cases, or other instances outside Google infrastructure:
 
 Alternatively, you can use the setting ``credentials`` or ``GS_CREDENTIALS`` as described below.
 
+Settings for Signed Urls
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+   There is currently a limitation in the GCS client for Python which by default requires a
+   service account private key file to be present when generating signed urls. The service
+   account private key file is unavailable when running on compute services. Compute Services
+   (App Engine, Cloud Run, Cloud Functions, Compute Engine...) fetch `access tokens from the metadata server
+   <https://cloud.google.com/docs/authentication/application-default-credentials>`__
+
+Due to the above limitation, currently the only way to generate signed url without having the private key file mounted
+in the env is through the IAM Sign Blob API.
+
+IAM Sign Blob API doesn't require a private key file to be present in the env, but it does have
+`quota limits <https://cloud.google.com/iam/quotas#quotas>`__ which could be a deal-breaker. In order to enable this,
+the setting ``GS_IAM_SIGN_BLOB`` (default=`False`) needs to be `True`. When this setting is enabled,
+signed urls are generated through the IAM SignBlob API using the attached service account email and access_token instead
+of the credentials in the key file.
+
+``GS_IAM_SIGN_BLOB`` setting is also complemented with the optional setting ``GS_SA_EMAIL``. This setting allows
+you to override the service account to be used to generate the signed url if it is different from the one attached
+to your env. Also useful for local/development use cases where the metadata server isn't available and storing private key
+files is dangerous.
 
 Settings
 ~~~~~~~~
@@ -219,3 +244,18 @@ Settings
   It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
   Note: The maximum value for this option is 7 days (604800 seconds) in version `v4` (See this `Github issue  <https://github.com/googleapis/python-storage/issues/456#issuecomment-856884993>`_)
+
+``iam_sign_blob`` or ``GS_IAM_SIGN_BLOB``
+
+  default: ``False``
+
+  Generate signed urls using the IAM Sign Blob API which doesn't require a service account private key file to be present in the env.
+  Set this setting to ``True`` if storing private key file isn't viable and would rather generate signed urls using an API.
+
+``sa_email`` or ``GS_SA_EMAIL``
+
+  default: ``None``
+
+  Allows override of the service account to be used for generating signed urls using the IAM Sign Blob API.
+  This setting is completely optional and should be used if the service account associated with your service/app isn't
+  the one with the permissions to SignBlob. Also helpful for development use cases where private key file is not recommended.
