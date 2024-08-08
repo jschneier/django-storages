@@ -155,7 +155,7 @@ class GoogleCloudStorage(BaseStorage):
         if self._client is None:
             if self.iam_sign_blob and not self.credentials:
                 self.credentials, self.project_id = auth.default(
-                    scopes=['https://www.googleapis.com/auth/cloud-platform']
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
                 )
             self._client = Client(project=self.project_id, credentials=self.credentials)
         return self._client
