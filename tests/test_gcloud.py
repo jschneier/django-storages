@@ -511,24 +511,18 @@ class GCloudStorageTests(GCloudTestCase):
 
     def test_iam_sign_blob_setting(self):
         self.assertEqual(self.storage.iam_sign_blob, False)
-        with override_settings(
-            GS_IAM_SIGN_BLOB=True
-        ):
+        with override_settings(GS_IAM_SIGN_BLOB=True):
             storage = gcloud.GoogleCloudStorage()
             self.assertEqual(storage.iam_sign_blob, True)
 
     def test_sa_email_setting(self):
         self.assertEqual(self.storage.sa_email, None)
-        with override_settings(
-            GS_SA_EMAIL="service_account_email@gmail.com"
-        ):
+        with override_settings(GS_SA_EMAIL="service_account_email@gmail.com"):
             storage = gcloud.GoogleCloudStorage()
             self.assertEqual(storage.sa_email, "service_account_email@gmail.com")
 
     def test_iam_sign_blob_no_service_account_email_raises_attribute_error(self):
-        with override_settings(
-            GS_IAM_SIGN_BLOB=True
-        ):
+        with override_settings(GS_IAM_SIGN_BLOB=True):
             storage = gcloud.GoogleCloudStorage()
             storage._bucket = mock.MagicMock()
             storage.credentials = mock.MagicMock()
@@ -537,16 +531,17 @@ class GCloudStorageTests(GCloudTestCase):
             # simulating access token
             storage.credentials.token = "1234"
             # no sa_email or adc service_account_email found
-            with self.assertRaises(AttributeError, msg=(
-                "Sign Blob API requires service_account_email to be available "
-                "through ADC or setting `sa_email`"
-            )):
+            with self.assertRaises(
+                AttributeError,
+                msg=(
+                    "Sign Blob API requires service_account_email to be available "
+                    "through ADC or setting `sa_email`"
+                ),
+            ):
                 storage.url(self.filename)
 
     def test_iam_sign_blob_with_adc_service_account_email(self):
-        with override_settings(
-            GS_IAM_SIGN_BLOB=True
-        ):
+        with override_settings(GS_IAM_SIGN_BLOB=True):
             storage = gcloud.GoogleCloudStorage()
             storage._bucket = mock.MagicMock()
             storage.credentials = mock.MagicMock()
@@ -562,13 +557,12 @@ class GCloudStorageTests(GCloudTestCase):
                 expiration=timedelta(seconds=86400),
                 version="v4",
                 service_account_email=storage.credentials.service_account_email,
-                access_token=storage.credentials.token
+                access_token=storage.credentials.token,
             )
 
     def test_iam_sign_blob_with_sa_email_setting(self):
         with override_settings(
-            GS_IAM_SIGN_BLOB=True,
-            GS_SA_EMAIL="service_account_email@gmail.com"
+            GS_IAM_SIGN_BLOB=True, GS_SA_EMAIL="service_account_email@gmail.com"
         ):
             storage = gcloud.GoogleCloudStorage()
             storage._bucket = mock.MagicMock()
@@ -585,7 +579,7 @@ class GCloudStorageTests(GCloudTestCase):
                 expiration=timedelta(seconds=86400),
                 version="v4",
                 service_account_email=storage.sa_email,
-                access_token=storage.credentials.token
+                access_token=storage.credentials.token,
             )
 
 
