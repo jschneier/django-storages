@@ -4,6 +4,11 @@ django-storages CHANGELOG
 X.YY.Z (UNRELEASED)
 *******************
 
+General
+-------
+
+- Add support for Django 5.1 (`#1444`_)
+
 Azure
 -----
 
