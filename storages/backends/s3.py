@@ -581,8 +581,11 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def exists(self, name):
         name = self._normalize_name(clean_name(name))
+        params = _filter_download_params(self.get_object_parameters(name))
         try:
-            self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
+            self.connection.meta.client.head_object(
+                Bucket=self.bucket_name, Key=name, **params
+            )
             return True
         except ClientError as err:
             if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
