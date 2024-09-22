@@ -73,7 +73,9 @@ class DropboxStorage(BaseStorage):
     CHUNK_SIZE = 4 * 1024 * 1024
 
     def __init__(self, oauth2_access_token=None, **settings):
-        super().__init__(oauth2_access_token=oauth2_access_token, **settings)
+        if oauth2_access_token is not None:
+            settings["oauth2_access_token"] = oauth2_access_token
+        super().__init__(**settings)
 
         if self.oauth2_access_token is None and not all(
             [self.app_key, self.app_secret, self.oauth2_refresh_token]
