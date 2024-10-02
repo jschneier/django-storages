@@ -62,7 +62,8 @@ class GoogleCloudFile(CompressedFileMixin, File):
             )
             if "r" in self._mode:
                 self._is_dirty = False
-                self.blob.download_to_file(self._file)
+                # Prevent automatic decompression by using raw_download=True
+                self.blob.download_to_file(self._file, raw_download=True)
                 self._file.seek(0)
             if self._storage.gzip and self.blob.content_encoding == "gzip":
                 self._file = self._decompress_file(mode=self._mode, file=self._file)
