@@ -14,6 +14,7 @@ from google.cloud.storage.blob import Blob
 from google.cloud.storage.retry import DEFAULT_RETRY
 
 from storages.backends import gcloud
+from storages.backends.gcloud import GoogleCloudFile
 
 
 class GCloudTestCase(TestCase):
@@ -571,3 +572,17 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
             self.assertEqual(zfile.read(), b"I should be gzip'd")
         finally:
             patcher.stop()
+
+    def test_storage_read_gzip(self, *args):
+        """
+        Test reading a gzipped file decompresses content only once.
+        """
+        name = "test_storage_save.css"
+        file = GoogleCloudFile(name, "rb", self.storage)
+        blob = mock.MagicMock()
+        file.blob = blob
+        blob.download_to_file = lambda f, checksum=None: f.write(b"No gzip")
+        blob.content_encoding = "gzip"
+        f = file._get_file()
+
+        f.read()  # This should not fail
