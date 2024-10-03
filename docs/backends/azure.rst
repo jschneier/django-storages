@@ -123,7 +123,7 @@ Settings
 
   Global connection timeout in seconds.
 
-``max_memory`` size ``AZURE_BLOB_MAX_MEMORY_SIZE``
+``max_memory_size`` or ``AZURE_BLOB_MAX_MEMORY_SIZE``
 
   Default: ``2*1024*1024`` i.e ``2MB``
 
