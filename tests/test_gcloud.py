@@ -583,7 +583,6 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         file.blob = blob
         blob.download_to_file = lambda f: f.write(b"I should not be gzip'd")
         blob.content_encoding = "gzip"
-
         f = file._get_file()
 
         f.read()  # This should not fail
