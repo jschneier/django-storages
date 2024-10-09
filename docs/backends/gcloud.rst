@@ -213,7 +213,7 @@ Settings
   the credentials provided to django-storages (See :ref:`GS Credentials <gs-creds>`).
 
   Note: Default Google Compute Engine (GCE) Service accounts are
-  `unable to sign urls <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
+  `unable to sign urls <https://cloud.google.com/python/docs/reference/storage/latest/google.cloud.storage.blob.Blob#google_cloud_storage_blob_Blob_generate_signed_url>`_.
 
   The ``expiration`` value is handled by the underlying `Google library  <https://googlecloudplatform.github.io/google-cloud-python/latest/storage/blobs.html#google.cloud.storage.blob.Blob.generate_signed_url>`_.
   It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
