@@ -2,7 +2,6 @@ from django.core.files.base import ContentFile
 
 
 class NonSeekableContentFile(ContentFile):
-
     def open(self, mode=None):
         return self
 

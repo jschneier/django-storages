@@ -25,35 +25,7 @@ hasn't been released yet) then the magic incantation you are looking for is:
 
   pip install -e 'git+https://github.com/jschneier/django-storages.git#egg=django-storages'
 
-Once that is done set ``DEFAULT_FILE_STORAGE`` to the backend of your choice.
-If, for example, you want to use the boto3 backend you would set:
-
-.. code-block:: python
-
-  DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-
-If you are using the ``FileSystemStorage`` as your storage management class in your models ``FileField`` fields, remove them
-and don't specify any storage parameter. That way, the ``DEFAULT_FILE_STORAGE`` class will be used by default in your field.
-For example, if you have a `photo` field defined as:
-
-.. code-block:: python
-
-    photo = models.FileField(
-        storage=FileSystemStorage(location=settings.MEDIA_ROOT),
-        upload_to='photos',
-    )
-
-Set it to just:
-
-.. code-block:: python
-
-    photo = models.FileField(
-        upload_to='photos',
-    )
-
-There are also a number of settings available to control how each storage backend functions,
-please consult the documentation for a comprehensive list.
+For detailed instructions on how to configure the backend of your choice please consult the documentation.
 
 About
 =====
@@ -99,7 +71,6 @@ Contributing
 #. Bug me until I can merge your pull request.
 
 Please don't update the library version in CHANGELOG.rst or ``storages/__init__.py``, the maintainer will do that on release.
-If you're the first to update the CHANGELOG in this release cycle, just put the version as ``XXXX-XX-XX``.
 
 History
 =======

@@ -4,58 +4,67 @@ Dropbox
 A Django files storage using Dropbox as a backend via the official
 `Dropbox SDK for Python`_. Currently only v2 of the API is supported.
 
+Installation
+------------
+
 Before you start configuration, you will need to install the SDK
 which can be done for you automatically by doing::
 
    pip install django-storages[dropbox]
 
-Settings
---------
+Configuration & Settings
+------------------------
 
-To use DropBoxStorage set::
+Django 4.2 changed the way file storage objects are configured. In particular, it made it easier to independently configure
+storage backends and add additional ones. To configure multiple storage objects pre Django 4.2 required subclassing the backend
+because the settings were global, now you pass them under the key ``OPTIONS``. For example, to save media files to Dropbox on Django
+>= 4.2 you'd define::
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.dropbox.DropBoxStorage'
 
-Two methods of authenticating are supported:
+  STORAGES = {
+      "default": {
+          "BACKEND": "storages.backends.dropbox.DropboxStorage",
+          "OPTIONS": {
+            ...your_options_here
+          },
+      },
+  }
 
-1. using an access token
-2. using a refresh token with an app key and secret
+On Django < 4.2 you'd instead define::
+
+    DEFAULT_FILE_STORAGE = "storages.backends.dropbox.DropboxStorage"
+
+To put static files on Dropbox via ``collectstatic`` on Django >= 4.2 you'd include the ``staticfiles`` key (at the same level as
+``default``) in the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
+
+    STATICFILES_STORAGE = "storages.backends.dropbox.DropboxStorage"
+
+The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
+well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
+
+Authentication
+--------------
+
+Two methods of authentication are supported:
+
+#. Using an access token
+#. Using a refresh token with an app key and secret
 
 Dropbox has recently introduced short-lived access tokens only, and does not seem to allow new apps to generate access tokens that do not expire. Short-lived access tokens can be indentified by their prefix (short-lived access tokens start with ``'sl.'``).
 
-Please set the following variables accordingly:
+You can manually obtain the refresh token by following the instructions below using ``APP_KEY`` and ``APP_SECRET``.
 
-``DROPBOX_OAUTH2_TOKEN``
-   Your Dropbox token. You can obtain one by following the instructions in the `tutorial`_.
+The relevant settings which can all be obtained by following the instructions in the `tutorial`_:
 
-``DROPBOX_APP_KEY``
-   Your Dropbox appkey. You can obtain one by following the instructions in the `tutorial`_.
-
-``DROPBOX_APP_SECRET``
-   Your Dropbox secret. You can obtain one by following the instructions in the `tutorial`_.
-
-``DROPBOX_OAUTH2_REFRESH_TOKEN``
-   Your Dropbox refresh token. You can obtain one by following the instructions in the `tutorial`_.
+#. ``oauth2_access_token`` or ``DROPBOX_OAUTH2_TOKEN``
+#. ``oauth2_refresh_token`` or ``DROPBOX_OAUTH2_REFRESH_TOKEN``
+#. ``app_secret`` or ``DROPBOX_APP_SECRET``
+#. ``app_key`` or ``DROPBOX_APP_KEY``
 
 The refresh token can be obtained using the `commandline-oauth.py`_ example from the `Dropbox SDK for Python`_.
 
-``DROPBOX_ROOT_PATH`` (optional, default ``'/'``)
-   Path which will prefix all uploaded files. Must begin with a ``/``.
-
-``DROPBOX_TIMEOUT`` (optional, default ``100``)
-   Timeout in seconds for requests to the API. If ``None``, the client will wait forever.
-   The default value matches the SDK at the time of this writing.
-
-``DROPBOX_WRITE_MODE`` (optional, default ``'add'``)
-   Sets the Dropbox WriteMode strategy. Read more in the `official docs`_.
-
-Obtain the refresh token manually
-#################################
-
-You can obtail the refresh token manually via ``APP_KEY`` and ``APP_SECRET``.
-
 Get AUTHORIZATION_CODE
-**********************
+~~~~~~~~~~~~~~~~~~~~~~
 
 Using your ``APP_KEY`` follow the link:
 
@@ -64,7 +73,7 @@ Using your ``APP_KEY`` follow the link:
 It will give you ``AUTHORIZATION_CODE``.
 
 Obtain the refresh token
-*************************
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Usinh your ``APP_KEY``, ``APP_SECRET`` and ``AUTHORIZATION_KEY`` obtain the refresh token.
 
@@ -88,6 +97,29 @@ The response would be:
       "uid": "************************",
       "account_id": "dbid:************************"
    }
+
+Settings
+--------
+
+``root_path`` or ``DROPBOX_ROOT_PATH``
+
+  Default: ``'/'``
+
+  Path which will prefix all uploaded files. Must begin with a ``/``.
+
+``timeout`` or ``DROPBOX_TIMEOUT``
+
+  Default: ``100``
+
+  Timeout in seconds for requests to the API. If ``None``, the client will wait forever.
+  The default value matches the SDK at the time of this writing.
+
+``write_mode`` or ``DROPBOX_WRITE_MODE``
+
+  Default: ``'add'``
+
+  Sets the Dropbox WriteMode strategy. Read more in the `official docs`_.
+
 
 .. _`tutorial`: https://www.dropbox.com/developers/documentation/python#tutorial
 .. _`Dropbox SDK for Python`: https://www.dropbox.com/developers/documentation/python#tutorial

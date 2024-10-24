@@ -1,213 +1,296 @@
 Amazon S3
 =========
 
-Usage
-*****
+This backend implements the Django File Storage API for Amazon Web Services's (AWS) Simple Storage Service (S3).
 
-There is only one supported backend for interacting with Amazon's S3,
-``S3Boto3Storage``, based on the boto3 library.
+Installation
+------------
 
-The legacy ``S3BotoStorage`` backend was removed in version 1.9. To continue getting new features you must upgrade
-to the ``S3Boto3Storage`` backend by following the :ref:`migration instructions <migrating-boto-to-boto3>`.
+The backend is based on the boto3 library which must be installed; the minimum required version is 1.4.4 although
+we always recommend the most recent. Either add it to your requirements or use the optional ``s3`` extra e.g::
 
-The minimum required version of ``boto3`` is 1.4.4 although we always recommend
-the most recent.
+  pip install django-storages[s3]
 
-Settings
---------
+Configuration & Settings
+------------------------
 
-To upload your media files to S3 set::
+Django 4.2 changed the way file storage objects are configured. In particular, it made it easier to independently configure
+storage backends and add additional ones. To configure multiple storage objects pre Django 4.2 required subclassing the backend
+because the settings were global, now you pass them under the key ``OPTIONS``. For example, to save media files to S3 on Django
+>= 4.2 you'd define::
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
-To allow ``django-admin collectstatic`` to automatically put your static files in your bucket set the following in your settings.py::
+  STORAGES = {
+      "default": {
+          "BACKEND": "storages.backends.s3.S3Storage",
+          "OPTIONS": {
+            ...your_options_here
+          },
+      },
+  }
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+On Django < 4.2 you'd instead define::
 
-If you want to use something like `ManifestStaticFilesStorage`_ then you must instead use::
+    DEFAULT_FILE_STORAGE = "storages.backends.s3.S3Storage"
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3ManifestStaticStorage'
+To put static files on S3 via ``collectstatic`` on Django >= 4.2 you'd include the ``staticfiles`` key (at the same level as
+``default``) in the ``STORAGES`` dictionary while on Django < 4.2 you'd instead define::
 
-There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Boto3Storage``
+    STATICFILES_STORAGE = "storages.backends.s3.S3Storage"
+
+The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
+well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
+
+Authentication Settings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+There are several different methods for specifying the AWS credentials used to create the S3 client.  In the order that ``S3Storage``
 searches for them:
 
-#. ``AWS_S3_SESSION_PROFILE``
-#. ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``
-#. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``
+#. ``session_profile`` or ``AWS_S3_SESSION_PROFILE``
+#. ``access_key`` or ``AWS_S3_ACCESS_KEY_ID`` or ``AWS_ACCESS_KEY_ID``
+#. ``secret_key`` or ``AWS_S3_SECRET_ACCESS_KEY`` or ``AWS_SECRET_ACCESS_KEY``
+#. ``security_token`` or ``AWS_SESSION_TOKEN`` or ``AWS_SECURITY_TOKEN``
 #. The environment variables AWS_S3_ACCESS_KEY_ID and AWS_S3_SECRET_ACCESS_KEY
 #. The environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+#. The environment variables AWS_SESSION_TOKEN and AWS_SECURITY_TOKEN
 #. Use Boto3's default session
 
-``AWS_S3_SESSION_PROFILE``
-    The AWS profile to use instead of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``. All configuration information
-    other than the key id and secret key is ignored in favor of the other settings specified below.
+Settings
+~~~~~~~~
 
-.. note::
-      If this is set, then it is a configuration error to also set ``AWS_S3_ACCESS_KEY_ID`` and ``AWS_S3_SECRET_ACCESS_KEY``.
-      ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` are ignored
+``bucket_name`` or ``AWS_STORAGE_BUCKET_NAME``
 
-``AWS_S3_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID``
-    Your Amazon Web Services access key, as a string.
+  **Required**
 
-``AWS_S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY``
-    Your Amazon Web Services secret access key, as a string.
+  The name of the S3 bucket that will host the files.
 
-``AWS_STORAGE_BUCKET_NAME``
-    Your Amazon Web Services storage bucket name, as a string.
+``object_parameters`` or ``AWS_S3_OBJECT_PARAMETERS``
 
-``AWS_S3_OBJECT_PARAMETERS`` (optional, default ``{}``)
+  Default: ``{}``
+
   Use this to set parameters on all objects. To set these on a per-object
-  basis, subclass the backend and override ``S3Boto3Storage.get_object_parameters``.
+  basis, subclass the backend and override ``S3Storage.get_object_parameters``.
 
   To view a full list of possible parameters (there are many) see the `Boto3 docs for uploading files`_; an incomplete list includes: ``CacheControl``, ``SSEKMSKeyId``, ``StorageClass``, ``Tagging`` and ``Metadata``.
 
-``AWS_DEFAULT_ACL`` (optional; default is ``None`` which means the file will be ``private`` per Amazon's default)
+``default_acl`` or ``AWS_DEFAULT_ACL``
 
-   Use this to set an ACL on your file such as ``public-read``. If not set the file will be ``private`` per Amazon's default.
-   If the ``ACL`` parameter is set in ``AWS_S3_OBJECT_PARAMETERS``, then this setting is ignored.
+  Default: ``None`` - the file will be ``private`` per Amazon's default
 
-   Options such as ``public-read`` and ``private`` come from the `list of canned ACLs`_.
+  Use this to set an ACL on your file such as ``public-read``. If not set the file will be ``private`` per Amazon's default.
+  If the ``ACL`` parameter is set in ``object_parameters``, then this setting is ignored.
 
-``AWS_QUERYSTRING_AUTH`` (optional; default is ``True``)
-    Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
-    authentication from generated URLs. This can be useful if your S3 buckets
-    are public.
+  Options such as ``public-read`` and ``private`` come from the `list of canned ACLs`_.
 
-``AWS_S3_MAX_MEMORY_SIZE`` (optional; default is ``0`` - do not roll over)
-    The maximum amount of memory (in bytes) a file can take up before being rolled over
-    into a temporary file on disk.
+``querystring_auth`` or ``AWS_QUERYSTRING_AUTH``
 
-``AWS_QUERYSTRING_EXPIRE`` (optional; default is 3600 seconds)
-    The number of seconds that a generated URL is valid for.
+  Default: ``True``
 
-``AWS_S3_URL_PROTOCOL`` (optional: default is ``https:``)
-    The protocol to use when constructing a custom domain, ``AWS_S3_CUSTOM_DOMAIN`` must be ``True`` for this to have any effect.
+  Setting ``AWS_QUERYSTRING_AUTH`` to ``False`` to remove query parameter
+  authentication from generated URLs. This can be useful if your S3 buckets
+  are public.
 
-``AWS_S3_FILE_OVERWRITE`` (optional: default is ``True``)
-    By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
+``max_memory_size`` or ``AWS_S3_MAX_MEMORY_SIZE``
 
-``AWS_LOCATION`` (optional: default is `''`)
-    A path prefix that will be prepended to all uploads
+  Default: ``0`` i.e do not roll over
 
-``AWS_IS_GZIPPED`` (optional: default is ``False``)
-    Whether or not to enable gzipping of content types specified by ``GZIP_CONTENT_TYPES``
+  The maximum amount of memory (in bytes) a file can take up before being rolled over
+  into a temporary file on disk.
 
-``GZIP_CONTENT_TYPES`` (optional: default is ``text/css``, ``text/javascript``, ``application/javascript``, ``application/x-javascript``, ``image/svg+xml``)
-    When ``AWS_IS_GZIPPED`` is set to ``True`` the content types which will be gzipped
+``querystring_expire`` or ``AWS_QUERYSTRING_EXPIRE``
 
-``AWS_S3_REGION_NAME`` (optional: default is ``None``)
-    Name of the AWS S3 region to use (eg. eu-west-1)
+  Default: ``3600``
 
-``AWS_S3_USE_SSL`` (optional: default is ``True``)
-    Whether or not to use SSL when connecting to S3, this is passed to the boto3 session resource constructor.
+  The number of seconds that a generated URL is valid for.
 
-``AWS_S3_VERIFY`` (optional: default is ``None``)
-    Whether or not to verify the connection to S3. Can be set to False to not verify certificates or a path to a CA cert bundle.
+``url_protocol`` or ``AWS_S3_URL_PROTOCOL``
 
-``AWS_S3_ENDPOINT_URL`` (optional: default is ``None``)
-    Custom S3 URL to use when connecting to S3, including scheme. Overrides ``AWS_S3_REGION_NAME`` and ``AWS_S3_USE_SSL``. To avoid ``AuthorizationQueryParametersError`` error, ``AWS_S3_REGION_NAME`` should also be set.
+  Default: ``https:``
 
-``AWS_S3_ADDRESSING_STYLE`` (optional: default is ``None``)
-    Possible values ``virtual`` and ``path``.
+  The protocol to use when constructing a custom domain, ``custom_domain`` must be ``True`` for this to have any effect.
 
-``AWS_S3_PROXIES`` (optional: default is ``None``)
-  A dictionary of proxy servers to use by protocol or endpoint, e.g.:
-  {'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}.
+  .. note::
+    Must end in a ``:``
 
-``AWS_S3_SIGNATURE_VERSION`` (optional)
+``file_overwrite`` or ``AWS_S3_FILE_OVERWRITE``
 
-  As of ``boto3`` version 1.13.21 the default signature version used for generating presigned
-  urls is still ``v2``. To be able to access your s3 objects in all regions through presigned
-  urls, explicitly set this to ``s3v4``.
+  Default: ``True``
 
-  Set this to use an alternate version such as ``s3``. Note that only certain regions
-  support the legacy ``s3`` (also known as ``v2``) version. You can check to see
-  if your region is one of them in the `S3 region list`_.
+  By default files with the same name will overwrite each other. Set this to ``False`` to have extra characters appended.
 
-.. note::
+``location`` or ``AWS_LOCATION``
 
-  The signature versions are not backwards compatible so be careful about url endpoints if making this change
-  for legacy projects.
+  Default: ``''``
+
+  A path prefix that will be prepended to all uploads.
+
+``gzip`` or ``AWS_IS_GZIPPED``
+
+  Default: ``False``
+
+  Whether or not to enable gzipping of content types specified by ``gzip_content_types``.
+
+``gzip_content_types`` or ``GZIP_CONTENT_TYPES``
+
+  Default: ``(text/css,text/javascript,application/javascript,application/x-javascript,image/svg+xml)``
+
+  The list of content types to be gzipped when ``gzip`` is ``True``.
+
+``region_name`` or ``AWS_S3_REGION_NAME``
+
+  Default: ``None``
+
+  Name of the AWS S3 region to use (eg. eu-west-1)
+
+``use_ssl`` or ``AWS_S3_USE_SSL``
+
+  Default: ``True``
+
+  Whether or not to use SSL when connecting to S3, this is passed to the boto3 session resource constructor.
+
+``verify`` or ``AWS_S3_VERIFY``
+
+  Default: ``None``
+
+  Whether or not to verify the connection to S3. Can be set to False to not verify certificates or a path to a CA cert bundle.
+
+``endpoint_url`` or ``AWS_S3_ENDPOINT_URL``
+
+  Default: ``None``
+
+  Custom S3 URL to use when connecting to S3, including scheme. Overrides ``region_name`` and ``use_ssl``.
+  To avoid ``AuthorizationQueryParametersError`` errors, ``region_name`` should also be set.
+
+``addressing_style`` or ``AWS_S3_ADDRESSING_STYLE``
+
+  Default: ``None``
+
+  Possible values ``virtual`` and ``path``.
+
+``proxies`` or ``AWS_S3_PROXIES``
+
+  Default: ``None``
+
+  Dictionary of proxy servers to use by protocol or endpoint, e.g.::
+
+    {'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}.
+
+``transfer_config`` or ``AWS_S3_TRANSFER_CONFIG``
+
+  Default: ``None``
+
+  Set this to customize the transfer config options such as disabling threads for ``gevent`` compatibility;
+  See the `Boto3 docs for TransferConfig`_ for more info.
+
+
+``custom_domain`` or ``AWS_S3_CUSTOM_DOMAIN``
+
+  Default: ``None``
+
+  Set this to specify a custom domain for constructed URLs.
+
+  .. note::
+     You'll have to configure CloudFront to use the bucket as an origin for this to
+     work.
+
+     If your CloudFront config restricts viewer access you will also need to provide
+     ``cloudfront_key`` / ``AWS_CLOUDFRONT_KEY`` and ``cloudfront_key_id`` /
+     ``AWS_CLOUDFRONT_KEY_ID``; See those settings and
+     :ref:`cloudfront-signed-url-header` for more info.
+
+     If you have more than one storage with different viewer access permissions, you
+     can provide ``cloudfront_signer=None`` to disable signing on one or more
+     storages.
+
+  .. warning::
+
+    Django’s STATIC_URL must end in a slash and this must not. It is best to set this variable independently of STATIC_URL.
+
+``cloudfront_key`` or ``AWS_CLOUDFRONT_KEY``
+
+  Default: ``None``
+
+  A private PEM encoded key to use in a ``boto3`` ``CloudFrontSigner``; See
+  :ref:`cloudfront-signed-url-header` for more info.
+
+``cloudfront_key_id`` or ``AWS_CLOUDFRONT_KEY_ID``
+
+  Default: ``None``
+
+  The AWS key ID for the private key provided with ``cloudfront_key`` /
+  ``AWS_CLOUDFRONT_KEY``; See :ref:`cloudfront-signed-url-header` for more info.
+
+``cloudfront_signer``
+
+  Default: omitted
+
+  By default the ``cloudfront_signer`` is generated based on the CloudFront key and ID
+  provided. If both are provided URLs will be signed and will work for distributions
+  with restricted viewer access, but if neither are provided then URLs will not be
+  signed and will work for distributions with unrestricted viewer access.
+
+  If you require a custom CloudFront signer you may pass a ``boto3``
+  ``CloudFrontSigner`` instance that can sign URLs, and to disable signing you may pass
+  ``None``.
+
+``signature_version`` or ``AWS_S3_SIGNATURE_VERSION``
+
+  Default: ``None``
+
+  The default signature version is ``s3v4``. Set this to ``s3`` to use the legacy
+  signing scheme (aka ``v2``). Note that only certain regions support that version.
+  You can check to see if your region is one of them in the `S3 region list`_.
+
+  .. warning::
+
+    The signature versions are not backwards compatible so be careful about url endpoints if making this change
+    for legacy projects.
+
+``client_config`` or ``AWS_S3_CLIENT_CONFIG``
+
+  Default: ``None``
+
+  An instance of ``botocore.config.Config`` to do advanced configuration of the client such as
+  ``max_pool_connections``. See all options in the `Botocore docs`_.
+
+  .. note::
+
+    Setting this overrides the settings for ``addressing_style``, ``signature_version`` and
+    ``proxies``. Include them as arguments to your ``botocore.config.Config`` class if you need them.
 
 .. _AWS Signature Version 4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
-.. _S3 region list: http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+.. _S3 region list: https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_region
 .. _list of canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Boto3 docs for uploading files: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_object
+.. _Boto3 docs for TransferConfig: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
 .. _ManifestStaticFilesStorage: https://docs.djangoproject.com/en/3.1/ref/contrib/staticfiles/#manifeststaticfilesstorage
+.. _Botocore docs: https://botocore.amazonaws.com/v1/documentation/api/latest/reference/config.html#botocore.config.Config
 
-.. _migrating-boto-to-boto3:
+.. _cloudfront-signed-url-header:
 
-Migrating from Boto to Boto3
-----------------------------
+CloudFront Signed URLs
+----------------------
 
-Migration from the boto-based to boto3-based backend should be straightforward and painless.
+If you want to generate signed Cloudfront URLs, you can do so by following these steps:
 
-The following adjustments to settings are required:
+#. Generate a CloudFront Key Pair as specified in the `AWS docs`_.
+#. Add ``cloudfront_key`` and ``cloudfront_key_id`` as above with the generated settings
+#. Install one of `cryptography`_ or `rsa`_
+#. Set both ``cloudfront_key_id/AWS_CLOUDFRONT_KEY_ID`` and ``cloudfront_key/AWS_CLOUDFRONT_KEY``
 
-- Rename ``AWS_HEADERS`` to ``AWS_S3_OBJECT_PARAMETERS`` and change the format of the key
-  names as in the following example: ``cache-control`` becomes ``CacheControl``.
-- Rename ``AWS_ORIGIN`` to ``AWS_S3_REGION_NAME``
-- If ``AWS_S3_CALLING_FORMAT`` is set to ``VHostCallingFormat`` set ``AWS_S3_ADDRESSING_STYLE`` to ``virtual``
-- Replace the combination of ``AWS_S3_HOST`` and ``AWS_S3_PORT`` with ``AWS_S3_ENDPOINT_URL``
-- Extract the region name from ``AWS_S3_HOST`` and set ``AWS_S3_REGION_NAME``
-- Replace ``AWS_S3_PROXY_HOST`` and ``AWS_S3_PROXY_PORT`` with ``AWS_S3_PROXIES``
-- If using signature version ``s3v4`` you can remove ``S3_USE_SIGV4``
-- If you persist urls and rely on the output to use the signature version of ``s3`` set ``AWS_S3_SIGNATURE_VERSION`` to ``s3``
-- Update ``DEFAULT_FILE_STORAGE`` and/or ``STATICFILES_STORAGE`` to ``storages.backends.s3boto3.S3Boto3Storage``
+django-storages will now generate `signed cloudfront urls`_.
 
-Additionally, you must install ``boto3``. The minimum required version is 1.4.4
-although we always recommend the most recent.
-
-Please open an issue on the GitHub repo if any further issues are encountered or steps were omitted.
-
-CloudFront
-----------
-
-If you're using S3 as a CDN (via CloudFront), you'll probably want this storage
-to serve those files using that::
-
-    AWS_S3_CUSTOM_DOMAIN = 'cdn.mydomain.com'
-
-.. warning::
-
-    Django's ``STATIC_URL`` `must end in a slash`_ and the ``AWS_S3_CUSTOM_DOMAIN`` *must not*. It is best to set this variable independently of ``STATIC_URL``.
-
-.. _must end in a slash: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
-
-Keep in mind you'll have to configure CloudFront to use the proper bucket as an
-origin manually for this to work.
-
-If you need to use multiple storages that are served via CloudFront, pass the
-`custom_domain` parameter to their constructors.
-
-CloudFront Signed Urls
-^^^^^^^^^^^^^^^^^^^^^^
-If you want django-storages to generate Signed Cloudfront Urls, you can do so by following these steps:
-        
-- modify `settings.py` to include::
-
-    AWS_CLOUDFRONT_KEY = os.environ.get('AWS_CLOUDFRONT_KEY', None).encode('ascii')
-    AWS_CLOUDFRONT_KEY_ID = os.environ.get('AWS_CLOUDFRONT_KEY_ID', None)
-    
-- Generate a CloudFront Key Pair as specified in the `AWS Doc to create  CloudFront key pairs`_.
-
-- Updated ENV vars with the corresponding values::
-
-        AWS_CLOUDFRONT_KEY=-----BEGIN RSA PRIVATE KEY-----
-        ...
-        -----END RSA PRIVATE KEY-----
-        AWS_CLOUDFRONT_KEY_ID=APK....
-
-.. _AWS Doc to create  CloudFront key pairs: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs-procedure
-
-django-storages will now generate `signed cloudfront urls`_
-
+.. _AWS docs: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs-procedure
 .. _signed cloudfront urls: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html
+
+.. _cryptography: https://pypi.org/project/cryptography/
+.. _rsa: https://pypi.org/project/rsa/
 
 IAM Policy
 ----------
 
-The IAM policy permissions needed for most common use cases are:
+The IAM policy definition needed for the most common use case is:
 
 .. code-block:: json
 
@@ -240,193 +323,3 @@ The IAM policy permissions needed for most common use cases are:
 For more information about Principal, please refer to `AWS JSON Policy Elements`_
 
 .. _AWS JSON Policy Elements: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
-
-Storage
--------
-
-Standard file access options are available, and work as expected::
-
-    >>> from django.core.files.storage import default_storage
-    >>> default_storage.exists('storage_test')
-    False
-    >>> file = default_storage.open('storage_test', 'w')
-    >>> file.write('storage contents')
-    >>> file.close()
-
-    >>> default_storage.exists('storage_test')
-    True
-    >>> file = default_storage.open('storage_test', 'r')
-    >>> file.read()
-    'storage contents'
-    >>> file.close()
-
-    >>> default_storage.delete('storage_test')
-    >>> default_storage.exists('storage_test')
-    False
-
-
-Overriding the default Storage class
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You can override the default Storage class and create your custom storage backend. Below provides some examples and common use cases to help you get started. This section assumes you have your AWS credentials configured, e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
-
-To create a storage class using a specific bucket::
-
-    from storages.backends.s3boto3 import S3Boto3Storage
-
-    class MediaStorage(S3Boto3Storage):
-        bucket_name = 'my-media-bucket'
-
-
-Assume that you store the above class ``MediaStorage`` in a file called ``custom_storage.py`` in the project directory tree like below::
-
-    | (your django project root directory)
-    | ├── manage.py
-    | ├── my_django_app
-    | │   ├── custom_storage.py
-    | │   └── ...
-    | ├── ...
-
-You can now use your custom storage class for default file storage in Django settings like below::
-
-    DEFAULT_FILE_STORAGE = 'my_django_app.custom_storage.MediaStorage'
-
-Or you may want to upload files to the bucket in some view that accepts file upload request::
-
-    import os
-
-    from django.views import View
-    from django.http import JsonResponse
-
-    from django_backend.custom_storages import MediaStorage
-
-    class FileUploadView(View):
-        def post(self, requests, **kwargs):
-            file_obj = requests.FILES.get('file', '')
-
-            # do your validation here e.g. file size/type check
-
-            # organize a path for the file in bucket
-            file_directory_within_bucket = 'user_upload_files/{username}'.format(username=requests.user)
-
-            # synthesize a full file path; note that we included the filename
-            file_path_within_bucket = os.path.join(
-                file_directory_within_bucket,
-                file_obj.name
-            )
-
-            media_storage = MediaStorage()
-
-            if not media_storage.exists(file_path_within_bucket): # avoid overwriting existing file
-                media_storage.save(file_path_within_bucket, file_obj)
-                file_url = media_storage.url(file_path_within_bucket)
-
-                return JsonResponse({
-                    'message': 'OK',
-                    'fileUrl': file_url,
-                })
-            else:
-                return JsonResponse({
-                    'message': 'Error: file {filename} already exists at {file_directory} in bucket {bucket_name}'.format(
-                        filename=file_obj.name,
-                        file_directory=file_directory_within_bucket,
-                        bucket_name=media_storage.bucket_name
-                    ),
-                }, status=400)
-
-A side note is that if you have ``AWS_S3_CUSTOM_DOMAIN`` setup in your ``settings.py``, by default the storage class will always use ``AWS_S3_CUSTOM_DOMAIN`` to generate url.
-
-If your ``AWS_S3_CUSTOM_DOMAIN`` is pointing to a different bucket than your custom storage class, the ``.url()`` function will give you the wrong url. In such case, you will have to configure your storage class and explicitly specify ``custom_domain`` as below::
-
-    class MediaStorage(S3Boto3Storage):
-        bucket_name = 'my-media-bucket'
-        custom_domain = '{}.s3.amazonaws.com'.format(bucket_name)
-
-You can also decide to config your custom storage class to store files under a specific directory within the bucket::
-
-    class MediaStorage(S3Boto3Storage):
-        bucket_name = 'my-app-bucket'
-        location = 'media' # store files under directory `media/` in bucket `my-app-bucket`
-
-This is especially useful when you want to have multiple storage classes share the same bucket::
-
-    class MediaStorage(S3Boto3Storage):
-        bucket_name = 'my-app-bucket'
-        location = 'media'
-
-    class StaticStorage(S3Boto3Storage):
-        bucket_name = 'my-app-bucket'
-        location = 'static'
-
-So your bucket file can be organized like as below::
-
-    | my-app-bucket
-    | ├── media
-    | │   ├── user_video.mp4
-    | │   ├── user_file.pdf
-    | │   └── ...
-    | ├── static
-    | │   ├── app.js
-    | │   ├── app.css
-    | │   └── ...
-
-
-Model
------
-
-An object without a file has limited functionality::
-
-    from django.db import models
-    from django.core.files.base import ContentFile
-
-    class MyModel(models.Model):
-      normal = models.FileField()
-
-    >>> obj1 = MyModel()
-    >>> obj1.normal
-    <FieldFile: None>
-    >>> obj1.normal.size
-    Traceback (most recent call last):
-    ...
-    ValueError: The 'normal' attribute has no file associated with it.
-
-Saving a file enables full functionality::
-
-    >>> obj1.normal.save('django_test.txt', ContentFile(b'content'))
-    >>> obj1.normal
-    <FieldFile: tests/django_test.txt>
-    >>> obj1.normal.size
-    7
-    >>> obj1.normal.read()
-    'content'
-
-Files can be read in a little at a time, if necessary::
-
-    >>> obj1.normal.open()
-    >>> obj1.normal.read(3)
-    'con'
-    >>> obj1.normal.read()
-    'tent'
-    >>> '-'.join(obj1.normal.chunks(chunk_size=2))
-    'co-nt-en-t'
-
-Save another file with the same name::
-
-    >>> obj2 = MyModel()
-    >>> obj2.normal.save('django_test.txt', ContentFile(b'more content'))
-    >>> obj2.normal
-    <FieldFile: tests/django_test.txt>
-    >>> obj2.normal.size
-    12
-
-Push the objects into the cache to make sure they pickle properly::
-
-    >>> cache.set('obj1', obj1)
-    >>> cache.set('obj2', obj2)
-    >>> cache.get('obj2').normal
-    <FieldFile: tests/django_test.txt>
-
-Clean up the temporary files::
-
-    >>> obj1.normal.delete()
-    >>> obj2.normal.delete()
