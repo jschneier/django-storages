@@ -195,6 +195,18 @@ Settings
   Additionally, this setting can be used to configure the client retry settings. To see how follow the
   `Python retry docs <https://learn.microsoft.com/en-us/azure/storage/blobs/storage-retry-policy-python>`__.
 
+``request_options`` or ``AZURE_REQUEST_OPTIONS``
+
+  Default: ``{"client_request_id": django_guid.get_guid}``
+
+  A dict of kwarg options to set on each request for the ``BlobServiceClient``. A partial list of options can be found
+  `in the client docs <https://learn.microsoft.com/en-us/python/api/overview/azure/storage-blob-readme?view=azure-python#other-client--per-operation-configuration>`__.
+
+  A no-argument callable can be used to set the value at request time. If django-guid is installed then the request id will be
+  set by default. If you have a custom request id generator and you can use it like so::
+
+    AZURE_REQUEST_OPTIONS = {"client_request_id": my_request_generator_function}
+
 ``api_version`` or ``AZURE_API_VERSION``
 
   Default: ``None``

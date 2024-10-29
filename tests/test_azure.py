@@ -270,6 +270,7 @@ class AzureStorageTest(TestCase):
                 max_concurrency=2,
                 timeout=20,
                 overwrite=True,
+                client_request_id=None,
             )
             c_mocked.assert_called_once_with(
                 content_type="text/plain", content_encoding=None, cache_control=None
@@ -293,6 +294,7 @@ class AzureStorageTest(TestCase):
             max_concurrency=2,
             timeout=20,
             overwrite=True,
+            client_request_id=None,
         )
 
     def test_storage_exists(self):
@@ -308,7 +310,9 @@ class AzureStorageTest(TestCase):
 
     def test_delete_blob(self):
         self.storage.delete("name")
-        self.storage._client.delete_blob.assert_called_once_with("name", timeout=20)
+        self.storage._client.delete_blob.assert_called_once_with(
+            "name", timeout=20, client_request_id=None
+        )
 
     def test_storage_listdir_base(self):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
@@ -322,7 +326,7 @@ class AzureStorageTest(TestCase):
 
         dirs, files = self.storage.listdir("")
         self.storage._client.list_blobs.assert_called_with(
-            name_starts_with="", timeout=20
+            name_starts_with="", timeout=20, client_request_id=None
         )
         self.assertEqual(len(dirs), 0)
 
@@ -377,4 +381,24 @@ class AzureStorageTest(TestCase):
             self.assertEqual(storage.client, client_mock)
             bsc.assert_called_once_with(
                 "https://test.blob.core.windows.net", credential=None, api_version="1.3"
+            )
+
+    def test_lazy_evaluated_request_options(self):
+        foo = mock.MagicMock()
+        foo.side_effect = [1, 2]  # return different values the two times it is called
+        with override_settings(
+            AZURE_REQUEST_OPTIONS={"key1": 5, "client_request_id": foo}
+        ):
+            storage = azure_storage.AzureStorage()
+            client_mock = mock.MagicMock()
+            storage._client = client_mock
+
+            _, _ = storage.listdir("")
+            client_mock.list_blobs.assert_called_with(
+                name_starts_with="", timeout=20, key1=5, client_request_id=1
+            )
+
+            _, _ = storage.listdir("")
+            client_mock.list_blobs.assert_called_with(
+                name_starts_with="", timeout=20, key1=5, client_request_id=2
             )
