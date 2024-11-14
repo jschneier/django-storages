@@ -4,6 +4,7 @@ from unittest import mock
 
 from azure.storage.blob import BlobProperties
 from django.core.files.base import ContentFile
+from django.core.files.storages import storages
 from django.test import TestCase
 from django.test import override_settings
 from django.utils.timezone import make_aware
@@ -378,3 +379,27 @@ class AzureStorageTest(TestCase):
             bsc.assert_called_once_with(
                 "https://test.blob.core.windows.net", credential=None, api_version="1.3"
             )
+
+    @override_settings(
+        STORAGES={
+            "default": {
+                "BACKEND": "storages.backends.azure_storage.AzureStorage",
+                "OPTIONS": {
+                    "account_key": "default_account_key",
+                    "account_name": "default_account_name",
+                    "azure_container": "default_container",
+                },
+            },
+            "staticfiles": {
+                "BACKEND": "storages.backends.azure_storage.AzureStorage",
+                "OPTIONS": {
+                    "account_key": "staticfiles_account_key",
+                    "account_name": "staticfiles_account_name",
+                    "azure_container": "staticfiles_container",
+                },
+            },
+        },
+    )
+    def test_override_settings_failing(self):
+        self.assertEqual(storages["default"].account_key, "default_account_key")
+        self.assertEqual(storages["staticfiles"].account_key, "staticfiles_account_key")
