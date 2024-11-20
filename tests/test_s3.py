@@ -1057,6 +1057,11 @@ class S3FileTests(TestCase):
     def test_reopening(self):
         f = s3.S3File("test", "wb", self.storage)
 
+        with self.assertRaisesMessage(ValueError, "Cannot change mode with an open file."):
+            # Test raising mode error while file not init, but we're marked not closed (can happen after init before file access)
+            # However, if the file was properly closed, we're allowed to reopen with a diff mode.
+            _ = f.open("w")
+
         with f.open() as fp:
             fp.write(b"xyz")
 
@@ -1068,6 +1073,14 @@ class S3FileTests(TestCase):
         self.assertEqual(f._raw_bytes_written, 0)
         self.assertFalse(f._is_dirty)
         self.assertIsNone(f._multipart)
+
+        # Allowed to reopen with diff mode while closed
+        self.assertTrue(f.closed)
+        self.assertEqual(f._mode, 'wb')
+        with f.open('rb') as fp:
+            self.assertIsNotNone(fp.file)
+            self.assertFalse(fp.closed)
+            self.assertEqual(fp._mode, 'rb')
 
 
 @mock_s3
@@ -1190,6 +1203,36 @@ class S3StorageTestsWithMoto(TestCase):
             content_lines = file.readlines()
             file.close()
         self.assertEqual(content_lines, [b"line1\n", b"line2\r\n", b"more\r", b"text"])
+
+    def test_reopening_change_modes(self):
+        """
+        Test reopening the file with different modes.
+
+        This exercises scenarios like a model instance with a ``FileField`` tied to this storage,
+        where the same file needs to be read as text and later binary (ie. to compute hash) from the
+        same model instance. Django ``FileField``s (really ``FieldFile``s) keep a reference to the
+        underlying ``File`` (aka ``S3File``) which makes it require being able to reopen with a
+        different mode to support these scenarios.
+        """
+        name = "test_reopening_change_modes.txt"
+        with io.BytesIO() as temp_file:
+            temp_file.write(b"line1\nline2\n")
+            self.storage.save(name, temp_file)
+
+        file = self.storage.open(name, mode="r")
+
+        # Open with original mode, then closes file
+        with file.open():
+            self.assertEqual(file._mode, 'r')
+            self.assertEqual(file.readline(), "line1\n")
+            self.assertEqual(file.readline(), "line2\n")
+        
+        # Open with different mode (should work as long as file was prev closed)
+        self.assertTrue(file.closed)
+        with file.open("rb") as fp:
+            self.assertEqual(file._mode, 'rb')
+            self.assertEqual(fp.read(), b"line1\nline2\n")
+
 
 
 class TestBackwardsNames(TestCase):
