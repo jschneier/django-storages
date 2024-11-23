@@ -520,7 +520,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
         """
         Test saving a gzipped file
         """
-        name = "test_storage_save.js.gz"
+        name = "test_storage_save.css.gz"
         content = ContentFile("I am gzip'd", name=name)
 
         blob = Blob("x", None)
@@ -536,7 +536,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
                 retry=DEFAULT_RETRY,
                 size=11,
                 predefined_acl=None,
-                content_type="application/javascript",
+                content_type="text/css",
             )
         finally:
             patcher.stop()
