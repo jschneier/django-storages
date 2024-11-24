@@ -55,7 +55,7 @@ dropbox = [
   "dropbox>=7.2.1",
 ]
 google = [
-  "google-cloud-storage>=1.27",
+  "google-cloud-storage>=1.32",
 ]
 libcloud = [
   "apache-libcloud",
