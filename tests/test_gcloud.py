@@ -42,7 +42,7 @@ class GCloudStorageTests(GCloudTestCase):
                 self.filename, chunk_size=None
             )
 
-            f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+            f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
             self.assertEqual(f.read(), data)
 
     def test_open_read_num_bytes(self):
@@ -55,7 +55,7 @@ class GCloudStorageTests(GCloudTestCase):
                 self.filename, chunk_size=None
             )
 
-            f.blob.download_to_file = lambda tmpfile: tmpfile.write(data)
+            f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
             self.assertEqual(f.read(num_bytes), data[0:num_bytes])
 
     def test_open_read_nonexistent(self):
