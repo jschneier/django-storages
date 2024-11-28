@@ -24,6 +24,11 @@ from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
 
+try:
+    from django_guid import get_guid
+except ImportError:
+    def get_guid():
+        return None
 
 @deconstructible
 class AzureStorageFile(File):
@@ -47,7 +52,7 @@ class AzureStorageFile(File):
 
         if "r" in self._mode or "a" in self._mode:
             download_stream = self._storage.client.download_blob(
-                self._path, timeout=self._storage.timeout
+                self._path, **self._storage._request_options()
             )
             download_stream.readinto(file)
         if "r" in self._mode:
@@ -132,6 +137,22 @@ class AzureStorage(BaseStorage):
             if not self.account_key and "AccountKey" in parsed:
                 self.account_key = parsed["AccountKey"]
 
+    def _request_options(self):
+        """
+        If callables were provided in request_options, evaluate them and return
+        the concrete values. Include "timeout", which was a previously-supported
+        request option before the introduction of the request_options setting.
+        """
+        if not self.request_options:
+            return {"timeout": self.timeout}
+        callable_allowed = ("raw_response_hook", "raw_request_hook")
+        options = self.request_options.copy()
+        options["timeout"] = self.timeout
+        for key, value in self.request_options.items():
+            if key not in callable_allowed and callable(value):
+                options[key] = value()
+        return options
+
     def get_default_settings(self):
         return {
             "account_name": setting("AZURE_ACCOUNT_NAME"),
@@ -154,6 +175,7 @@ class AzureStorage(BaseStorage):
             "token_credential": setting("AZURE_TOKEN_CREDENTIAL"),
             "api_version": setting("AZURE_API_VERSION", None),
             "client_options": setting("AZURE_CLIENT_OPTIONS", {}),
+            "request_options": setting("AZURE_REQUEST_OPTIONS", {"client_request_id": get_guid}),
         }
 
     def _get_service_client(self):
@@ -252,13 +274,13 @@ class AzureStorage(BaseStorage):
 
     def delete(self, name):
         try:
-            self.client.delete_blob(self._get_valid_path(name), timeout=self.timeout)
+            self.client.delete_blob(self._get_valid_path(name), **self._request_options())
         except ResourceNotFoundError:
             pass
 
     def size(self, name):
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
-        properties = blob_client.get_blob_properties(timeout=self.timeout)
+        properties = blob_client.get_blob_properties(**self._request_options())
         return properties.size
 
     def _save(self, name, content):
@@ -276,8 +298,8 @@ class AzureStorage(BaseStorage):
             content,
             content_settings=ContentSettings(**params),
             max_concurrency=self.upload_max_conn,
-            timeout=self.timeout,
             overwrite=self.overwrite_files,
+            **self._request_options(),
         )
         return cleaned_name
 
@@ -350,7 +372,7 @@ class AzureStorage(BaseStorage):
         USE_TZ is True, otherwise returns a naive datetime in the local timezone.
         """
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
-        properties = blob_client.get_blob_properties(timeout=self.timeout)
+        properties = blob_client.get_blob_properties(**self._request_options())
         if not setting("USE_TZ", False):
             return timezone.make_naive(properties.last_modified)
 
@@ -372,7 +394,7 @@ class AzureStorage(BaseStorage):
         return [
             blob.name
             for blob in self.client.list_blobs(
-                name_starts_with=path, timeout=self.timeout
+                name_starts_with=path, **self._request_options()
             )
         ]
 
