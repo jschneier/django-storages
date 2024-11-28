@@ -378,3 +378,21 @@ class AzureStorageTest(TestCase):
             bsc.assert_called_once_with(
                 "https://test.blob.core.windows.net", credential=None, api_version="1.3"
             )
+
+    def test_lazy_evaluated_request_options(self):
+        foo = mock.MagicMock()
+        foo.side_effect = [1, 2]  # return different values the two times it is called
+        with override_settings(AZURE_REQUEST_OPTIONS={"key1": 5, "key2": foo}):
+            storage = azure_storage.AzureStorage()
+            client_mock = mock.MagicMock()
+            storage._client = client_mock
+
+            _, _ = storage.listdir("")
+            client_mock.list_blobs.assert_called_with(
+                name_starts_with="", timeout=20, key1=5, key2=1
+            )
+
+            _, _ = storage.listdir("")
+            client_mock.list_blobs.assert_called_with(
+                name_starts_with="", timeout=20, key1=5, key2=2
+            )
