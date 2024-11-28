@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from datetime import timedelta
 from unittest import mock
 
@@ -7,8 +8,19 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test import override_settings
 from django.utils.timezone import make_aware
+from django_guid import set_guid
 
 from storages.backends import azure_storage
+
+
+def set_and_expect_guid():
+    """
+    Set a GUID via the django_guid module and expect it to be set in the headers.
+    """
+
+    guid = str(uuid.uuid4())
+    set_guid(guid)
+    return {'x-ms-client-request-id': guid}
 
 
 class AzureStorageTest(TestCase):
@@ -254,7 +266,8 @@ class AzureStorageTest(TestCase):
 
     # From boto3
 
-    def test_storage_save(self):
+    @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
+    def test_storage_save(self, mocked_get_guid):
         """
         Test saving a file
         """
@@ -270,17 +283,65 @@ class AzureStorageTest(TestCase):
                 max_concurrency=2,
                 timeout=20,
                 overwrite=True,
+                headers={},
             )
             c_mocked.assert_called_once_with(
                 content_type="text/plain", content_encoding=None, cache_control=None
             )
 
-    def test_storage_open_write(self):
+    def test_storage_save_with_guid(self):
+        """
+        Test saving a file
+        """
+        name = 'test storage save.txt'
+        content = ContentFile('new content')
+        headers = set_and_expect_guid()
+        with mock.patch('storages.backends.azure_storage.ContentSettings') as c_mocked:
+            c_mocked.return_value = 'content_settings_foo'
+            self.assertEqual(self.storage.save(name, content), name)
+            self.storage._client.upload_blob.assert_called_once_with(
+                name,
+                content.file,
+                content_settings='content_settings_foo',
+                max_concurrency=2,
+                timeout=20,
+                overwrite=True,
+                headers=headers)
+            c_mocked.assert_called_once_with(
+                content_type='text/plain',
+                content_encoding=None,
+                cache_control=None)
+            self.storage._custom_client.upload_blob.assert_not_called()
+
+    @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
+    def test_storage_open_write(self, mocked_get_guid):
+        """
+        Test opening a file in write mode
+        """
+        name = 'test_open_for_writïng.txt'
+        content = 'new content'
+
+        file = self.storage.open(name, 'w')
+        file.write(content)
+        written_file = file.file
+        file.close()
+        self.storage._client.upload_blob.assert_called_once_with(
+            name,
+            written_file,
+            content_settings=mock.ANY,
+            max_concurrency=2,
+            timeout=20,
+            overwrite=True,
+            headers={})
+        self.storage._custom_client.upload_blob.assert_not_called()
+
+    def test_storage_open_write_with_guid(self):
         """
         Test opening a file in write mode
         """
         name = "test_open_for_writïng.txt"
         content = "new content"
+        headers = set_and_expect_guid()
 
         file = self.storage.open(name, "w")
         file.write(content)
@@ -293,9 +354,11 @@ class AzureStorageTest(TestCase):
             max_concurrency=2,
             timeout=20,
             overwrite=True,
+            headers=headers
         )
 
-    def test_storage_exists(self):
+    @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
+    def test_storage_exists(self, mocked_get_guid):
         overwrite_files = [True, False]
         for owf in overwrite_files:
             self.storage.overwrite_files = owf
@@ -306,11 +369,32 @@ class AzureStorageTest(TestCase):
             assert_(self.storage.exists("blob"))
             self.assertEqual(client_mock.exists.call_count, call_count)
 
-    def test_delete_blob(self):
-        self.storage.delete("name")
-        self.storage._client.delete_blob.assert_called_once_with("name", timeout=20)
+    def test_storage_exists_with_guid(self):
+        blob_name = "blob"
+        headers = set_and_expect_guid()
+        client_mock = mock.MagicMock()
+        custom_client_mock = mock.MagicMock()
+        self.storage._client.get_blob_client.return_value = client_mock
+        self.storage._custom_client.get_blob_client.return_value = client_mock
+        self.assertTrue(self.storage.exists(blob_name))
+        client_mock.get_blob_properties.assert_called_once_with(headers=headers)
+        self.assertEqual(custom_client_mock.exists.call_count, 0)
 
-    def test_storage_listdir_base(self):
+    @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
+    def test_delete_blob(self, mocked_get_guid):
+        self.storage.delete("name")
+        self.storage._client.delete_blob.assert_called_once_with(
+            "name", timeout=20, headers={})
+
+    def test_delete_blob_with_guid(self):
+        headers = set_and_expect_guid()
+        self.storage.delete("name")
+        self.storage._client.delete_blob.assert_called_once_with(
+            "name", timeout=20, headers=headers)
+        self.storage._custom_client.delete_blob.assert_not_called()
+
+    @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
+    def test_storage_listdir_base(self, mocked_get_guid):
         file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
 
         result = []
@@ -322,9 +406,10 @@ class AzureStorageTest(TestCase):
 
         dirs, files = self.storage.listdir("")
         self.storage._client.list_blobs.assert_called_with(
-            name_starts_with="", timeout=20
+            name_starts_with="", timeout=20, headers={}
         )
         self.assertEqual(len(dirs), 0)
+
 
         self.assertEqual(len(files), 4)
         for filename in ["2.txt", "4.txt", "other/path/3.txt", "some/path/1.txt"]:
@@ -332,6 +417,66 @@ class AzureStorageTest(TestCase):
                 filename in files,
                 """ "{}" not in file list "{}".""".format(filename, files),
             )
+
+    def test_storage_listdir_base_with_guid(self):
+        file_names = ["some/path/1.txt", "2.txt", "other/path/3.txt", "4.txt"]
+        headers = set_and_expect_guid()
+
+        result = []
+        for p in file_names:
+            obj = mock.MagicMock()
+            obj.name = p
+            result.append(obj)
+        self.storage._client.list_blobs.return_value = iter(result)
+
+        dirs, files = self.storage.listdir("")
+        self.storage._client.list_blobs.assert_called_with(
+            name_starts_with="", timeout=20, headers=headers)
+        self.storage._custom_client.list_blobs.assert_not_called()
+        # Rest of functionality is tested in test_storage_listdir_base
+
+    @mock.patch('storages.backends.azure_storage.get_guid', return_value=None)
+    def test_storage_listdir_subdir(self, mocked_get_guid):
+        file_names = ["some/path/1.txt", "some/2.txt"]
+
+        result = []
+        for p in file_names:
+            obj = mock.MagicMock()
+            obj.name = p
+            result.append(obj)
+        self.storage._client.list_blobs.return_value = iter(result)
+
+        dirs, files = self.storage.listdir("some/")
+        self.storage._client.list_blobs.assert_called_with(
+            name_starts_with="some/", timeout=20, headers={})
+        self.storage._custom_client.list_blobs.assert_not_called()
+
+        self.assertEqual(len(dirs), 1)
+        self.assertTrue(
+            'path' in dirs,
+            """ "path" not in directory list "{}".""".format(dirs))
+
+        self.assertEqual(len(files), 1)
+        self.assertTrue(
+            '2.txt' in files,
+            """ "2.txt" not in files list "{}".""".format(files))
+
+    def test_storage_listdir_subdir_with_guid(self):
+        file_names = ["some/path/1.txt", "some/2.txt"]
+        headers = set_and_expect_guid()
+
+        result = []
+        for p in file_names:
+            obj = mock.MagicMock()
+            obj.name = p
+            result.append(obj)
+        self.storage._client.list_blobs.return_value = iter(result)
+
+        dirs, files = self.storage.listdir("some/")
+        self.storage._client.list_blobs.assert_called_with(
+            name_starts_with="some/", timeout=20, headers=headers)
+        self.storage._custom_client.list_blobs.assert_not_called()
+        # Rest of functionality is tested in test_storage_listdir_subdir
 
     def test_size_of_file(self):
         props = BlobProperties()
