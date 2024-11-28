@@ -146,10 +146,23 @@ class S3File(CompressedFileMixin, File):
         self._is_dirty = False
 
     def open(self, mode=None):
+        """
+        Open the file.
+
+        - If the file is already open, it will seek to the start.
+        - If the file is closed, it will re-open with the last mode or new ``mode``.
+
+        :param mode: File mode to open with.  Defaults to last opened mode.
+        :returns: ``S3File`` after opening.
+        """
         if self._file is not None and not self.closed:
             self.seek(0)  # Mirror Django's behavior
         elif mode and mode != self._mode:
-            raise ValueError("Cannot reopen file with a new mode.")
+            if not self.closed:
+                raise ValueError("Cannot change mode with an open file.")
+
+            # Allow reopening file with a diff mode
+            self._mode = mode
 
         # Accessing the file will functionally re-open it
         self.file  # noqa: B018
