@@ -717,6 +717,14 @@ class S3StorageTests(TestCase):
         self.storage.url("test_name")
         self.storage.unsigned_connection.meta.client.generate_presigned_url.assert_called_once()
 
+    def test_url_protocol(self):
+        self.assertFalse(hasattr(settings, "AWS_S3_URL_PROTOCOL"))
+        self.assertEqual(self.storage.url_protocol, "https:")
+
+        with override_settings(AWS_S3_URL_PROTOCOL=None):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.url_protocol, "https:")
+
     @mock.patch("storages.backends.s3.datetime")
     def test_storage_url_custom_domain_signed_urls(self, dt):
         key_id = "test-key"
