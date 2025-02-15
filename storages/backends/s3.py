@@ -430,7 +430,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                     "image/svg+xml",
                 ),
             ),
-            "url_protocol": setting("AWS_S3_URL_PROTOCOL", "https:"),
+            "url_protocol": setting("AWS_S3_URL_PROTOCOL") or "https:",
             "endpoint_url": setting("AWS_S3_ENDPOINT_URL"),
             "proxies": setting("AWS_S3_PROXIES"),
             "region_name": setting("AWS_S3_REGION_NAME"),
