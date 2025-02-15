@@ -49,7 +49,7 @@ class DropboxFile(File):
                 with BytesIO(response.content) as file_content:
                     copyfileobj(file_content, self._file)
             else:
-                # JIC the exception isn't catched by the dropbox client
+                # JIC the exception isn't caught by the dropbox client
                 raise DropboxStorageException(
                     "Dropbox server returned a {} response when accessing {}".format(
                         response.status_code, self.name
@@ -194,7 +194,6 @@ class DropboxStorage(BaseStorage):
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
-        name = self._full_path(name)
         if self.write_mode == "overwrite":
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
