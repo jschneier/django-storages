@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.utils import FileProxyMixin
+from django.core.files.utils import validate_file_name
 from django.utils.encoding import force_bytes
 
 
@@ -121,11 +122,18 @@ def lookup_env(names):
 
 
 def get_available_overwrite_name(name, max_length):
+    # This is adapted from Django, and will be removed once
+    # Django 5.1 is the lowest supported version
+    dir_name, file_name = os.path.split(name)
+    if ".." in pathlib.PurePath(dir_name).parts:
+        raise SuspiciousFileOperation(
+            "Detected path traversal attempt in '%s'" % dir_name
+        )
+    validate_file_name(file_name, allow_relative_path=True)
+
     if max_length is None or len(name) <= max_length:
         return name
 
-    # Adapted from Django
-    dir_name, file_name = os.path.split(name)
     file_root, file_ext = os.path.splitext(file_name)
     truncation = len(name) - max_length
 
@@ -136,7 +144,9 @@ def get_available_overwrite_name(name, max_length):
             "Please make sure that the corresponding file field "
             'allows sufficient "max_length".' % name
         )
-    return os.path.join(dir_name, "{}{}".format(file_root, file_ext))
+    name = os.path.join(dir_name, "{}{}".format(file_root, file_ext))
+    validate_file_name(name, allow_relative_path=True)
+    return name
 
 
 def is_seekable(file_object):
