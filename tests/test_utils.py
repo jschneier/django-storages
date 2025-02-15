@@ -140,6 +140,11 @@ class TestGetAvailableOverwriteName(TestCase):
         with self.assertRaises(SuspiciousFileOperation):
             gaon(name, len(name) - 5)
 
+    def test_suspicious_file(self):
+        name = "superlong/file/with/../path.txt"
+        with self.assertRaises(SuspiciousFileOperation):
+            gaon(name, 50)
+
 
 class TestReadBytesWrapper(TestCase):
     def test_with_bytes_file(self):
