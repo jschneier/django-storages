@@ -24,6 +24,7 @@ Dropbox
 
 - As part of the above hardening fix a bug was uncovered whereby a ``root_path`` setting would be applied
   multiple times during ``save()`` (`#1484`_)
+- Fix setting OAuth2 access token via env var (`#1452`_)
 
 FTP
 ---
@@ -43,6 +44,7 @@ Google Cloud
 .. _#1432: https://github.com/jschneier/django-storages/pull/1432
 .. _#1473: https://github.com/jschneier/django-storages/pull/1473
 .. _#1457: https://github.com/jschneier/django-storages/pull/1457
+.. _#1452: https://github.com/jschneier/django-storages/pull/1452
 .. _#1438: https://github.com/jschneier/django-storages/pull/1438
 
 
