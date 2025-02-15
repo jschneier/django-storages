@@ -1,8 +1,15 @@
 django-storages CHANGELOG
 =========================
 
-X.YY.Z (UNRELEASED)
+1.14.5 (2025-02-15)
 *******************
+
+General
+-------
+
+- Revert ``exists()`` behavior to pre-1.14.4 semantics with additional hardening for Django versions < 4.2 to fix
+  CVE-2024-39330. This change matches the eventual behavior Django itself shipped with. (`#1484`_, `#1486`_)
+- Add support for Django 5.1 (`#1444`_)
 
 Azure
 -----
@@ -12,7 +19,32 @@ Azure
 - Add ``AZURE_CLIENT_OPTIONS`` settings to enable customization of all ``BlobServiceClient`` parameters
   such as ``api_version`` and all ``retry*`` options. (`#1432`_)
 
+Dropbox
+-------
+
+- As part of the above hardening fix a bug was uncovered whereby a ``root_path`` setting would be applied
+  multiple times during ``save()`` (`#1484`_)
+
+FTP
+---
+
+- Fix incorrect ``exists()`` results due to an errant appended slash (`#1438`_)
+
+Google Cloud
+------------
+
+- Switch checksum to ``crc32c`` to fix downloading when running in FIPS mode (`#1473`_)
+- Fix double decompression when using ``gzip`` (`#1457`_)
+
+
+.. _#1484: https://github.com/jschneier/django-storages/pull/1484
+.. _#1486: https://github.com/jschneier/django-storages/pull/1486
+.. _#1444: https://github.com/jschneier/django-storages/pull/1444
 .. _#1432: https://github.com/jschneier/django-storages/pull/1432
+.. _#1473: https://github.com/jschneier/django-storages/pull/1473
+.. _#1457: https://github.com/jschneier/django-storages/pull/1457
+.. _#1438: https://github.com/jschneier/django-storages/pull/1438
+
 
 1.14.4 (2024-07-09)
 *******************
