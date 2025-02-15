@@ -4,9 +4,11 @@ import os.path
 import pathlib
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 from django.test import TestCase
 
 from storages import utils
+from storages.utils import get_available_overwrite_name as gaon
 
 
 class SettingTest(TestCase):
@@ -114,6 +116,29 @@ class SafeJoinTest(TestCase):
     def test_with_base_url_join_nothing(self):
         path = utils.safe_join("base_url")
         self.assertEqual(path, "base_url/")
+
+
+class TestGetAvailableOverwriteName(TestCase):
+    def test_maxlength_is_none(self):
+        name = "superlong/file/with/path.txt"
+        self.assertEqual(gaon(name, None), name)
+
+    def test_maxlength_equals_name(self):
+        name = "parent/child.txt"
+        self.assertEqual(gaon(name, len(name)), name)
+
+    def test_maxlength_is_greater_than_name(self):
+        name = "parent/child.txt"
+        self.assertEqual(gaon(name, len(name) + 1), name)
+
+    def test_maxlength_less_than_name(self):
+        name = "parent/child.txt"
+        self.assertEqual(gaon(name, len(name) - 1), "parent/chil.txt")
+
+    def test_truncates_away_filename_raises(self):
+        name = "parent/child.txt"
+        with self.assertRaises(SuspiciousFileOperation):
+            gaon(name, len(name) - 5)
 
 
 class TestReadBytesWrapper(TestCase):

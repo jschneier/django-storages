@@ -20,6 +20,7 @@ from django.utils.deconstruct import deconstructible
 
 from storages.base import BaseStorage
 from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
@@ -240,12 +241,19 @@ class AzureStorage(BaseStorage):
     def _open(self, name, mode="rb"):
         return AzureStorageFile(name, mode, self)
 
+    def get_available_name(self, name, max_length=_AZURE_NAME_MAX_LEN):
+        """
+        Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+        """
+        name = clean_name(name)
+        if self.overwrite_files:
+            return get_available_overwrite_name(name, max_length)
+        return super().get_available_name(name, max_length)
+
     def exists(self, name):
         if not name:
             return True
-
-        if self.overwrite_files:
-            return False
 
         blob_client = self.client.get_blob_client(self._get_valid_path(name))
         return blob_client.exists()
