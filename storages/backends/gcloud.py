@@ -14,6 +14,7 @@ from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
 from storages.utils import check_location
 from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
@@ -241,9 +242,6 @@ class GoogleCloudStorage(BaseStorage):
             except NotFound:
                 return False
 
-        if self.file_overwrite:
-            return False
-
         name = self._normalize_name(clean_name(name))
         return bool(self.bucket.get_blob(name))
 
@@ -334,3 +332,9 @@ class GoogleCloudStorage(BaseStorage):
                     params[key] = value
 
             return blob.generate_signed_url(**params)
+
+    def get_available_name(self, name, max_length=None):
+        name = clean_name(name)
+        if self.file_overwrite:
+            return get_available_overwrite_name(name, max_length)
+        return super().get_available_name(name, max_length)

@@ -98,11 +98,6 @@ class DropboxTest(TestCase):
         exists = self.storage.exists("bar")
         self.assertFalse(exists)
 
-    @mock.patch("dropbox.Dropbox.files_get_metadata", return_value=[FILE_METADATA_MOCK])
-    def test_exists_overwrite_mode(self, *args):
-        self.storage.write_mode = "overwrite"
-        self.assertFalse(self.storage.exists("foo"))
-
     @mock.patch("dropbox.Dropbox.files_list_folder", return_value=FILES_MOCK)
     def test_listdir(self, *args):
         dirs, files = self.storage.listdir("/")

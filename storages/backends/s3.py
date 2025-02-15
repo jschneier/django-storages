@@ -23,6 +23,7 @@ from storages.compress import CompressStorageMixin
 from storages.utils import ReadBytesWrapper
 from storages.utils import check_location
 from storages.utils import clean_name
+from storages.utils import get_available_overwrite_name
 from storages.utils import is_seekable
 from storages.utils import lookup_env
 from storages.utils import safe_join
@@ -579,9 +580,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             raise
 
     def exists(self, name):
-        if self.file_overwrite:
-            return False
-
         name = self._normalize_name(clean_name(name))
         try:
             self.connection.meta.client.head_object(Bucket=self.bucket_name, Key=name)
@@ -697,6 +695,13 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
         )
         return url
+
+    def get_available_name(self, name, max_length=None):
+        """Overwrite existing file with the same name."""
+        name = clean_name(name)
+        if self.file_overwrite:
+            return get_available_overwrite_name(name, max_length)
+        return super().get_available_name(name, max_length)
 
 
 class S3StaticStorage(S3Storage):

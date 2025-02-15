@@ -2,7 +2,9 @@ import datetime
 from datetime import timedelta
 from unittest import mock
 
+import django
 from azure.storage.blob import BlobProperties
+from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test import override_settings
@@ -67,6 +69,65 @@ class AzureStorageTest(TestCase):
             self.storage._get_valid_path(self.storage._get_valid_path(some_path)),
             self.storage._get_valid_path(some_path),
         )
+
+    def test_get_available_name(self):
+        self.storage.overwrite_files = False
+        client_mock = mock.MagicMock()
+        client_mock.exists.side_effect = [True, False]
+        self.storage._client.get_blob_client.return_value = client_mock
+        name = self.storage.get_available_name("foo.txt")
+        self.assertTrue(name.startswith("foo_"))
+        self.assertTrue(name.endswith(".txt"))
+        self.assertTrue(len(name) > len("foo.txt"))
+        self.assertEqual(client_mock.exists.call_count, 2)
+
+    def test_get_available_name_first(self):
+        self.storage.overwrite_files = False
+        client_mock = mock.MagicMock()
+        client_mock.exists.return_value = False
+        self.storage._client.get_blob_client.return_value = client_mock
+        self.assertEqual(
+            self.storage.get_available_name("foo bar baz.txt"), "foo bar baz.txt"
+        )
+        self.assertEqual(client_mock.exists.call_count, 1)
+
+    def test_get_available_name_max_len(self):
+        self.storage.overwrite_files = False
+        # if you wonder why this is, file-system
+        # storage will raise when file name is too long as well,
+        # the form should validate this
+        client_mock = mock.MagicMock()
+        client_mock.exists.side_effect = [True, False]
+        self.storage._client.get_blob_client.return_value = client_mock
+        self.assertRaises(ValueError, self.storage.get_available_name, "a" * 1025)
+        name = self.storage.get_available_name(
+            "a" * 1000, max_length=100
+        )  # max_len == 1024
+        self.assertEqual(len(name), 100)
+        self.assertTrue("_" in name)
+        self.assertEqual(client_mock.exists.call_count, 2)
+
+    def test_get_available_invalid(self):
+        self.storage.overwrite_files = False
+        self.storage._client.exists.return_value = False
+        if django.VERSION[:2] == (3, 0):
+            # Django 2.2.21 added this security fix:
+            # https://docs.djangoproject.com/en/3.2/releases/2.2.21/#cve-2021-31542-potential-directory-traversal-via-uploaded-files
+            # It raises SuspiciousOperation before we get to our ValueError.
+            # The fix wasn't applied to 3.0 (no longer in support), but was applied to
+            # 3.1 & 3.2.
+            self.assertRaises(ValueError, self.storage.get_available_name, "")
+            self.assertRaises(ValueError, self.storage.get_available_name, "/")
+            self.assertRaises(ValueError, self.storage.get_available_name, ".")
+            self.assertRaises(ValueError, self.storage.get_available_name, "///")
+        else:
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, "/")
+            self.assertRaises(SuspiciousOperation, self.storage.get_available_name, ".")
+            self.assertRaises(
+                SuspiciousOperation, self.storage.get_available_name, "///"
+            )
+        self.assertRaises(ValueError, self.storage.get_available_name, "...")
 
     def test_url(self):
         blob_mock = mock.MagicMock()
@@ -296,15 +357,11 @@ class AzureStorageTest(TestCase):
         )
 
     def test_storage_exists(self):
-        overwrite_files = [True, False]
-        for owf in overwrite_files:
-            self.storage.overwrite_files = owf
-            client_mock = mock.MagicMock()
-            self.storage._client.get_blob_client.return_value = client_mock
-            assert_ = self.assertFalse if owf else self.assertTrue
-            call_count = 0 if owf else 1
-            assert_(self.storage.exists("blob"))
-            self.assertEqual(client_mock.exists.call_count, call_count)
+        blob_name = "blob"
+        client_mock = mock.MagicMock()
+        self.storage._client.get_blob_client.return_value = client_mock
+        self.assertTrue(self.storage.exists(blob_name))
+        self.assertEqual(client_mock.exists.call_count, 1)
 
     def test_delete_blob(self):
         self.storage.delete("name")
