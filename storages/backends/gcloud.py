@@ -354,7 +354,7 @@ class GoogleCloudStorage(BaseStorage):
         if self.file_overwrite:
             return get_available_overwrite_name(name, max_length)
         return super().get_available_name(name, max_length)
-    
+
     def _get_iam_sign_blob_params(self):
         if self.credentials.token_state != TokenState.FRESH:
             self.credentials.refresh(requests.Request())
