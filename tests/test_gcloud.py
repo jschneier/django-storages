@@ -505,6 +505,79 @@ class GCloudStorageTests(GCloudTestCase):
                 self.filename, chunk_size=chunk_size
             )
 
+    def test_iam_sign_blob_setting(self):
+        self.assertEqual(self.storage.iam_sign_blob, False)
+        with override_settings(GS_IAM_SIGN_BLOB=True):
+            storage = gcloud.GoogleCloudStorage()
+            self.assertEqual(storage.iam_sign_blob, True)
+
+    def test_sa_email_setting(self):
+        self.assertEqual(self.storage.sa_email, None)
+        with override_settings(GS_SA_EMAIL="service_account_email@gmail.com"):
+            storage = gcloud.GoogleCloudStorage()
+            self.assertEqual(storage.sa_email, "service_account_email@gmail.com")
+
+    def test_iam_sign_blob_no_service_account_email_raises_attribute_error(self):
+        with override_settings(GS_IAM_SIGN_BLOB=True):
+            storage = gcloud.GoogleCloudStorage()
+            storage._bucket = mock.MagicMock()
+            storage.credentials = mock.MagicMock()
+            # deleting mocked attribute to simulate no service_account_email
+            del storage.credentials.service_account_email
+            # simulating access token
+            storage.credentials.token = "1234"
+            # no sa_email or adc service_account_email found
+            with self.assertRaises(
+                AttributeError,
+                msg=(
+                    "Sign Blob API requires service_account_email to be available "
+                    "through ADC or setting `sa_email`"
+                ),
+            ):
+                storage.url(self.filename)
+
+    def test_iam_sign_blob_with_adc_service_account_email(self):
+        with override_settings(GS_IAM_SIGN_BLOB=True):
+            storage = gcloud.GoogleCloudStorage()
+            storage._bucket = mock.MagicMock()
+            storage.credentials = mock.MagicMock()
+            # simulating adc service account email
+            storage.credentials.service_account_email = "service@gmail.com"
+            # simulating access token
+            storage.credentials.token = "1234"
+            blob = mock.MagicMock()
+            storage._bucket.blob.return_value = blob
+            storage.url(self.filename)
+            # called with adc service account email and access token
+            blob.generate_signed_url.assert_called_with(
+                expiration=timedelta(seconds=86400),
+                version="v4",
+                service_account_email=storage.credentials.service_account_email,
+                access_token=storage.credentials.token,
+            )
+
+    def test_iam_sign_blob_with_sa_email_setting(self):
+        with override_settings(
+            GS_IAM_SIGN_BLOB=True, GS_SA_EMAIL="service_account_email@gmail.com"
+        ):
+            storage = gcloud.GoogleCloudStorage()
+            storage._bucket = mock.MagicMock()
+            storage.credentials = mock.MagicMock()
+            # simulating adc service account email
+            storage.credentials.service_account_email = "service@gmail.com"
+            # simulating access token
+            storage.credentials.token = "1234"
+            blob = mock.MagicMock()
+            storage._bucket.blob.return_value = blob
+            storage.url(self.filename)
+            # called with sa_email as it has final say
+            blob.generate_signed_url.assert_called_with(
+                expiration=timedelta(seconds=86400),
+                version="v4",
+                service_account_email=storage.sa_email,
+                access_token=storage.credentials.token,
+            )
+
 
 class GoogleCloudGzipClientTests(GCloudTestCase):
     def setUp(self):

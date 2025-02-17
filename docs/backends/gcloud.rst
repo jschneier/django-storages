@@ -1,7 +1,7 @@
 Google Cloud Storage
 ====================
 
-This backend provides Django File API for `Google Cloud Storage <https://cloud.google.com/storage/>`_
+This backend implements the Django File API for `Google Cloud Storage <https://cloud.google.com/storage/>`_
 using the Python library provided by Google.
 
 
@@ -42,25 +42,59 @@ To put static files on GCS via ``collectstatic`` on Django >= 4.2 you'd include 
 The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
 well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
 
+.. _auth-settings:
+
 Authentication Settings
 ~~~~~~~~~~~~~~~~~~~~~~~
-By default, this library will try to use the credentials associated with the
-current Google Cloud infrastructure/environment for authentication.
+By default, this library will try to use the credentials associated with the current Google Cloud infrastructure/environment for authentication.
 
 In most cases, the default service accounts are not sufficient to read/write and sign files in GCS, so you will need to create a dedicated service account:
 
 #. Create a service account. (`Google Getting Started Guide <https://cloud.google.com/docs/authentication/getting-started>`__)
 #. Make sure your service account has access to the bucket and appropriate permissions. (`Using IAM Permissions <https://cloud.google.com/storage/docs/access-control/using-iam-permissions>`__)
 #. Ensure this service account is associated to the type of compute being used (Google Compute Engine (GCE), Google Kubernetes Engine (GKE), Google Cloud Run (GCR), etc)
+#. If your app only handles ``publicRead`` storage objects then the above steps are all that is required
+#. If your app handles signed (expiring) urls, then read through the options in the ``Settings for Signed Urls`` in the following section
 
-For development use cases, or other instances outside Google infrastructure:
+Settings for Signed Urls
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _iam-sign-blob-api:
+
+IAM Sign Blob API
+*****************
+
+.. note::
+   There is currently a limitation in the GCS client for Python which by default requires a
+   service account private key file to be present when generating signed urls. The service
+   account private key file is unavailable when running on compute services. Compute Services
+   (App Engine, Cloud Run, Cloud Functions, Compute Engine, etc) fetch `access tokens from the metadata server
+   <https://cloud.google.com/docs/authentication/application-default-credentials>`__
+
+Due to the above limitation, currently the only way to generate a signed url without having the private key file mounted
+in the env is through the IAM Sign Blob API.
+
+.. note::
+   The IAM Sign Blob API has `quota limits <https://cloud.google.com/iam/quotas#quotas>`__ which could be a deal-breaker.
+
+To use the IAM Sign Blob API set ``iam_sign_blob`` or ``GS_IAM_SIGN_BLOB`` to ``True``. When this setting is enabled,
+signed urls are generated through the IAM SignBlob API using the attached service account email and access_token
+instead of the credentials in the key file.
+
+An additional optional setting ``sa_email`` or ``GS_SA_EMAIL`` is also available. It allows you to override the service account
+used to generate the signed url if it is different from the one attached to your env. It's also useful for local/development
+use cases where the metadata server isn't available and storing private key files is dangerous.
+
+Mounted Private Key
+********************
+
+If the above method is not sufficient for your needs you can still use the service account key file for authentication (not recommended by Google):
 
 #. Create the key and download ``your-project-XXXXX.json`` file.
-#. Ensure the key is mounted/available to your running Django app.
-#. Set an environment variable of GOOGLE_APPLICATION_CREDENTIALS to the path of the json file.
+#. Ensure the key is mounted/available to your running app.
+#. Set an environment variable of ``GOOGLE_APPLICATION_CREDENTIALS`` to the path of the JSON file.
 
-Alternatively, you can use the setting ``credentials`` or ``GS_CREDENTIALS`` as described below.
-
+Alternatively, you can set ``credentials`` or ``GS_CREDENTIALS`` to the path of the JSON file.
 
 Settings
 ~~~~~~~~
@@ -89,13 +123,11 @@ Settings
 
   The list of content types to be gzipped when ``gzip`` is ``True``.
 
-.. _gs-creds:
-
 ``credentials`` or ``GS_CREDENTIALS``
 
   default: ``None``
 
-  The OAuth 2 credentials to use for the connection. If unset, falls back to the default inferred from the environment
+  The OAuth2 credentials to use for the connection. Be sure to read through all of :ref:`auth-settings` first.
   (i.e. ``GOOGLE_APPLICATION_CREDENTIALS``)::
 
     from google.oauth2 import service_account
@@ -209,8 +241,7 @@ Settings
   default: ``timedelta(seconds=86400)``)
 
   The time that a generated URL is valid before expiration. The default is 1 day.
-  Public files will return a url that does not expire. Files will be signed by
-  the credentials provided to django-storages (See :ref:`GS Credentials <gs-creds>`).
+  Public files will return a url that does not expire.
 
   Note: Default Google Compute Engine (GCE) Service accounts are
   `unable to sign urls <https://cloud.google.com/python/docs/reference/storage/latest/google.cloud.storage.blob.Blob#google_cloud_storage_blob_Blob_generate_signed_url>`_.
@@ -219,3 +250,15 @@ Settings
   It supports `timedelta`, `datetime`, or `integer` seconds since epoch time.
 
   Note: The maximum value for this option is 7 days (604800 seconds) in version `v4` (See this `Github issue  <https://github.com/googleapis/python-storage/issues/456#issuecomment-856884993>`_)
+
+``iam_sign_blob`` or ``GS_IAM_SIGN_BLOB``
+
+  default: ``False``
+
+  Generate signed urls using the IAM Sign Blob API. See :ref:`iam-sign-blob-api` for more info.
+
+``sa_email`` or ``GS_SA_EMAIL``
+
+  default: ``None``
+
+  Override the service account used for generating signed urls using the IAM Sign Blob API. See :ref:`iam-sign-blob-api` for more info.
