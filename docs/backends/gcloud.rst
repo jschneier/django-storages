@@ -59,6 +59,8 @@ In most cases, the default service accounts are not sufficient to read/write and
 Settings for Signed Urls
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _iam-sign-blob-api:
+
 IAM Sign Blob API
 *****************
 
@@ -253,13 +255,10 @@ Settings
 
   default: ``False``
 
-  Generate signed urls using the IAM Sign Blob API which doesn't require a service account private key file to be present in the env.
-  Set this setting to ``True`` if storing private key file isn't viable and you would rather generate signed urls using the IAM Sign Blob API.
+  Generate signed urls using the IAM Sign Blob API. See :ref:`iam-sign-blob-api` for more info.
 
 ``sa_email`` or ``GS_SA_EMAIL``
 
   default: ``None``
 
-  Allows override of the service account to be used for generating signed urls using the IAM Sign Blob API.
-  This setting is completely optional and should be used if the service account associated with your service/app isn't
-  the one with the permissions to SignBlob. Also helpful for development use cases where private key file is not recommended.
+  Override the service account used for generating signed urls using the IAM Sign Blob API. See :ref:`iam-sign-blob-api` for more info.
