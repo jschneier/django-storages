@@ -167,9 +167,7 @@ Settings
 
   default: ``True``
 
-  If set to ``False`` it forces the url not to be signed. This setting is useful if you need to have a
-  bucket configured with ``Uniform`` access control configured with public read. In that case you should
-  force the flag ``GS_QUERYSTRING_AUTH = False`` and ``GS_DEFAULT_ACL = None``
+  Whether or not to force URL signing. Set this to ``False`` for buckets where all objects are public.
 
 ``file_overwrite`` or ``GS_FILE_OVERWRITE``
 
