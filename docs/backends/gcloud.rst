@@ -250,7 +250,7 @@ Settings
   default: ``False``
 
   Generate signed urls using the IAM Sign Blob API which doesn't require a service account private key file to be present in the env.
-  Set this setting to ``True`` if storing private key file isn't viable and would rather generate signed urls using an API.
+  Set this setting to ``True`` if storing private key file isn't viable and you would rather generate signed urls using the IAM Sign Blob API.
 
 ``sa_email`` or ``GS_SA_EMAIL``
 
