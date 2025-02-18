@@ -502,6 +502,15 @@ class S3StorageTests(TestCase):
             Key="file.txt",
         )
 
+    def test_storage_exists_ssec(self):
+        params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
+        self.storage.get_object_parameters = lambda name: params
+        self.storage.file_overwrite = False
+        self.assertTrue(self.storage.exists("file.txt"))
+        self.storage.connection.meta.client.head_object.assert_called_with(
+            Bucket=self.storage.bucket_name, Key="file.txt", SSECustomerKey="xyz"
+        )
+
     def test_storage_exists_false(self):
         self.storage.connection.meta.client.head_object.side_effect = ClientError(
             {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 404}},
