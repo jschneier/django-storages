@@ -46,7 +46,7 @@ Authentication Settings
 
 Several different methods of authentication are provided. In order of precedence they are:
 
-#. ``connection_string`` or ``AZURE_CONNECTION_STRING`` (see `Connection string docs <https://azure.microsoft.com/documentation/articles/storage-configure-connection-string/>`_)
+#. ``connection_string`` or ``AZURE_CONNECTION_STRING`` (see `Connection string docs <https://learn.microsoft.com/en-us/azure/storage/common/storage-configure-connection-string>`_)
 #. (``account_key`` or ``AZURE_ACCOUNT_KEY``) and (``account_name`` or ``AZURE_ACCOUNT_NAME``)
 #. ``token_credential`` or ``AZURE_TOKEN_CREDENTIAL`` with ``account_name`` or ``AZURE_ACCOUNT_NAME``
 #. ``sas_token`` or ``AZURE_SAS_TOKEN``
