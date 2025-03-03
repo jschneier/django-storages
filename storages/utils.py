@@ -56,7 +56,7 @@ def clean_name(name):
 
     # If name starts with a leading slash, s3 will throw an access denied error
     # so we remove the leading slash
-    if name.startswith('/'):
+    if name.startswith("/"):
         clean_name = name[1:]
 
     return clean_name
