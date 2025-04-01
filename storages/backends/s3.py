@@ -3,7 +3,6 @@ import mimetypes
 import os
 import posixpath
 import tempfile
-import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta

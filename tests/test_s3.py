@@ -1020,6 +1020,7 @@ class S3FileTests(TestCase):
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
 
+    @mock.patch("boto3.Session")
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
         self.storage.get_object_parameters = lambda name: params
@@ -1033,6 +1034,7 @@ class S3FileTests(TestCase):
             mock.ANY, ExtraArgs=filtered, Config=self.storage.transfer_config
         )
 
+    @mock.patch("boto3.Session")
     def test_closed(self):
         with s3.S3File("test", "wb", self.storage) as f:
             with self.subTest("after init"):
@@ -1051,6 +1053,7 @@ class S3FileTests(TestCase):
                 f.file
                 self.assertFalse(f.closed)
 
+    @mock.patch("boto3.Session")
     def test_reopening(self):
         f = s3.S3File("test", "wb", self.storage)
 
