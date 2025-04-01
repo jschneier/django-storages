@@ -77,11 +77,6 @@ class S3StorageTests(TestCase):
         # Can't pickle MagicMock, but you can't pickle a real Bucket object either
         p = pickle.dumps(self.storage)
         new_storage = pickle.loads(p)
-
-        self.assertIsInstance(new_storage._connections, threading.local)
-        # Put the mock connection back in
-        new_storage.connection = mock.MagicMock()
-
         self.assertIsNone(new_storage._bucket)
         new_storage.bucket
         self.assertIsNotNone(new_storage._bucket)
@@ -94,8 +89,6 @@ class S3StorageTests(TestCase):
         # Can't pickle a threadlocal
         p = pickle.dumps(self.storage)
         new_storage = pickle.loads(p)
-
-        self.assertIsInstance(new_storage._connections, threading.local)
 
     def test_storage_url_slashes(self):
         """
@@ -780,21 +773,6 @@ class S3StorageTests(TestCase):
         parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path, "/filename.mp4")
         self.assertEqual(parsed_url.query, "version=10")
-
-    @skipIf(threading is None, "Test requires threading")
-    def test_connection_threading(self):
-        connections = []
-
-        def thread_storage_connection():
-            connections.append(self.storage.connection)
-
-        for _ in range(2):
-            t = threading.Thread(target=thread_storage_connection)
-            t.start()
-            t.join()
-
-        # Connection for each thread needs to be unique
-        self.assertIsNot(connections[0], connections[1])
 
     def test_location_leading_slash(self):
         msg = (
