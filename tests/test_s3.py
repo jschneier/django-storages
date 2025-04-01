@@ -53,7 +53,7 @@ class S3StorageTests(TestCase):
 
     @mock.patch("boto3.Session.resource")
     def test_connection_unsiged(self, resource):
-        with override_settings(AWS_S3_ADDRESSING_STYLE="virtual"):
+        with override_settings(AWS_S3_ADDRESSING_STYLE="virtual", AWS_QUERYSTRING_AUTH=False):
             storage = s3.S3Storage()
             _ = storage.connection
             resource.assert_called_once()
