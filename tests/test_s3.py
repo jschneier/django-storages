@@ -3,10 +3,8 @@ import gzip
 import io
 import os
 import pickle
-import threading
 from textwrap import dedent
 from unittest import mock
-from unittest import skipIf
 from urllib.parse import urlparse
 
 import boto3
@@ -85,10 +83,8 @@ class S3StorageTests(TestCase):
         """
         Test that the storage can be pickled, without a bucket instance
         """
-
-        # Can't pickle a threadlocal
         p = pickle.dumps(self.storage)
-        new_storage = pickle.loads(p)
+        pickle.loads(p)
 
     def test_storage_url_slashes(self):
         """
