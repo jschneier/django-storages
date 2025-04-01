@@ -38,6 +38,7 @@ try:
     from botocore.config import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
+    from cachetools.func import ttl_cache
 except ImportError as e:
     raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
 
@@ -330,8 +331,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             )
 
         self._bucket = None
-        self._connections = threading.local()
-        self._unsigned_connections = threading.local()
 
         if self.config is not None:
             warnings.warn(
@@ -347,6 +346,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 s3={"addressing_style": self.addressing_style},
                 signature_version=self.signature_version,
                 proxies=self.proxies,
+                max_pool_connections=64,  # thread-safe
+                tcp_keepalive=True,
+                retries={"max_attempts": 6, "mode": "adaptive"},
             )
 
         if self.use_threads is False:
@@ -445,49 +447,33 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state.pop("_connections", None)
-        state.pop("_unsigned_connections", None)
+        state.pop("connection", None)
         state.pop("_bucket", None)
         return state
 
     def __setstate__(self, state):
-        state["_connections"] = threading.local()
-        state["_unsigned_connections"] = threading.local()
         state["_bucket"] = None
         self.__dict__ = state
 
+    # 1 hour time to live for the boto3 resource to avoid their memory leak
+    # ref https://github.com/boto/boto3/issues/1670
     @property
+    @ttl_cache(ttl=3600)
     def connection(self):
-        connection = getattr(self._connections, "connection", None)
-        if connection is None:
-            session = self._create_session()
-            self._connections.connection = session.resource(
-                "s3",
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=self.client_config,
-                verify=self.verify,
-            )
-        return self._connections.connection
-
-    @property
-    def unsigned_connection(self):
-        unsigned_connection = getattr(self._unsigned_connections, "connection", None)
-        if unsigned_connection is None:
-            session = self._create_session()
-            config = self.client_config.merge(
+        config = self.client_config
+        if not self.querystring_auth: # create unsigned_connection
+            config = config.merge(
                 Config(signature_version=botocore.UNSIGNED)
             )
-            self._unsigned_connections.connection = session.resource(
-                "s3",
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=config,
-                verify=self.verify,
-            )
-        return self._unsigned_connections.connection
+        session = self._create_session()
+        return session.resource(
+            "s3",
+            region_name=self.region_name,
+            use_ssl=self.use_ssl,
+            endpoint_url=self.endpoint_url,
+            config=config,
+            verify=self.verify,
+        )
 
     def _create_session(self):
         """
@@ -691,10 +677,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         params["Bucket"] = self.bucket.name
         params["Key"] = name
 
-        connection = (
-            self.connection if self.querystring_auth else self.unsigned_connection
-        )
-        url = connection.meta.client.generate_presigned_url(
+        url = self.connection.meta.client.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
         )
         return url

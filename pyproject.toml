@@ -62,6 +62,7 @@ libcloud = [
 ]
 s3 = [
   "boto3>=1.4.4",
+  "cachetools>=5.0.0",
 ]
 sftp = [
   "paramiko>=1.15",

@@ -35,8 +35,6 @@ class S3ManifestStaticStorageTestStorage(s3.S3ManifestStaticStorage):
 class S3StorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3Storage()
-        self.storage._connections.connection = mock.MagicMock()
-        self.storage._unsigned_connections.connection = mock.MagicMock()
 
     @mock.patch("boto3.Session")
     def test_s3_session(self, session):
@@ -59,7 +57,7 @@ class S3StorageTests(TestCase):
     def test_connection_unsiged(self, resource):
         with override_settings(AWS_S3_ADDRESSING_STYLE="virtual"):
             storage = s3.S3Storage()
-            _ = storage.unsigned_connection
+            _ = storage.connection
             resource.assert_called_once()
             self.assertEqual(
                 botocore.UNSIGNED, resource.call_args[1]["config"].signature_version
@@ -82,7 +80,7 @@ class S3StorageTests(TestCase):
 
         self.assertIsInstance(new_storage._connections, threading.local)
         # Put the mock connection back in
-        new_storage._connections.connection = mock.MagicMock()
+        new_storage.connection = mock.MagicMock()
 
         self.assertIsNone(new_storage._bucket)
         new_storage.bucket
@@ -580,7 +578,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage._connections.connection.meta.client.get_paginator.return_value = (
+        self.storage.connection.meta.client.get_paginator.return_value = (
             paginator
         )
 
@@ -609,7 +607,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage._connections.connection.meta.client.get_paginator.return_value = (
+        self.storage.connection.meta.client.get_paginator.return_value = (
             paginator
         )
 
@@ -634,7 +632,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage._connections.connection.meta.client.get_paginator.return_value = (
+        self.storage.connection.meta.client.get_paginator.return_value = (
             paginator
         )
 
@@ -717,7 +715,7 @@ class S3StorageTests(TestCase):
     def test_url_unsigned(self):
         self.storage.querystring_auth = False
         self.storage.url("test_name")
-        self.storage.unsigned_connection.meta.client.generate_presigned_url.assert_called_once()
+        self.storage.connection.meta.client.generate_presigned_url.assert_called_once()
 
     @mock.patch("storages.backends.s3.datetime")
     def test_storage_url_custom_domain_signed_urls(self, dt):
@@ -1000,7 +998,6 @@ class S3StorageTests(TestCase):
 class S3StaticStorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3StaticStorage()
-        self.storage._connections.connection = mock.MagicMock()
 
     def test_querystring_auth(self):
         self.assertFalse(self.storage.querystring_auth)
@@ -1009,7 +1006,6 @@ class S3StaticStorageTests(TestCase):
 class S3ManifestStaticStorageTests(TestCase):
     def setUp(self):
         self.storage = S3ManifestStaticStorageTestStorage()
-        self.storage._connections.connection = mock.MagicMock()
 
     def test_querystring_auth(self):
         self.assertFalse(self.storage.querystring_auth)
@@ -1023,7 +1019,6 @@ class S3FileTests(TestCase):
     @override_settings(AWS_S3_OBJECT_PARAMETERS={"ContentType": "text/html"})
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
-        self.storage._connections.connection = mock.MagicMock()
 
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
