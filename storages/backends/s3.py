@@ -460,10 +460,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     @ttl_cache(ttl=3600)
     def connection(self):
         config = self.client_config
-        if not self.querystring_auth: # create unsigned_connection
-            config = config.merge(
-                Config(signature_version=botocore.UNSIGNED)
-            )
+        if not self.querystring_auth:  # create unsigned_connection
+            config = config.merge(Config(signature_version=botocore.UNSIGNED))
         session = self._create_session()
         return session.resource(
             "s3",

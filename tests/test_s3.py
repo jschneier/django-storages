@@ -578,9 +578,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage.connection.meta.client.get_paginator.return_value = (
-            paginator
-        )
+        self.storage.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir("")
         paginator.paginate.assert_called_with(
@@ -607,9 +605,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage.connection.meta.client.get_paginator.return_value = (
-            paginator
-        )
+        self.storage.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir("some/")
         paginator.paginate.assert_called_with(
@@ -632,9 +628,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage.connection.meta.client.get_paginator.return_value = (
-            paginator
-        )
+        self.storage.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir("dir/")
         paginator.paginate.assert_called_with(
