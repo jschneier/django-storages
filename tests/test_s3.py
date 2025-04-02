@@ -33,6 +33,7 @@ class S3ManifestStaticStorageTestStorage(s3.S3ManifestStaticStorage):
 class S3StorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3Storage()
+        self.storage._create_connection = mock.MagicMock()
 
     @mock.patch("boto3.Session")
     def test_s3_session(self, session):
@@ -57,7 +58,7 @@ class S3StorageTests(TestCase):
             AWS_S3_ADDRESSING_STYLE="virtual", AWS_QUERYSTRING_AUTH=False
         ):
             storage = s3.S3Storage()
-            _ = storage.connection
+            _ = storage.unsigned_connection
             resource.assert_called_once()
             self.assertEqual(
                 botocore.UNSIGNED, resource.call_args[1]["config"].signature_version
@@ -66,28 +67,18 @@ class S3StorageTests(TestCase):
                 "virtual", resource.call_args[1]["config"].s3["addressing_style"]
             )
 
-    def test_pickle_with_bucket(self):
-        """
-        Test that the storage can be pickled with a bucket attached
-        """
-        # Ensure the bucket has been used
-        self.storage.bucket
-        self.assertIsNotNone(self.storage._bucket)
-
-        # Can't pickle MagicMock, but you can't pickle a real Bucket object either
-        p = pickle.dumps(self.storage)
-        new_storage = pickle.loads(p)
-        self.assertIsNone(new_storage._bucket)
-        new_storage.bucket
-        self.assertIsNotNone(new_storage._bucket)
-
-    def test_pickle_without_bucket(self):
+    @mock.patch("boto3.Session")
+    def test_pickle(self):
         """
         Test that the storage can be pickled, without a bucket instance
         """
-        p = pickle.dumps(self.storage)
+        storage = s3.S3Storage()
+        _ = storage.connection
+        _ = storage.bucket
+        p = pickle.dumps(storage)
         pickle.loads(p)
 
+    @mock.patch("boto3.Session")
     def test_storage_url_slashes(self):
         """
         Test URL generation.
@@ -102,6 +93,7 @@ class S3StorageTests(TestCase):
         self.assertEqual(self.storage.url("path/1"), "https://example.com/path/1")
         self.assertEqual(self.storage.url("path/1/"), "https://example.com/path/1/")
 
+    @mock.patch("boto3.Session")
     def test_storage_save(self):
         """
         Test saving a file
@@ -700,7 +692,7 @@ class S3StorageTests(TestCase):
     def test_url_unsigned(self):
         self.storage.querystring_auth = False
         self.storage.url("test_name")
-        self.storage.connection.meta.client.generate_presigned_url.assert_called_once()
+        self.storage.unsigned_connection.meta.client.generate_presigned_url.assert_called_once()
 
     @mock.patch("storages.backends.s3.datetime")
     def test_storage_url_custom_domain_signed_urls(self, dt):
@@ -968,6 +960,7 @@ class S3StorageTests(TestCase):
 class S3StaticStorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3StaticStorage()
+        self.storage._create_connection = mock.MagicMock()
 
     def test_querystring_auth(self):
         self.assertFalse(self.storage.querystring_auth)
@@ -976,6 +969,7 @@ class S3StaticStorageTests(TestCase):
 class S3ManifestStaticStorageTests(TestCase):
     def setUp(self):
         self.storage = S3ManifestStaticStorageTestStorage()
+        self.storage._create_connection = mock.MagicMock()
 
     def test_querystring_auth(self):
         self.assertFalse(self.storage.querystring_auth)
@@ -989,8 +983,8 @@ class S3FileTests(TestCase):
     @override_settings(AWS_S3_OBJECT_PARAMETERS={"ContentType": "text/html"})
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
+        self.storage._create_connection = mock.MagicMock()
 
-    @mock.patch("boto3.Session")
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
         self.storage.get_object_parameters = lambda name: params
@@ -1004,7 +998,6 @@ class S3FileTests(TestCase):
             mock.ANY, ExtraArgs=filtered, Config=self.storage.transfer_config
         )
 
-    @mock.patch("boto3.Session")
     def test_closed(self):
         with s3.S3File("test", "wb", self.storage) as f:
             with self.subTest("after init"):
@@ -1023,7 +1016,6 @@ class S3FileTests(TestCase):
                 f.file
                 self.assertFalse(f.closed)
 
-    @mock.patch("boto3.Session")
     def test_reopening(self):
         f = s3.S3File("test", "wb", self.storage)
 
