@@ -1,6 +1,24 @@
 django-storages CHANGELOG
 =========================
 
+1.14.6 (2025-04-01)
+*******************
+
+Google Cloud
+------------
+
+- Add option to sign URLs via IAM Blob API (`#1427`_)
+
+S3
+--
+
+- Fix ``exists`` calls when using SSE-C (`#1451`_)
+- Default ``url_protocol`` to ``https:`` if set to ``None`` (`#1483`_)
+
+.. _#1427: https://github.com/jschneier/django-storages/pull/1427
+.. _#1451: https://github.com/jschneier/django-storages/pull/1451
+.. _#1483: https://github.com/jschneier/django-storages/pull/1483
+
 1.14.5 (2025-02-15)
 *******************
 
