@@ -67,7 +67,6 @@ class S3StorageTests(TestCase):
                 "virtual", resource.call_args[1]["config"].s3["addressing_style"]
             )
 
-    @mock.patch("boto3.Session")
     def test_pickle(self):
         """
         Test that the storage can be pickled, without a bucket instance
@@ -78,7 +77,6 @@ class S3StorageTests(TestCase):
         p = pickle.dumps(storage)
         pickle.loads(p)
 
-    @mock.patch("boto3.Session")
     def test_storage_url_slashes(self):
         """
         Test URL generation.
@@ -93,7 +91,6 @@ class S3StorageTests(TestCase):
         self.assertEqual(self.storage.url("path/1"), "https://example.com/path/1")
         self.assertEqual(self.storage.url("path/1/"), "https://example.com/path/1/")
 
-    @mock.patch("boto3.Session")
     def test_storage_save(self):
         """
         Test saving a file

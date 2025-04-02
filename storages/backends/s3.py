@@ -30,6 +30,12 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
+    from cachetools.func import ttl_cache
+except (ImportError, ModuleNotFoundError) as e:
+    msg = "Could not import cachetools. Did you run 'pip install django-storages[s3]'?"
+    raise ImproperlyConfigured(msg) from e
+
+try:
     import boto3.session
     import botocore
     import s3transfer.constants
@@ -37,9 +43,9 @@ try:
     from botocore.config import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
-    from cachetools.func import ttl_cache
-except ImportError as e:
-    raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
+except (ImportError, ModuleNotFoundError) as e:
+    msg = "Could not import boto3. Did you run 'pip install django-storages[s3]'?"
+    raise ImproperlyConfigured(msg) from e
 
 
 # NOTE: these are defined as functions so both can be tested
