@@ -329,8 +329,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 "AWS_S3_SECRET_ACCESS_KEY/secret_key"
             )
 
-        self._bucket = None
-
         if self.config is not None:
             warnings.warn(
                 "The 'config' class property is deprecated and will be "
@@ -445,22 +443,37 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         }
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-        state.pop("connection", None)
-        state.pop("_bucket", None)
-        return state
+        return self.__dict__
 
     def __setstate__(self, state):
-        state["_bucket"] = None
         self.__dict__ = state
 
-    # 1 hour time to live for the boto3 resource to avoid their memory leak
-    # ref https://github.com/boto/boto3/issues/1670
     @property
-    @ttl_cache(ttl=3600)
     def connection(self):
+        """
+        Get the (cached) thread-safe boto3 s3 resource.
+        """
+        return self._create_connection()
+
+    @property
+    def unsigned_connection(self):
+        """
+        Get the (cached) thread-safe boto3 s3 resource (unsigned).
+        """
+        return self._create_connection(unsigned=True)
+
+    @ttl_cache(ttl=3600)
+    def _create_connection(self, *, unsigned=False):
+        """
+        Create a new session and boto3 s3 resource.
+
+        This function has a 1 hour time to live cache for the boto3 resource.
+
+        We want to avoid storing a resource for too long to avoid their memory leak
+        ref https://github.com/boto/boto3/issues/1670.
+        """
         config = self.client_config
-        if not self.querystring_auth:  # create unsigned_connection
+        if unsigned:
             config = config.merge(Config(signature_version=botocore.UNSIGNED))
         session = self._create_session()
         return session.resource(
@@ -475,7 +488,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def _create_session(self):
         """
         If a user specifies a profile name and this class obtains access keys
-        from another source such as environment variables,we want the profile
+        from another source such as environment variables, we want the profile
         name to take precedence.
         """
         if self.session_profile:
@@ -494,9 +507,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         Get the current bucket. If there is no current bucket object
         create it.
         """
-        if self._bucket is None:
-            self._bucket = self.connection.Bucket(self.bucket_name)
-        return self._bucket
+        return self.connection.Bucket(self.bucket_name)
 
     def _normalize_name(self, name):
         """
@@ -674,7 +685,10 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         params["Bucket"] = self.bucket.name
         params["Key"] = name
 
-        url = self.connection.meta.client.generate_presigned_url(
+        connection = (
+            self.connection if self.querystring_auth else self.unsigned_connection
+        )
+        url = connection.meta.client.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
         )
         return url
