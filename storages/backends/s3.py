@@ -3,6 +3,7 @@ import mimetypes
 import os
 import posixpath
 import tempfile
+import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta
@@ -30,7 +31,7 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
-    from cachetools.func import ttl_cache
+    import cachetools
 except (ImportError, ModuleNotFoundError) as e:
     msg = "Could not import cachetools. Did you run 'pip install django-storages[s3]'?"
     raise ImproperlyConfigured(msg) from e
@@ -378,6 +379,10 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             else:
                 self.cloudfront_signer = None
 
+        self._ttl_cache = cachetools.cached(
+            cache=cachetools.TTLCache(maxsize=2, ttl=3600), lock=threading.Lock()
+        )
+
     def get_cloudfront_signer(self, key_id, key):
         cache_key = f"{key_id}:{key}"
         if cache_key not in self.__class__._signers:
@@ -449,7 +454,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         }
 
     def __getstate__(self):
-        return self.__dict__
+        state = self.__dict__.copy()
+        state.pop("_ttl_cache", None)
+        return state
 
     def __setstate__(self, state):
         self.__dict__ = state
@@ -458,25 +465,27 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def connection(self):
         """
         Get the (cached) thread-safe boto3 s3 resource.
+
+        This function has a 1 hour time to live cache for the boto3 resource.
+        We want to avoid storing a resource for too long to avoid their memory leak
+        ref https://github.com/boto/boto3/issues/1670.
         """
-        return self._create_connection()
+        return self._ttl_cache(self._create_connection)()
 
     @property
     def unsigned_connection(self):
         """
         Get the (cached) thread-safe boto3 s3 resource (unsigned).
-        """
-        return self._create_connection(unsigned=True)
 
-    @ttl_cache(ttl=3600)
+        This function has a 1 hour time to live cache for the boto3 resource.
+        We want to avoid storing a resource for too long to avoid their memory leak
+        ref https://github.com/boto/boto3/issues/1670.
+        """
+        return self._ttl_cache(self._create_connection)(unsigned=True)
+
     def _create_connection(self, *, unsigned=False):
         """
         Create a new session and boto3 s3 resource.
-
-        This function has a 1 hour time to live cache for the boto3 resource.
-
-        We want to avoid storing a resource for too long to avoid their memory leak
-        ref https://github.com/boto/boto3/issues/1670.
         """
         config = self.client_config
         if unsigned:

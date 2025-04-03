@@ -953,6 +953,27 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage()
             self.assertEqual(storage.security_token, "baz")
 
+    def test_connection_cache(self):
+        storage1 = s3.S3Storage()
+        connection1 = storage1.connection
+        unsigned_connection1 = storage1.unsigned_connection
+        # different connections
+        self.assertNotEqual(id(connection1), id(unsigned_connection1))
+        # cache hits
+        self.assertEqual(id(connection1), id(storage1.connection))
+        self.assertEqual(id(unsigned_connection1), id(storage1.unsigned_connection))
+
+        storage2 = s3.S3Storage()
+        connection2 = storage2.connection
+        unsigned_connection2 = storage2.unsigned_connection
+        # different connections
+        self.assertNotEqual(id(connection2), id(unsigned_connection2))
+        self.assertNotEqual(id(connection1), id(connection2))
+        self.assertNotEqual(id(unsigned_connection1), id(unsigned_connection2))
+        # cache hits
+        self.assertEqual(id(connection2), id(storage2.connection))
+        self.assertEqual(id(unsigned_connection2), id(storage2.unsigned_connection))
+
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):

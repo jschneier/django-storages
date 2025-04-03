@@ -1,12 +1,14 @@
 name: CI
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
-    branches:
-      - '**'
+  push:
+    branches: [master]
+  workflow_dispatch:
 
+concurrency:  # https://stackoverflow.com/questions/66335225#comment133398800_72408109
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   run_unittest_tests:
