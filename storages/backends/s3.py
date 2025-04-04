@@ -31,6 +31,21 @@ from storages.utils import setting
 from storages.utils import to_bytes
 
 try:
+    import cachetools
+except (ImportError, ModuleNotFoundError) as e:
+    msg = "Could not import cachetools. Did you run 'pip install django-storages[s3]'?"
+    raise ImproperlyConfigured(msg) from e
+
+try:
+    from functools import cached_property
+except ImportError:  # python_version<='3.7'
+    try:
+        from backports.cached_property import cached_property
+    except (ImportError, ModuleNotFoundError) as e:
+        msg = "Could not import backports.cached_property. Did you run 'pip install django-storages[s3]'?"  # noqa: E501
+        raise ImproperlyConfigured(msg) from e
+
+try:
     import boto3.session
     import botocore
     import s3transfer.constants
@@ -38,8 +53,9 @@ try:
     from botocore.config import Config
     from botocore.exceptions import ClientError
     from botocore.signers import CloudFrontSigner
-except ImportError as e:
-    raise ImproperlyConfigured("Could not load Boto3's S3 bindings. %s" % e)
+except (ImportError, ModuleNotFoundError) as e:
+    msg = "Could not import boto3. Did you run 'pip install django-storages[s3]'?"
+    raise ImproperlyConfigured(msg) from e
 
 
 # NOTE: these are defined as functions so both can be tested
@@ -329,10 +345,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 "AWS_S3_SECRET_ACCESS_KEY/secret_key"
             )
 
-        self._bucket = None
-        self._connections = threading.local()
-        self._unsigned_connections = threading.local()
-
         if self.config is not None:
             warnings.warn(
                 "The 'config' class property is deprecated and will be "
@@ -347,6 +359,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 s3={"addressing_style": self.addressing_style},
                 signature_version=self.signature_version,
                 proxies=self.proxies,
+                max_pool_connections=64,  # thread-safe
+                tcp_keepalive=True,
+                retries={"max_attempts": 6, "mode": "adaptive"},
             )
 
         if self.use_threads is False:
@@ -441,58 +456,64 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "use_threads": setting("AWS_S3_USE_THREADS", True),
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
             "client_config": setting("AWS_S3_CLIENT_CONFIG", None),
+            "client_ttl": setting("AWS_S3_CLIENT_TTL", 3600),
         }
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state.pop("_connections", None)
-        state.pop("_unsigned_connections", None)
-        state.pop("_bucket", None)
+        state.pop("_ttl_cache", None)
         return state
 
     def __setstate__(self, state):
-        state["_connections"] = threading.local()
-        state["_unsigned_connections"] = threading.local()
-        state["_bucket"] = None
         self.__dict__ = state
 
     @property
     def connection(self):
-        connection = getattr(self._connections, "connection", None)
-        if connection is None:
-            session = self._create_session()
-            self._connections.connection = session.resource(
-                "s3",
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=self.client_config,
-                verify=self.verify,
-            )
-        return self._connections.connection
+        """
+        Get the (cached) thread-safe boto3 s3 resource.
+        """
+        return self._ttl_cache(self._create_connection)()
 
     @property
     def unsigned_connection(self):
-        unsigned_connection = getattr(self._unsigned_connections, "connection", None)
-        if unsigned_connection is None:
-            session = self._create_session()
-            config = self.client_config.merge(
-                Config(signature_version=botocore.UNSIGNED)
-            )
-            self._unsigned_connections.connection = session.resource(
-                "s3",
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=config,
-                verify=self.verify,
-            )
-        return self._unsigned_connections.connection
+        """
+        Get the (cached) thread-safe boto3 s3 resource (unsigned).
+        """
+        return self._ttl_cache(self._create_connection)(unsigned=True)
+
+    @cached_property
+    def _ttl_cache(self):
+        """
+        This time-to-live cache is used to periodically recreate boto3 clients.
+        We want to avoid storing a resource for too long to avoid their memory leak
+        ref https://github.com/boto/boto3/issues/1670.
+        """
+        return cachetools.cached(
+            cache=cachetools.TTLCache(maxsize=2, ttl=self.client_ttl),
+            lock=threading.Lock(),
+        )
+
+    def _create_connection(self, *, unsigned=False):
+        """
+        Create a new session and boto3 s3 resource.
+        """
+        config = self.client_config
+        if unsigned:
+            config = config.merge(Config(signature_version=botocore.UNSIGNED))
+        session = self._create_session()
+        return session.resource(
+            "s3",
+            region_name=self.region_name,
+            use_ssl=self.use_ssl,
+            endpoint_url=self.endpoint_url,
+            config=config,
+            verify=self.verify,
+        )
 
     def _create_session(self):
         """
         If a user specifies a profile name and this class obtains access keys
-        from another source such as environment variables,we want the profile
+        from another source such as environment variables, we want the profile
         name to take precedence.
         """
         if self.session_profile:
@@ -511,9 +532,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         Get the current bucket. If there is no current bucket object
         create it.
         """
-        if self._bucket is None:
-            self._bucket = self.connection.Bucket(self.bucket_name)
-        return self._bucket
+        return self.connection.Bucket(self.bucket_name)
 
     def _normalize_name(self, name):
         """
