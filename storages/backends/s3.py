@@ -37,6 +37,15 @@ except (ImportError, ModuleNotFoundError) as e:
     raise ImproperlyConfigured(msg) from e
 
 try:
+    from functools import cached_property
+except ImportError:  # python_version<='3.7'
+    try:
+        from backports.cached_property import cached_property
+    except (ImportError, ModuleNotFoundError) as e:
+        msg = "Could not import backports.cached_property. Did you run 'pip install django-storages[s3]'?"  # noqa: E501
+        raise ImproperlyConfigured(msg) from e
+
+try:
     import boto3.session
     import botocore
     import s3transfer.constants
@@ -379,10 +388,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             else:
                 self.cloudfront_signer = None
 
-        self._ttl_cache = cachetools.cached(
-            cache=cachetools.TTLCache(maxsize=2, ttl=3600), lock=threading.Lock()
-        )
-
     def get_cloudfront_signer(self, key_id, key):
         cache_key = f"{key_id}:{key}"
         if cache_key not in self.__class__._signers:
@@ -451,6 +456,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "use_threads": setting("AWS_S3_USE_THREADS", True),
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
             "client_config": setting("AWS_S3_CLIENT_CONFIG", None),
+            "client_ttl": setting("AWS_S3_CLIENT_TTL", 3600),
         }
 
     def __getstate__(self):
@@ -465,10 +471,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def connection(self):
         """
         Get the (cached) thread-safe boto3 s3 resource.
-
-        This function has a 1 hour time to live cache for the boto3 resource.
-        We want to avoid storing a resource for too long to avoid their memory leak
-        ref https://github.com/boto/boto3/issues/1670.
         """
         return self._ttl_cache(self._create_connection)()
 
@@ -476,12 +478,20 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def unsigned_connection(self):
         """
         Get the (cached) thread-safe boto3 s3 resource (unsigned).
+        """
+        return self._ttl_cache(self._create_connection)(unsigned=True)
 
-        This function has a 1 hour time to live cache for the boto3 resource.
+    @cached_property
+    def _ttl_cache(self):
+        """
+        This time-to-live cache is used to periodically recreate boto3 clients.
         We want to avoid storing a resource for too long to avoid their memory leak
         ref https://github.com/boto/boto3/issues/1670.
         """
-        return self._ttl_cache(self._create_connection)(unsigned=True)
+        return cachetools.cached(
+            cache=cachetools.TTLCache(maxsize=2, ttl=self.client_ttl),
+            lock=threading.Lock(),
+        )
 
     def _create_connection(self, *, unsigned=False):
         """

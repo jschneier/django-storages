@@ -75,7 +75,9 @@ class S3StorageTests(TestCase):
         _ = storage.connection
         _ = storage.bucket
         p = pickle.dumps(storage)
-        pickle.loads(p)
+        new_storage = pickle.loads(p)
+        _ = new_storage.connection
+        _ = storage.bucket
 
     def test_storage_url_slashes(self):
         """
