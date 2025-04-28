@@ -331,6 +331,13 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 "AWS_S3_SECRET_ACCESS_KEY/secret_key"
             )
 
+        self._connection_lock = threading.Lock()
+        self._connection_expiry = None
+        self._connection = None
+        self._unsigned_connection_lock = threading.Lock()
+        self._unsigned_connection_expiry = None
+        self._unsigned_connection = None
+
         if self.config is not None:
             warnings.warn(
                 "The 'config' class property is deprecated and will be "
@@ -373,13 +380,6 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 )
             else:
                 self.cloudfront_signer = None
-
-        self._connection_lock = threading.Lock()
-        self._connection_expiry = None
-        self._connection = None
-        self._unsigned_connection_lock = threading.Lock()
-        self._unsigned_connection_expiry = None
-        self._unsigned_connection = None
 
     def get_cloudfront_signer(self, key_id, key):
         cache_key = f"{key_id}:{key}"
@@ -463,13 +463,13 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         return state
 
     def __setstate__(self, state):
+        state["_connection_lock"] = threading.Lock()
+        state["_connection_expiry"] = None
+        state["_connection"] = None
+        state["_unsigned_connection_lock"] = threading.Lock()
+        state["_unsigned_connection_expiry"] = None
+        state["_unsigned_connection"] = None
         self.__dict__ = state
-        self._connection_lock = threading.Lock()
-        self._connection_expiry = None
-        self._connection = None
-        self._unsigned_connection_lock = threading.Lock()
-        self._unsigned_connection_expiry = None
-        self._unsigned_connection = None
 
     @property
     def connection(self):
