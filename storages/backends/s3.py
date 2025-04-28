@@ -4,6 +4,7 @@ import os
 import posixpath
 import tempfile
 import threading
+import time
 import warnings
 from datetime import datetime
 from datetime import timedelta
@@ -29,21 +30,6 @@ from storages.utils import lookup_env
 from storages.utils import safe_join
 from storages.utils import setting
 from storages.utils import to_bytes
-
-try:
-    import cachetools
-except (ImportError, ModuleNotFoundError) as e:
-    msg = "Could not import cachetools. Did you run 'pip install django-storages[s3]'?"
-    raise ImproperlyConfigured(msg) from e
-
-try:
-    from functools import cached_property
-except ImportError:  # python_version<='3.7'
-    try:
-        from backports.cached_property import cached_property
-    except (ImportError, ModuleNotFoundError) as e:
-        msg = "Could not import backports.cached_property. Did you run 'pip install django-storages[s3]'?"  # noqa: E501
-        raise ImproperlyConfigured(msg) from e
 
 try:
     import boto3.session
@@ -388,6 +374,13 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             else:
                 self.cloudfront_signer = None
 
+        self._connection_lock = threading.Lock()
+        self._connection_expiry = None
+        self._connection = None
+        self._unsigned_connection_lock = threading.Lock()
+        self._unsigned_connection_expiry = None
+        self._unsigned_connection = None
+
     def get_cloudfront_signer(self, key_id, key):
         cache_key = f"{key_id}:{key}"
         if cache_key not in self.__class__._signers:
@@ -461,37 +454,56 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state.pop("_ttl_cache", None)
+        state.pop("_connection_lock", None)
+        state.pop("_connection_expiry", None)
+        state.pop("_connection", None)
+        state.pop("_unsigned_connection_lock", None)
+        state.pop("_unsigned_connection_expiry", None)
+        state.pop("_unsigned_connection", None)
         return state
 
     def __setstate__(self, state):
         self.__dict__ = state
+        self._connection_lock = threading.Lock()
+        self._connection_expiry = None
+        self._connection = None
+        self._unsigned_connection_lock = threading.Lock()
+        self._unsigned_connection_expiry = None
+        self._unsigned_connection = None
 
     @property
     def connection(self):
         """
         Get the (cached) thread-safe boto3 s3 resource.
         """
-        return self._ttl_cache(self._create_connection)()
+        with self._connection_lock:
+            # return cached connection if TTL allows
+            if (
+                self._connection_expiry is not None
+                and time.monotonic() < self._connection_expiry
+            ):
+                return self._connection
+            # create new connection and set new expiry
+            self._connection_expiry = time.monotonic() + self.client_ttl
+            self._connection = self._create_connection()
+            return self._connection
 
     @property
     def unsigned_connection(self):
         """
         Get the (cached) thread-safe boto3 s3 resource (unsigned).
         """
-        return self._ttl_cache(self._create_connection)(unsigned=True)
-
-    @cached_property
-    def _ttl_cache(self):
-        """
-        This time-to-live cache is used to periodically recreate boto3 clients.
-        We want to avoid storing a resource for too long to avoid their memory leak
-        ref https://github.com/boto/boto3/issues/1670.
-        """
-        return cachetools.cached(
-            cache=cachetools.TTLCache(maxsize=2, ttl=self.client_ttl),
-            lock=threading.Lock(),
-        )
+        with self._unsigned_connection_lock:
+            # return cached connection if TTL allows
+            if (
+                self._unsigned_connection_expiry is not None
+                and time.monotonic() < self._unsigned_connection_expiry
+            ):
+                return self._unsigned_connection
+            # create new connection and set new expiry
+            self._unsigned_connection_expiry = time.monotonic() + self.client_ttl
+            self._unsigned_connection = self._create_connection(unsigned=True)
+            return self._unsigned_connection
 
     def _create_connection(self, *, unsigned=False):
         """

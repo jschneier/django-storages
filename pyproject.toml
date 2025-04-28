@@ -50,8 +50,6 @@ azure = [
 ]
 boto3 = [
   "boto3>=1.4.4",
-  "cachetools>=5.0.0",
-  "backports.cached_property; python_version<='3.7'"
 ]
 dropbox = [
   "dropbox>=7.2.1",
@@ -64,8 +62,6 @@ libcloud = [
 ]
 s3 = [
   "boto3>=1.4.4",
-  "cachetools>=5.0.0",
-  "backports.cached_property; python_version<='3.7'"
 ]
 sftp = [
   "paramiko>=1.15",
