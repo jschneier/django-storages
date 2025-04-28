@@ -331,6 +331,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 "AWS_S3_SECRET_ACCESS_KEY/secret_key"
             )
 
+        # These variables are used for a boto3 client time-to-live caching mechanism.
+        # We want to avoid storing a resource for too long to avoid their memory leak
+        # ref https://github.com/boto/boto3/issues/1670.
         self._connection_lock = threading.Lock()
         self._connection_expiry = None
         self._connection = None
