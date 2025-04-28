@@ -43,6 +43,11 @@ class CleanNameTests(TestCase):
         path = utils.clean_name("path/to/somewhere/")
         self.assertEqual(path, "path/to/somewhere/")
 
+    def test_clean_name_leading_slash(self):
+        """Test the clean_name when the path has a leading slash."""
+        path = utils.clean_name("/path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere")
+
     def test_clean_name_windows(self):
         """Test the clean_name when the path has a trailing slash."""
         path = utils.clean_name("path\\to\\somewhere")
@@ -189,7 +194,7 @@ class TestReadBytesWrapper(TestCase):
     # bytes when encoding with utf-8 vs windows-1252 vs utf-16
 
     def test_with_string_file_specified_encoding(self):
-        content = "\u2122\u20AC\u2030"
+        content = "\u2122\u20ac\u2030"
         file = io.StringIO(content)
         file_wrapped = utils.ReadBytesWrapper(file, encoding="utf-16")
 
@@ -197,7 +202,7 @@ class TestReadBytesWrapper(TestCase):
         self.assertEqual(file_wrapped.read(), content.encode("utf-16"))
 
     def test_with_string_file_detect_encoding(self):
-        content = "\u2122\u20AC\u2030"
+        content = "\u2122\u20ac\u2030"
         with open(
             file=os.path.join(
                 os.path.dirname(__file__), "test_files", "windows-1252-encoded.txt"
@@ -214,7 +219,7 @@ class TestReadBytesWrapper(TestCase):
             self.assertEqual(file_wrapped.read(), content.encode("windows-1252"))
 
     def test_with_string_file_fallback_encoding(self):
-        content = "\u2122\u20AC\u2030"
+        content = "\u2122\u20ac\u2030"
         file = io.StringIO(content)
         file_wrapped = utils.ReadBytesWrapper(file)
 
