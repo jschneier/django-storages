@@ -1027,8 +1027,6 @@ class S3ManifestStaticStorageTests(TestCase):
 
 
 class S3FileTests(TestCase):
-    # Remove the override_settings after Python3.7 is dropped
-    @override_settings(AWS_S3_OBJECT_PARAMETERS={"ContentType": "text/html"})
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
