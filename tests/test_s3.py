@@ -19,7 +19,7 @@ from django.core.files.base import File
 from django.test import TestCase
 from django.test import override_settings
 from django.utils.timezone import is_aware
-from moto import mock_s3
+from moto import mock_aws
 
 from storages.backends import s3
 from tests.utils import NonSeekableContentFile
@@ -693,6 +693,14 @@ class S3StorageTests(TestCase):
         self.storage.url("test_name")
         self.storage.unsigned_connection.meta.client.generate_presigned_url.assert_called_once()
 
+    def test_url_protocol(self):
+        self.assertFalse(hasattr(settings, "AWS_S3_URL_PROTOCOL"))
+        self.assertEqual(self.storage.url_protocol, "https:")
+
+        with override_settings(AWS_S3_URL_PROTOCOL=None):
+            storage = s3.S3Storage()
+            self.assertEqual(storage.url_protocol, "https:")
+
     @mock.patch("storages.backends.s3.datetime")
     def test_storage_url_custom_domain_signed_urls(self, dt):
         key_id = "test-key"
@@ -999,8 +1007,6 @@ class S3ManifestStaticStorageTests(TestCase):
 
 
 class S3FileTests(TestCase):
-    # Remove the override_settings after Python3.7 is dropped
-    @override_settings(AWS_S3_OBJECT_PARAMETERS={"ContentType": "text/html"})
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
         self.storage._create_connection = mock.MagicMock()
@@ -1052,10 +1058,10 @@ class S3FileTests(TestCase):
         self.assertIsNone(f._multipart)
 
 
-@mock_s3
+@mock_aws
 class S3StorageTestsWithMoto(TestCase):
     """
-    Using mock_s3 as a class decorator automatically decorates methods,
+    Using mock_aws as a class decorator automatically decorates methods,
     but NOT classmethods or staticmethods.
     """
 

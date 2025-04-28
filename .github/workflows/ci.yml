@@ -16,44 +16,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-22.04]
         python-version:
-            - "3.7"
             - "3.8"
             - "3.9"
             - "3.10"
             - "3.11"
             - "3.12"
         django-version:
-            - "3.2"
-            - "4.1"
             - "4.2"
             - "5.0"
             - "5.1"
             - "main"
         exclude:
-            - python-version: "3.7"
-              django-version: "4.1"
-            - python-version: "3.12"
-              django-version: "4.1"
-            - python-version: "3.7"
-              django-version: "4.2"
-            - python-version: "3.12"
-              django-version: "4.2"
-            - python-version: "3.7"
-              django-version: "5.0"
             - python-version: "3.8"
               django-version: "5.0"
             - python-version: "3.9"
               django-version: "5.0"
-            - python-version: "3.7"
-              django-version: "5.1"
             - python-version: "3.8"
               django-version: "5.1"
             - python-version: "3.9"
               django-version: "5.1"
-            - python-version: "3.7"
-              django-version: "main"
             - python-version: "3.8"
               django-version: "main"
             - python-version: "3.9"
@@ -62,10 +45,6 @@ jobs:
               django-version: "main"
             - python-version: "3.11"
               django-version: "main"
-            - python-version: "3.11"
-              django-version: "3.2"
-            - python-version: "3.12"
-              django-version: "3.2"
 
     steps:
       - uses: actions/checkout@v4
@@ -89,8 +68,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04]
-        python-version: ["3.7"]
+        os: [ubuntu-22.04]
+        python-version: ["3.8"]
 
     steps:
       - uses: actions/checkout@v4
