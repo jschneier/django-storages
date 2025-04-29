@@ -480,15 +480,12 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         Get the (cached) thread-safe boto3 s3 resource.
         """
         with self._connection_lock:
-            # return cached connection if TTL allows
             if (
-                self._connection_expiry is not None
-                and time.monotonic() < self._connection_expiry
+                self._connection is None  # fresh instance
+                or time.monotonic() > self._connection_expiry  # TTL expired
             ):
-                return self._connection
-            # create new connection and set new expiry
-            self._connection_expiry = time.monotonic() + self.client_ttl
-            self._connection = self._create_connection()
+                self._connection_expiry = time.monotonic() + self.client_ttl
+                self._connection = self._create_connection()
             return self._connection
 
     @property
@@ -497,15 +494,12 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         Get the (cached) thread-safe boto3 s3 resource (unsigned).
         """
         with self._unsigned_connection_lock:
-            # return cached connection if TTL allows
             if (
-                self._unsigned_connection_expiry is not None
-                and time.monotonic() < self._unsigned_connection_expiry
+                self._unsigned_connection is None  # fresh instance
+                or time.monotonic() > self._unsigned_connection_expiry  # TTL expired
             ):
-                return self._unsigned_connection
-            # create new connection and set new expiry
-            self._unsigned_connection_expiry = time.monotonic() + self.client_ttl
-            self._unsigned_connection = self._create_connection(unsigned=True)
+                self._unsigned_connection_expiry = time.monotonic() + self.client_ttl
+                self._unsigned_connection = self._create_connection(unsigned=True)
             return self._unsigned_connection
 
     def _create_connection(self, *, unsigned=False):
