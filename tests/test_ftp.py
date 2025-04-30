@@ -9,7 +9,7 @@ from django.test import override_settings
 from storages.backends import ftp
 
 USER = "foo"
-PASSWORD = "b@r"
+PASSWORD = "bar"
 HOST = "localhost"
 PORT = 2121
 
@@ -50,7 +50,7 @@ class FTPTest(TestCase):
     def test_decode_location(self):
         config = self.storage._decode_location(URL)
         wanted_config = {
-            "passwd": "b@r",
+            "passwd": "bar",
             "host": "localhost",
             "user": "foo",
             "active": False,
@@ -62,7 +62,7 @@ class FTPTest(TestCase):
         # Test active FTP
         config = self.storage._decode_location("a" + URL)
         wanted_config = {
-            "passwd": "b@r",
+            "passwd": "bar",
             "host": "localhost",
             "user": "foo",
             "active": True,
@@ -79,7 +79,24 @@ class FTPTest(TestCase):
             self.storage._decode_location("http://foo.pt")
 
     def test_decode_location_urlchars_password(self):
-        self.storage._decode_location(geturl(pwd="b#r"))
+        self.assertEqual(
+            self.storage._decode_location(geturl(pwd="b%3Ar"))["passwd"], "b:r"
+        )
+        self.assertEqual(
+            self.storage._decode_location(geturl(pwd="b%2Fr"))["passwd"], "b/r"
+        )
+        self.assertEqual(
+            self.storage._decode_location(geturl(pwd="b%40r"))["passwd"], "b@r"
+        )
+        self.assertEqual(
+            self.storage._decode_location(geturl(pwd="b%23r"))["passwd"], "b#r"
+        )
+        self.assertEqual(
+            self.storage._decode_location(geturl(pwd="b%3Fr"))["passwd"], "b?r"
+        )
+        self.assertEqual(
+            self.storage._decode_location(geturl(pwd="b%25r"))["passwd"], "b%r"
+        )
 
     @override_settings(FTP_STORAGE_LOCATION=URL)
     def test_override_settings(self):
@@ -273,7 +290,7 @@ class FTPTLSTest(TestCase):
 
     def test_decode_location(self):
         wanted_config = {
-            "passwd": "b@r",
+            "passwd": "bar",
             "host": "localhost",
             "user": "foo",
             "active": False,
