@@ -286,7 +286,7 @@ class FTPStorageFileTest(TestCase):
 
 class FTPTLSTest(TestCase):
     def setUp(self):
-        self.storage = ftp.FTPStorage(location=geturl(scheme="ftps"))
+        self.storage = ftp.FTPStorage(location=geturl(scheme="ftpes"))
 
     def test_decode_location(self):
         wanted_config = {

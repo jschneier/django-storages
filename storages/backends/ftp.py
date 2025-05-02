@@ -11,7 +11,7 @@
 # In models.py you can write:
 # from FTPStorage import FTPStorage
 # fs = FTPStorage()
-# For a TLS configuration, you must use 'ftps' protocol
+# For a TLS configuration, you must use 'ftpes' protocol
 # class FTPTest(models.Model):
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
@@ -61,14 +61,14 @@ class FTPStorage(BaseStorage):
         """Return splitted configuration data from location."""
         splitted_url = urlparse(location)
 
-        if splitted_url.scheme not in ("ftp", "aftp", "ftps"):
-            raise ImproperlyConfigured("Only ftp, aftp, ftps schemes supported")
+        if splitted_url.scheme not in ("ftp", "aftp", "ftps", "ftpes"):
+            raise ImproperlyConfigured("Only ftp, aftp, ftps, ftpes schemes supported")
         if splitted_url.hostname == "":
             raise ImproperlyConfigured("You must at least provide host!")
 
         config = {
             "active": splitted_url.scheme == "aftp",
-            "secure": splitted_url.scheme == "ftps",
+            "secure": splitted_url.scheme in ["ftps", "ftpes"],
             "path": unquote(splitted_url.path) or "/",
             "host": unquote(splitted_url.hostname),
             "user": unquote(splitted_url.username),
