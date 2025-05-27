@@ -578,6 +578,23 @@ class GCloudStorageTests(GCloudTestCase):
                 access_token=storage.credentials.token,
             )
 
+    def test_iam_sign_blob_params_with_integer_token_state(self):
+        """
+        Test that _get_iam_sign_blob_params works with integer token_state values
+        (backward compatibility)
+        """
+        with override_settings(GS_IAM_SIGN_BLOB=True, GS_SA_EMAIL="test@example.com"):
+            storage = gcloud.GoogleCloudStorage()
+            storage.credentials = mock.MagicMock()
+            storage.credentials.token = "access_token_123"
+            storage.credentials.token_state = 2  # STALE - should refresh
+
+            email, token = storage._get_iam_sign_blob_params()
+
+            self.assertEqual(email, "test@example.com")
+            self.assertEqual(token, "access_token_123")
+            storage.credentials.refresh.assert_called_once()
+
 
 class GoogleCloudGzipClientTests(GCloudTestCase):
     def setUp(self):
