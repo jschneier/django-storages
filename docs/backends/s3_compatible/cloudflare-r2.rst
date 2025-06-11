@@ -5,6 +5,7 @@ Cloudflare R2 implements an `S3 Compatible API <https://developers.cloudflare.co
 
 #. Create an R2 bucket using Cloudflare's web panel or API
 #. Follow `Cloudflare's docs`_ to create authentication tokens, locking down permissions as required
+#. On your Cloudflare dashboard, create a Custom Domain that has your Static URL. This should match your Static_URL in your Settings.py file (e.g. static.domain_name.com)
 #. Follow the instructions in the :doc:`Amazon S3 docs <../amazon-S3>` with the following exceptions:
 
    * Set ``bucket_name`` to your previously created bucket
