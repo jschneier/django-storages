@@ -347,8 +347,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 s3={"addressing_style": self.addressing_style},
                 signature_version=self.signature_version,
                 proxies=self.proxies,
-                request_checksum_calculation='when_required',
-                response_checksum_validation='when_required',
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
             )
 
         if self.use_threads is False:
