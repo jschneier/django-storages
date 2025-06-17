@@ -1,6 +1,14 @@
 django-storages CHANGELOG
 =========================
 
+X.YY.Z (UNRELEASED)
+*******************
+
+General
+-------
+
+- Add support for Django 5.2
+
 1.14.6 (2025-04-01)
 *******************
 
