@@ -25,6 +25,7 @@ jobs:
             - "4.2"
             - "5.0"
             - "5.1"
+            - "5.2"
             - "main"
         exclude:
             - python-version: "3.8"
@@ -35,6 +36,10 @@ jobs:
               django-version: "5.1"
             - python-version: "3.9"
               django-version: "5.1"
+            - python-version: "3.8"
+              django-version: "5.2"
+            - python-version: "3.9"
+              django-version: "5.2"
             - python-version: "3.8"
               django-version: "main"
             - python-version: "3.9"
