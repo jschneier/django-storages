@@ -21,7 +21,6 @@ from storages.utils import to_bytes
 
 try:
     from google import auth
-    from google.auth.credentials import TokenState
     from google.auth.transport import requests
     from google.cloud.exceptions import NotFound
     from google.cloud.storage import Blob
@@ -356,7 +355,11 @@ class GoogleCloudStorage(BaseStorage):
         return super().get_available_name(name, max_length)
 
     def _get_iam_sign_blob_params(self):
-        if self.credentials.token_state != TokenState.FRESH:
+        # Check if credentials need refreshing before signing
+        # TokenState.FRESH = 1, STALE = 2, INVALID = 3
+        # We hardcode the value 1 (FRESH) to avoid importing TokenState,
+        # which was only added in google-auth 2.26.0, ensuring backward compatibility
+        if self.credentials.token_state != 1:  # Not FRESH
             self.credentials.refresh(requests.Request())
 
         try:
