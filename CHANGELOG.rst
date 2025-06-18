@@ -74,6 +74,13 @@ Google Cloud
 .. _#1438: https://github.com/jschneier/django-storages/pull/1438
 
 
+S3
+--
+
+- Fix to allow reopening closed file with different mode (`#1474`)
+
+.. _#1475: https://github.com/jschneier/django-storages/pull/1475
+
 1.14.4 (2024-07-09)
 *******************
 
