@@ -69,6 +69,19 @@ class GoogleCloudFile(CompressedFileMixin, File):
                 # This automatically decompresses the file
                 self.blob.download_to_file(self._file, checksum="crc32c")
                 self._file.seek(0)
+                if "b" not in self._mode:
+                    if hasattr(self._file, "readable"):
+                        # For versions > Python 3.10 compatibility
+                        # See SpooledTemporaryFile changes in 3.11 (https://docs.python.org/3/library/tempfile.html) # noqa: E501
+                        # Now fully implements the io.BufferedIOBase and io.TextIOBase abstract base classes allowing the file # noqa: E501
+                        # to be readable in the mode that it was specified (without accessing the underlying _file object). # noqa: E501
+                        # In this case, we need to wrap the file in a TextIOWrapper to ensure that the file is read as a text file. # noqa: E501
+                        self._file = io.TextIOWrapper(self._file, encoding="utf-8")
+                    else:
+                        # For versions <= Python 3.10 compatibility
+                        self._file = io.TextIOWrapper(
+                            self._file._file, encoding="utf-8"
+                        )
         return self._file
 
     def _set_file(self, value):
