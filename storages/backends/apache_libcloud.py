@@ -16,8 +16,16 @@ try:
     from libcloud.storage.providers import get_driver
     from libcloud.storage.types import ObjectDoesNotExistError
     from libcloud.storage.types import Provider
+    LIBCLOUD_AVAILABLE = True
 except ImportError:
-    raise ImproperlyConfigured("Could not load libcloud")
+    LIBCLOUD_AVAILABLE = False
+    # Define placeholder for import errors during testing
+    class ObjectDoesNotExistError(Exception):
+        pass
+    Provider = None
+    get_driver = None
+    # Only raise ImproperlyConfigured if we try to use the class
+    # This allows tests to import the module without failure
 
 
 @deconstructible
@@ -26,6 +34,10 @@ class LibCloudStorage(Storage):
     on supported providers"""
 
     def __init__(self, provider_name=None, option=None):
+        # Check if libcloud is available
+        if not LIBCLOUD_AVAILABLE:
+            raise ImproperlyConfigured("Could not load libcloud")
+
         if provider_name is None:
             provider_name = getattr(settings, "DEFAULT_LIBCLOUD_PROVIDER", "default")
 
@@ -122,27 +134,53 @@ class LibCloudStorage(Storage):
         return obj.size if obj else -1
 
     def url(self, name):
-        provider_type = self.provider["type"].lower()
-        obj = self._get_object(name)
-        if not obj:
-            return None
-        try:
-            url = self.driver.get_object_cdn_url(obj)
-        except NotImplementedError as e:
-            object_path = "{}/{}".format(self.bucket, obj.name)
+        name = clean_name(name)
+
+        # Handle provider type which can be a string or an enum
+        provider_type = self.provider["type"]
+        if not isinstance(provider_type, str):
+            provider_type = str(provider_type)
+        provider_type = provider_type.lower()
+
+        # For providers that we know don't need get_object_cdn_url,
+        # construct the URL directly without retrieving the object
+        known_providers = ["s3", "google", "azure", "backblaze"]
+        is_known_provider = any(provider in provider_type for provider in known_providers)
+
+        if is_known_provider:
+            # Handle empty name specially
+            if not name:
+                object_path = self.bucket
+            else:
+                object_path = "{}/{}".format(self.bucket, name)
+
             if "s3" in provider_type:
                 base_url = "https://%s" % self.driver.connection.host
-                url = urljoin(base_url, object_path)
+                return urljoin(base_url, object_path)
             elif "google" in provider_type:
-                url = urljoin("https://storage.googleapis.com", object_path)
+                return urljoin("https://storage.googleapis.com", object_path)
             elif "azure" in provider_type:
                 base_url = "https://%s.blob.core.windows.net" % self.provider["user"]
-                url = urljoin(base_url, object_path)
+                return urljoin(base_url, object_path)
             elif "backblaze" in provider_type:
-                url = urljoin("api.backblaze.com/b2api/v1/", object_path)
-            else:
-                raise e
-        return url
+                return urljoin("api.backblaze.com/b2api/v1/", object_path)
+
+        # For other providers or CDN-enabled drivers, we need to retrieve the object
+        # Empty name is a special case - we can't get an object with an empty name
+        if not name:
+            return None
+
+        try:
+            obj = self._get_object(name)
+            if not obj:
+                return None
+            return self.driver.get_object_cdn_url(obj)
+        except ObjectDoesNotExistError:
+            return None
+        except NotImplementedError as e:
+            # At this point, we know the driver doesn't implement get_object_cdn_url
+            # and we don't have a custom implementation for this provider type
+            raise e
 
     def _open(self, name, mode="rb"):
         remote_file = LibCloudFile(name, self, mode=mode)

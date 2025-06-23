@@ -38,6 +38,10 @@ def clean_name(name):
     Includes cleaning up Windows style paths, ensuring an ending trailing slash,
     and coercing from pathlib.PurePath.
     """
+    # Return empty string as is to prevent it from becoming '.'
+    if not name:
+        return ''
+
     if isinstance(name, pathlib.PurePath):
         name = str(name)
 
