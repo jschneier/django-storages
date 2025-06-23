@@ -3,10 +3,8 @@ import gzip
 import io
 import os
 import pickle
-import threading
 from textwrap import dedent
 from unittest import mock
-from unittest import skipIf
 from urllib.parse import urlparse
 
 import boto3
@@ -35,8 +33,7 @@ class S3ManifestStaticStorageTestStorage(s3.S3ManifestStaticStorage):
 class S3StorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3Storage()
-        self.storage._connections.connection = mock.MagicMock()
-        self.storage._unsigned_connections.connection = mock.MagicMock()
+        self.storage._create_connection = mock.MagicMock()
 
     @mock.patch("boto3.Session")
     def test_s3_session(self, session):
@@ -57,7 +54,9 @@ class S3StorageTests(TestCase):
 
     @mock.patch("boto3.Session.resource")
     def test_connection_unsiged(self, resource):
-        with override_settings(AWS_S3_ADDRESSING_STYLE="virtual"):
+        with override_settings(
+            AWS_S3_ADDRESSING_STYLE="virtual", AWS_QUERYSTRING_AUTH=False
+        ):
             storage = s3.S3Storage()
             _ = storage.unsigned_connection
             resource.assert_called_once()
@@ -68,36 +67,17 @@ class S3StorageTests(TestCase):
                 "virtual", resource.call_args[1]["config"].s3["addressing_style"]
             )
 
-    def test_pickle_with_bucket(self):
-        """
-        Test that the storage can be pickled with a bucket attached
-        """
-        # Ensure the bucket has been used
-        self.storage.bucket
-        self.assertIsNotNone(self.storage._bucket)
-
-        # Can't pickle MagicMock, but you can't pickle a real Bucket object either
-        p = pickle.dumps(self.storage)
-        new_storage = pickle.loads(p)
-
-        self.assertIsInstance(new_storage._connections, threading.local)
-        # Put the mock connection back in
-        new_storage._connections.connection = mock.MagicMock()
-
-        self.assertIsNone(new_storage._bucket)
-        new_storage.bucket
-        self.assertIsNotNone(new_storage._bucket)
-
-    def test_pickle_without_bucket(self):
+    def test_pickle(self):
         """
         Test that the storage can be pickled, without a bucket instance
         """
-
-        # Can't pickle a threadlocal
-        p = pickle.dumps(self.storage)
+        storage = s3.S3Storage()
+        _ = storage.connection
+        _ = storage.bucket
+        p = pickle.dumps(storage)
         new_storage = pickle.loads(p)
-
-        self.assertIsInstance(new_storage._connections, threading.local)
+        _ = new_storage.connection
+        _ = storage.bucket
 
     def test_storage_url_slashes(self):
         """
@@ -580,9 +560,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage._connections.connection.meta.client.get_paginator.return_value = (
-            paginator
-        )
+        self.storage.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir("")
         paginator.paginate.assert_called_with(
@@ -609,9 +587,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage._connections.connection.meta.client.get_paginator.return_value = (
-            paginator
-        )
+        self.storage.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir("some/")
         paginator.paginate.assert_called_with(
@@ -634,9 +610,7 @@ class S3StorageTests(TestCase):
 
         paginator = mock.MagicMock()
         paginator.paginate.return_value = pages
-        self.storage._connections.connection.meta.client.get_paginator.return_value = (
-            paginator
-        )
+        self.storage.connection.meta.client.get_paginator.return_value = paginator
 
         dirs, files = self.storage.listdir("dir/")
         paginator.paginate.assert_called_with(
@@ -796,21 +770,6 @@ class S3StorageTests(TestCase):
         parsed_url = urlparse(url)
         self.assertEqual(parsed_url.path, "/filename.mp4")
         self.assertEqual(parsed_url.query, "version=10")
-
-    @skipIf(threading is None, "Test requires threading")
-    def test_connection_threading(self):
-        connections = []
-
-        def thread_storage_connection():
-            connections.append(self.storage.connection)
-
-        for _ in range(2):
-            t = threading.Thread(target=thread_storage_connection)
-            t.start()
-            t.join()
-
-        # Connection for each thread needs to be unique
-        self.assertIsNot(connections[0], connections[1])
 
     def test_location_leading_slash(self):
         msg = (
@@ -1004,11 +963,32 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage()
             self.assertEqual(storage.security_token, "baz")
 
+    def test_connection_cache(self):
+        storage1 = s3.S3Storage()
+        connection1 = storage1.connection
+        unsigned_connection1 = storage1.unsigned_connection
+        # different connections
+        self.assertNotEqual(id(connection1), id(unsigned_connection1))
+        # cache hits
+        self.assertEqual(id(connection1), id(storage1.connection))
+        self.assertEqual(id(unsigned_connection1), id(storage1.unsigned_connection))
+
+        storage2 = s3.S3Storage()
+        connection2 = storage2.connection
+        unsigned_connection2 = storage2.unsigned_connection
+        # different connections
+        self.assertNotEqual(id(connection2), id(unsigned_connection2))
+        self.assertNotEqual(id(connection1), id(connection2))
+        self.assertNotEqual(id(unsigned_connection1), id(unsigned_connection2))
+        # cache hits
+        self.assertEqual(id(connection2), id(storage2.connection))
+        self.assertEqual(id(unsigned_connection2), id(storage2.unsigned_connection))
+
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):
         self.storage = s3.S3StaticStorage()
-        self.storage._connections.connection = mock.MagicMock()
+        self.storage._create_connection = mock.MagicMock()
 
     def test_querystring_auth(self):
         self.assertFalse(self.storage.querystring_auth)
@@ -1017,7 +997,7 @@ class S3StaticStorageTests(TestCase):
 class S3ManifestStaticStorageTests(TestCase):
     def setUp(self):
         self.storage = S3ManifestStaticStorageTestStorage()
-        self.storage._connections.connection = mock.MagicMock()
+        self.storage._create_connection = mock.MagicMock()
 
     def test_querystring_auth(self):
         self.assertFalse(self.storage.querystring_auth)
@@ -1029,7 +1009,7 @@ class S3ManifestStaticStorageTests(TestCase):
 class S3FileTests(TestCase):
     def setUp(self) -> None:
         self.storage = s3.S3Storage()
-        self.storage._connections.connection = mock.MagicMock()
+        self.storage._create_connection = mock.MagicMock()
 
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
