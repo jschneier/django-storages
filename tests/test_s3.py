@@ -1,3 +1,9 @@
+import os
+import pytest
+pytest.importorskip("boto3")
+if not os.environ.get("DJANGO_SETTINGS_MODULE"):
+    pytest.skip("DJANGO_SETTINGS_MODULE not set", allow_module_level=True)
+
 import datetime
 import gzip
 import io
