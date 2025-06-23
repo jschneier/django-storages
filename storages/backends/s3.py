@@ -355,7 +355,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 s3={"addressing_style": self.addressing_style},
                 signature_version=self.signature_version,
                 proxies=self.proxies,
-                max_pool_connections=64,  # thread-safe
+                max_pool_connections=64,  # shared between threads
                 tcp_keepalive=True,
                 retries={"max_attempts": 6, "mode": "adaptive"},
             )
@@ -504,12 +504,13 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
     def _create_connection(self, *, unsigned=False):
         """
-        Create a new session and boto3 s3 resource.
+        Create a new session and thread-safe boto3 s3 resource.
         """
         config = self.client_config
         if unsigned:
             config = config.merge(Config(signature_version=botocore.UNSIGNED))
         session = self._create_session()
+        # thread-safe client ref https://github.com/boto/boto3/blob/1.38.41/docs/source/guide/clients.rst?plain=1#L111
         return session.resource(
             "s3",
             region_name=self.region_name,
