@@ -510,7 +510,8 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         if unsigned:
             config = config.merge(Config(signature_version=botocore.UNSIGNED))
         session = self._create_session()
-        # thread-safe client ref https://github.com/boto/boto3/blob/1.38.41/docs/source/guide/clients.rst?plain=1#L111
+        # thread-safe boto3 client (wrapped by a boto3 resource) ref:
+        # https://github.com/boto/boto3/blob/1.38.41/docs/source/guide/clients.rst?plain=1#L111
         return session.resource(
             "s3",
             region_name=self.region_name,
