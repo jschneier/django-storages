@@ -33,22 +33,45 @@ class TestReadBytesWrapperStandalone(unittest.TestCase):
         wrapper = ReadBytesWrapper(file_obj, encoding='ascii')
         self.assertEqual(wrapper.read(), content.encode('ascii'))
 
-    def test_with_string_file_detect_encoding(self):
-        """Test that the wrapper uses the file's encoding if available"""
+    def test_with_string_file_default_encoding(self):
+        """Test the default encoding behavior"""
         content = 'Hello, world!'
         file_obj = io.StringIO(content)
-        file_obj.encoding = 'latin1'
-        wrapper = ReadBytesWrapper(file_obj)
+        # Create a custom file-like object with encoding attribute
+        class StringIOWithEncoding:
+            def __init__(self, content, encoding):
+                self.content = content
+                self.encoding = encoding
+                self.closed = False
+
+            def read(self, *args, **kwargs):
+                return self.content
+
+            def close(self):
+                self.closed = True
+
+        # Test with a file that has a custom encoding
+        custom_file = StringIOWithEncoding(content, 'latin1')
+        wrapper = ReadBytesWrapper(custom_file)
         self.assertEqual(wrapper.read(), content.encode('latin1'))
 
-    def test_with_string_file_fallback_encoding(self):
+    def test_with_string_file_no_encoding(self):
         """Test fallback to utf-8 when no encoding is specified"""
         content = 'Hello, world!'
-        file_obj = io.StringIO(content)
-        # Remove the encoding attribute if it exists
-        if hasattr(file_obj, 'encoding'):
-            delattr(file_obj, 'encoding')
-        wrapper = ReadBytesWrapper(file_obj)
+        # Create a file-like object without encoding attribute
+        class StringIOWithoutEncoding:
+            def __init__(self, content):
+                self.content = content
+                self.closed = False
+
+            def read(self, *args, **kwargs):
+                return self.content
+
+            def close(self):
+                self.closed = True
+
+        custom_file = StringIOWithoutEncoding(content)
+        wrapper = ReadBytesWrapper(custom_file)
         self.assertEqual(wrapper.read(), content.encode('utf-8'))
 
     def test_close(self):

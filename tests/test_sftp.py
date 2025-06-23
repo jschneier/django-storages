@@ -5,7 +5,11 @@ import stat
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-import paramiko
+import pytest
+pytest.importorskip("paramiko")
+if not os.environ.get("DJANGO_SETTINGS_MODULE"):
+    pytest.skip("DJANGO_SETTINGS_MODULE not set", allow_module_level=True)
+
 from django.core.files.base import File
 from django.test import TestCase
 from django.test import override_settings

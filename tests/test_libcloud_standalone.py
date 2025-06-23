@@ -1,10 +1,24 @@
 import os
 import sys
 import unittest
+import pytest
 from unittest.mock import patch, MagicMock
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Check if libcloud is available, otherwise skip this file
+try:
+    import libcloud
+    HAS_LIBCLOUD = True
+except ImportError:
+    HAS_LIBCLOUD = False
+    # Mark the module to be skipped
+    pytest.skip("libcloud not installed", allow_module_level=True)
+    # Create a mock libcloud module for testing imports
+    class MockLibcloud:
+        pass
+    sys.modules['libcloud'] = MockLibcloud()
 
 # Mock Django settings before importing LibCloudStorage
 with patch('django.conf.settings') as mock_settings:

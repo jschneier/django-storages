@@ -1,5 +1,20 @@
 import unittest
+import sys
+import pytest
 from unittest import mock
+
+# Check if libcloud is available, otherwise skip this test file
+try:
+    import libcloud
+    HAS_LIBCLOUD = True
+except ImportError:
+    HAS_LIBCLOUD = False
+    # Skip the entire module
+    pytest.skip("libcloud not installed", allow_module_level=True)
+    # Create a mock libcloud module for testing imports
+    class MockLibcloud:
+        pass
+    sys.modules['libcloud'] = MockLibcloud()
 
 class MockConnection:
     def __init__(self):
