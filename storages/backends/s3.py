@@ -98,6 +98,54 @@ def _filter_download_params(params):
     }
 
 
+class S3SeekableFile(io.RawIOBase):
+    """
+    Wrapper around an S3 file, providing support for seeking.
+    The position of the pointer is held in memory.
+    For every read only the requested length is loaded from the S3 service.
+    """
+
+    def __init__(self, obj, ExtraArgs):
+        self.s3_object = obj
+        self.size = obj.content_length
+        self.pos = 0
+        self.ExtraArgs = ExtraArgs
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        if whence == io.SEEK_SET:
+            self.pos = offset
+        elif whence == io.SEEK_CUR:
+            self.pos += offset
+        elif whence == io.SEEK_END:
+            self.pos = self.size + offset
+        else:
+            raise ValueError("Invalid value for whence.")
+
+        return self.pos
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def read(self, size=-1):
+        if size < 0 or self.pos + size > self.size:
+            size = self.size - self.pos
+
+        if size <= 0:
+            return b""
+
+        range_header = f"bytes={self.pos}-{self.pos + size - 1}"
+        resp = self.s3_object.get(Range=range_header, **self.ExtraArgs)
+        data = resp['Body'].read()
+        self.pos += len(data)
+
+        return data
+
 @deconstructible
 class S3File(CompressedFileMixin, File):
     """
@@ -167,35 +215,24 @@ class S3File(CompressedFileMixin, File):
 
     def _get_file(self):
         if self._file is None:
-            self._file = tempfile.SpooledTemporaryFile(
-                max_size=self._storage.max_memory_size,
-                suffix=".S3File",
-                dir=setting("FILE_UPLOAD_TEMP_DIR"),
-            )
             if "r" in self._mode:
                 self._is_dirty = False
                 params = _filter_download_params(
                     self._storage.get_object_parameters(self.name)
                 )
-                self.obj.download_fileobj(
-                    self._file, ExtraArgs=params, Config=self._storage.transfer_config
-                )
-                self._file.seek(0)
+                self._file = S3SeekableFile(self.obj, ExtraArgs=params)
+
                 if self._storage.gzip and self.obj.content_encoding == "gzip":
                     self._file = self._decompress_file(mode=self._mode, file=self._file)
-                elif "b" not in self._mode:
-                    if hasattr(self._file, "readable"):
-                        # For versions > Python 3.10 compatibility
-                        # See SpooledTemporaryFile changes in 3.11 (https://docs.python.org/3/library/tempfile.html) # noqa: E501
-                        # Now fully implements the io.BufferedIOBase and io.TextIOBase abstract base classes allowing the file # noqa: E501
-                        # to be readable in the mode that it was specified (without accessing the underlying _file object). # noqa: E501
-                        # In this case, we need to wrap the file in a TextIOWrapper to ensure that the file is read as a text file. # noqa: E501
-                        self._file = io.TextIOWrapper(self._file, encoding="utf-8")
-                    else:
-                        # For versions <= Python 3.10 compatibility
-                        self._file = io.TextIOWrapper(
-                            self._file._file, encoding="utf-8"
-                        )
+                if "b" not in self._mode:
+                    self._file = io.TextIOWrapper(self._file, encoding="utf-8")
+            else:
+                self._file = tempfile.SpooledTemporaryFile(
+                    max_size=self._storage.max_memory_size,
+                    suffix=".S3File",
+                    dir=setting("FILE_UPLOAD_TEMP_DIR"),
+                )
+
             self._closed = False
         return self._file
 
@@ -203,6 +240,10 @@ class S3File(CompressedFileMixin, File):
         self._file = value
 
     file = property(_get_file, _set_file)
+
+    seek = property(lambda self: self.file.seek)
+    seekable = property(lambda self: self.file.seekable)
+    tell = property(lambda self: self.file.tell)
 
     def read(self, *args, **kwargs):
         if "r" not in self._mode:
