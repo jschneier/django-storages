@@ -325,6 +325,9 @@ class S3StorageTests(TestCase):
         """
         Test opening a file in "r" mode (ie reading as string, not bytes)
         """
+        obj = self.storage.bucket.Object.return_value
+        obj.content_length = 0
+
         name = "test_open_read_string.txt"
         with self.storage.open(name, "r") as file:
             content_str = file.read()
@@ -1031,6 +1034,35 @@ class S3FileTests(TestCase):
         self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
+    def test_open(self):
+        params = {"CacheControl": "never"}
+        self.storage.get_object_parameters = lambda name: params
+        f = s3.S3File("test", "r", self.storage)
+        f.file
+        f.obj.get.assert_not_called()
+
+    def test_read(self):
+        params = {"CacheControl": "never"}
+        self.storage.get_object_parameters = lambda name: params
+        f = s3.S3File("test", "r", self.storage)
+
+        data = b"01234"
+        f.obj.content_length = len(data)
+        f.obj.get.return_value = {"Body": io.BytesIO(data)}
+
+        self.assertEqual(data.decode("utf-8"), f.file.read())
+        f.obj.get.assert_called_once_with(Range="bytes=0-4")
+
+    def test_seek(self):
+        f = s3.S3File("test", "r", self.storage)
+
+        data = b"01234"
+        f.obj.content_length = len(data)
+        f.obj.get.return_value = {"Body": io.BytesIO(data)}
+
+        f.file.seek(5)
+        f.obj.get.assert_not_called()
+
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
         self.storage.get_object_parameters = lambda name: params
@@ -1040,9 +1072,7 @@ class S3FileTests(TestCase):
         f.obj.load.assert_called_once_with(**filtered)
 
         f.file
-        f.obj.download_fileobj.assert_called_once_with(
-            mock.ANY, ExtraArgs=filtered, Config=self.storage.transfer_config
-        )
+        f.obj.get.assert_not_called()
 
     def test_closed(self):
         with s3.S3File("test", "wb", self.storage) as f:
@@ -1091,6 +1121,76 @@ class S3StorageTestsWithMoto(TestCase):
         cls.storage = s3.S3Storage()
         cls.bucket = cls.storage.connection.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
         cls.bucket.create()
+
+    def test_readable(self):
+        self.storage.save("file.txt", File(io.StringIO("01234")))
+
+        file = s3.S3File("file.txt", "r", self.storage)
+        self.assertTrue(file.readable())
+
+    def test_seekable(self):
+        self.storage.save("file.txt", File(io.StringIO("01234")))
+
+        file = s3.S3File("file.txt", "r", self.storage)
+        self.assertTrue(file.seekable())
+
+    def test_tell(self):
+        self.storage.save("file.txt", File(io.StringIO("01234")))
+
+        file = s3.S3File("file.txt", "r", self.storage)
+        self.assertEqual(0, file.tell())
+
+        file.seek(3)
+        self.assertEqual(3, file.tell())
+
+        file.seek(0, os.SEEK_END)
+        self.assertEqual(5, file.tell())
+
+    def test_seek_string_file(self):
+        self.storage.save("string_file.txt", File(io.StringIO("01234")))
+        file = s3.S3File("string_file.txt", "r", self.storage)
+
+        self.assertEqual(2, file.seek(2))
+        self.assertEqual("234", file.read())
+
+    def test_seek_start_string_file(self):
+        self.storage.save("string_file.txt", File(io.StringIO("01234")))
+
+        file = s3.S3File("string_file.txt", "r", self.storage)
+        self.assertEqual("01234", file.read())
+
+        self.assertEqual(0, file.seek(0))
+        self.assertEqual("01234", file.read())
+
+    def test_seek_end_string_file(self):
+        self.storage.save("string_file.txt", File(io.StringIO("01234")))
+
+        file = s3.S3File("string_file.txt", "r", self.storage)
+        self.assertEqual(5, file.seek(0, io.SEEK_END))
+        self.assertEqual("", file.read())
+
+    def test_seek_bytes_file(self):
+        self.storage.save("string_file.txt", File(io.BytesIO(b"01234")))
+
+        file = s3.S3File("string_file.txt", "rb", self.storage)
+        self.assertEqual(2, file.seek(2))
+        self.assertEqual(b"234", file.read())
+
+    def test_seek_start_bytes_file(self):
+        self.storage.save("bytes_file.txt", File(io.BytesIO(b"01234")))
+
+        file = s3.S3File("bytes_file.txt", "rb", self.storage)
+        self.assertEqual(b"01234", file.read())
+
+        self.assertEqual(0, file.seek(0))
+        self.assertEqual(b"01234", file.read())
+
+    def test_seek_end_bytes_file(self):
+        self.storage.save("bytes_file.txt", File(io.BytesIO(b"01234")))
+
+        file = s3.S3File("bytes_file.txt", "rb", self.storage)
+        self.assertEqual(5, file.seek(0, io.SEEK_END))
+        self.assertEqual(b"", file.read())
 
     def test_save_bytes_file(self):
         self.storage.save("bytes_file.txt", File(io.BytesIO(b"foo1")))
