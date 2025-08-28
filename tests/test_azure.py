@@ -161,7 +161,7 @@ class AzureStorageTest(TestCase):
 
         with mock.patch("storages.backends.azure_storage.datetime") as datetime_mocked:
             # Implicit read permission
-            datetime_mocked.utcnow.return_value = fixed_time
+            datetime_mocked.datetime.now.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", 100),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
@@ -179,7 +179,7 @@ class AzureStorageTest(TestCase):
             self.assertEqual(str(called_kwargs["permission"]), "r")
 
             # Explicit write permission
-            datetime_mocked.utcnow.return_value = fixed_time
+            datetime_mocked.datetime.now.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", expire=100, mode="w"),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
@@ -219,7 +219,7 @@ class AzureStorageTest(TestCase):
             datetime.datetime(2016, 11, 6, 4), datetime.timezone.utc
         )
         with mock.patch("storages.backends.azure_storage.datetime") as datetime_mocked:
-            datetime_mocked.utcnow.return_value = fixed_time
+            datetime_mocked.datetime.now.return_value = fixed_time
             service_client.get_user_delegation_key.return_value = "user delegation key"
             self.assertEqual(
                 self.storage.url("some blob", 100),
@@ -435,3 +435,13 @@ class AzureStorageTest(TestCase):
             bsc.assert_called_once_with(
                 "https://test.blob.core.windows.net", credential=None, api_version="1.3"
             )
+
+    def test_user_delegation_key_expiry_is_aware(self):
+        """
+        Ensure _user_delegation_key_expiry is a UTC-aware datetime.
+        """
+        storage = azure_storage.AzureStorage()
+        self.assertIsNotNone(storage._user_delegation_key_expiry.tzinfo)
+        self.assertEqual(
+            storage._user_delegation_key_expiry.utcoffset().total_seconds(), 0
+        )
