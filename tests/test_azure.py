@@ -159,9 +159,9 @@ class AzureStorageTest(TestCase):
             datetime.datetime(2016, 11, 6, 4), datetime.timezone.utc
         )
 
-        with mock.patch("storages.backends.azure_storage.datetime") as d_mocked:
+        with mock.patch("storages.backends.azure_storage.datetime") as datetime_mocked:
             # Implicit read permission
-            d_mocked.utcnow.return_value = fixed_time
+            datetime_mocked.utcnow.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", 100),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
@@ -179,7 +179,7 @@ class AzureStorageTest(TestCase):
             self.assertEqual(str(called_kwargs["permission"]), "r")
 
             # Explicit write permission
-            d_mocked.utcnow.return_value = fixed_time
+            datetime_mocked.utcnow.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", expire=100, mode="w"),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
@@ -218,8 +218,8 @@ class AzureStorageTest(TestCase):
         fixed_time = make_aware(
             datetime.datetime(2016, 11, 6, 4), datetime.timezone.utc
         )
-        with mock.patch("storages.backends.azure_storage.datetime") as d_mocked:
-            d_mocked.utcnow.return_value = fixed_time
+        with mock.patch("storages.backends.azure_storage.datetime") as datetime_mocked:
+            datetime_mocked.utcnow.return_value = fixed_time
             service_client.get_user_delegation_key.return_value = "user delegation key"
             self.assertEqual(
                 self.storage.url("some blob", 100),
