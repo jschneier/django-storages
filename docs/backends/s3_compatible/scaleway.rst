@@ -3,7 +3,7 @@ Scaleway
 
 `Scaleway Object Storage <https://www.scaleway.com/en/docs/storage/object/>`_ implements the S3 protocol. To use it follow the instructions in the :doc:`Amazon S3 docs <../amazon-S3>` with the important caveats that you must:
 
-- Set ``AWS_BUCKET_NAME`` to the Bucket you want write to (such as ``my-chosen-bucket``)
+- Set ``AWS_STORAGE_BUCKET_NAME`` to the Bucket you want write to (such as ``my-chosen-bucket``)
 - Set ``AWS_S3_REGION_NAME`` to your Scaleway region (such as ``nl-ams`` or ``fr-par``)
 - Set ``AWS_S3_ENDPOINT_URL`` to the value of ``https://s3.${AWS_S3_REGION_NAME}.scw.cloud``
 - Set ``AWS_ACCESS_KEY_ID`` to the value of your Access Key ID (i.e. ``SCW3XXXXXXXXXXXXXXXX``)
