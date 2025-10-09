@@ -728,7 +728,7 @@ class S3StorageTests(TestCase):
             self.assertEqual(storage.url_protocol, "https:")
 
     @mock.patch("storages.backends.s3.datetime")
-    def test_storage_url_custom_domain_signed_urls(self, dt):
+    def test_storage_url_custom_domain_signed_urls(self, datetime_mocked):
         key_id = "test-key"
         filename = "file.txt"
         pem = dedent(
@@ -766,7 +766,9 @@ class S3StorageTests(TestCase):
             self.assertEqual(self.storage.url(filename), url)
 
             self.storage.querystring_auth = True
-            dt.utcnow.return_value = datetime.datetime.utcfromtimestamp(0)
+            datetime_mocked.now.return_value = datetime.datetime.fromtimestamp(
+                0, datetime.timezone.utc
+            )
             self.assertEqual(self.storage.url(filename), signed_url)
 
     def test_generated_url_is_encoded(self):
