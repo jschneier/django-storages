@@ -7,6 +7,7 @@ import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from urllib.parse import urlencode
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
@@ -681,7 +682,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             )
 
             if self.querystring_auth and self.cloudfront_signer:
-                expiration = datetime.utcnow() + timedelta(seconds=expire)
+                expiration = datetime.now(timezone.utc) + timedelta(seconds=expire)
                 return self.cloudfront_signer.generate_presigned_url(
                     url, date_less_than=expiration
                 )
