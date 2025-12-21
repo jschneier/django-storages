@@ -229,7 +229,7 @@ class FTPStorage(BaseStorage):
     def size(self, name):
         self._start_connection()
         try:
-            dirs, files = self._get_dir_details(os.path.dirname(name))
+            _dirs, files = self._get_dir_details(os.path.dirname(name))
             if os.path.basename(name) in files:
                 return files[os.path.basename(name)]
             else:

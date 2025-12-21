@@ -279,7 +279,7 @@ class S3StorageTests(TestCase):
             },
             Config=self.storage.transfer_config,
         )
-        args, kwargs = obj.upload_fileobj.call_args
+        args, _kwargs = obj.upload_fileobj.call_args
         content = args[0]
         zfile = gzip.GzipFile(mode="rb", fileobj=content)
         self.assertEqual(zfile.read(), b"I should be gzip'd")
@@ -307,7 +307,7 @@ class S3StorageTests(TestCase):
             },
             Config=self.storage.transfer_config,
         )
-        args, kwargs = obj.upload_fileobj.call_args
+        args, _kwargs = obj.upload_fileobj.call_args
         content = args[0]
         zfile = gzip.GzipFile(mode="rb", fileobj=content)
         self.assertEqual(zfile.read(), b"I should be gzip'd")

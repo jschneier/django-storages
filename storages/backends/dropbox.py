@@ -44,7 +44,7 @@ class DropboxFile(File):
             self._file = SpooledTemporaryFile()
             # As dropbox==9.3.0, the client returns a tuple
             # (dropbox.files.FileMetadata, requests.models.Response)
-            file_metadata, response = self._storage.client.files_download(self.name)
+            _file_metadata, response = self._storage.client.files_download(self.name)
             if response.status_code == 200:
                 with BytesIO(response.content) as file_content:
                     copyfileobj(file_content, self._file)

@@ -438,7 +438,7 @@ class GCloudStorageTests(GCloudTestCase):
             predefined_acl=None,
             content_type="text/css",
         )
-        args, kwargs = obj.upload_from_file.call_args
+        args, _kwargs = obj.upload_from_file.call_args
         content = args[0]
         zfile = gzip.GzipFile(mode="rb", fileobj=content)
         self.assertEqual(zfile.read(), b"I should be gzip'd")
@@ -634,7 +634,7 @@ class GoogleCloudGzipClientTests(GCloudTestCase):
                 predefined_acl=None,
                 content_type="text/css",
             )
-            args, kwargs = obj.upload_from_file.call_args
+            args, _kwargs = obj.upload_from_file.call_args
             content = args[0]
             zfile = gzip.GzipFile(mode="rb", fileobj=content)
             self.assertEqual(zfile.read(), b"I should be gzip'd")

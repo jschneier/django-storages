@@ -175,7 +175,7 @@ class AzureStorageTest(TestCase):
                 permission=mock.ANY,
                 expiry=fixed_time + timedelta(seconds=100),
             )
-            called_args, called_kwargs = generate_blob_sas_mocked.call_args
+            _called_args, called_kwargs = generate_blob_sas_mocked.call_args
             self.assertEqual(str(called_kwargs["permission"]), "r")
 
             # Explicit write permission
@@ -193,7 +193,7 @@ class AzureStorageTest(TestCase):
                 permission=mock.ANY,
                 expiry=fixed_time + timedelta(seconds=100),
             )
-            called_args, called_kwargs = generate_blob_sas_mocked.call_args
+            _called_args, called_kwargs = generate_blob_sas_mocked.call_args
             self.assertEqual(str(called_kwargs["permission"]), "w")
 
     def test_url_custom_domain(self):
