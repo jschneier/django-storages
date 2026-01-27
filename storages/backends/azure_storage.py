@@ -47,10 +47,15 @@ class AzureStorageFile(File):
         )
 
         if "r" in self._mode or "a" in self._mode:
-            download_stream = self._storage.client.download_blob(
-                self._path, timeout=self._storage.timeout
-            )
-            download_stream.readinto(file)
+            try:
+                download_stream = self._storage.client.download_blob(
+                    self._path, timeout=self._storage.timeout
+                )
+                download_stream.readinto(file)
+            except ResourceNotFoundError as e:
+                file.close()
+                msg = f"Blob not found: {self.name}"
+                raise FileNotFoundError(msg) from e
         if "r" in self._mode:
             file.seek(0)
 
