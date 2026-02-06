@@ -159,6 +159,10 @@ class FTPStorage(BaseStorage):
             self._connection.cwd(pwd)
             memory_file.seek(0)
             return memory_file
+        except ftplib.error_perm as e:
+            if str(e).startswith("550"):
+                raise FileNotFoundError(f"File not found: {name}") from e
+            raise FTPStorageException("Error reading file %s" % name)
         except ftplib.all_errors:
             raise FTPStorageException("Error reading file %s" % name)
 

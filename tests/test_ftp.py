@@ -1,3 +1,4 @@
+import ftplib
 import io
 from unittest.mock import patch
 
@@ -162,6 +163,25 @@ class FTPTest(TestCase):
         self.storage._start_connection()
         with self.assertRaises(ftp.FTPStorageException):
             self.storage._read("foo")
+
+    @patch(
+        "ftplib.FTP",
+        **{
+            "return_value.pwd.return_value": "foo",
+            "return_value.retrbinary.side_effect": ftplib.error_perm(
+                "550 File not found"
+            ),
+        },
+    )
+    def test_read_missing_file(self, mock_ftp):
+        """
+        Test that reading a missing file raises FileNotFoundError
+        """
+        name = "missing_file.txt"
+        file = self.storage.open(name, "rb")
+        with self.assertRaises(FileNotFoundError) as cm:
+            _ = file.read()
+        self.assertIn(name, str(cm.exception))
 
     @patch(
         "ftplib.FTP",

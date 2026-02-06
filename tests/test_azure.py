@@ -3,6 +3,7 @@ from datetime import timedelta
 from unittest import mock
 
 import django
+from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobProperties
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
@@ -355,6 +356,20 @@ class AzureStorageTest(TestCase):
             timeout=20,
             overwrite=True,
         )
+
+    def test_storage_open_read_missing_blob(self):
+        """
+        Test that opening a missing blob for reading raises FileNotFoundError
+        """
+        name = "missing_blob.txt"
+        self.storage._client.download_blob.side_effect = ResourceNotFoundError(
+            "The specified blob does not exist."
+        )
+
+        file = self.storage.open(name, "rb")
+        with self.assertRaises(FileNotFoundError) as cm:
+            _ = file.file
+        self.assertIn(name, str(cm.exception))
 
     def test_storage_exists(self):
         blob_name = "blob"

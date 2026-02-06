@@ -60,6 +60,20 @@ class SFTPStorageTest(TestCase):
         self.storage._read("foo")
         self.assertTrue(mock_sftp.open.called)
 
+    @patch(
+        "storages.backends.sftpstorage.SFTPStorage.sftp",
+        **{"open.side_effect": FileNotFoundError("No such file")},
+    )
+    def test_read_missing_file(self, mock_sftp):
+        """
+        Test that reading a missing file raises FileNotFoundError
+        """
+        name = "missing_file.txt"
+        file = self.storage.open(name, "rb")
+        with self.assertRaises(FileNotFoundError) as cm:
+            _ = file.read()
+        self.assertIn(name, str(cm.exception))
+
     @patch("storages.backends.sftpstorage.SFTPStorage.sftp")
     def test_chown(self, mock_sftp):
         self.storage._chown("foo", 1, 1)
