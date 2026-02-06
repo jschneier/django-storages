@@ -93,7 +93,10 @@ class SFTPStorage(ClosingContextManager, BaseStorage):
 
     def _read(self, name):
         remote_path = self._remote_path(name)
-        return self.sftp.open(remote_path, "rb")
+        try:
+            return self.sftp.open(remote_path, "rb")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"File not found: {name}") from e
 
     def _chown(self, path, uid=None, gid=None):
         """Set uid and/or gid for file at path."""

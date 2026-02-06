@@ -179,6 +179,27 @@ class DropboxFileTest(TestCase):
             with self.storage.open("foo.txt") as file:
                 file.read()
 
+    @mock.patch("dropbox.Dropbox.files_download")
+    def test_read_missing_file(self, mock_download):
+        """
+        Test that opening a missing file for reading raises FileNotFoundError
+        """
+        from dropbox.exceptions import ApiError
+        from dropbox.files import LookupError
+
+        name = "missing_file.txt"
+        mock_download.side_effect = ApiError(
+            request_id="test",
+            error=LookupError("not_found", None),
+            user_message_text="The file was not found.",
+            user_message_locale="en",
+        )
+
+        file = self.storage.open(name)
+        with self.assertRaises(FileNotFoundError) as cm:
+            _ = file.file
+        self.assertIn(name, str(cm.exception))
+
 
 @mock.patch("dropbox.Dropbox.files_list_folder", return_value=FILES_EMPTY_MOCK)
 class DropboxRootPathTest(TestCase):

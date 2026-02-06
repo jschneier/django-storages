@@ -42,18 +42,33 @@ class DropboxFile(File):
     def _get_file(self):
         if self._file is None:
             self._file = SpooledTemporaryFile()
-            # As dropbox==9.3.0, the client returns a tuple
-            # (dropbox.files.FileMetadata, requests.models.Response)
-            file_metadata, response = self._storage.client.files_download(self.name)
+            try:
+                # As dropbox==9.3.0, the client returns a tuple
+                # (dropbox.files.FileMetadata, requests.models.Response)
+                file_metadata, response = self._storage.client.files_download(self.name)
+            except ApiError as e:
+                self._file.close()
+                self._file = None
+                err = e.error
+                # LookupError directly (e.g. not_found)
+                if hasattr(err, "is_not_found") and err.is_not_found():
+                    raise FileNotFoundError(f"File not found: {self.name}") from e
+                # DownloadError wrapping a LookupError (path -> not_found)
+                if hasattr(err, "is_path") and err.is_path():
+                    lookup = err.get_path()
+                    if hasattr(lookup, "is_not_found") and lookup.is_not_found():
+                        raise FileNotFoundError(f"File not found: {self.name}") from e
+                raise
             if response.status_code == 200:
                 with BytesIO(response.content) as file_content:
                     copyfileobj(file_content, self._file)
             else:
                 # JIC the exception isn't caught by the dropbox client
+                self._file.close()
+                self._file = None
                 raise DropboxStorageException(
-                    "Dropbox server returned a {} response when accessing {}".format(
-                        response.status_code, self.name
-                    )
+                    f"Dropbox server returned a {response.status_code} "
+                    f"response when accessing {self.name}"
                 )
             self._file.seek(0)
         return self._file

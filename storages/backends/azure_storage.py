@@ -54,8 +54,7 @@ class AzureStorageFile(File):
                 download_stream.readinto(file)
             except ResourceNotFoundError as e:
                 file.close()
-                msg = f"Blob not found: {self.name}"
-                raise FileNotFoundError(msg) from e
+                raise FileNotFoundError("Blob not found: %s" % self.name) from e
         if "r" in self._mode:
             file.seek(0)
 

@@ -1031,6 +1031,20 @@ class S3FileTests(TestCase):
         self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
+    def test_open_read_missing_file(self):
+        """
+        Test that opening a missing file for reading raises FileNotFoundError
+        """
+        name = "missing_file.txt"
+        self.storage.bucket.Object.return_value.load.side_effect = ClientError(
+            {"Error": {}, "ResponseMetadata": {"HTTPStatusCode": 404}},
+            "HeadObject",
+        )
+
+        with self.assertRaises(FileNotFoundError) as cm:
+            self.storage.open(name, "rb")
+        self.assertIn(name, str(cm.exception))
+
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
         self.storage.get_object_parameters = lambda name: params
