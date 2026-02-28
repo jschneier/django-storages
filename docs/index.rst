@@ -15,6 +15,7 @@ django-storages is a collection of custom storage backends for Django.
    backends/gcloud
    backends/sftp
    backends/s3_compatible/index
+   backends/vercel-blob
 
 Installation
 ************
