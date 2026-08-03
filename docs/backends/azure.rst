@@ -117,6 +117,12 @@ Settings
 
   Number of connections to make when uploading a single file.
 
+``download_max_conn`` or ``AZURE_DOWNLOAD_MAX_CONN``
+
+  Default: ``1``
+
+  Number of concurrent connections to use when downloading a single file.
+
 ``timeout`` or ``AZURE_CONNECTION_TIMEOUT_SECS``
 
   Default: ``20``

@@ -48,7 +48,9 @@ class AzureStorageFile(File):
 
         if "r" in self._mode or "a" in self._mode:
             download_stream = self._storage.client.download_blob(
-                self._path, timeout=self._storage.timeout
+                self._path,
+                timeout=self._storage.timeout,
+                max_concurrency=self._storage.download_max_conn,
             )
             download_stream.readinto(file)
         if "r" in self._mode:
@@ -141,6 +143,7 @@ class AzureStorage(BaseStorage):
             "azure_container": setting("AZURE_CONTAINER"),
             "azure_ssl": setting("AZURE_SSL", True),
             "upload_max_conn": setting("AZURE_UPLOAD_MAX_CONN", 2),
+            "download_max_conn": setting("AZURE_DOWNLOAD_MAX_CONN", 1),
             "timeout": setting("AZURE_CONNECTION_TIMEOUT_SECS", 20),
             "max_memory_size": setting("AZURE_BLOB_MAX_MEMORY_SIZE", 2 * 1024 * 1024),
             "expiration_secs": setting("AZURE_URL_EXPIRATION_SECS"),

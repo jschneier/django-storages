@@ -356,6 +356,38 @@ class AzureStorageTest(TestCase):
             overwrite=True,
         )
 
+    def test_storage_open_read(self):
+        """
+        Test opening a file in read mode
+        """
+        name = "test_open_for_reading.txt"
+        download_stream = mock.MagicMock()
+        self.storage._client.download_blob.return_value = download_stream
+
+        file = self.storage.open(name, "r")
+        # Access file to trigger the download
+        _ = file.read()
+        self.storage._client.download_blob.assert_called_once_with(
+            name, timeout=20, max_concurrency=1
+        )
+        download_stream.readinto.assert_called_once_with(mock.ANY)
+
+    def test_storage_open_read_custom_max_conn(self):
+        """
+        Test opening a file in read mode with custom download max concurrency
+        """
+        name = "test_open_for_reading.txt"
+        self.storage.download_max_conn = 5
+        download_stream = mock.MagicMock()
+        self.storage._client.download_blob.return_value = download_stream
+
+        file = self.storage.open(name, "r")
+        _ = file.read()
+        self.storage._client.download_blob.assert_called_once_with(
+            name, timeout=20, max_concurrency=5
+        )
+        download_stream.readinto.assert_called_once_with(mock.ANY)
+
     def test_storage_exists(self):
         blob_name = "blob"
         client_mock = mock.MagicMock()

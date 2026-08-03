@@ -9,6 +9,11 @@ General
 
 - Add support for Django 5.2
 
+Azure
+-----
+
+- Add ``download_max_conn`` / ``AZURE_DOWNLOAD_MAX_CONN`` setting to configure max concurrency for blob downloads
+
 1.14.6 (2025-04-01)
 *******************
 
