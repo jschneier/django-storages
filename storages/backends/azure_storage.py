@@ -184,6 +184,11 @@ class AzureStorage(BaseStorage):
                 DeprecationWarning,
             )
             options["api_version"] = self.api_version
+
+        # allow account url override for very custom azure instances/routing
+        if "account_url" in options:
+            return BlobServiceClient(credential=credential, **options)
+
         return BlobServiceClient(account_url, credential=credential, **options)
 
     @property
