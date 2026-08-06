@@ -665,12 +665,14 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         else:
             return make_naive(entry.last_modified)
 
-    def url(self, name, parameters=None, expire=None, http_method=None):
+    def url(self, name, parameters=None, expire=None, http_method=None, querystring_auth=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
         params = parameters.copy() if parameters else {}
         if expire is None:
             expire = self.querystring_expire
+        if querystring_auth is None:
+            querystring_auth = self.querystring_auth
 
         if self.custom_domain:
             url = "{}//{}/{}{}".format(
@@ -680,7 +682,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 "?{}".format(urlencode(params)) if params else "",
             )
 
-            if self.querystring_auth and self.cloudfront_signer:
+            if querystring_auth and self.cloudfront_signer:
                 expiration = datetime.utcnow() + timedelta(seconds=expire)
                 return self.cloudfront_signer.generate_presigned_url(
                     url, date_less_than=expiration
@@ -692,7 +694,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         params["Key"] = name
 
         connection = (
-            self.connection if self.querystring_auth else self.unsigned_connection
+            self.connection if querystring_auth else self.unsigned_connection
         )
         url = connection.meta.client.generate_presigned_url(
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
