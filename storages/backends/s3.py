@@ -665,7 +665,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         else:
             return make_naive(entry.last_modified)
 
-    def url(self, name, parameters=None, expire=None, http_method=None):
+    def url(self, name, *, parameters=None, expire=None, http_method=None):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
         params = parameters.copy() if parameters else {}

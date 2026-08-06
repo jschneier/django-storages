@@ -309,7 +309,7 @@ class GoogleCloudStorage(BaseStorage):
         created = blob.time_created
         return created if setting("USE_TZ") else timezone.make_naive(created)
 
-    def url(self, name, parameters=None):
+    def url(self, name, *, parameters=None):
         """
         Return public URL or a signed URL for the Blob.
 

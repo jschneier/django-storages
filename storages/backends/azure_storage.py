@@ -293,7 +293,7 @@ class AzureStorage(BaseStorage):
         # azure expects time in UTC
         return datetime.utcnow() + timedelta(seconds=expire)
 
-    def url(self, name, expire=None, parameters=None, mode="r"):
+    def url(self, name, *, expire=None, parameters=None, mode="r"):
         name = self._get_valid_path(name)
         params = parameters or {}
         permission = BlobSasPermissions.from_string(mode)
