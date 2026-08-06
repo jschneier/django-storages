@@ -41,6 +41,8 @@ To put static files on S3 via ``collectstatic`` on Django >= 4.2 you'd include t
 The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
 well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
 
+Be aware that if a storage instance is passed directly to a model field like ``storage=storages["PublicMediaStorage"]``, Django will serialize that field's arguments into your migration files, including any credentials set via ``OPTIONS`` or by subclassing, even if you originally sourced them from environment variables. To avoid this, omit credential keys from ``OPTIONS`` where possible and let boto3's default credential chain (environment variables, instance role, etc.) supply them instead.
+
 Authentication Settings
 ~~~~~~~~~~~~~~~~~~~~~~~
 
