@@ -4,6 +4,7 @@ import os
 import posixpath
 import tempfile
 import threading
+import time
 import warnings
 from datetime import datetime
 from datetime import timedelta
@@ -441,6 +442,10 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "use_threads": setting("AWS_S3_USE_THREADS", True),
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
             "client_config": setting("AWS_S3_CLIENT_CONFIG", None),
+            "cloudfront_distribution_id": setting("AWS_CLOUDFRONT_DISTRIBUTION_ID"),
+            "cloudfront_invalidate_on_change": setting(
+                "AWS_CLOUDFRONT_INVALIDATE_ON_CHANGE", False
+            ),
         }
 
     def __getstate__(self):
@@ -558,6 +563,11 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         obj = self.bucket.Object(name)
 
+        file_existed = None
+        # Avoid HEAD request cost when invalidation is disabled.
+        if self.cloudfront_invalidate_on_change:
+            file_existed = self.exists(cleaned_name)
+
         # Workaround file being closed errantly see: https://github.com/boto/s3transfer/issues/80
         original_close = content.close
         content.close = lambda: None
@@ -565,11 +575,16 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             obj.upload_fileobj(content, ExtraArgs=params, Config=self.transfer_config)
         finally:
             content.close = original_close
+
+        if should_invalidate and file_existed:
+            self._invalidate_cloudfront(name)
+
         return cleaned_name
 
     def delete(self, name):
+        name = self._normalize_name(clean_name(name))
+
         try:
-            name = self._normalize_name(clean_name(name))
             self.bucket.Object(name).delete()
         except ClientError as err:
             if err.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
@@ -578,6 +593,9 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
             # Some other error was encountered. Re-raise it
             raise
+
+        if self.cloudfront_invalidate_on_change:
+            self._invalidate_cloudfront(name)
 
     def exists(self, name):
         name = self._normalize_name(clean_name(name))
@@ -698,6 +716,32 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
         )
         return url
+
+    def _invalidate_cloudfront(self, name):
+        if not self.cloudfront_distribution_id:
+            raise ImproperlyConfigured(
+                "AWS_CLOUDFRONT_DISTRIBUTION_ID must be set to invalidate files "
+                "on CloudFront."
+            )
+
+        invalidation_path = name if name.startswith("/") else f"/{name}"
+
+        cloudfront = self._create_session().client(
+            "cloudfront",
+            config=Config(
+                region_name=self.region_name,
+            ),
+        )
+        cloudfront.create_invalidation(
+            DistributionId=self.cloudfront_distribution_id,
+            InvalidationBatch={
+                "Paths": {
+                    "Quantity": 1,
+                    "Items": [invalidation_path],
+                },
+                "CallerReference": f"{name}-{int(time.time() * 1000)}",
+            },
+        )
 
     def get_available_name(self, name, max_length=None):
         """Overwrite existing file with the same name."""
