@@ -381,8 +381,17 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             )
         return self.__class__._signers[cache_key]
 
+    def _convert_string_to_bool(self, value):
+        """Convert string 'true'/'false' to boolean, leave other values unchanged."""
+        if isinstance(value, str):
+            if value.lower() == "false":
+                return False
+            elif value.lower() == "true":
+                return True
+        return value
+
     def get_default_settings(self):
-        return {
+        settings = {
             "access_key": setting(
                 "AWS_S3_ACCESS_KEY_ID",
                 setting(
@@ -442,6 +451,10 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "transfer_config": setting("AWS_S3_TRANSFER_CONFIG", None),
             "client_config": setting("AWS_S3_CLIENT_CONFIG", None),
         }
+
+        # Convert string "false"/"true" to boolean for verify parameter
+        settings["verify"] = self._convert_string_to_bool(settings["verify"])
+        return settings
 
     def __getstate__(self):
         state = self.__dict__.copy()

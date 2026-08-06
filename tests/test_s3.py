@@ -1004,6 +1004,47 @@ class S3StorageTests(TestCase):
             storage = s3.S3Storage()
             self.assertEqual(storage.security_token, "baz")
 
+    def test_convert_string_to_bool_method(self):
+        """Test _convert_string_to_bool helper method directly"""
+        storage = s3.S3Storage()
+
+        # Test string "false" conversion
+        self.assertIs(storage._convert_string_to_bool("false"), False)
+        self.assertIs(storage._convert_string_to_bool("False"), False)
+        self.assertIs(storage._convert_string_to_bool("FALSE"), False)
+
+        # Test string "true" conversion
+        self.assertIs(storage._convert_string_to_bool("true"), True)
+        self.assertIs(storage._convert_string_to_bool("True"), True)
+        self.assertIs(storage._convert_string_to_bool("TRUE"), True)
+
+    def test_get_default_settings_verify_conversion(self):
+        """Test get_default_settings converts AWS_S3_VERIFY string to boolean"""
+        # Test with string "false"
+        with override_settings(AWS_S3_VERIFY="false"):
+            storage = s3.S3Storage()
+            settings = storage.get_default_settings()
+            self.assertIs(settings["verify"], False)
+            self.assertIsInstance(settings["verify"], bool)
+
+        # Test with string "true"
+        with override_settings(AWS_S3_VERIFY="true"):
+            storage = s3.S3Storage()
+            settings = storage.get_default_settings()
+            self.assertIs(settings["verify"], True)
+            self.assertIsInstance(settings["verify"], bool)
+
+        # Test with boolean False (should remain boolean)
+        with override_settings(AWS_S3_VERIFY=False):
+            storage = s3.S3Storage()
+            settings = storage.get_default_settings()
+            self.assertIs(settings["verify"], False)
+
+        # Test with None (default)
+        storage = s3.S3Storage()
+        settings = storage.get_default_settings()
+        self.assertIsNone(settings["verify"])
+
 
 class S3StaticStorageTests(TestCase):
     def setUp(self):
