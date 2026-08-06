@@ -602,7 +602,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
 
         directories = []
         files = []
-        paginator = self.connection.meta.client.get_paginator("list_objects")
+        paginator = self.connection.meta.client.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=self.bucket_name, Delimiter="/", Prefix=path)
         for page in pages:
             directories += [
