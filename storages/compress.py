@@ -46,4 +46,9 @@ class CompressStorageMixin:
 
 class CompressedFileMixin:
     def _decompress_file(self, mode, file, mtime=0.0):
-        return GzipFile(mode=mode, fileobj=file, mtime=mtime)
+        f = GzipFile(mode=mode, fileobj=file, mtime=mtime)
+
+        if "b" not in mode:
+            f = io.TextIOWrapper(f, encoding="utf-8")
+
+        return f
