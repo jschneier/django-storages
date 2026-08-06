@@ -1,3 +1,6 @@
+import os
+import posixpath
+
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import Storage
 
@@ -22,3 +25,15 @@ class BaseStorage(Storage):
 
     def get_default_settings(self):
         return {}
+
+    def generate_filename(self, filename):
+        """
+        Validate the filename by calling get_valid_name() and return a filename
+        to be passed to the save() method. 
+        """
+        # `filename` may include a path as returned by FileField.upload_to.
+        dirname, filename = os.path.split(filename)
+        
+        # Use posixpath so it will not use "\\" on Windows
+        return posixpath.normpath(posixpath.join(dirname, self.get_valid_name(filename)))
+    
