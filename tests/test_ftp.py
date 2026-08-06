@@ -1,3 +1,4 @@
+import datetime
 import io
 from unittest.mock import patch
 
@@ -5,6 +6,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.test import TestCase
 from django.test import override_settings
+from django.utils import timezone
 
 from storages.backends import ftp
 
@@ -16,6 +18,13 @@ PORT = 2121
 LIST_FIXTURE = """drwxr-xr-x   2 ftp      nogroup      4096 Jul 27 09:46 dir
 -rw-r--r--   1 ftp      nogroup      1024 Jul 27 09:45 fi
 -rw-r--r--   1 ftp      nogroup      2048 Jul 27 09:50 fi2"""
+
+MLST_FILE_NAME = "file-name.ext"
+
+MLST_VALID = f"""250-Begin
+ type=file;size=256;modify=20260101103015;UNIX.mode=0644;UNIX.uid=1000;UNIX.gid=1000;unique=123456789ab; {MLST_FILE_NAME}
+250 End.
+"""  # noqa: E501
 
 
 def geturl(scheme="ftp", pwd=PASSWORD):
@@ -229,6 +238,65 @@ class FTPTest(TestCase):
             self.storage.url("foo")
         self.storage = ftp.FTPStorage(location=URL, base_url="http://foo.bar/")
         self.assertEqual("http://foo.bar/foo", self.storage.url("foo"))
+
+    @patch("ftplib.FTP", **{"return_value.sendcmd.return_value": MLST_VALID})
+    def test_get_modified_time_aware(self, mock_ftp):
+        """The correct datetime is returned in a timezone-aware context."""
+        aware_date = datetime.datetime(
+            2026, 1, 1, 10, 30, 15, tzinfo=datetime.timezone.utc
+        )
+
+        with self.settings(TIME_ZONE="America/Montreal", USE_TZ=True):
+            last_modified = self.storage.get_modified_time(MLST_FILE_NAME)
+            self.assertTrue(timezone.is_aware(last_modified))
+            self.assertEqual(aware_date, last_modified)
+
+    @patch("ftplib.FTP", **{"return_value.sendcmd.return_value": MLST_VALID})
+    def test_get_modified_time_naive(self, mock_ftp):
+        """The correct datetime is returned in a timezone-naive context."""
+        aware_date = datetime.datetime(
+            2026, 1, 1, 10, 30, 15, tzinfo=datetime.timezone.utc
+        )
+
+        with self.settings(TIME_ZONE="America/Montreal", USE_TZ=False):
+            naive_date = timezone.make_naive(aware_date)
+            last_modified = self.storage.get_modified_time(MLST_FILE_NAME)
+            self.assertTrue(timezone.is_naive(last_modified))
+            self.assertEqual(naive_date, last_modified)
+
+    @patch(
+        "ftplib.FTP",
+        **{"return_value.sendcmd.return_value": MLST_VALID.replace("modify", "create")},
+    )
+    def test_get_modified_time_modify_missing(self, mock_ftp):
+        """An FTPStorageException is raised if the "modify" attribute is missing."""
+        with self.assertRaisesRegex(
+            ftp.FTPStorageException, 'does not contain a "modify" attribute'
+        ):
+            self.storage.get_modified_time(MLST_FILE_NAME)
+
+    @patch(
+        "ftplib.FTP",
+        **{
+            "return_value.sendcmd.return_value": MLST_VALID.replace(
+                "20260101103015", "20260101"
+            )
+        },
+    )
+    def test_get_modified_time_bad_timestamp(self, mock_ftp):
+        """An FTPStorageException is raised if the "modify" timestamp is invalid."""
+        with self.assertRaisesRegex(
+            ftp.FTPStorageException, '"modify" timestamp is in an unexpected format'
+        ):
+            self.storage.get_modified_time(MLST_FILE_NAME)
+
+    @patch("ftplib.FTP", **{"return_value.sendcmd.side_effect": OSError()})
+    def test_get_modified_time_ftp_error(self, mock_ftp):
+        """An FTPStorageException is raised if sendcmd encounters an FTP error."""
+        with self.assertRaisesRegex(
+            ftp.FTPStorageException, "Error getting listing for file"
+        ):
+            self.storage.get_modified_time(MLST_FILE_NAME)
 
 
 class FTPStorageFileTest(TestCase):

@@ -15,6 +15,7 @@
 # class FTPTest(models.Model):
 #     file = models.FileField(upload_to='a/b/c/', storage=fs)
 
+import datetime
 import ftplib
 import io
 import os
@@ -25,6 +26,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import File
 from django.utils.deconstruct import deconstructible
+from django.utils.timezone import make_naive
 
 from storages.base import BaseStorage
 from storages.utils import setting
@@ -190,6 +192,36 @@ class FTPStorage(BaseStorage):
         except ftplib.all_errors:
             raise FTPStorageException("Error getting listing for %s" % path)
 
+    def _get_file_last_modified_details(self, file_name):
+        """Returns the last modified timestamp (as a datetime) for the given file."""
+        # Connection must be open!
+        try:
+            # Get metadata for the requested file
+            # MLST specification: https://datatracker.ietf.org/doc/html/rfc3659#section-7
+            response = self._connection.sendcmd(f"MLST {file_name}")
+
+            if "modify=" not in response:
+                raise FTPStorageException(
+                    "Output of MLST is not in the expected format, "
+                    f'or does not contain a "modify" attribute for file {file_name}'
+                )
+
+            # Extract the timestamp between 'modify=' and the next ';'
+            # Expect timestamps to be in UTC: https://datatracker.ietf.org/doc/html/rfc3659#section-2.3
+            last_modified = response.split("modify=")[1].split(";")[0]
+            return datetime.datetime.strptime(last_modified, "%Y%m%d%H%M%S").replace(
+                tzinfo=datetime.timezone.utc
+            )
+
+        except ValueError as error:
+            raise FTPStorageException(
+                f'MLST "modify" timestamp is in an unexpected format for {file_name}'
+            ) from error
+        except ftplib.all_errors as error:
+            raise FTPStorageException(
+                f"Error getting listing for file {file_name}"
+            ) from error
+
     def listdir(self, path):
         self._start_connection()
         try:
@@ -241,6 +273,18 @@ class FTPStorage(BaseStorage):
         if self.base_url is None:
             raise ValueError("This file is not accessible via a URL.")
         return urllib.parse.urljoin(self.base_url, name).replace("\\", "/")
+
+    def get_modified_time(self, name):
+        """
+        Returns an (aware) datetime object containing the last modified time if
+        USE_TZ is True, otherwise returns a naive datetime in the local timezone.
+        """
+        self._start_connection()
+        last_modified = self._get_file_last_modified_details(name)
+        if setting("USE_TZ"):
+            return last_modified
+        else:
+            return make_naive(last_modified)
 
 
 class FTPStorageFile(File):
