@@ -43,6 +43,11 @@ class CleanNameTests(TestCase):
         path = utils.clean_name("path/to/somewhere/")
         self.assertEqual(path, "path/to/somewhere/")
 
+    def test_clean_name_leading_slash(self):
+        """Test the clean_name when the path has a leading slash."""
+        path = utils.clean_name("/path/to/somewhere")
+        self.assertEqual(path, "path/to/somewhere")
+
     def test_clean_name_windows(self):
         """Test the clean_name when the path has a trailing slash."""
         path = utils.clean_name("path\\to\\somewhere")
