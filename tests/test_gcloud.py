@@ -578,6 +578,26 @@ class GCloudStorageTests(GCloudTestCase):
                 access_token=storage.credentials.token,
             )
 
+    def test_open_read_text_mode(self):
+        """
+        Test opening a file in text mode ('rt') returns strings, not bytes
+        """
+        data = b"This is some test text data."
+        expected_text = "This is some test text data."
+
+        with self.storage.open(self.filename, "rt") as f:
+            self.storage._client.bucket.assert_called_with(self.bucket_name)
+            self.storage._bucket.get_blob.assert_called_with(
+                self.filename, chunk_size=None
+            )
+
+            f.blob.download_to_file = lambda tmpfile, **kwargs: tmpfile.write(data)
+            content = f.read()
+
+            # Should return string, not bytes
+            self.assertIsInstance(content, str)
+            self.assertEqual(content, expected_text)
+
 
 class GoogleCloudGzipClientTests(GCloudTestCase):
     def setUp(self):
