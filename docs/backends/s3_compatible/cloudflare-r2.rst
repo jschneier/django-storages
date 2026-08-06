@@ -10,6 +10,7 @@ Cloudflare R2 implements an `S3 Compatible API <https://developers.cloudflare.co
 
    * Set ``bucket_name`` to your previously created bucket
    * Set ``endpoint_url`` to ``https://<ACCOUNT_ID>.r2.cloudflarestorage.com``
+   * Set ``signature_version`` to ``s3v4``. For more information check the `docs <https://developers.cloudflare.com/r2/data-catalog/manage-catalogs/#authenticate-your-iceberg-engine>`_. 
    * Set the values of ``access_key`` and ``secret_key`` to their respective Cloudflare keys
 
 .. note::
