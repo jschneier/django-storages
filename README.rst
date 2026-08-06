@@ -68,6 +68,7 @@ Contributing
    <https://github.com/jschneier/django-storages>`_ to start making changes.
 #. Add a test case to show that the bug is fixed or the feature is implemented
    correctly.
+    #. You can run tests locally with [`tox`](https://tox.wiki/en/latest/index.html).
 #. Bug me until I can merge your pull request.
 
 Please don't update the library version in CHANGELOG.rst or ``storages/__init__.py``, the maintainer will do that on release.
