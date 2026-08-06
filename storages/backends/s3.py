@@ -665,7 +665,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         else:
             return make_naive(entry.last_modified)
 
-    def url(self, name, parameters=None, expire=None, http_method=None):
+    def url(self, name, parameters=None, expire=None, http_method='get'):
         # Preserve the trailing slash after normalizing the path.
         name = self._normalize_name(clean_name(name))
         params = parameters.copy() if parameters else {}
@@ -694,8 +694,11 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         connection = (
             self.connection if self.querystring_auth else self.unsigned_connection
         )
+        # Vary on the the `ClientMethod`, instead of just the `HttpMethod`, to allow
+        # non-GET `Params` to be passed (e.g. setting `Tagging` for `put_object`).
+        client_method = f"{http_method.lower()}_object"
         url = connection.meta.client.generate_presigned_url(
-            "get_object", Params=params, ExpiresIn=expire, HttpMethod=http_method
+            client_method, Params=params, ExpiresIn=expire
         )
         return url
 

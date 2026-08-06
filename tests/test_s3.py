@@ -708,10 +708,9 @@ class S3StorageTests(TestCase):
         custom_method = "HEAD"
         self.assertEqual(self.storage.url(name, http_method=custom_method), url)
         self.storage.connection.meta.client.generate_presigned_url.assert_called_with(
-            "get_object",
+            "head_object",
             Params={"Bucket": self.storage.bucket.name, "Key": name},
             ExpiresIn=self.storage.querystring_expire,
-            HttpMethod=custom_method,
         )
 
     def test_url_unsigned(self):
