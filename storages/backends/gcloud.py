@@ -9,6 +9,7 @@ from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
+from django.utils.encoding import force_bytes, smart_str, force_str
 
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
@@ -44,6 +45,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
         self.name = name
         self.mime_type, self.mime_encoding = mimetypes.guess_type(name)
         self._mode = mode
+        self._force_mode = (lambda b: b) if 'b' in mode else force_str
         self._storage = storage
         self.blob = storage.bucket.get_blob(name, chunk_size=storage.blob_chunk_size)
         if not self.blob and "w" in mode:
@@ -76,14 +78,15 @@ class GoogleCloudFile(CompressedFileMixin, File):
 
     file = property(_get_file, _set_file)
 
-    def read(self, num_bytes=None):
+    def read(self, *args, **kwargs):
         if "r" not in self._mode:
             raise AttributeError("File was not opened in read mode.")
+        return self._force_mode(super(GoogleCloudFile, self).read(*args, **kwargs))
 
-        if num_bytes is None:
-            num_bytes = -1
-
-        return super().read(num_bytes)
+    def readline(self, *args, **kwargs):
+        if "r" not in self._mode:
+            raise AttributeError("File was not opened in read mode.")
+        return self._force_mode(super(GoogleCloudFile, self).readline(*args, **kwargs))
 
     def write(self, content):
         if "w" not in self._mode:
