@@ -54,7 +54,53 @@ class FTPTest(TestCase):
             "host": "localhost",
             "user": "foo",
             "active": False,
+            "path": "",
+            "port": 2121,
+            "secure": False,
+        }
+        self.assertEqual(config, wanted_config)
+        config = self.storage._decode_location("ftp://foo:b@r@localhost:2121")
+        wanted_config = {
+            "passwd": "b@r",
+            "host": "localhost",
+            "user": "foo",
+            "active": False,
+            "path": None,
+            "port": 2121,
+            "secure": False,
+        }
+        self.assertEqual(config, wanted_config)
+        config = self.storage._decode_location("ftp://foo:b@r@localhost:2121/test/dir")
+        wanted_config = {
+            "passwd": "b@r",
+            "host": "localhost",
+            "user": "foo",
+            "active": False,
+            "path": "test/dir",
+            "port": 2121,
+            "secure": False,
+        }
+        self.assertEqual(config, wanted_config)
+        config = self.storage._decode_location("ftp://foo:b@r@localhost:2121//")
+        wanted_config = {
+            "passwd": "b@r",
+            "host": "localhost",
+            "user": "foo",
+            "active": False,
             "path": "/",
+            "port": 2121,
+            "secure": False,
+        }
+        self.assertEqual(config, wanted_config)
+        config = self.storage._decode_location(
+            "ftp://foo:b@r@localhost:2121//root/test/dir"
+        )
+        wanted_config = {
+            "passwd": "b@r",
+            "host": "localhost",
+            "user": "foo",
+            "active": False,
+            "path": "/root/test/dir",
             "port": 2121,
             "secure": False,
         }
@@ -66,7 +112,7 @@ class FTPTest(TestCase):
             "host": "localhost",
             "user": "foo",
             "active": True,
-            "path": "/",
+            "path": "",
             "port": 2121,
             "secure": False,
         }
@@ -277,7 +323,7 @@ class FTPTLSTest(TestCase):
             "host": "localhost",
             "user": "foo",
             "active": False,
-            "path": "/",
+            "path": "",
             "port": 2121,
             "secure": True,
         }

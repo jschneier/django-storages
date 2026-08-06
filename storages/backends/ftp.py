@@ -60,7 +60,7 @@ class FTPStorage(BaseStorage):
         """Return splitted configuration data from location."""
         splitted_url = re.search(
             r"^(?P<scheme>.+)://(?P<user>.+):(?P<passwd>.+)@"
-            r"(?P<host>.+):(?P<port>\d+)/(?P<path>.*)$",
+            r"(?P<host>.+):(?P<port>\d+)(?P<path>/.*)?$",
             location,
         )
 
@@ -75,7 +75,7 @@ class FTPStorage(BaseStorage):
         config["active"] = splitted_url["scheme"] == "aftp"
         config["secure"] = splitted_url["scheme"] == "ftps"
 
-        config["path"] = splitted_url["path"] or "/"
+        config["path"] = splitted_url["path"][1:] if splitted_url["path"] else None
         config["host"] = splitted_url["host"]
         config["user"] = splitted_url["user"]
         config["passwd"] = splitted_url["passwd"]
@@ -102,7 +102,7 @@ class FTPStorage(BaseStorage):
                     ftp.prot_p()
                 if self._config["active"]:
                     ftp.set_pasv(False)
-                if self._config["path"] != "":
+                if self._config["path"]:
                     ftp.cwd(self._config["path"])
                 self._connection = ftp
                 return
