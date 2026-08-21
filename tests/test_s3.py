@@ -1,9 +1,11 @@
 import datetime
+import gc
 import gzip
 import io
 import os
 import pickle
 import threading
+import weakref
 from textwrap import dedent
 from unittest import mock
 from unittest import skipIf
@@ -148,6 +150,42 @@ class S3StorageTests(TestCase):
             },
             Config=self.storage.transfer_config,
         )
+
+    def test_storage_save_does_not_retain_content(self):
+        """
+        Test that the wrapper _save builds does not outlive the call
+
+        The wrapper is unreachable once _save returns, but restoring ``close``
+        by assigning the bound method back onto the wrapper would make it
+        reference itself. Reference counting could then never free it, and the
+        uploaded payload would stay resident until a cyclic collection ran.
+        """
+        if gc.isenabled():
+            self.addCleanup(gc.enable)
+        gc.disable()
+        self.addCleanup(gc.collect)
+
+        for gzip_enabled, name in ((False, "test.txt"), (True, "test.css")):
+            with self.subTest(gzip=gzip_enabled):
+                storage = s3.S3Storage(gzip=gzip_enabled)
+                storage._connections.connection = mock.MagicMock()
+                storage._unsigned_connections.connection = mock.MagicMock()
+
+                wrapper = None
+
+                def upload_fileobj(fileobj, **kwargs):
+                    nonlocal wrapper
+                    wrapper = weakref.ref(fileobj)
+                    fileobj.read()
+
+                # A plain function rather than a mock: a mock would keep the
+                # wrapper alive through call_args.
+                storage.bucket.Object.return_value.upload_fileobj = upload_fileobj
+
+                storage.save(name, ContentFile("new content"))
+
+                self.assertIsNotNone(wrapper)
+                self.assertIsNone(wrapper(), "the upload wrapper was retained")
 
     def test_storage_save_with_default_acl(self):
         """

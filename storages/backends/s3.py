@@ -559,12 +559,16 @@ class S3Storage(CompressStorageMixin, BaseStorage):
         obj = self.bucket.Object(name)
 
         # Workaround file being closed errantly see: https://github.com/boto/s3transfer/issues/80
-        original_close = content.close
+        # `content` is a wrapper built above, so `close` here is only ever an instance
+        # attribute shadowing the class's. Delete it rather than assigning the original
+        # back: the original is a bound method of `content`, so storing it on `content`
+        # makes the wrapper reference itself. Reference counting could then never free
+        # it and the uploaded payload would stay resident until a cyclic collection.
         content.close = lambda: None
         try:
             obj.upload_fileobj(content, ExtraArgs=params, Config=self.transfer_config)
         finally:
-            content.close = original_close
+            del content.close
         return cleaned_name
 
     def delete(self, name):
