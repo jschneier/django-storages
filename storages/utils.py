@@ -70,29 +70,32 @@ def safe_join(base, *paths):
     Paths outside the base path indicate a possible security
     sensitive operation.
     """
-    base_path = base
-    base_path = base_path.rstrip("/")
+    base_path = base.rstrip("/")
     paths = list(paths)
 
-    final_path = base_path + "/"
+    # Evaluate confinement against a rooted path so an empty ``base``
+    # still rejects ``..`` sequences that would walk above it.
+    anchor = "/.storages_join"
+    rooted_base = posixpath.join(anchor, base_path) if base_path else anchor
+
+    final_path = rooted_base + "/"
     for path in paths:
         _final_path = posixpath.normpath(posixpath.join(final_path, path))
         # posixpath.normpath() strips the trailing /. Add it back.
         if path.endswith("/") or _final_path + "/" == final_path:
             _final_path += "/"
         final_path = _final_path
-    if final_path == base_path:
+    if final_path == rooted_base:
         final_path += "/"
 
-    # Ensure final_path starts with base_path and that the next character after
-    # the base path is /.
-    base_path_len = len(base_path)
-    if not final_path.startswith(base_path) or final_path[base_path_len] != "/":
+    if not (
+        final_path == rooted_base or final_path.startswith(rooted_base + "/")
+    ):
         raise ValueError(
             "the joined path is located outside of the base path component"
         )
 
-    return final_path.lstrip("/")
+    return final_path[len(anchor) :].lstrip("/")
 
 
 def check_location(storage):

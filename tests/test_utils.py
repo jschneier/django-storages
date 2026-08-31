@@ -78,6 +78,12 @@ class SafeJoinTest(TestCase):
         with self.assertRaises(ValueError):
             utils.safe_join("base", "/etc/passwd")
 
+    def test_empty_base_rejects_parent_escape(self):
+        with self.assertRaises(ValueError):
+            utils.safe_join("", "../../secret.txt")
+        with self.assertRaises(ValueError):
+            utils.safe_join("", "/etc/passwd")
+
     def test_trailing_slash(self):
         """
         Test safe_join with paths that end with a trailing slash.
