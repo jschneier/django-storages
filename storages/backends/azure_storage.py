@@ -1,6 +1,6 @@
+import datetime
 import mimetypes
 import warnings
-from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 from urllib.parse import urlparse
@@ -123,7 +123,7 @@ class AzureStorage(BaseStorage):
         self._service_client = None
         self._client = None
         self._user_delegation_key = None
-        self._user_delegation_key_expiry = datetime.utcnow()
+        self._user_delegation_key_expiry = datetime.datetime.now(datetime.timezone.utc)
         if self.connection_string and (not self.account_name or not self.account_key):
             parsed = parse_connection_string(
                 self.connection_string, case_sensitive_keys=True
@@ -206,13 +206,16 @@ class AzureStorage(BaseStorage):
         if self.token_credential is None:
             return None
 
+        if timezone.is_naive(expiry):
+            expiry = timezone.make_aware(expiry, datetime.timezone.utc)
+
         # Get a new key if we don't already have one, or if the one we have expires too
         # soon.
         if (
             self._user_delegation_key is None
             or expiry > self._user_delegation_key_expiry
         ):
-            now = datetime.utcnow()
+            now = datetime.datetime.now(datetime.timezone.utc)
             key_expiry_time = now + timedelta(days=7)
             self._user_delegation_key = self.service_client.get_user_delegation_key(
                 key_start_time=now, key_expiry_time=key_expiry_time
@@ -291,7 +294,7 @@ class AzureStorage(BaseStorage):
 
     def _expire_at(self, expire):
         # azure expects time in UTC
-        return datetime.utcnow() + timedelta(seconds=expire)
+        return datetime.datetime.now(datetime.timezone.utc) + timedelta(seconds=expire)
 
     def url(self, name, expire=None, parameters=None, mode="r"):
         name = self._get_valid_path(name)

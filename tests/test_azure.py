@@ -161,7 +161,7 @@ class AzureStorageTest(TestCase):
 
         with mock.patch("storages.backends.azure_storage.datetime") as d_mocked:
             # Implicit read permission
-            d_mocked.utcnow.return_value = fixed_time
+            d_mocked.datetime.now.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", 100),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
@@ -179,7 +179,7 @@ class AzureStorageTest(TestCase):
             self.assertEqual(str(called_kwargs["permission"]), "r")
 
             # Explicit write permission
-            d_mocked.utcnow.return_value = fixed_time
+            d_mocked.datetime.now.return_value = fixed_time
             self.assertEqual(
                 self.storage.url("some blob", expire=100, mode="w"),
                 "https://ret_foo.blob.core.windows.net/test/some%20blob",
@@ -219,7 +219,7 @@ class AzureStorageTest(TestCase):
             datetime.datetime(2016, 11, 6, 4), datetime.timezone.utc
         )
         with mock.patch("storages.backends.azure_storage.datetime") as d_mocked:
-            d_mocked.utcnow.return_value = fixed_time
+            d_mocked.datetime.now.return_value = fixed_time
             service_client.get_user_delegation_key.return_value = "user delegation key"
             self.assertEqual(
                 self.storage.url("some blob", 100),
@@ -234,6 +234,62 @@ class AzureStorageTest(TestCase):
                 permission=mock.ANY,
                 expiry=fixed_time + timedelta(seconds=100),
             )
+
+    @mock.patch("storages.backends.azure_storage.generate_blob_sas")
+    def test_url_expire_is_aware_utc(self, generate_blob_sas_mocked):
+        generate_blob_sas_mocked.return_value = "foo_token"
+        blob_mock = mock.MagicMock()
+        blob_mock.url = "https://ret_foo.blob.core.windows.net/test/some%20blob"
+        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage.account_name = self.account_name
+
+        before = datetime.datetime.now(datetime.timezone.utc)
+        self.storage.url("some blob", 100)
+        after = datetime.datetime.now(datetime.timezone.utc)
+
+        expiry = generate_blob_sas_mocked.call_args.kwargs["expiry"]
+        self.assertEqual(expiry.utcoffset(), timedelta(0))
+        self.assertLessEqual(before + timedelta(seconds=100), expiry)
+        self.assertLessEqual(expiry, after + timedelta(seconds=100))
+
+    @mock.patch("storages.backends.azure_storage.generate_blob_sas")
+    def test_url_reuses_user_delegation_key_until_it_expires(
+        self, generate_blob_sas_mocked
+    ):
+        generate_blob_sas_mocked.return_value = "foo_token"
+        blob_mock = mock.MagicMock()
+        blob_mock.url = "https://ret_foo.blob.core.windows.net/test/some%20blob"
+        self.storage._client.get_blob_client.return_value = blob_mock
+        self.storage.account_name = self.account_name
+        service_client = mock.MagicMock()
+        self.storage._service_client = service_client
+        self.storage.token_credential = "token_credential"
+
+        self.storage.url("some blob", 100)
+        self.storage.url("some blob", 100)
+        service_client.get_user_delegation_key.assert_called_once()
+        key_times = service_client.get_user_delegation_key.call_args.kwargs
+        self.assertEqual(key_times["key_start_time"].utcoffset(), timedelta(0))
+        self.assertEqual(
+            key_times["key_expiry_time"] - key_times["key_start_time"],
+            timedelta(days=7),
+        )
+
+        self.storage.url("some blob", int(timedelta(days=8).total_seconds()))
+        self.assertEqual(service_client.get_user_delegation_key.call_count, 2)
+
+    def test_user_delegation_key_accepts_naive_utc_expiry(self):
+        service_client = mock.MagicMock()
+        self.storage._service_client = service_client
+        self.storage.token_credential = "token_credential"
+        naive_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+        self.storage.get_user_delegation_key(naive_now + timedelta(seconds=100))
+        self.storage.get_user_delegation_key(naive_now + timedelta(seconds=100))
+        service_client.get_user_delegation_key.assert_called_once()
+
+        self.storage.get_user_delegation_key(naive_now + timedelta(days=8))
+        self.assertEqual(service_client.get_user_delegation_key.call_count, 2)
 
     def test_container_client_default_params(self):
         storage = azure_storage.AzureStorage()
