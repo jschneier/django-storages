@@ -5,6 +5,7 @@ import posixpath
 import tempfile
 import threading
 import warnings
+from contextlib import contextmanager
 from datetime import datetime
 from datetime import timedelta
 from urllib.parse import urlencode
@@ -17,6 +18,7 @@ from django.utils.deconstruct import deconstructible
 from django.utils.encoding import filepath_to_uri
 from django.utils.timezone import make_naive
 
+from storages.backends._stream import validate_byte_range
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
 from storages.compress import CompressStorageMixin
@@ -535,6 +537,36 @@ class S3Storage(CompressStorageMixin, BaseStorage):
                 raise FileNotFoundError("File does not exist: %s" % name)
             raise  # Let it bubble up if it was some other error
         return f
+
+    @contextmanager
+    def open_stream(self, name, start=0, length=None):
+        """Open a forward-only byte-range stream from an S3 object.
+
+        Unlike :meth:`open`, this method does not create a seekable Django file
+        or materialize the complete object in a temporary file. ``name`` is the
+        logical storage name; ``start`` and ``length`` select a half-open byte
+        interval. Read in bounded sizes and use the context manager so its HTTP
+        response body is released when reading ends early.
+
+        This deliberately does not apply :class:`S3File` compatibility
+        transformations, including transparent gzip decompression.
+        """
+
+        validate_byte_range(start, length)
+        logical_name = clean_name(name)
+        key = self._normalize_name(logical_name)
+        params = _filter_download_params(self.get_object_parameters(logical_name))
+        params.update(Bucket=self.bucket_name, Key=key)
+        if start or length is not None:
+            end = "" if length is None else start + length - 1
+            params["Range"] = f"bytes={start}-{end}"
+
+        response = self.connection.meta.client.get_object(**params)
+        body = response["Body"]
+        try:
+            yield body
+        finally:
+            body.close()
 
     def _save(self, name, content):
         cleaned_name = clean_name(name)

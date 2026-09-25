@@ -9,6 +9,23 @@ General
 
 - Add support for Django 5.2
 
+S3
+--
+
+- Add ``open_stream()`` for bounded, forward-only object reads (`#1568`_)
+
+Azure
+-----
+
+- Add ``open_stream()`` for bounded, forward-only blob reads (`#1568`_)
+
+Google Cloud
+------------
+
+- Add ``open_stream()`` for bounded, forward-only blob reads (`#1568`_)
+
+.. _#1568: https://github.com/jschneier/django-storages/issues/1568
+
 1.14.6 (2025-04-01)
 *******************
 

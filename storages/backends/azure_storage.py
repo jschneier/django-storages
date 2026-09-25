@@ -1,5 +1,6 @@
 import mimetypes
 import warnings
+from contextlib import contextmanager
 from datetime import datetime
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
@@ -18,6 +19,9 @@ from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
+from storages.backends._stream import ChunkIteratorStream
+from storages.backends._stream import LimitedStream
+from storages.backends._stream import validate_byte_range
 from storages.base import BaseStorage
 from storages.utils import clean_name
 from storages.utils import get_available_overwrite_name
@@ -240,6 +244,27 @@ class AzureStorage(BaseStorage):
 
     def _open(self, name, mode="rb"):
         return AzureStorageFile(name, mode, self)
+
+    @contextmanager
+    def open_stream(self, name, start=0, length=None):
+        """Open a forward-only byte-range stream from an Azure blob.
+
+        Unlike :meth:`open`, this method does not create a seekable Django file
+        or materialize the complete blob in a temporary file. ``name`` is the
+        logical storage name and is normalized using this storage's configured
+        location; ``start`` and ``length`` select a half-open byte interval.
+        Read in bounded sizes; Azure buffers a provider chunk before yielding
+        it, rather than retaining a provider response between reads.
+        """
+
+        validate_byte_range(start, length)
+        downloader = self.client.download_blob(
+            self._get_valid_path(name),
+            offset=start,
+            length=length,
+            timeout=self.timeout,
+        )
+        yield LimitedStream(ChunkIteratorStream(downloader.chunks()), length)
 
     def get_available_name(self, name, max_length=_AZURE_NAME_MAX_LEN):
         """

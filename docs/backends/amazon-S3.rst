@@ -41,6 +41,17 @@ To put static files on S3 via ``collectstatic`` on Django >= 4.2 you'd include t
 The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
 well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
 
+Streaming reads
+~~~~~~~~~~~~~~~
+
+``S3Storage.open()`` returns a seekable Django file object and downloads the complete object to a temporary file before it can be read. If buffering / seeking is not needed, use ``open_stream()`` instead, which avoids the overhead::
+
+    with storage.open_stream("reports/latest.csv", start=1024, length=4096) as stream:
+        while chunk := stream.read(256 * 1024):
+            send(chunk)
+
+``name`` is the logical storage name. ``start`` is a zero-based offset and ``length`` is a positive number of bytes; omitting ``length`` reads through the end of the object. The method issues an S3 ranged request and does not spool the object. Read with a bounded size and always use the context manager so its HTTP response body is closed. It intentionally does not provide seeking, text-mode handling, or ``S3File``'s transparent gzip decompression.
+
 Authentication Settings
 ~~~~~~~~~~~~~~~~~~~~~~~
 

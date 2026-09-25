@@ -45,6 +45,103 @@ class S3StorageTests(TestCase):
             _ = storage.connection
             session.assert_called_once_with(profile_name="test_profile")
 
+    def test_open_stream(self):
+        """Normalize names and forward only supported S3 read options."""
+
+        body = mock.MagicMock()
+        self.storage.location = "media"
+        self.storage.bucket_name = "test-bucket"
+        self.storage.get_object_parameters = mock.MagicMock(
+            return_value={
+                "ChecksumMode": "ENABLED",
+                "RequestPayer": "requester",
+                "SSECustomerAlgorithm": "AES256",
+                "SSECustomerKey": "secret",
+                "SSECustomerKeyMD5": "digest",
+                "VersionId": "version",
+                "ExpectedBucketOwner": "123456789012",
+                "ContentType": "application/octet-stream",
+            }
+        )
+        self.storage.connection.meta.client.get_object.return_value = {"Body": body}
+
+        with self.storage.open_stream(
+            "folder/../artifact", start=4, length=3
+        ) as stream:
+            self.assertIs(stream, body)
+
+        self.storage.get_object_parameters.assert_called_once_with("artifact")
+        self.storage.connection.meta.client.get_object.assert_called_once_with(
+            Bucket="test-bucket",
+            Key="media/artifact",
+            Range="bytes=4-6",
+            ChecksumMode="ENABLED",
+            RequestPayer="requester",
+            SSECustomerAlgorithm="AES256",
+            SSECustomerKey="secret",
+            SSECustomerKeyMD5="digest",
+            VersionId="version",
+            ExpectedBucketOwner="123456789012",
+        )
+        body.close.assert_called_once()
+
+    def test_open_stream_to_end(self):
+        """Request from an offset through EOF when no byte count is supplied."""
+
+        data = b"01234567"
+        body = mock.MagicMock()
+        body.read.side_effect = (data[4:6], data[6:], b"")
+        self.storage.bucket_name = "test-bucket"
+        self.storage.connection.meta.client.get_object.return_value = {"Body": body}
+
+        with self.storage.open_stream("artifact", start=4) as stream:
+            self.assertEqual(stream.read(2), b"45")
+            self.assertEqual(stream.read(2), b"67")
+            self.assertEqual(stream.read(2), b"")
+
+        self.storage.connection.meta.client.get_object.assert_called_once_with(
+            Bucket="test-bucket", Key="artifact", Range="bytes=4-"
+        )
+
+    def test_open_stream_reads_entire_object_by_default(self):
+        """Avoid a Range header for the ordinary full-object read case."""
+
+        body = mock.MagicMock()
+        body.read.side_effect = (b"abc", b"def", b"")
+        self.storage.bucket_name = "test-bucket"
+        self.storage.connection.meta.client.get_object.return_value = {"Body": body}
+
+        with self.storage.open_stream("artifact") as stream:
+            self.assertEqual(stream.read(3), b"abc")
+            self.assertEqual(stream.read(3), b"def")
+            self.assertEqual(stream.read(3), b"")
+
+        self.storage.connection.meta.client.get_object.assert_called_once_with(
+            Bucket="test-bucket", Key="artifact"
+        )
+
+    def test_open_stream_closes_body_after_error(self):
+        """Release the S3 HTTP body when a consumer stops with an error."""
+
+        body = mock.MagicMock()
+        self.storage.connection.meta.client.get_object.return_value = {"Body": body}
+
+        with self.assertRaisesRegex(RuntimeError, "interrupted"):
+            with self.storage.open_stream("artifact"):
+                raise RuntimeError("interrupted")
+
+        body.close.assert_called_once()
+
+    def test_open_stream_rejects_invalid_range(self):
+        """Reject ranges that cannot be represented by an S3 Range header."""
+
+        with self.assertRaisesRegex(ValueError, "start"):
+            with self.storage.open_stream("artifact", start=-1):
+                pass
+        with self.assertRaisesRegex(ValueError, "length"):
+            with self.storage.open_stream("artifact", length=0):
+                pass
+
     @mock.patch("boto3.Session.resource")
     def test_client_config(self, resource):
         with override_settings(
@@ -1099,6 +1196,26 @@ class S3StorageTestsWithMoto(TestCase):
             b"foo1",
             self.bucket.Object("bytes_file.txt").get()["Body"].read(),
         )
+
+    def test_open_stream_reads_requested_range(self):
+        """Use S3's range semantics rather than the temporary-file ``open()`` path."""
+
+        self.bucket.Object("range_file.txt").put(Body=b"0123456789")
+
+        with self.storage.open_stream("range_file.txt", start=3, length=4) as stream:
+            self.assertEqual(stream.read(2), b"34")
+            self.assertEqual(stream.read(2), b"56")
+            self.assertEqual(stream.read(2), b"")
+
+    def test_open_stream_does_not_decompress_gzip_content(self):
+        """Keep open_stream's raw S3 semantics distinct from ``S3File``."""
+
+        content = gzip.compress(b"compressed content")
+        self.storage.gzip = True
+        self.bucket.Object("compressed.txt").put(Body=content, ContentEncoding="gzip")
+
+        with self.storage.open_stream("compressed.txt") as stream:
+            self.assertEqual(stream.read(), content)
 
     def test_save_string_file(self):
         self.storage.save("string_file.txt", File(io.StringIO("foo2")))

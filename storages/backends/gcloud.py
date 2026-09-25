@@ -1,6 +1,7 @@
 import gzip
 import io
 import mimetypes
+from contextlib import contextmanager
 from datetime import timedelta
 from tempfile import SpooledTemporaryFile
 
@@ -10,6 +11,8 @@ from django.core.files.base import File
 from django.utils import timezone
 from django.utils.deconstruct import deconstructible
 
+from storages.backends._stream import LimitedStream
+from storages.backends._stream import validate_byte_range
 from storages.base import BaseStorage
 from storages.compress import CompressedFileMixin
 from storages.utils import check_location
@@ -106,6 +109,31 @@ class GoogleCloudFile(CompressedFileMixin, File):
             self._file = None
 
 
+class _GoogleCloudStream:
+    """Read a GCS blob with one bounded HTTP range request per ``read()``."""
+
+    def __init__(self, blob, start, length):
+        self.blob = blob
+        self.position = start
+        self.length = length
+        self.remaining = length
+
+    def read(self, size=-1):
+        if self.remaining == 0:
+            return b""
+        if size is None or size < 0 or size > self.remaining:
+            size = self.remaining
+        end = self.position + size - 1
+        result = self.blob.download_as_bytes(
+            start=self.position,
+            end=end,
+            retry=DEFAULT_RETRY,
+        )
+        self.position += len(result)
+        self.remaining -= len(result)
+        return result
+
+
 @deconstructible
 class GoogleCloudStorage(BaseStorage):
     def __init__(self, **settings):
@@ -184,6 +212,29 @@ class GoogleCloudStorage(BaseStorage):
         if not file_object.blob:
             raise FileNotFoundError("File does not exist: %s" % name)
         return file_object
+
+    @contextmanager
+    def open_stream(self, name, start=0, length=None):
+        """Open a forward-only byte-range stream from a Google Cloud Storage blob.
+
+        Unlike :meth:`open`, this method does not create a seekable Django file
+        or materialize the complete blob in a temporary file. ``name`` is the
+        logical storage name; ``start`` and ``length`` select a half-open byte
+        interval. Each positive-sized ``read()`` issues a bounded ranged
+        download request, so callers should read in bounded sizes.
+        """
+
+        validate_byte_range(start, length)
+        name = self._normalize_name(clean_name(name))
+        blob = self.bucket.get_blob(name, chunk_size=self.blob_chunk_size)
+        if not blob:
+            raise FileNotFoundError("File does not exist: %s" % name)
+
+        available = max(blob.size - start, 0)
+        stream = _GoogleCloudStream(
+            blob, start, min(length, available) if length else available
+        )
+        yield LimitedStream(stream, stream.length)
 
     def _compress_content(self, content):
         content.seek(0)

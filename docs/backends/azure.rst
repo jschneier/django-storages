@@ -41,6 +41,17 @@ To put static files on Azure via ``collectstatic`` on Django >= 4.2 you'd includ
 The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
 well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
 
+Streaming reads
+~~~~~~~~~~~~~~~
+
+``AzureStorage.open()`` returns a seekable Django file object and downloads the complete blob to a temporary file before it can be read. If buffering / seeking is not needed, use ``open_stream()`` instead, which avoids the overhead::
+
+    with storage.open_stream("reports/latest.csv", start=1024, length=4096) as stream:
+        while chunk := stream.read(256 * 1024):
+            send(chunk)
+
+``name`` is the logical storage name. ``start`` is a zero-based offset and ``length`` is a positive number of bytes; omitting ``length`` reads through the end of the blob. The method requests that interval without spooling the blob. Read with a bounded size; Azure buffers a provider chunk before yielding it. It intentionally does not provide seeking or text-mode handling.
+
 Authentication Settings
 ~~~~~~~~~~~~~~~~~~~~~~~
 

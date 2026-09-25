@@ -42,6 +42,17 @@ To put static files on GCS via ``collectstatic`` on Django >= 4.2 you'd include 
 The settings documented in the following sections include both the key for ``OPTIONS`` (and subclassing) as
 well as the global value. Given the significant improvements provided by the new API, migration is strongly encouraged.
 
+Streaming reads
+~~~~~~~~~~~~~~~
+
+``GoogleCloudStorage.open()`` returns a seekable Django file object and downloads the complete blob to a temporary file before it can be read. If buffering / seeking is not needed, use ``open_stream()`` instead, which avoids the overhead::
+
+    with storage.open_stream("reports/latest.csv", start=1024, length=4096) as stream:
+        while chunk := stream.read(256 * 1024):
+            send(chunk)
+
+``name`` is the logical storage name. ``start`` is a zero-based offset and ``length`` is a positive number of bytes; omitting ``length`` reads through the end of the blob. Each bounded ``read()`` issues a GCS ranged request for no more than that size, avoiding a temporary file and full-object download. The stream is forward-only and does not provide seeking or text-mode handling.
+
 .. _auth-settings:
 
 Authentication Settings
