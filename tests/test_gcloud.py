@@ -10,6 +10,7 @@ from django.test import TestCase
 from django.test import override_settings
 from django.utils import timezone
 from google.cloud.exceptions import NotFound
+from google.cloud.exceptions import PreconditionFailed
 from google.cloud.storage.blob import Blob
 from google.cloud.storage.retry import DEFAULT_RETRY
 
@@ -136,6 +137,23 @@ class GCloudStorageTests(GCloudTestCase):
             content_type=mimetypes.guess_type(filename)[0],
             predefined_acl=None,
         )
+
+    def test_save_without_overwrite_retries_under_another_name(self):
+        # A concurrent save takes the name after get_available_name() found
+        # it free: the upload answers 412 and the name is then taken.
+        self.storage.file_overwrite = False
+        self.storage.exists = mock.Mock(side_effect=[False, True, False])
+        upload = self.storage.bucket.get_blob().upload_from_file
+        upload.side_effect = [PreconditionFailed("exists"), None]
+        content = ContentFile("This is some test content.")
+
+        name = self.storage.save(self.filename, content)
+
+        self.assertNotEqual(name, self.filename)
+        self.assertRegex(name, r"^test_file_\w{7}\.txt$")
+        self.assertEqual(upload.call_count, 2)
+        for call in upload.call_args_list:
+            self.assertEqual(call.kwargs["if_generation_match"], 0)
 
     def test_save_with_default_acl(self):
         data = "This is some test ủⓝï℅ⅆℇ content."
