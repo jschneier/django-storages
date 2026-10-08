@@ -372,17 +372,25 @@ class AzureStorage(BaseStorage):
 
     def list_all(self, path=""):
         """Return all files for a given path"""
-        if path:
+        # _get_valid_path raises on an all-empty result, so skip it when both are empty.
+        if path or self.location:
             path = self._get_valid_path(path)
         if path and not path.endswith("/"):
             path += "/"
         # XXX make generator, add start, end
-        return [
+        names = [
             blob.name
             for blob in self.client.list_blobs(
                 name_starts_with=path, timeout=self.timeout
             )
         ]
+        if self.location:
+            prefix = self.location.rstrip("/") + "/"
+            names = [
+                name[len(prefix) :] if name.startswith(prefix) else name
+                for name in names
+            ]
+        return names
 
     def listdir(self, path=""):
         """

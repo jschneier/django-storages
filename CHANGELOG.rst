@@ -9,6 +9,13 @@ General
 
 - Add support for Django 5.2
 
+Azure
+-----
+
+- Fix ``listdir`` returning files outside ``location`` and not stripping ``location`` from results (`#1567`_)
+
+.. _#1567: https://github.com/jschneier/django-storages/pull/1567
+
 1.14.6 (2025-04-01)
 *******************
 

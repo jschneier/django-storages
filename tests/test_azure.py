@@ -390,6 +390,39 @@ class AzureStorageTest(TestCase):
                 """ "{}" not in file list "{}".""".format(filename, files),
             )
 
+    def test_storage_listdir_scopes_root_to_location(self):
+        self.storage.location = "test-location"
+        file_names = ["test-location/some-file.txt", "something-else.txt"]
+
+        def list_blobs(name_starts_with="", **kwargs):
+            for p in file_names:
+                if p.startswith(name_starts_with):
+                    obj = mock.MagicMock()
+                    obj.name = p
+                    yield obj
+
+        self.storage._client.list_blobs.side_effect = list_blobs
+
+        dirs, files = self.storage.listdir("")
+        self.storage._client.list_blobs.assert_called_with(
+            name_starts_with="test-location/", timeout=20
+        )
+        self.assertEqual(len(dirs), 0)
+        self.assertEqual(files, ["some-file.txt"])
+
+    def test_storage_listdir_strips_location_from_results(self):
+        self.storage.location = "test-location"
+        obj = mock.MagicMock()
+        obj.name = "test-location/dir/test.txt"
+        self.storage._client.list_blobs.return_value = iter([obj])
+
+        dirs, files = self.storage.listdir("dir")
+        self.storage._client.list_blobs.assert_called_with(
+            name_starts_with="test-location/dir/", timeout=20
+        )
+        self.assertEqual(len(dirs), 0)
+        self.assertEqual(files, ["dir/test.txt"])
+
     def test_size_of_file(self):
         props = BlobProperties()
         props.size = 12
