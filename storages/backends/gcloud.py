@@ -24,6 +24,7 @@ try:
     from google.auth.credentials import TokenState
     from google.auth.transport import requests
     from google.cloud.exceptions import NotFound
+    from google.cloud.exceptions import PreconditionFailed
     from google.cloud.storage import Blob
     from google.cloud.storage import Client
     from google.cloud.storage.blob import _quote
@@ -193,6 +194,16 @@ class GoogleCloudStorage(BaseStorage):
         zbuf.seek(0)
         return zbuf
 
+    def save(self, name, content, max_length=None):
+        try:
+            return super().save(name, content, max_length=max_length)
+        except PreconditionFailed:
+            if self.file_overwrite:
+                raise
+            # Try one more time in case of a lost race; get_available_name will
+            # pick a new name.
+           return super().save(name, content, max_length=max_length)
+
     def _save(self, name, content):
         cleaned_name = clean_name(name)
         name = self._normalize_name(cleaned_name)
@@ -209,6 +220,9 @@ class GoogleCloudStorage(BaseStorage):
         upload_params[CONTENT_TYPE] = blob_params.pop(
             CONTENT_TYPE, file_object.mime_type
         )
+        if not self.file_overwrite:
+            # Only save the object if no live object of that name exists.
+            upload_params["if_generation_match"] = 0
 
         if (
             self.gzip

@@ -9,6 +9,11 @@ General
 
 - Add support for Django 5.2
 
+Google Cloud
+------------
+
+- With ``file_overwrite=False``, upload with the ``ifGenerationMatch=0`` precondition to ensure concurrent writes to the same filename cannot overwrite each other.
+
 1.14.6 (2025-04-01)
 *******************
 
