@@ -149,6 +149,71 @@ class S3StorageTests(TestCase):
             Config=self.storage.transfer_config,
         )
 
+    def test_storage_save_read_only_file(self):
+        class ReadOnlyFile:
+            name = "test_storage_save.txt"
+            content_type = "text/plain"
+
+            def __init__(self, content):
+                self.content = content
+
+            def read(self, size=-1):
+                content, self.content = self.content, b""
+                return content if size < 0 else content[:size]
+
+        content = ReadOnlyFile(b"new content")
+        upload_fileobj = self.storage.bucket.Object.return_value.upload_fileobj
+        uploaded_contents = []
+        upload_fileobj.side_effect = lambda fileobj, **kwargs: uploaded_contents.append(
+            fileobj.read()
+        )
+
+        self.storage._save(content.name, content)
+
+        self.assertEqual(uploaded_contents, [b"new content"])
+        self.assertEqual(
+            upload_fileobj.call_args.kwargs["ExtraArgs"]["ContentType"], "text/plain"
+        )
+
+    def test_storage_save_legacy_seekable_file(self):
+        class LegacySeekableFile:
+            name = "test_storage_save.txt"
+            content_type = "text/plain"
+
+            def __init__(self, content):
+                self.content = content
+                self.position = 3
+                self.seek_calls = []
+
+            def read(self, size=-1):
+                content = self.content[self.position :]
+                if size >= 0:
+                    content = content[:size]
+                self.position += len(content)
+                return content
+
+            def seek(self, position, whence=0):
+                self.seek_calls.append((position, whence))
+                if whence == os.SEEK_SET:
+                    self.position = position
+                elif whence == os.SEEK_CUR:
+                    self.position += position
+                elif whence == os.SEEK_END:
+                    self.position = len(self.content) + position
+                return self.position
+
+        content = LegacySeekableFile(b"new content")
+        upload_fileobj = self.storage.bucket.Object.return_value.upload_fileobj
+        uploaded_contents = []
+        upload_fileobj.side_effect = lambda fileobj, **kwargs: uploaded_contents.append(
+            fileobj.read()
+        )
+
+        self.storage._save(content.name, content)
+
+        self.assertEqual(content.seek_calls, [(0, os.SEEK_SET)])
+        self.assertEqual(uploaded_contents, [b"new content"])
+
     def test_storage_save_with_default_acl(self):
         """
         Test saving a file with user defined ACL.

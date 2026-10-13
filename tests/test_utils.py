@@ -11,6 +11,48 @@ from storages import utils
 from storages.utils import get_available_overwrite_name as gaon
 
 
+class TestIsSeekable(TestCase):
+    def test_seekable_method(self):
+        file_object = io.BytesIO(b"content")
+        self.assertTrue(utils.is_seekable(file_object))
+
+    def test_non_seekable_method(self):
+        class NonSeekable:
+            def seekable(self):
+                return False
+
+        self.assertFalse(utils.is_seekable(NonSeekable()))
+
+    def test_seekable_property(self):
+        class Seekable:
+            seekable = True
+
+        self.assertTrue(utils.is_seekable(Seekable()))
+
+    def test_non_seekable_property(self):
+        class NonSeekable:
+            seekable = False
+
+        self.assertFalse(utils.is_seekable(NonSeekable()))
+
+    def test_legacy_seek_method(self):
+        class LegacyFile:
+            def read(self):
+                return b"content"
+
+            def seek(self, position, whence=0):
+                return position
+
+        self.assertTrue(utils.is_seekable(LegacyFile()))
+
+    def test_read_only_file(self):
+        class ReadOnlyFile:
+            def read(self):
+                return b"content"
+
+        self.assertFalse(utils.is_seekable(ReadOnlyFile()))
+
+
 class SettingTest(TestCase):
     def test_get_setting(self):
         value = utils.setting("SECRET_KEY")

@@ -150,7 +150,12 @@ def get_available_overwrite_name(name, max_length):
 
 
 def is_seekable(file_object):
-    return not hasattr(file_object, "seekable") or file_object.seekable()
+    seekable = getattr(file_object, "seekable", None)
+    if isinstance(seekable, bool):
+        return seekable
+    if callable(seekable):
+        return seekable()
+    return callable(getattr(file_object, "seek", None))
 
 
 class ReadBytesWrapper(FileProxyMixin):
