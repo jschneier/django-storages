@@ -1031,6 +1031,33 @@ class S3FileTests(TestCase):
         self.storage = s3.S3Storage()
         self.storage._connections.connection = mock.MagicMock()
 
+    def test_decompressed_file_does_not_expose_compressed_fileno(self):
+        self.storage.gzip = True
+        payload = b"uncompressed response body" * 100
+        f = s3.S3File("test", "rb", self.storage)
+        f.obj.content_encoding = "gzip"
+        f.obj.download_fileobj.side_effect = lambda fileobj, **kwargs: fileobj.write(
+            gzip.compress(payload)
+        )
+        self.assertFalse(hasattr(f, "fileno"))
+        self.assertEqual(f.read(), payload)
+        f.close()
+
+    def test_uncompressed_file_keeps_fileno(self):
+        for compressed, decompress in ((False, True), (True, False)):
+            with self.subTest(compressed=compressed, decompress=decompress):
+                self.storage.gzip = decompress
+                payload = b"file contents"
+                if compressed:
+                    payload = gzip.compress(payload)
+                f = s3.S3File("test", "rb", self.storage)
+                f.obj.content_encoding = "gzip" if compressed else None
+                f.obj.download_fileobj.side_effect = (
+                    lambda fileobj, payload=payload, **kwargs: fileobj.write(payload)
+                )
+                self.assertEqual(os.read(f.fileno(), len(payload)), payload)
+                f.close()
+
     def test_loading_ssec(self):
         params = {"SSECustomerKey": "xyz", "CacheControl": "never"}
         self.storage.get_object_parameters = lambda name: params

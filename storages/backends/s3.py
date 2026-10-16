@@ -7,6 +7,7 @@ import threading
 import warnings
 from datetime import datetime
 from datetime import timedelta
+from gzip import GzipFile
 from urllib.parse import urlencode
 
 from django.contrib.staticfiles.storage import ManifestFilesMixin
@@ -203,6 +204,15 @@ class S3File(CompressedFileMixin, File):
         self._file = value
 
     file = property(_get_file, _set_file)
+
+    @property
+    def fileno(self):
+        file = self.file
+        if isinstance(file, GzipFile):
+            # The descriptor contains compressed bytes, while read() returns
+            # decompressed bytes. WSGI servers must use the read() fallback.
+            raise AttributeError("Decompressed files do not expose a file descriptor.")
+        return file.fileno
 
     def read(self, *args, **kwargs):
         if "r" not in self._mode:
