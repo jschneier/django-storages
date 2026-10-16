@@ -52,6 +52,16 @@ class GoogleCloudFile(CompressedFileMixin, File):
             )
         self._file = None
         self._is_dirty = False
+        self._closed = False
+
+    def open(self, mode=None, *args, **kwargs):
+        # Seeking lazily reopens remote files without using a local path.
+        self.seek(0)
+        return self
+
+    @property
+    def closed(self):
+        return self._closed
 
     @property
     def size(self):
@@ -69,6 +79,7 @@ class GoogleCloudFile(CompressedFileMixin, File):
                 # This automatically decompresses the file
                 self.blob.download_to_file(self._file, checksum="crc32c")
                 self._file.seek(0)
+            self._closed = False
         return self._file
 
     def _set_file(self, value):
@@ -104,6 +115,8 @@ class GoogleCloudFile(CompressedFileMixin, File):
                 )
             self._file.close()
             self._file = None
+            self._is_dirty = False
+        self._closed = True
 
 
 @deconstructible
