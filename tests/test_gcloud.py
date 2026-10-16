@@ -2,10 +2,12 @@ import datetime
 import gzip
 import mimetypes
 from datetime import timedelta
+from inspect import signature
 from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
+from django.core.files.base import File
 from django.test import TestCase
 from django.test import override_settings
 from django.utils import timezone
@@ -31,6 +33,84 @@ class GCloudTestCase(TestCase):
 
 
 class GCloudStorageTests(GCloudTestCase):
+    def test_closed_does_not_initialize_buffer(self):
+        for mode in ("rb", "wb"):
+            with self.subTest(mode=mode):
+                f = self.storage.open(self.filename, mode)
+                for _ in range(3):
+                    self.assertFalse(f.closed)
+                    self.assertIsNone(f._file)
+                f.blob.download_to_file.assert_not_called()
+                f.close()
+                for _ in range(3):
+                    self.assertTrue(f.closed)
+                    self.assertIsNone(f._file)
+                f.close()
+                f.blob.upload_from_file.assert_not_called()
+
+    def test_closed_after_write_does_not_upload_empty_buffer(self):
+        f = self.storage.open(self.filename, "wb")
+        uploads = []
+
+        def capture_upload(fileobj, **kwargs):
+            fileobj.seek(0)
+            uploads.append(fileobj.read())
+
+        f.blob.upload_from_file.side_effect = capture_upload
+        f.write(b"original content")
+        f.close()
+        for _ in range(3):
+            self.assertTrue(f.closed)
+        f.close()
+        self.assertEqual(uploads, [b"original content"])
+        self.assertIsNone(f._file)
+
+    def test_open_rewinds_and_reopens_remote_file(self):
+        f = self.storage.open(self.filename, "rb")
+        f.blob.download_to_file.side_effect = lambda tmpfile, **kwargs: tmpfile.write(
+            b"remote content"
+        )
+        self.assertEqual(f.read(6), b"remote")
+        self.assertIs(f.open(), f)
+        self.assertEqual(f.read(), b"remote content")
+        f.blob.download_to_file.assert_called_once()
+        f.close()
+        self.assertIs(f.open(), f)
+        self.assertFalse(f.closed)
+        self.assertEqual(f.read(), b"remote content")
+        self.assertEqual(f.blob.download_to_file.call_count, 2)
+        f.close()
+
+    def test_reopening_write_file_without_writing_does_not_upload(self):
+        f = self.storage.open(self.filename, "wb")
+        f.write(b"original content")
+        f.close()
+        f.open()
+        f.close()
+        f.blob.upload_from_file.assert_called_once()
+
+    def test_upload_failure_keeps_file_open_for_retry(self):
+        f = self.storage.open(self.filename, "wb")
+        f.write(b"original content")
+        f.blob.upload_from_file.side_effect = RuntimeError("upload failed")
+        with self.assertRaises(RuntimeError):
+            f.close()
+        self.assertFalse(f.closed)
+        self.assertTrue(f._is_dirty)
+        f.blob.upload_from_file.side_effect = None
+        f.close()
+        self.assertTrue(f.closed)
+
+    def test_open_accepts_django_file_options(self):
+        if "kwargs" not in signature(File.open).parameters:
+            self.skipTest("This Django version does not accept extra File.open options")
+        f = self.storage.open(self.filename, "rb")
+        self.assertIs(f.open("rb", buffering=0), f)
+        f.close()
+        self.assertIs(f.open("rb", buffering=0), f)
+        self.assertFalse(f.closed)
+        f.close()
+
     def test_open_read(self):
         """
         Test opening a file and reading from it
