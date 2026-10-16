@@ -29,6 +29,11 @@ from django.utils.deconstruct import deconstructible
 from storages.base import BaseStorage
 from storages.utils import setting
 
+UNIX_LIST_PATTERN = re.compile(
+    r"^(?P<type>[d-])\S*\s+\d+\s+\S+\s+(?:\S+\s+)?"
+    r"(?P<size>\d+)\s+\S+\s+\d+\s+\S+\s(?P<name>.+)$"
+)
+
 
 class FTPStorageException(Exception):
     pass
@@ -177,15 +182,15 @@ class FTPStorage(BaseStorage):
             dirs = {}
             files = {}
             for line in lines:
-                words = line.split()
-                if len(words) < 6:
+                # UNIX listings may omit the group; the filename is the
+                # remainder after the date, not the last whitespace token.
+                match = UNIX_LIST_PATTERN.match(line)
+                if match is None:
                     continue
-                if words[-2] == "->":
-                    continue
-                if words[0][0] == "d":
-                    dirs[words[-1]] = 0
-                elif words[0][0] == "-":
-                    files[words[-1]] = int(words[-5])
+                if match["type"] == "d":
+                    dirs[match["name"]] = 0
+                else:
+                    files[match["name"]] = int(match["size"])
             return dirs, files
         except ftplib.all_errors:
             raise FTPStorageException("Error getting listing for %s" % path)
