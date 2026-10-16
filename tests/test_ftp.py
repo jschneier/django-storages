@@ -37,6 +37,71 @@ class FTPTest(TestCase):
     def setUp(self):
         self.storage = ftp.FTPStorage(location=URL)
 
+    @patch("ftplib.FTP")
+    def test_listing_preserves_whitespace_in_names(self, mock_ftp):
+        lines = (
+            "drwxr-xr-x 2 owner group 4096 Jul 27 09:46 reports and data",
+            "-rw-r--r-- 1 owner group 1024 Jul 27 2025 monthly report.txt",
+            "-rw-r--r-- 1 owner group 2048 Jul 27 09:50 two  spaces.txt",
+            "-rw-r--r-- 1 owner group 0 Jul 27 09:50 arrow -> name.txt",
+            "lrwxrwxrwx 1 owner group 6 Jul 27 09:50 link name -> target name",
+            "total 8",
+        )
+
+        def listing(cmd, callback):
+            for line in lines:
+                callback(line)
+
+        mock_ftp.return_value.retrlines.side_effect = listing
+        dirs, files = self.storage.listdir("/")
+        self.assertEqual(dirs, ["reports and data"])
+        self.assertEqual(
+            files, ["monthly report.txt", "two  spaces.txt", "arrow -> name.txt"]
+        )
+        self.assertEqual(self.storage.size("monthly report.txt"), 1024)
+        self.assertEqual(self.storage.size("two  spaces.txt"), 2048)
+        self.assertEqual(self.storage.size("arrow -> name.txt"), 0)
+
+    @patch("ftplib.FTP")
+    def test_listing_without_group_preserves_names(self, mock_ftp):
+        lines = (
+            "drwxr-xr-x 2 owner 4096 Jul 27 09:46 reports and data",
+            "-rw-r--r-- 1 owner 1024 Jul 27 2025 monthly report.txt",
+            "-rw-r--r-- 1 owner 2048 Jul 27 09:50 fi2",
+        )
+
+        def listing(cmd, callback):
+            for line in lines:
+                callback(line)
+
+        mock_ftp.return_value.retrlines.side_effect = listing
+        dirs, files = self.storage.listdir("/")
+        self.assertEqual(dirs, ["reports and data"])
+        self.assertEqual(files, ["monthly report.txt", "fi2"])
+        self.assertEqual(self.storage.size("monthly report.txt"), 1024)
+        self.assertEqual(self.storage.size("fi2"), 2048)
+
+    @patch("ftplib.FTP")
+    def test_listing_preserves_leading_and_trailing_spaces(self, mock_ftp):
+        lines = (
+            "drwxr-xr-x 2 owner group 4096 Jul 27 09:46  leading directory",
+            "-rw-r--r-- 1 owner group 7 Jul 27 09:46  leading file.txt",
+            "-rw-r--r-- 1 owner 8 Jul 27 09:46 trailing file.txt ",
+            "-rw-r--r-- 1 owner 9 Jul 27 09:46   ",
+        )
+
+        def listing(cmd, callback):
+            for line in lines:
+                callback(line)
+
+        mock_ftp.return_value.retrlines.side_effect = listing
+        dirs, files = self.storage.listdir("/")
+        self.assertEqual(dirs, [" leading directory"])
+        self.assertEqual(files, [" leading file.txt", "trailing file.txt ", "  "])
+        self.assertEqual(self.storage.size(" leading file.txt"), 7)
+        self.assertEqual(self.storage.size("trailing file.txt "), 8)
+        self.assertEqual(self.storage.size("  "), 9)
+
     def test_init_no_location(self):
         with self.assertRaises(ImproperlyConfigured):
             ftp.FTPStorage()
