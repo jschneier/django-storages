@@ -9,6 +9,12 @@ General
 
 - Add support for Django 5.2
 
+Google Cloud
+------------
+
+- Add ``client_options`` / ``GS_CLIENT_OPTIONS`` setting to forward options
+  (e.g. a non-default ``universe_domain``) to the storage ``Client``
+
 1.14.6 (2025-04-01)
 *******************
 

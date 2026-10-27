@@ -148,6 +148,7 @@ class GoogleCloudStorage(BaseStorage):
             # in such cases, sign blob api is REQUIRED for signing data
             "iam_sign_blob": setting("GS_IAM_SIGN_BLOB", False),
             "sa_email": setting("GS_SA_EMAIL"),
+            "client_options": setting("GS_CLIENT_OPTIONS", {}),
         }
 
     @property
@@ -157,7 +158,11 @@ class GoogleCloudStorage(BaseStorage):
                 self.credentials, self.project_id = auth.default(
                     scopes=["https://www.googleapis.com/auth/cloud-platform"]
                 )
-            self._client = Client(project=self.project_id, credentials=self.credentials)
+            self._client = Client(
+                project=self.project_id,
+                credentials=self.credentials,
+                client_options=self.client_options or None,
+            )
         return self._client
 
     @property

@@ -260,3 +260,16 @@ Settings
   default: ``None``
 
   Override the service account used for generating signed urls using the IAM Sign Blob API. See :ref:`iam-sign-blob-api` for more info.
+
+``client_options`` or ``GS_CLIENT_OPTIONS``
+
+  default: ``{}``
+
+  A ``dict`` of client options forwarded to the underlying
+  ``google.cloud.storage.Client``. For example, to target a non-default
+  universe domain::
+
+      GS_CLIENT_OPTIONS = {"universe_domain": "example.com"}
+
+  When a non-default universe domain is used, the credentials'
+  ``universe_domain`` must match the one configured here.

@@ -458,6 +458,31 @@ class GCloudStorageTests(GCloudTestCase):
         with self.assertRaises(ImproperlyConfigured, msg=msg):
             gcloud.GoogleCloudStorage(location="/")
 
+    def test_client_options_default_empty(self):
+        # No GS_CLIENT_OPTIONS -> client is created without client_options.
+        storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
+        self.assertEqual(storage.client_options, {})
+        storage.client
+        gcloud.Client.assert_called_with(
+            project=storage.project_id,
+            credentials=storage.credentials,
+            client_options=None,
+        )
+
+    def test_client_options_passed_to_client(self):
+        # GS_CLIENT_OPTIONS (e.g. a non-default universe domain) is forwarded to
+        # the google-cloud-storage Client.
+        opts = {"universe_domain": "example.com"}
+        with override_settings(GS_CLIENT_OPTIONS=opts):
+            storage = gcloud.GoogleCloudStorage(bucket_name=self.bucket_name)
+            self.assertEqual(storage.client_options, opts)
+            storage.client
+            gcloud.Client.assert_called_with(
+                project=storage.project_id,
+                credentials=storage.credentials,
+                client_options=opts,
+            )
+
     def test_override_settings(self):
         with override_settings(GS_LOCATION="foo1"):
             storage = gcloud.GoogleCloudStorage()
