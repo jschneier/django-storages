@@ -12,5 +12,6 @@ backend for some of the most popular.
    backblaze-B2
    cloudflare-r2
    digital-ocean-spaces
+   neon
    oracle-cloud
    scaleway
