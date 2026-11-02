@@ -45,6 +45,67 @@ class S3StorageTests(TestCase):
             _ = storage.connection
             session.assert_called_once_with(profile_name="test_profile")
 
+    @mock.patch("boto3.Session")
+    def test_new_session_per_storage_by_default(self, session):
+        s3.S3Storage().connection
+        s3.S3Storage().connection
+
+        self.assertEqual(2, session.call_count)
+
+    @mock.patch.dict(s3._shared_sessions, clear=True)
+    @mock.patch("boto3.Session")
+    def test_shared_session_is_reused_by_storages(self, session):
+        with override_settings(AWS_S3_SHARED_SESSION=True):
+            first, second = s3.S3Storage(), s3.S3Storage()
+            first.connection
+            second.connection
+            first.unsigned_connection
+
+        session.assert_called_once()
+
+    @mock.patch.dict(s3._shared_sessions, clear=True)
+    @mock.patch("boto3.Session")
+    def test_shared_session_is_per_credentials(self, session):
+        with override_settings(AWS_S3_SHARED_SESSION=True):
+            s3.S3Storage(access_key="a", secret_key="s").connection
+            s3.S3Storage(access_key="a", secret_key="s").connection
+            s3.S3Storage(access_key="b", secret_key="s").connection
+
+        self.assertEqual(2, session.call_count)
+
+    @mock.patch.dict(s3._shared_sessions, clear=True)
+    @mock.patch("boto3.Session")
+    def test_shared_session_with_profile(self, session):
+        with override_settings(AWS_S3_SHARED_SESSION=True):
+            s3.S3Storage(session_profile="p").connection
+            s3.S3Storage(session_profile="p").connection
+
+        session.assert_called_once_with(profile_name="p")
+
+    @skipIf(threading is None, "Test requires threading")
+    @mock.patch.dict(s3._shared_sessions, clear=True)
+    @mock.patch("boto3.Session")
+    def test_shared_session_connection_per_thread(self, session):
+        session.return_value.resource.side_effect = lambda *a, **k: mock.MagicMock()
+        connections = []
+        with override_settings(AWS_S3_SHARED_SESSION=True):
+            storage = s3.S3Storage()
+
+            def thread_storage_connection():
+                connections.append(storage.connection)
+
+            threads = [
+                threading.Thread(target=thread_storage_connection) for _ in range(4)
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        # one session, but every thread still gets its own resource
+        session.assert_called_once()
+        self.assertEqual(4, len({id(c) for c in connections}))
+
     @mock.patch("boto3.Session.resource")
     def test_client_config(self, resource):
         with override_settings(

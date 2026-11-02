@@ -1,3 +1,4 @@
+import contextlib
 import io
 import mimetypes
 import os
@@ -96,6 +97,13 @@ def _filter_download_params(params):
         for (key, value) in params.items()
         if key in s3transfer.constants.ALLOWED_DOWNLOAD_ARGS
     }
+
+
+# Sessions shared by all storages that opt in with ``shared_session``. Creating a
+# boto3 session loads botocore's service models and endpoint data from disk
+# (thousands of stat/listdir calls), and the loader's cache lives in the session.
+_shared_sessions = {}
+_shared_sessions_lock = threading.RLock()
 
 
 @deconstructible
@@ -407,6 +415,7 @@ class S3Storage(CompressStorageMixin, BaseStorage):
             "session_profile": setting(
                 "AWS_S3_SESSION_PROFILE", lookup_env(["AWS_S3_SESSION_PROFILE"])
             ),
+            "shared_session": setting("AWS_S3_SHARED_SESSION", False),
             "file_overwrite": setting("AWS_S3_FILE_OVERWRITE", True),
             "object_parameters": setting("AWS_S3_OBJECT_PARAMETERS", {}),
             "bucket_name": setting("AWS_STORAGE_BUCKET_NAME"),
@@ -460,41 +469,71 @@ class S3Storage(CompressStorageMixin, BaseStorage):
     def connection(self):
         connection = getattr(self._connections, "connection", None)
         if connection is None:
-            session = self._create_session()
-            self._connections.connection = session.resource(
-                "s3",
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=self.client_config,
-                verify=self.verify,
-            )
+            with self._session_lock():
+                session = self._create_session()
+                self._connections.connection = session.resource(
+                    "s3",
+                    region_name=self.region_name,
+                    use_ssl=self.use_ssl,
+                    endpoint_url=self.endpoint_url,
+                    config=self.client_config,
+                    verify=self.verify,
+                )
         return self._connections.connection
 
     @property
     def unsigned_connection(self):
         unsigned_connection = getattr(self._unsigned_connections, "connection", None)
         if unsigned_connection is None:
-            session = self._create_session()
-            config = self.client_config.merge(
-                Config(signature_version=botocore.UNSIGNED)
-            )
-            self._unsigned_connections.connection = session.resource(
-                "s3",
-                region_name=self.region_name,
-                use_ssl=self.use_ssl,
-                endpoint_url=self.endpoint_url,
-                config=config,
-                verify=self.verify,
-            )
+            with self._session_lock():
+                session = self._create_session()
+                config = self.client_config.merge(
+                    Config(signature_version=botocore.UNSIGNED)
+                )
+                self._unsigned_connections.connection = session.resource(
+                    "s3",
+                    region_name=self.region_name,
+                    use_ssl=self.use_ssl,
+                    endpoint_url=self.endpoint_url,
+                    config=config,
+                    verify=self.verify,
+                )
         return self._unsigned_connections.connection
+
+    def _session_lock(self):
+        """
+        A boto3 session is not thread safe: creating clients and resources from it
+        lazily initialises state shared by the whole session. Serialize that when it
+        is shared.
+        """
+        if self.shared_session:
+            return _shared_sessions_lock
+        return contextlib.nullcontext()
 
     def _create_session(self):
         """
         If a user specifies a profile name and this class obtains access keys
         from another source such as environment variables,we want the profile
         name to take precedence.
+
+        With ``shared_session`` one session per set of credentials is reused by every
+        storage instance and thread of the process instead of creating a new one.
         """
+        if not self.shared_session:
+            return self._new_session()
+        key = (
+            self.session_profile,
+            self.access_key,
+            self.secret_key,
+            self.security_token,
+        )
+        with _shared_sessions_lock:
+            session = _shared_sessions.get(key)
+            if session is None:
+                session = _shared_sessions[key] = self._new_session()
+            return session
+
+    def _new_session(self):
         if self.session_profile:
             session = boto3.Session(profile_name=self.session_profile)
         else:
