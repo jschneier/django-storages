@@ -9,6 +9,14 @@ General
 
 - Add support for Django 5.2
 
+S3
+--
+
+- Add the ``AWS_S3_SHARED_SESSION`` setting to reuse one boto3 session per set of credentials instead of creating one
+  per storage instance and thread (`#1472`_)
+
+.. _#1472: https://github.com/jschneier/django-storages/issues/1472
+
 1.14.6 (2025-04-01)
 *******************
 

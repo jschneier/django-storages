@@ -247,6 +247,16 @@ Settings
     The signature versions are not backwards compatible so be careful about url endpoints if making this change
     for legacy projects.
 
+``shared_session`` or ``AWS_S3_SHARED_SESSION``
+
+  Default: ``False``
+
+  Create one ``boto3.Session`` per set of credentials for the whole process instead of a new one for every storage
+  instance and thread. Creating a session is expensive: its loader reads botocore's service models and endpoint
+  data from disk (thousands of ``stat`` and ``listdir`` calls), which takes tens of milliseconds and seconds on a slow
+  filesystem or a CPU-limited container, once per storage instance and thread. Each thread still gets its own
+  resource, and resources are created while holding a lock because a boto3 session is not thread safe.
+
 ``client_config`` or ``AWS_S3_CLIENT_CONFIG``
 
   Default: ``None``
